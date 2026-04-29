@@ -128,6 +128,32 @@ export interface TransactionListResponse {
   totalCount: number;
 }
 
+// --- Configuration ---
+// JSON shape from backend/src/Web/API/ConfigurationAPI.hs (ConfigurationResponse,
+// DictionaryResponse, DictionaryEntryResponse, BankingConfigurationDTO).
+
+export interface DictionaryEntryResponse {
+  id: UUID;
+  name: string;
+}
+
+export interface DictionaryResponse {
+  entries: DictionaryEntryResponse[];
+}
+
+export interface BankingConfigurationDTO {
+  defaultIncomeCategory: UUID | null;
+  defaultExpenseCategory: UUID | null;
+  mccExpenseCategoryMap: Record<string, UUID>;
+}
+
+export interface ConfigurationResponse {
+  baseCurrency: string;
+  defaultCurrency: string;
+  dictionaries: Record<string, DictionaryResponse>;
+  banking: BankingConfigurationDTO;
+}
+
 // --- API errors ---
 
 export interface ApiError {

@@ -1,9 +1,12 @@
 import type {
   AccountResponse,
   AuthResponse,
+  ConfigurationResponse,
   TransactionResponse,
   UserProfileResponse,
 } from '@/api/types';
+
+export const foodCategoryId = '00000000-0000-0000-0000-00000000f00d';
 
 export const authResponseFixture: AuthResponse = {
   token: 'jwt-test',
@@ -44,7 +47,22 @@ export const transactionFixture: TransactionResponse = {
   status: 'Completed',
   failureReason: null,
   transferType: 'Expense',
-  category: 'Food',
+  category: foodCategoryId,
   date: '2026-04-27T08:00:00Z',
   labels: [],
+};
+
+export const configurationFixture: ConfigurationResponse = {
+  baseCurrency: 'USD',
+  defaultCurrency: 'USD',
+  dictionaries: {
+    categories: {
+      entries: [{ id: foodCategoryId, name: 'Food' }],
+    },
+  },
+  banking: {
+    defaultIncomeCategory: null,
+    defaultExpenseCategory: null,
+    mccExpenseCategoryMap: {},
+  },
 };

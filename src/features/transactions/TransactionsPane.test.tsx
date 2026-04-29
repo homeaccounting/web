@@ -35,6 +35,13 @@ describe('TransactionsPane', () => {
     expect(await screen.findByText(transactionFixture.description)).toBeInTheDocument();
   });
 
+  it('renders the category name resolved from the configuration dictionary', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    expect(await screen.findByText('Food')).toBeInTheDocument();
+    expect(screen.queryByText(transactionFixture.category as string)).not.toBeInTheDocument();
+  });
+
   it('renders empty state when there are no transactions', async () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
     server.use(

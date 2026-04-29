@@ -2,6 +2,7 @@ import { http, HttpResponse } from 'msw';
 import {
   accountFixture,
   authResponseFixture,
+  configurationFixture,
   profileFixture,
   transactionFixture,
 } from './fixtures';
@@ -26,4 +27,5 @@ export const handlers = [
   http.get(`${apiBase}/api/transactions`, () =>
     HttpResponse.json({ transactions: [transactionFixture], totalCount: 1 }),
   ),
+  http.get(`${apiBase}/api/users/me/configuration`, () => HttpResponse.json(configurationFixture)),
 ];
