@@ -93,3 +93,27 @@ all: check test build
 # Trigger CI workflow for the current branch
 ci:
     gh workflow run CI --ref "$(git branch --show-current)"
+
+# --- Image ---
+
+# Build and push image to ghcr.io. Tag defaults to dev-<short-sha>.
+# Requires `gh auth login` and docker.
+publish tag="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    SHA="$(git rev-parse --short HEAD)"
+    TAG="{{tag}}"
+    [[ -z "$TAG" ]] && TAG="dev-$SHA"
+    OWNER="homeaccounting"
+    IMAGE="ghcr.io/${OWNER}/web:${TAG}"
+    echo "==> docker login ghcr.io"
+    gh auth token | docker login ghcr.io -u "$(gh api user -q .login)" --password-stdin
+    echo "==> docker build $IMAGE"
+    docker build --platform linux/amd64 -t "$IMAGE" .
+    echo "==> docker push $IMAGE"
+    docker push "$IMAGE"
+    echo "==> Published: $IMAGE"
+
+# Deployment is run from homeaccounting/infra:
+#   just deploy-web <sha>
+# Or via gh: gh workflow run deploy.yml -R homeaccounting/infra -f service=web -f tag=<sha>
