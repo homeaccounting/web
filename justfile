@@ -32,11 +32,17 @@ typecheck:
     pnpm exec tsc --noEmit
     @echo "✓ Type check complete"
 
-# Lint with ESLint
+# Lint with ESLint (read-only)
 lint:
     @echo "Linting..."
     pnpm exec eslint .
     @echo "✓ Lint complete"
+
+# Auto-fix lint issues with ESLint
+lint-fix:
+    @echo "Auto-fixing lint issues..."
+    pnpm exec eslint . --fix
+    @echo "✓ Lint fix complete"
 
 # Format with Prettier
 format:
