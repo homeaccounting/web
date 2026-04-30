@@ -84,5 +84,7 @@ jobs:
           context: .
           push: true
           tags: ${{ steps.tags.outputs.tags }}
+          build-args: |
+            VITE_API_BASE_URL=
           cache-from: type=gha
           cache-to: type=gha,mode=max
