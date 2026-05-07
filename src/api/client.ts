@@ -52,8 +52,13 @@ export class ApiClient {
     }
 
     if (!res.ok) {
-      const message = (await safeReadMessage(res)) ?? `HTTP ${res.status}`;
-      throw new ApiError({ status: res.status, message });
+      const body = await safeReadErrorBody(res);
+      throw new ApiError({
+        status: res.status,
+        message: body.message ?? `HTTP ${res.status}`,
+        code: body.code,
+        fieldErrors: body.fieldErrors,
+      });
     }
 
     // Servant's `Post '[JSON] NoContent` returns 200 with an empty body, not 204.
@@ -71,11 +76,24 @@ function jsonBody(body: unknown): BodyInit | undefined {
   return JSON.stringify(body as Record<string, unknown>);
 }
 
-async function safeReadMessage(res: Response): Promise<string | undefined> {
+async function safeReadErrorBody(res: Response): Promise<{
+  message?: string;
+  code?: string;
+  fieldErrors?: Record<string, string>;
+}> {
   try {
-    const data = (await res.json()) as { message?: string; error?: string };
-    return data.message ?? data.error;
+    const data = (await res.json()) as {
+      message?: string;
+      code?: string;
+      fieldErrors?: Record<string, string>;
+      error?: string;
+    };
+    return {
+      message: data.message ?? data.error,
+      code: data.code,
+      fieldErrors: data.fieldErrors,
+    };
   } catch {
-    return undefined;
+    return {};
   }
 }

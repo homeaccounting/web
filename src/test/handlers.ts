@@ -24,6 +24,21 @@ export const handlers = [
   http.get(`${apiBase}/api/accounts`, () =>
     HttpResponse.json({ accounts: [accountFixture], totalCount: 1 }),
   ),
+  http.post(`${apiBase}/api/accounts`, async ({ request }) => {
+    const body = (await request.json()) as { name: string; currency: string };
+    return HttpResponse.json(
+      {
+        id: 'new-account-id',
+        name: body.name,
+        balance: 0,
+        currency: body.currency,
+        overdraftLimit: null,
+        subtype: { type: 'cash' },
+        version: 1,
+      },
+      { status: 201 },
+    );
+  }),
   http.get(`${apiBase}/api/transactions`, () =>
     HttpResponse.json({ transactions: [transactionFixture], totalCount: 1 }),
   ),

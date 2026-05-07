@@ -68,4 +68,54 @@ describe('ApiClient', () => {
     server.use(http.post(`${baseUrl}/api/auth/link-oauth`, () => new HttpResponse(null)));
     await expect(client.post<void>('/api/auth/link-oauth', {})).resolves.toBeUndefined();
   });
+
+  it('parses fieldErrors out of a 400 response body', async () => {
+    server.use(
+      http.post(`${baseUrl}/api/accounts`, () =>
+        HttpResponse.json(
+          { message: 'Validation failed', fieldErrors: { name: 'Name is required' } },
+          { status: 400 },
+        ),
+      ),
+    );
+    try {
+      await client.post('/api/accounts', {});
+      expect.unreachable('expected ApiError to be thrown');
+    } catch (err) {
+      expect(err).toBeInstanceOf(ApiError);
+      const apiErr = err as ApiError;
+      expect(apiErr.status).toBe(400);
+      expect(apiErr.fieldErrors).toEqual({ name: 'Name is required' });
+    }
+  });
+
+  it('parses code out of an ErrorResponse-style 400 body', async () => {
+    server.use(
+      http.post(`${baseUrl}/api/accounts`, () =>
+        HttpResponse.json({ message: 'Banking error', code: 'BANKING_ERROR' }, { status: 400 }),
+      ),
+    );
+    try {
+      await client.post('/api/accounts', {});
+      expect.unreachable('expected ApiError to be thrown');
+    } catch (err) {
+      expect(err).toBeInstanceOf(ApiError);
+      const apiErr = err as ApiError;
+      expect(apiErr.code).toBe('BANKING_ERROR');
+      expect(apiErr.message).toBe('Banking error');
+    }
+  });
+
+  it('falls back to "HTTP <status>" message when the body is not JSON', async () => {
+    server.use(http.get(`${baseUrl}/api/boom`, () => new HttpResponse(null, { status: 500 })));
+    try {
+      await client.get('/api/boom');
+      expect.unreachable('expected ApiError to be thrown');
+    } catch (err) {
+      expect(err).toBeInstanceOf(ApiError);
+      const apiErr = err as ApiError;
+      expect(apiErr.status).toBe(500);
+      expect(apiErr.message).toBe('HTTP 500');
+    }
+  });
 });

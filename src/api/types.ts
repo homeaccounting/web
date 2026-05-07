@@ -95,6 +95,40 @@ export interface AccountListResponse {
   totalCount: number;
 }
 
+// Request DTOs for POST /api/accounts. Mirror backend Web/Types.hs:138-204.
+
+export type AccountSubtypeKind = 'cash' | 'bankAccount' | 'eWallet' | 'asset' | 'loan';
+
+// Backend enums (closed sets at the Haskell level; backend also accepts
+// freeform OtherCardNetwork/OtherAsset, but the web UI does not expose those).
+export type CardNetworkKind = 'visa' | 'mastercard' | 'amex';
+export type AssetTypeKind = 'property' | 'vehicle' | 'stocks' | 'retirementFund';
+
+// Mirrors backend AccountSubtypeRequest (Web/Types.hs:153-167). Backend's
+// JSON shape is "type plus optional fields"; we keep the same flat shape.
+export interface AccountSubtypeRequest {
+  type: AccountSubtypeKind;
+  storageLocation?: string;
+  bankName?: string;
+  accountNumber?: string;
+  cardNetwork?: CardNetworkKind;
+  provider?: string;
+  accountIdentifier?: string;
+  assetType?: AssetTypeKind;
+  description?: string;
+  lender?: string;
+  interestRate?: number;
+  dueDate?: string; // ISO date 'YYYY-MM-DD'
+}
+
+export interface CreateAccountRequest {
+  name: string;
+  initialBalance: number;
+  currency: string; // 'UAH' | 'USD' | 'EUR' | 'GBP'
+  overdraftLimit?: number; // omit when none
+  subtype?: AccountSubtypeRequest;
+}
+
 // --- Transactions ---
 // JSON shape from backend/src/Web/Types.hs:455-472 (`TransactionResponse`).
 
