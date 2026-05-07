@@ -73,7 +73,7 @@ export class ApiClient {
 
 function jsonBody(body: unknown): BodyInit | undefined {
   if (body === undefined) return undefined;
-  return JSON.stringify(body as Record<string, unknown>);
+  return JSON.stringify(body);
 }
 
 async function safeReadErrorBody(res: Response): Promise<{
