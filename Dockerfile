@@ -18,6 +18,7 @@ RUN pnpm build
 
 # --- stage 2: serve ---
 FROM caddy:2-alpine
+LABEL org.opencontainers.image.source="https://github.com/homeaccounting/web"
 COPY --from=build /app/dist /srv
 COPY Caddyfile /etc/caddy/Caddyfile
 EXPOSE 80
