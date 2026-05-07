@@ -115,7 +115,9 @@ publish tag="":
     echo "==> docker login ghcr.io"
     gh auth token | docker login ghcr.io -u "$(gh api user -q .login)" --password-stdin
     echo "==> docker build $IMAGE"
-    docker build --platform linux/amd64 -t "$IMAGE" .
+    docker build --platform linux/amd64 \
+      --build-arg APP_COMMIT_HASH="$SHA" \
+      -t "$IMAGE" .
     echo "==> docker push $IMAGE"
     docker push "$IMAGE"
     echo "==> Published: $IMAGE"

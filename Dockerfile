@@ -12,6 +12,8 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 ARG VITE_API_BASE_URL=""
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+ARG APP_COMMIT_HASH=""
+ENV APP_COMMIT_HASH=$APP_COMMIT_HASH
 RUN pnpm build
 
 # --- stage 2: serve ---

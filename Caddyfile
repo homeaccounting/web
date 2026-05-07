@@ -1,6 +1,7 @@
 :80 {
 	root * /srv
 	encode zstd gzip
+	header /info Content-Type application/json
 	try_files {path} /index.html
 	file_server
 }

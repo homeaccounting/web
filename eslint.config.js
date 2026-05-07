@@ -14,6 +14,8 @@ export default tseslint.config(
       'src/components/ui/**',
       'vite.config.js',
       'vite.config.d.ts',
+      'vite/**/*.js',
+      'vite/**/*.d.ts',
       '*.tsbuildinfo',
     ],
   },
