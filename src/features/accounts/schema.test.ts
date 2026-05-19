@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { createAccountFormSchema, toCreateAccountRequest } from './schema';
+import {
+  createAccountFormSchema,
+  editAccountFormSchema,
+  fromAccountResponse,
+  toCreateAccountRequest,
+} from './schema';
+import type { AccountResponse } from '@/api/types';
 
 describe('createAccountFormSchema', () => {
   const base = {
@@ -106,5 +112,95 @@ describe('toCreateAccountRequest', () => {
       interestRate: 5,
       dueDate: '2030-01-01',
     });
+  });
+});
+
+describe('editAccountFormSchema', () => {
+  it('requires name', () => {
+    const result = editAccountFormSchema.safeParse({
+      name: '',
+      currency: 'USD',
+      overdraftLimit: undefined,
+      subtype: { type: 'cash' },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects name longer than 120 chars', () => {
+    const result = editAccountFormSchema.safeParse({
+      name: 'x'.repeat(121),
+      currency: 'USD',
+      overdraftLimit: undefined,
+      subtype: { type: 'cash' },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('does not require initialBalance (no such field in edit schema)', () => {
+    const result = editAccountFormSchema.safeParse({
+      name: 'Savings',
+      currency: 'USD',
+      overdraftLimit: undefined,
+      subtype: { type: 'cash' },
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('does not apply the negative-balance refinement', () => {
+    const result = editAccountFormSchema.safeParse({
+      name: 'Savings',
+      currency: 'USD',
+      overdraftLimit: undefined,
+      subtype: { type: 'cash' },
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts non-enum currency strings', () => {
+    const result = editAccountFormSchema.safeParse({
+      name: 'Savings',
+      currency: 'JPY',
+      overdraftLimit: undefined,
+      subtype: { type: 'cash' },
+    });
+    expect(result.success).toBe(true);
+  });
+});
+
+describe('fromAccountResponse', () => {
+  const fixture: AccountResponse = {
+    id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+    name: 'Savings',
+    balance: 0,
+    currency: 'USD',
+    overdraftLimit: null,
+    subtype: { type: 'cash', storageLocation: 'wallet' },
+    version: 1,
+  };
+
+  it('maps fields from AccountResponse to EditAccountFormValues', () => {
+    const v = fromAccountResponse(fixture);
+    expect(v.name).toBe('Savings');
+    expect(v.currency).toBe('USD');
+    expect(v.overdraftLimit).toBeUndefined();
+    expect(v.subtype).toEqual({ type: 'cash', storageLocation: 'wallet' });
+  });
+
+  it('defaults missing subtype to { type: "cash" }', () => {
+    const v = fromAccountResponse({ ...fixture, subtype: null });
+    expect(v.subtype).toEqual({ type: 'cash' });
+  });
+
+  it('preserves a non-enum currency string', () => {
+    const v = fromAccountResponse({ ...fixture, currency: 'JPY' });
+    expect(v.currency).toBe('JPY');
+  });
+
+  it('drops freeform card-network variants to undefined', () => {
+    const v = fromAccountResponse({
+      ...fixture,
+      subtype: { type: 'bankAccount', cardNetwork: 'OtherCardNetwork: foo' },
+    });
+    expect((v.subtype as { cardNetwork?: string }).cardNetwork).toBeUndefined();
   });
 });

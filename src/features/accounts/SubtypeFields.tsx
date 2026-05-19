@@ -8,7 +8,9 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select';
+import { ASSET_TYPE_KINDS, CARD_NETWORK_KINDS } from '@/api/types';
 import type { CreateAccountFormValues } from './schema';
+import { ASSET_TYPE_LABELS, CARD_NETWORK_LABELS } from './labels';
 
 export function SubtypeFields() {
   const { control, watch } = useFormContext<CreateAccountFormValues>();
@@ -72,9 +74,11 @@ export function SubtypeFields() {
                     <SelectValue placeholder="Select…" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="visa">Visa</SelectItem>
-                    <SelectItem value="mastercard">Mastercard</SelectItem>
-                    <SelectItem value="amex">Amex</SelectItem>
+                    {CARD_NETWORK_KINDS.map((kind) => (
+                      <SelectItem key={kind} value={kind}>
+                        {CARD_NETWORK_LABELS[kind]}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </FormControl>
@@ -132,10 +136,11 @@ export function SubtypeFields() {
                     <SelectValue placeholder="Select…" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="property">Property</SelectItem>
-                    <SelectItem value="vehicle">Vehicle</SelectItem>
-                    <SelectItem value="stocks">Stocks</SelectItem>
-                    <SelectItem value="retirementFund">Retirement fund</SelectItem>
+                    {ASSET_TYPE_KINDS.map((kind) => (
+                      <SelectItem key={kind} value={kind}>
+                        {ASSET_TYPE_LABELS[kind]}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </FormControl>

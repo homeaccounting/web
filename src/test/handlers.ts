@@ -39,6 +39,31 @@ export const handlers = [
       { status: 201 },
     );
   }),
+  http.put(`${apiBase}/api/accounts/:id/name`, () => new HttpResponse(null, { status: 200 })),
+  http.put(
+    `${apiBase}/api/accounts/:id/overdraft-limit`,
+    () => new HttpResponse(null, { status: 200 }),
+  ),
+  http.put(`${apiBase}/api/accounts/:id/type`, () => new HttpResponse(null, { status: 200 })),
+  http.put(`${apiBase}/api/accounts/:id/balance`, () =>
+    HttpResponse.json({
+      id: 'tx-0',
+      sourceAccountId: 'a1',
+      targetAccountId: 'a1',
+      sourceAmount: 0,
+      sourceCurrency: 'USD',
+      targetAmount: 0,
+      targetCurrency: 'USD',
+      exchangeRate: null,
+      description: 'Adjustment',
+      status: 'Completed',
+      failureReason: null,
+      transferType: 'Adjustment',
+      category: null,
+      date: '2025-01-01T00:00:00.000Z',
+      labels: [],
+    }),
+  ),
   http.get(`${apiBase}/api/transactions`, () =>
     HttpResponse.json({ transactions: [transactionFixture], totalCount: 1 }),
   ),

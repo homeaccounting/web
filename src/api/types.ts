@@ -97,12 +97,24 @@ export interface AccountListResponse {
 
 // Request DTOs for POST /api/accounts. Mirror backend Web/Types.hs:138-204.
 
-export type AccountSubtypeKind = 'cash' | 'bankAccount' | 'eWallet' | 'asset' | 'loan';
+// Single source of truth for the closed enum values that mirror backend
+// `Web.Types`. Components, schemas, and label maps import these arrays so
+// no call site repeats the literal list.
+export const ACCOUNT_SUBTYPE_KINDS = ['cash', 'bankAccount', 'eWallet', 'asset', 'loan'] as const;
+export type AccountSubtypeKind = (typeof ACCOUNT_SUBTYPE_KINDS)[number];
 
 // Backend enums (closed sets at the Haskell level; backend also accepts
 // freeform OtherCardNetwork/OtherAsset, but the web UI does not expose those).
-export type CardNetworkKind = 'visa' | 'mastercard' | 'amex';
-export type AssetTypeKind = 'property' | 'vehicle' | 'stocks' | 'retirementFund';
+export const CARD_NETWORK_KINDS = ['visa', 'mastercard', 'amex'] as const;
+export type CardNetworkKind = (typeof CARD_NETWORK_KINDS)[number];
+
+export const ASSET_TYPE_KINDS = ['property', 'vehicle', 'stocks', 'retirementFund'] as const;
+export type AssetTypeKind = (typeof ASSET_TYPE_KINDS)[number];
+
+// Currencies the web UI offers at account creation. Matches the backend's
+// `parseCurrency` accepted values for the create endpoint.
+export const SUPPORTED_CURRENCIES = ['UAH', 'USD', 'EUR', 'GBP'] as const;
+export type SupportedCurrency = (typeof SUPPORTED_CURRENCIES)[number];
 
 // Mirrors backend AccountSubtypeRequest (Web/Types.hs:153-167). Backend's
 // JSON shape is "type plus optional fields"; we keep the same flat shape.
@@ -124,9 +136,36 @@ export interface AccountSubtypeRequest {
 export interface CreateAccountRequest {
   name: string;
   initialBalance: number;
-  currency: string; // 'UAH' | 'USD' | 'EUR' | 'GBP'
+  currency: string; // SupportedCurrency at creation; widens to string at rest
   overdraftLimit?: number; // omit when none
   subtype?: AccountSubtypeRequest;
+}
+
+export interface RenameAccountRequest {
+  name: string;
+}
+
+// `currency` is JSON-optional (mirrors the backend's SetOverdraftLimitRequest,
+// where it defaults to "USD" when missing). Callers MUST set it to the
+// account's currency to avoid CurrencyMismatch on non-USD accounts —
+// see spec §6.3.
+export interface SetOverdraftLimitRequest {
+  overdraftLimit?: number;
+  currency?: string;
+}
+
+export interface SetAccountSubtypeRequest {
+  subtype: AccountSubtypeRequest;
+}
+
+// PUT /api/accounts/:id/balance. See spec §11.1 for server validation rules.
+// `date` is an ISO 8601 timestamp; the AdjustBalanceDialog converts a
+// YYYY-MM-DD date input to <YYYY-MM-DD>T00:00:00.000Z before sending.
+export interface AdjustBalanceRequest {
+  targetBalance: number;
+  currency: string;
+  date: ISO8601;
+  reason: string;
 }
 
 // --- Transactions ---
