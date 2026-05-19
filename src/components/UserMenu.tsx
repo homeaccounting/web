@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   DropdownMenu,
@@ -14,6 +15,7 @@ import { authApi } from '@/api/auth';
 import { usersApi } from '@/api/users';
 import { useAuth } from '@/auth/useAuth';
 import { beginLinkFlow, saveOAuthState } from '@/auth/oauthFlow';
+import { LinkTelegramDialog } from './LinkTelegramDialog';
 
 const baseUrl =
   (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:8080';
@@ -32,6 +34,8 @@ export function UserMenu() {
   });
 
   const hasGoogle = profile?.oauthIdentities.some((i) => i.provider === 'Google') ?? false;
+  const hasTelegram = profile?.telegramIdentity != null;
+  const [tgDialogOpen, setTgDialogOpen] = useState(false);
   const initials = (profile?.email ?? session?.email ?? '?').slice(0, 1).toUpperCase();
 
   const onLinkGoogle = async () => {
@@ -42,22 +46,30 @@ export function UserMenu() {
   };
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" aria-label="Open user menu" className="rounded-full p-0">
-          <Avatar className="h-8 w-8">
-            <AvatarFallback>{initials}</AvatarFallback>
-          </Avatar>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuLabel>{profile?.email ?? session?.email ?? 'Account'}</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        {!hasGoogle && (
-          <DropdownMenuItem onSelect={() => void onLinkGoogle()}>Link Google</DropdownMenuItem>
-        )}
-        <DropdownMenuItem onSelect={signOut}>Sign out</DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" aria-label="Open user menu" className="rounded-full p-0">
+            <Avatar className="h-8 w-8">
+              <AvatarFallback>{initials}</AvatarFallback>
+            </Avatar>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuLabel>{profile?.email ?? session?.email ?? 'Account'}</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          {!hasGoogle && (
+            <DropdownMenuItem onSelect={() => void onLinkGoogle()}>Link Google</DropdownMenuItem>
+          )}
+          {!hasTelegram && (
+            <DropdownMenuItem onSelect={() => setTgDialogOpen(true)}>
+              Link Telegram
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuItem onSelect={signOut}>Sign out</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <LinkTelegramDialog open={tgDialogOpen} onOpenChange={setTgDialogOpen} client={client} />
+    </>
   );
 }

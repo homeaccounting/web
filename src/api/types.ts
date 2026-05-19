@@ -30,6 +30,11 @@ export interface OAuthRedirectResponse {
   state: string;
 }
 
+export interface TelegramLinkCodeResponse {
+  deepLink: string;
+  expiresAt: ISO8601;
+}
+
 export interface LinkOAuthRequest {
   provider: OAuthProviderName;
   code: string;

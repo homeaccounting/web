@@ -2,6 +2,7 @@ import type {
   AccountResponse,
   AuthResponse,
   ConfigurationResponse,
+  TelegramLinkCodeResponse,
   TransactionResponse,
   UserProfileResponse,
 } from '@/api/types';
@@ -32,6 +33,11 @@ export const accountFixture: AccountResponse = {
   overdraftLimit: null,
   subtype: { type: 'bankAccount', bankName: 'ACME' },
   version: 1,
+};
+
+export const telegramLinkCodeFixture: TelegramLinkCodeResponse = {
+  deepLink: 'https://t.me/HomeAccountingBot?start=LINK_test-token',
+  expiresAt: '2026-04-29T12:34:56Z',
 };
 
 export const transactionFixture: TransactionResponse = {

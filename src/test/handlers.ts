@@ -4,6 +4,7 @@ import {
   authResponseFixture,
   configurationFixture,
   profileFixture,
+  telegramLinkCodeFixture,
   transactionFixture,
 } from './fixtures';
 
@@ -20,6 +21,9 @@ export const handlers = [
     HttpResponse.json(authResponseFixture),
   ),
   http.post(`${apiBase}/api/auth/link-oauth`, () => new HttpResponse(null, { status: 204 })),
+  http.post(`${apiBase}/api/auth/telegram/link-code`, () =>
+    HttpResponse.json(telegramLinkCodeFixture),
+  ),
   http.get(`${apiBase}/api/users/me`, () => HttpResponse.json(profileFixture)),
   http.get(`${apiBase}/api/accounts`, () =>
     HttpResponse.json({ accounts: [accountFixture], totalCount: 1 }),

@@ -5,6 +5,7 @@ import type {
   OAuthRedirectResponse,
   RefreshTokenRequest,
   RegisterRequest,
+  TelegramLinkCodeResponse,
 } from './types';
 import type { ApiClient } from './client';
 
@@ -19,4 +20,6 @@ export const authApi = (client: ApiClient) => ({
       `/api/auth/oauth/${provider}/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`,
     ),
   linkOAuth: (body: LinkOAuthRequest) => client.post<void>('/api/auth/link-oauth', body),
+  requestTelegramLinkCode: () =>
+    client.post<TelegramLinkCodeResponse>('/api/auth/telegram/link-code'),
 });
