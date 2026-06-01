@@ -82,9 +82,11 @@ describe('TransactionsPane', () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
     server.use(http.get(`${apiBase}/api/accounts`, () => new Promise<never>(() => {})));
     const { container } = renderWithProviders(ui(), { initialPath: '/accounts/a1' });
-    // The header lives in a border-b container above the transactions area.
+    // The account header lives in a border-b container above the transactions area.
+    // Note: ControlBar also has border-b, so find the one that contains the skeleton.
     await waitFor(() => {
-      const headerArea = container.querySelector('.border-b');
+      const borderDivs = Array.from(container.querySelectorAll('.border-b'));
+      const headerArea = borderDivs.find((el) => el.querySelector('.animate-pulse'));
       expect(headerArea).not.toBeNull();
       expect(headerArea?.querySelector('.animate-pulse')).not.toBeNull();
     });
@@ -201,5 +203,17 @@ describe('TransactionsPane', () => {
     renderWithProviders(ui(), { initialPath: '/accounts/a99' });
     expect(await screen.findByText(/no transactions yet/i)).toBeInTheDocument();
     expect(screen.queryByRole('heading', { level: 2 })).not.toBeInTheDocument();
+  });
+
+  it('renders the control bar even when no account is selected', () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    renderWithProviders(ui(), { initialPath: '/' });
+    expect(screen.getByRole('button', { name: /add income/i })).toBeInTheDocument();
+  });
+
+  it('shows the "Select an account." prompt when no account is selected', () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    renderWithProviders(ui(), { initialPath: '/' });
+    expect(screen.getByText(/select an account\./i)).toBeInTheDocument();
   });
 });

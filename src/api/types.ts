@@ -173,6 +173,37 @@ export interface AdjustBalanceRequest {
   reason: string;
 }
 
+// --- Transaction request DTOs ---
+// Mirrors backend Web/Types.hs:349-380 (IncomeRequest and ExpenseRequest are
+// structurally identical there). `category` is sent as JSON `Text` but the
+// backend parses it to a `DictionaryEntryId` UUID via `parseCategoryId`
+// (Web/Types.hs:1076-1080), so we type it as `UUID` (a string) on the wire.
+export interface IncomeRequest {
+  accountId: UUID;
+  amount: number;
+  currency: string;
+  category: UUID; // wire type: string; must be a dictionary entry UUID
+  description: string;
+  date?: ISO8601; // omit → backend defaults to server time
+  labels?: UUID[];
+}
+
+export type ExpenseRequest = IncomeRequest;
+
+// Mirrors backend Web/Types.hs:406-422. `currency` here is the SOURCE
+// account's currency (the form locks it to the source); the backend computes
+// the target amount via `exchangeRate` (or its default if omitted).
+export interface InternalTransferRequest {
+  sourceAccountId: UUID;
+  targetAccountId: UUID;
+  amount: number;
+  currency: string;
+  description: string;
+  exchangeRate?: number;
+  date?: ISO8601;
+  labels?: UUID[];
+}
+
 // --- Transactions ---
 // JSON shape from backend/src/Web/Types.hs:455-472 (`TransactionResponse`).
 

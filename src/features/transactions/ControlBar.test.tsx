@@ -1,0 +1,88 @@
+import { describe, it, expect, beforeEach } from 'vitest';
+import userEvent from '@testing-library/user-event';
+import { http, HttpResponse } from 'msw';
+import { screen, within } from '@testing-library/react';
+import { server } from '@/test/server';
+import { renderWithProviders } from '@/test/utils';
+import { AuthProvider } from '@/auth/AuthContext';
+import { saveSession } from '@/auth/storage';
+import { ControlBar } from './ControlBar';
+
+const apiBase = 'http://localhost:8080';
+
+// Two UUID accounts so the transfer form can render (needs >= 2 accounts)
+const twoAccounts = [
+  {
+    id: '00000000-0000-0000-0000-000000000001',
+    name: 'Checking',
+    balance: 1000,
+    currency: 'USD',
+    overdraftLimit: null,
+    subtype: { type: 'bankAccount', bankName: 'ACME' },
+    version: 1,
+  },
+  {
+    id: '00000000-0000-0000-0000-000000000002',
+    name: 'Savings',
+    balance: 5000,
+    currency: 'USD',
+    overdraftLimit: null,
+    subtype: { type: 'bankAccount', bankName: 'ACME' },
+    version: 1,
+  },
+];
+
+function ui() {
+  return (
+    <AuthProvider>
+      <ControlBar />
+    </AuthProvider>
+  );
+}
+
+describe('ControlBar', () => {
+  beforeEach(() => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+  });
+
+  it('renders all three icon buttons with accessible names', () => {
+    renderWithProviders(ui(), { initialPath: '/' });
+    expect(screen.getByRole('button', { name: /add income/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /add expense/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /add transfer/i })).toBeInTheDocument();
+  });
+
+  it('clicking "Add income" opens the income dialog', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(ui(), { initialPath: '/' });
+    await user.click(screen.getByRole('button', { name: /add income/i }));
+    const dialog = await screen.findByRole('dialog', { name: /add income/i });
+    expect(dialog).toBeInTheDocument();
+    // Verify the submit button lives inside the dialog
+    expect(within(dialog).getByRole('button', { name: /add income/i })).toBeInTheDocument();
+  });
+
+  it('clicking "Add expense" opens the expense dialog', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(ui(), { initialPath: '/' });
+    await user.click(screen.getByRole('button', { name: /add expense/i }));
+    const dialog = await screen.findByRole('dialog', { name: /add expense/i });
+    expect(dialog).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: /add expense/i })).toBeInTheDocument();
+  });
+
+  it('clicking "Add transfer" opens the transfer dialog', async () => {
+    const user = userEvent.setup();
+    // Override accounts to return two accounts so the transfer form renders (needs >= 2)
+    server.use(
+      http.get(`${apiBase}/api/accounts`, () =>
+        HttpResponse.json({ accounts: twoAccounts, totalCount: 2 }),
+      ),
+    );
+    renderWithProviders(ui(), { initialPath: '/' });
+    await user.click(screen.getByRole('button', { name: /add transfer/i }));
+    const dialog = await screen.findByRole('dialog', { name: /add transfer/i });
+    expect(dialog).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: /add transfer/i })).toBeInTheDocument();
+  });
+});

@@ -12,6 +12,7 @@ import { formatDate, formatMoney } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { useTransactions } from './useTransactions';
 import { AccountHeader } from './AccountHeader';
+import { ControlBar } from './ControlBar';
 
 export function TransactionsPane() {
   const { id } = useParams<{ id?: string }>();
@@ -19,8 +20,6 @@ export function TransactionsPane() {
   const { data: account, isLoading: accountLoading } = useAccountById(id);
   const { data: configuration } = useConfiguration();
   const categoryNameById = useDictionaryEntryNames(configuration);
-
-  if (!id) return <div className="p-6 text-muted-foreground">Select an account.</div>;
 
   const header = account ? (
     <AccountHeader account={account} />
@@ -31,7 +30,9 @@ export function TransactionsPane() {
   ) : null;
 
   let body: ReactNode;
-  if (isLoading) {
+  if (!id) {
+    body = <div className="p-6 text-muted-foreground">Select an account.</div>;
+  } else if (isLoading) {
     body = (
       <div className="space-y-2 p-4">
         {[0, 1, 2].map((i) => (
@@ -99,6 +100,7 @@ export function TransactionsPane() {
 
   return (
     <>
+      <ControlBar selectedAccountId={id} />
       {header}
       {body}
     </>

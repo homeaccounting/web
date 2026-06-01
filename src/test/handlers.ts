@@ -68,6 +68,82 @@ export const handlers = [
       labels: [],
     }),
   ),
+  http.post(`${apiBase}/api/transactions/income`, async ({ request }) => {
+    const body = (await request.json()) as {
+      accountId: string;
+      amount: number;
+      currency: string;
+      description: string;
+    };
+    return HttpResponse.json({
+      id: 'tx-new-income',
+      sourceAccountId: 'external-1',
+      targetAccountId: body.accountId,
+      sourceAmount: body.amount,
+      sourceCurrency: body.currency,
+      targetAmount: body.amount,
+      targetCurrency: body.currency,
+      exchangeRate: null,
+      description: body.description,
+      status: 'Completed',
+      failureReason: null,
+      transferType: 'Income',
+      category: null,
+      date: '2026-06-01T00:00:00.000Z',
+      labels: [],
+    });
+  }),
+  http.post(`${apiBase}/api/transactions/expense`, async ({ request }) => {
+    const body = (await request.json()) as {
+      accountId: string;
+      amount: number;
+      currency: string;
+      description: string;
+    };
+    return HttpResponse.json({
+      id: 'tx-new-expense',
+      sourceAccountId: body.accountId,
+      targetAccountId: 'external-1',
+      sourceAmount: -body.amount,
+      sourceCurrency: body.currency,
+      targetAmount: -body.amount,
+      targetCurrency: body.currency,
+      exchangeRate: null,
+      description: body.description,
+      status: 'Completed',
+      failureReason: null,
+      transferType: 'Expense',
+      category: null,
+      date: '2026-06-01T00:00:00.000Z',
+      labels: [],
+    });
+  }),
+  http.post(`${apiBase}/api/transactions/transfer`, async ({ request }) => {
+    const body = (await request.json()) as {
+      sourceAccountId: string;
+      targetAccountId: string;
+      amount: number;
+      currency: string;
+      description: string;
+    };
+    return HttpResponse.json({
+      id: 'tx-new-transfer',
+      sourceAccountId: body.sourceAccountId,
+      targetAccountId: body.targetAccountId,
+      sourceAmount: -body.amount,
+      sourceCurrency: body.currency,
+      targetAmount: body.amount,
+      targetCurrency: body.currency,
+      exchangeRate: null,
+      description: body.description,
+      status: 'Completed',
+      failureReason: null,
+      transferType: 'Transfer',
+      category: null,
+      date: '2026-06-01T00:00:00.000Z',
+      labels: [],
+    });
+  }),
   http.get(`${apiBase}/api/transactions`, () =>
     HttpResponse.json({ transactions: [transactionFixture], totalCount: 1 }),
   ),

@@ -8,6 +8,7 @@ import type {
 } from '@/api/types';
 
 export const foodCategoryId = '00000000-0000-0000-0000-00000000f00d';
+export const tripLabelId = '00000000-0000-0000-0000-0000000017a1';
 
 export const authResponseFixture: AuthResponse = {
   token: 'jwt-test',
@@ -58,13 +59,23 @@ export const transactionFixture: TransactionResponse = {
   labels: [],
 };
 
+export const salaryCategoryId = '00000000-0000-0000-0000-00000005a1a0';
+
+// Mirrors the backend's real dictionary ids — see
+// server-infra/src/Domain/Configuration/Defaults.hs and
+// ConfigurationService.hs. Income and expense have separate dictionaries;
+// `labels` is a single dictionary.
 export const configurationFixture: ConfigurationResponse = {
   baseCurrency: 'USD',
   defaultCurrency: 'USD',
   dictionaries: {
-    categories: {
+    'expense-category': {
       entries: [{ id: foodCategoryId, name: 'Food' }],
     },
+    'income-category': {
+      entries: [{ id: salaryCategoryId, name: 'Salary' }],
+    },
+    labels: { entries: [{ id: tripLabelId, name: 'Trip' }] },
   },
   banking: {
     defaultIncomeCategory: null,

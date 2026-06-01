@@ -32,9 +32,9 @@ export function AccountsPane() {
             aria-label="Edit account"
             disabled={accountActionsDisabled}
             onClick={() => setEditing(true)}
-            className="h-7 w-7"
+            className="h-9 w-9"
           >
-            <Pencil className="h-4 w-4" />
+            <Pencil className="h-5 w-5" />
           </Button>
           <Button
             size="icon"
@@ -42,18 +42,18 @@ export function AccountsPane() {
             aria-label="Adjust balance"
             disabled={accountActionsDisabled}
             onClick={() => setAdjusting(true)}
-            className="h-7 w-7"
+            className="h-9 w-9"
           >
-            <Scale className="h-4 w-4" />
+            <Scale className="h-5 w-5" />
           </Button>
           <Button
             size="icon"
             variant="ghost"
             aria-label="Add account"
             onClick={() => setCreating(true)}
-            className="h-7 w-7"
+            className="h-9 w-9"
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-5 w-5" />
           </Button>
         </div>
       </div>
