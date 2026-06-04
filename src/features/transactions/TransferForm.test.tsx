@@ -84,6 +84,64 @@ describe('TransferForm', () => {
     await waitFor(() => expect(screen.getByLabelText(/exchange rate/i)).toBeInTheDocument());
   });
 
+  describe('edit mode', () => {
+    const editDefaults = {
+      sourceAccountId: A1,
+      targetAccountId: A3,
+      amount: 50,
+      currency: 'USD',
+      description: 'd',
+      exchangeRate: undefined as number | undefined,
+      date: '2026-03-04',
+      labels: [] as string[],
+    };
+
+    it('hides "Defaults to today" helper text', () => {
+      renderWithProviders(
+        <TransferForm
+          mode="edit"
+          accounts={accounts}
+          labels={labels}
+          defaultValues={editDefaults}
+          isSubmitting={false}
+          onSubmit={vi.fn()}
+          onCancel={vi.fn()}
+        />,
+      );
+      expect(screen.queryByText(/Defaults to today/)).not.toBeInTheDocument();
+    });
+
+    it('shows a "Save" submit button', () => {
+      renderWithProviders(
+        <TransferForm
+          mode="edit"
+          accounts={accounts}
+          labels={labels}
+          defaultValues={editDefaults}
+          isSubmitting={false}
+          onSubmit={vi.fn()}
+          onCancel={vi.fn()}
+        />,
+      );
+      expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument();
+    });
+
+    it('disables Save when form is clean (no user input)', () => {
+      renderWithProviders(
+        <TransferForm
+          mode="edit"
+          accounts={accounts}
+          labels={labels}
+          defaultValues={editDefaults}
+          isSubmitting={false}
+          onSubmit={vi.fn()}
+          onCancel={vi.fn()}
+        />,
+      );
+      expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+    });
+  });
+
   it('renders an inline error when source equals target', async () => {
     const user = userEvent.setup();
     renderWithProviders(

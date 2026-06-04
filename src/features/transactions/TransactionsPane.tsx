@@ -1,8 +1,15 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useParams } from 'react-router-dom';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from '@/components/ui/context-menu';
+import { Pencil } from 'lucide-react';
 import {
   useConfiguration,
   useDictionaryEntryNames,
@@ -10,9 +17,11 @@ import {
 import { useAccountById } from '@/features/accounts/useAccountById';
 import { formatDate, formatMoney } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import type { TransactionResponse } from '@/api/types';
 import { useTransactions } from './useTransactions';
 import { AccountHeader } from './AccountHeader';
 import { ControlBar } from './ControlBar';
+import { EditTransactionDialog } from './EditTransactionDialog';
 
 export function TransactionsPane() {
   const { id } = useParams<{ id?: string }>();
@@ -20,6 +29,9 @@ export function TransactionsPane() {
   const { data: account, isLoading: accountLoading } = useAccountById(id);
   const { data: configuration } = useConfiguration();
   const categoryNameById = useDictionaryEntryNames(configuration);
+
+  const [editing, setEditing] = useState<TransactionResponse | null>(null);
+  const openEdit = (t: TransactionResponse) => setEditing(t);
 
   const header = account ? (
     <AccountHeader account={account} />
@@ -76,21 +88,42 @@ export function TransactionsPane() {
             const currency = isTarget ? t.targetCurrency : t.sourceCurrency;
             const negative = amount < 0;
             return (
-              <tr key={t.id} className="border-t">
-                <td className="px-4 py-2">{formatDate(t.date)}</td>
-                <td className="px-4 py-2">{t.description}</td>
-                <td className="w-40 truncate px-4 py-2">
-                  {t.category ? (categoryNameById.get(t.category) ?? '') : ''}
-                </td>
-                <td
-                  className={cn(
-                    'px-4 py-2 text-right tabular-nums',
-                    negative && 'text-destructive',
-                  )}
-                >
-                  {formatMoney(amount, currency)}
-                </td>
-              </tr>
+              <ContextMenu key={t.id}>
+                <ContextMenuTrigger asChild>
+                  <tr
+                    className="cursor-pointer border-t hover:bg-muted/50"
+                    role="button"
+                    tabIndex={0}
+                    onDoubleClick={() => openEdit(t)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        openEdit(t);
+                      }
+                    }}
+                  >
+                    <td className="px-4 py-2">{formatDate(t.date)}</td>
+                    <td className="px-4 py-2">{t.description}</td>
+                    <td className="w-40 truncate px-4 py-2">
+                      {t.category ? (categoryNameById.get(t.category) ?? '') : ''}
+                    </td>
+                    <td
+                      className={cn(
+                        'px-4 py-2 text-right tabular-nums',
+                        negative && 'text-destructive',
+                      )}
+                    >
+                      {formatMoney(amount, currency)}
+                    </td>
+                  </tr>
+                </ContextMenuTrigger>
+                <ContextMenuContent>
+                  <ContextMenuItem onSelect={() => openEdit(t)}>
+                    <Pencil className="mr-2 h-4 w-4" aria-hidden />
+                    Edit
+                  </ContextMenuItem>
+                </ContextMenuContent>
+              </ContextMenu>
             );
           })}
         </tbody>
@@ -103,6 +136,15 @@ export function TransactionsPane() {
       <ControlBar selectedAccountId={id} />
       {header}
       {body}
+      {editing && (
+        <EditTransactionDialog
+          open
+          onOpenChange={(o) => {
+            if (!o) setEditing(null);
+          }}
+          tx={editing}
+        />
+      )}
     </>
   );
 }

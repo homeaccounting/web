@@ -182,6 +182,69 @@ describe('IncomeExpenseForm', () => {
     expect(cb).toHaveValue('Food');
   });
 
+  describe('edit mode', () => {
+    const editDefaults = {
+      accountId: A1,
+      amount: 10,
+      currency: 'USD',
+      category: C1,
+      description: 'old',
+      date: '2026-03-04',
+      labels: [] as string[],
+    };
+
+    it('hides "Defaults to today" helper text', () => {
+      renderWithProviders(
+        <IncomeExpenseForm
+          kind="expense"
+          mode="edit"
+          accounts={accounts}
+          categories={categories}
+          labels={labels}
+          defaultValues={editDefaults}
+          isSubmitting={false}
+          onSubmit={vi.fn()}
+          onCancel={vi.fn()}
+        />,
+      );
+      expect(screen.queryByText(/Defaults to today/)).not.toBeInTheDocument();
+    });
+
+    it('shows a "Save" submit button', () => {
+      renderWithProviders(
+        <IncomeExpenseForm
+          kind="expense"
+          mode="edit"
+          accounts={accounts}
+          categories={categories}
+          labels={labels}
+          defaultValues={editDefaults}
+          isSubmitting={false}
+          onSubmit={vi.fn()}
+          onCancel={vi.fn()}
+        />,
+      );
+      expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument();
+    });
+
+    it('disables Save when form is clean (no user input)', () => {
+      renderWithProviders(
+        <IncomeExpenseForm
+          kind="expense"
+          mode="edit"
+          accounts={accounts}
+          categories={categories}
+          labels={labels}
+          defaultValues={editDefaults}
+          isSubmitting={false}
+          onSubmit={vi.fn()}
+          onCancel={vi.fn()}
+        />,
+      );
+      expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+    });
+  });
+
   it('exposes setFieldError via onReady so server errors render under fields', async () => {
     let api!: IncomeExpenseFormApi;
     renderWithProviders(

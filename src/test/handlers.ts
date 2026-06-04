@@ -10,6 +10,25 @@ import {
 
 const apiBase = 'http://localhost:8080';
 
+const editedTransactionFixture = (overrides: Record<string, unknown> = {}) => ({
+  id: 'tx-edit',
+  sourceAccountId: 'ext',
+  targetAccountId: 'a1',
+  sourceAmount: 0,
+  sourceCurrency: 'USD',
+  targetAmount: 0,
+  targetCurrency: 'USD',
+  exchangeRate: null,
+  description: 'edited',
+  status: 'Completed',
+  failureReason: null,
+  transferType: 'Income',
+  category: 'cat-1',
+  date: '2026-03-04T00:00:00.000Z',
+  labels: [],
+  ...overrides,
+});
+
 export const handlers = [
   http.post(`${apiBase}/api/auth/register`, () => HttpResponse.json(authResponseFixture)),
   http.post(`${apiBase}/api/auth/login`, () => HttpResponse.json(authResponseFixture)),
@@ -147,5 +166,36 @@ export const handlers = [
   http.get(`${apiBase}/api/transactions`, () =>
     HttpResponse.json({ transactions: [transactionFixture], totalCount: 1 }),
   ),
+  http.put(`${apiBase}/api/transactions/:id/description`, async ({ request }) => {
+    const body = (await request.json()) as { description: string };
+    return HttpResponse.json(editedTransactionFixture({ description: body.description }));
+  }),
+  http.put(`${apiBase}/api/transactions/:id/date`, async ({ request }) => {
+    const body = (await request.json()) as { at: string };
+    return HttpResponse.json(editedTransactionFixture({ date: body.at }));
+  }),
+  http.put(`${apiBase}/api/transactions/:id/labels`, async ({ request }) => {
+    const body = (await request.json()) as { labels: string[] };
+    return HttpResponse.json(editedTransactionFixture({ labels: body.labels }));
+  }),
+  http.patch(`${apiBase}/api/transactions/:id/allocations`, () =>
+    HttpResponse.json(editedTransactionFixture()),
+  ),
+  http.put(`${apiBase}/api/transactions/:id/amendment`, async ({ request }) => {
+    const body = (await request.json()) as {
+      sourceAmount: number;
+      targetAmount: number;
+      sourceCurrency: string;
+      targetCurrency: string;
+    };
+    return HttpResponse.json(
+      editedTransactionFixture({
+        sourceAmount: body.sourceAmount,
+        targetAmount: body.targetAmount,
+        sourceCurrency: body.sourceCurrency,
+        targetCurrency: body.targetCurrency,
+      }),
+    );
+  }),
   http.get(`${apiBase}/api/users/me/configuration`, () => HttpResponse.json(configurationFixture)),
 ];

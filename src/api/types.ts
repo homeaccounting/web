@@ -204,6 +204,51 @@ export interface InternalTransferRequest {
   labels?: UUID[];
 }
 
+// Edit transaction — per-field DTOs.
+// Mirrors backend Web/Types.hs:408-484.
+
+// Mirrors backend Domain/Core/Types.hs:228-249 (Money). The `amount` field
+// on an Allocation is this Money object, not a bare number.
+export interface Money {
+  amount: number;
+  currency: string;
+}
+
+// Mirrors backend Domain/Core/Types.hs:961-969 (Allocation).
+export interface Allocation {
+  categoryId: UUID;
+  amount: Money;
+}
+
+export interface SetTransactionLabelsRequest {
+  labels: UUID[];
+}
+
+export interface SetTransactionAllocationsRequest {
+  newAllocations: Allocation[];
+}
+
+export interface ChangeTransactionDescriptionRequest {
+  description: string;
+}
+
+export interface ChangeTransactionDateRequest {
+  at: ISO8601;
+}
+
+export interface AmendTransactionRequest {
+  sourceAccountId: UUID;
+  targetAccountId: UUID;
+  sourceAmount: number;
+  sourceCurrency: string;
+  targetAmount: number;
+  targetCurrency: string;
+  exchangeRate?: number;
+  // Optional on the wire; this slice always omits it and uses the dedicated
+  // PATCH /allocations endpoint for allocation changes.
+  newAllocations?: Allocation[];
+}
+
 // --- Transactions ---
 // JSON shape from backend/src/Web/Types.hs:455-472 (`TransactionResponse`).
 

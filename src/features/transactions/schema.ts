@@ -79,3 +79,44 @@ export function toTransferRequest(
     labels: labelsOrUndefined(v.labels),
   };
 }
+
+import type { AccountResponse, TransactionResponse } from '@/api/types';
+
+const dateToYyyyMmDd = (iso: string) => iso.slice(0, 10);
+
+export function toIncomeExpenseFormValues(
+  tx: TransactionResponse,
+  accounts: AccountResponse[],
+): IncomeExpenseFormValues {
+  const isIncome = tx.transferType === 'Income';
+  const accountId = isIncome ? tx.targetAccountId : tx.sourceAccountId;
+  const amount = isIncome ? tx.targetAmount : tx.sourceAmount;
+  const currency =
+    accounts.find((a) => a.id === accountId)?.currency ??
+    (isIncome ? tx.targetCurrency : tx.sourceCurrency);
+  return {
+    accountId,
+    amount,
+    currency,
+    category: tx.category ?? '',
+    description: tx.description,
+    date: dateToYyyyMmDd(tx.date),
+    labels: tx.labels,
+  };
+}
+
+export function toTransferFormValues(
+  tx: TransactionResponse,
+  accounts: AccountResponse[],
+): TransferFormValues {
+  return {
+    sourceAccountId: tx.sourceAccountId,
+    targetAccountId: tx.targetAccountId,
+    amount: tx.sourceAmount,
+    currency: accounts.find((a) => a.id === tx.sourceAccountId)?.currency ?? tx.sourceCurrency,
+    description: tx.description,
+    exchangeRate: tx.exchangeRate ?? undefined,
+    date: dateToYyyyMmDd(tx.date),
+    labels: tx.labels,
+  };
+}

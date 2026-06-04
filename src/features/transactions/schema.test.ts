@@ -5,7 +5,10 @@ import {
   toIncomeRequest,
   toExpenseRequest,
   toTransferRequest,
+  toIncomeExpenseFormValues,
+  toTransferFormValues,
 } from './schema';
+import type { AccountResponse, TransactionResponse } from '@/api/types';
 
 const ACC_A = '11111111-1111-1111-1111-111111111111';
 const ACC_B = '22222222-2222-2222-2222-222222222222';
@@ -144,5 +147,91 @@ describe('toTransferRequest', () => {
 
   it('omits labels when empty', () => {
     expect(toTransferRequest({ ...values, labels: [] }, 'USD', 'USD').labels).toBeUndefined();
+  });
+});
+
+const acc = (id: string, currency = 'USD'): AccountResponse => ({
+  id,
+  name: id,
+  currency,
+  balance: 0,
+  overdraftLimit: null,
+  subtype: { type: 'cash' },
+  version: 1,
+});
+
+const baseTx = (overrides: Partial<TransactionResponse>): TransactionResponse => ({
+  id: 'tx-1',
+  sourceAccountId: 'ext',
+  targetAccountId: 'a1',
+  sourceAmount: 10,
+  sourceCurrency: 'USD',
+  targetAmount: 10,
+  targetCurrency: 'USD',
+  exchangeRate: null,
+  description: 'd',
+  status: 'Completed',
+  failureReason: null,
+  transferType: 'Income',
+  category: 'cat-1',
+  date: '2026-03-04T15:00:00.000Z',
+  labels: ['l1'],
+  ...overrides,
+});
+
+describe('toIncomeExpenseFormValues', () => {
+  it('income → regular leg is the target', () => {
+    const v = toIncomeExpenseFormValues(baseTx({ transferType: 'Income' }), [acc('a1')]);
+    expect(v).toEqual({
+      accountId: 'a1',
+      amount: 10,
+      currency: 'USD',
+      category: 'cat-1',
+      description: 'd',
+      date: '2026-03-04',
+      labels: ['l1'],
+    });
+  });
+
+  it('expense → regular leg is the source', () => {
+    const tx = baseTx({
+      transferType: 'Expense',
+      sourceAccountId: 'a1',
+      targetAccountId: 'ext',
+    });
+    const v = toIncomeExpenseFormValues(tx, [acc('a1')]);
+    expect(v.accountId).toBe('a1');
+  });
+
+  it('defensive: missing category collapses to empty string', () => {
+    const v = toIncomeExpenseFormValues(baseTx({ category: null }), [acc('a1')]);
+    expect(v.category).toBe('');
+  });
+});
+
+describe('toTransferFormValues', () => {
+  it('seeds source/target ids and currency from the source account', () => {
+    const tx = baseTx({
+      transferType: 'Transfer',
+      sourceAccountId: 'a1',
+      targetAccountId: 'a2',
+      sourceAmount: 50,
+      sourceCurrency: 'USD',
+      targetAmount: 45,
+      targetCurrency: 'EUR',
+      exchangeRate: 0.9,
+      category: null,
+    });
+    const v = toTransferFormValues(tx, [acc('a1', 'USD'), acc('a2', 'EUR')]);
+    expect(v).toEqual({
+      sourceAccountId: 'a1',
+      targetAccountId: 'a2',
+      amount: 50,
+      currency: 'USD',
+      description: 'd',
+      exchangeRate: 0.9,
+      date: '2026-03-04',
+      labels: ['l1'],
+    });
   });
 });

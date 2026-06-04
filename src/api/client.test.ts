@@ -119,3 +119,33 @@ describe('ApiClient', () => {
     }
   });
 });
+
+describe('ApiClient.patch', () => {
+  beforeEach(() => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        (_url: string, init?: RequestInit) =>
+          new Response(JSON.stringify({ ok: true, method: init?.method, body: init?.body }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }),
+      ),
+    );
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('sends a PATCH with JSON body', async () => {
+    const client = new ApiClient({
+      baseUrl: 'http://test',
+      getToken: () => null,
+      onUnauthorized: () => undefined,
+    });
+    const res = await client.patch<{ ok: boolean; method: string; body: string }>('/x', { a: 1 });
+    expect(res.ok).toBe(true);
+    expect(res.method).toBe('PATCH');
+    expect(res.body).toBe('{"a":1}');
+  });
+});

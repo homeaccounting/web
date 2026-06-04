@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { server } from '@/test/server';
 import { renderWithProviders } from '@/test/utils';
 import { Routes, Route } from 'react-router-dom';
@@ -215,5 +216,38 @@ describe('TransactionsPane', () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
     renderWithProviders(ui(), { initialPath: '/' });
     expect(screen.getByText(/select an account\./i)).toBeInTheDocument();
+  });
+
+  it('opens EditTransactionDialog on double-click of a transaction row', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    const user = userEvent.setup();
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    const cell = await screen.findByText(transactionFixture.description);
+    const row = cell.closest('tr')!;
+    await user.dblClick(row);
+    expect(await screen.findByRole('dialog', { name: /edit expense/i })).toBeInTheDocument();
+  });
+
+  it('opens EditTransactionDialog via context menu Edit item on right-click', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    const user = userEvent.setup();
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    const cell = await screen.findByText(transactionFixture.description);
+    const row = cell.closest('tr')!;
+    await user.pointer({ keys: '[MouseRight]', target: row });
+    const editItem = await screen.findByRole('menuitem', { name: /edit/i });
+    await user.click(editItem);
+    expect(await screen.findByRole('dialog', { name: /edit expense/i })).toBeInTheDocument();
+  });
+
+  it('opens EditTransactionDialog when Enter is pressed on a focused row', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    const user = userEvent.setup();
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    const cell = await screen.findByText(transactionFixture.description);
+    const row = cell.closest('tr')!;
+    row.focus();
+    await user.keyboard('{Enter}');
+    expect(await screen.findByRole('dialog', { name: /edit expense/i })).toBeInTheDocument();
   });
 });

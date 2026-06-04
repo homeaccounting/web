@@ -45,6 +45,9 @@ export function IncomeExpenseForm({
     defaultValues,
   });
 
+  const isEdit = mode === 'edit';
+  const isDirty = form.formState.isDirty;
+
   const accountId = form.watch('accountId');
   useEffect(() => {
     const a = accounts.find((x) => x.id === accountId);
@@ -188,7 +191,9 @@ export function IncomeExpenseForm({
                   ref={field.ref}
                 />
               </FormControl>
-              <p className="text-xs text-muted-foreground">Defaults to today on the server.</p>
+              {!isEdit && (
+                <p className="text-xs text-muted-foreground">Defaults to today on the server.</p>
+              )}
               <FormMessage />
             </FormItem>
           )}
@@ -216,11 +221,14 @@ export function IncomeExpenseForm({
           <Button type="button" variant="outline" onClick={onCancel}>
             Cancel
           </Button>
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Saving…' : TRANSACTION_KIND_LABELS[kind].submit}
+          <Button type="submit" disabled={isSubmitting || (isEdit && !isDirty)}>
+            {isSubmitting
+              ? 'Saving…'
+              : isEdit
+                ? TRANSACTION_KIND_LABELS[kind].editSubmit
+                : TRANSACTION_KIND_LABELS[kind].submit}
           </Button>
         </DialogFooter>
-        <input type="hidden" value={mode} readOnly aria-hidden />
       </form>
     </FormProvider>
   );

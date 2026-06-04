@@ -40,6 +40,9 @@ export function TransferForm({
     defaultValues,
   });
 
+  const isEdit = mode === 'edit';
+  const isDirty = form.formState.isDirty;
+
   const sourceAccountId = form.watch('sourceAccountId');
   const targetAccountId = form.watch('targetAccountId');
   const source = accounts.find((a) => a.id === sourceAccountId);
@@ -226,7 +229,9 @@ export function TransferForm({
                   ref={field.ref}
                 />
               </FormControl>
-              <p className="text-xs text-muted-foreground">Defaults to today on the server.</p>
+              {!isEdit && (
+                <p className="text-xs text-muted-foreground">Defaults to today on the server.</p>
+              )}
               <FormMessage />
             </FormItem>
           )}
@@ -254,13 +259,14 @@ export function TransferForm({
           <Button type="button" variant="outline" onClick={onCancel}>
             Cancel
           </Button>
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Saving…' : TRANSACTION_KIND_LABELS.transfer.submit}
+          <Button type="submit" disabled={isSubmitting || (isEdit && !isDirty)}>
+            {isSubmitting
+              ? 'Saving…'
+              : isEdit
+                ? TRANSACTION_KIND_LABELS.transfer.editSubmit
+                : TRANSACTION_KIND_LABELS.transfer.submit}
           </Button>
         </DialogFooter>
-        {/* mode is consumed only for label/disabling semantics later — referenced
-            here so the prop is not flagged as unused in strict mode. */}
-        <input type="hidden" value={mode} readOnly aria-hidden />
       </form>
     </FormProvider>
   );
