@@ -5,6 +5,7 @@ import LoginPage from '@/pages/LoginPage';
 import RegisterPage from '@/pages/RegisterPage';
 import OAuthCallbackPage from '@/pages/OAuthCallbackPage';
 import NotFoundPage from '@/pages/NotFoundPage';
+import ProfilePage from '@/pages/ProfilePage';
 
 export default function App() {
   return (
@@ -15,6 +16,8 @@ export default function App() {
       <Route element={<ProtectedRoute />}>
         <Route path="/" element={<HomePage />} />
         <Route path="/accounts/:id" element={<HomePage />} />
+        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/profile/:tab" element={<ProfilePage />} />
       </Route>
       <Route path="*" element={<NotFoundPage />} />
     </Routes>

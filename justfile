@@ -10,7 +10,17 @@ default:
 install:
     @echo "Installing dependencies..."
     pnpm install
+    @just lockfile-fix
     @echo "✓ Install complete"
+
+# Rewrite any private-registry tarball URLs in pnpm-lock.yaml to public npm.
+# Workbooks resolved against the Wix mirror leak `npm.dev.wixpress.com` URLs
+# which CI (public-npm only) cannot reach. Hashes match either mirror, so the
+# rewrite is safe.
+lockfile-fix:
+    @sed -i.bak 's|https://npm.dev.wixpress.com/api/npm/npm-repos/|https://registry.npmjs.org/|g' pnpm-lock.yaml
+    @rm -f pnpm-lock.yaml.bak
+    @if grep -q wixpress pnpm-lock.yaml; then echo "✗ Lockfile still references wixpress"; exit 1; else echo "✓ Lockfile points at public npm only"; fi
 
 # Start the Vite dev server
 run:

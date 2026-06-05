@@ -310,6 +310,38 @@ export interface ConfigurationResponse {
   defaultCurrency: string;
   dictionaries: Record<string, DictionaryResponse>;
   banking: BankingConfigurationDTO;
+  // Backend Web.API.ConfigurationAPI.ConfigurationResponse adds these:
+  // booksClosedThrough has been present on the backend since the books-close
+  // slice landed; baseCurrencyEditable is added in the issue-#16 backend PR.
+  booksClosedThrough?: ISO8601 | null;
+  baseCurrencyEditable: boolean;
+}
+
+// Mirrors backend Web/API/UserAPI.hs:122-130.
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+}
+
+// Mirrors backend Web/API/ConfigurationAPI.hs:226-233.
+export interface ChangeCurrencyRequest {
+  currency: string;
+}
+
+// Mirrors backend Web/API/ConfigurationAPI.hs:236-243.
+export interface AddEntryRequest {
+  name: string;
+}
+
+// Mirrors backend Web/API/ConfigurationAPI.hs:246-254.
+export interface AddEntryResponse {
+  id: UUID;
+  name: string;
+}
+
+// Mirrors backend Web/API/ConfigurationAPI.hs:257-264.
+export interface RenameEntryRequest {
+  name: string;
 }
 
 // --- API errors ---

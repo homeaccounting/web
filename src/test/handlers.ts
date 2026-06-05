@@ -198,4 +198,36 @@ export const handlers = [
     );
   }),
   http.get(`${apiBase}/api/users/me/configuration`, () => HttpResponse.json(configurationFixture)),
+  http.put(
+    `${apiBase}/api/users/me/configuration/base-currency`,
+    () => new HttpResponse(null, { status: 204 }),
+  ),
+  http.put(
+    `${apiBase}/api/users/me/configuration/default-currency`,
+    () => new HttpResponse(null, { status: 204 }),
+  ),
+  http.post(
+    `${apiBase}/api/users/me/configuration/dictionaries/:dictId/entries`,
+    async ({ request }) => {
+      const body = (await request.json()) as { name: string };
+      return HttpResponse.json({ id: 'entry-new', name: body.name }, { status: 201 });
+    },
+  ),
+  http.put(
+    `${apiBase}/api/users/me/configuration/dictionaries/:dictId/entries/:entryId`,
+    () => new HttpResponse(null, { status: 204 }),
+  ),
+  http.delete(
+    `${apiBase}/api/users/me/configuration/dictionaries/:dictId/entries/:entryId`,
+    () => new HttpResponse(null, { status: 204 }),
+  ),
+  http.post(
+    `${apiBase}/api/users/me/change-password`,
+    () => new HttpResponse(null, { status: 204 }),
+  ),
+  http.delete(
+    `${apiBase}/api/users/me/oauth/:provider`,
+    () => new HttpResponse(null, { status: 204 }),
+  ),
+  http.delete(`${apiBase}/api/users/me/telegram`, () => new HttpResponse(null, { status: 204 })),
 ];

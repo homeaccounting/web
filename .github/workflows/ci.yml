@@ -30,6 +30,12 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+      - name: Guard against private-registry URLs in lockfile
+        run: |
+          if grep -q wixpress pnpm-lock.yaml; then
+            echo "::error::pnpm-lock.yaml contains private-registry tarball URLs. Run 'just lockfile-fix' and recommit."
+            exit 1
+          fi
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec tsc --noEmit
       - run: pnpm exec eslint .

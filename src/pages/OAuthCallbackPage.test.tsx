@@ -18,6 +18,7 @@ function ui() {
         <Route path="/auth/oauth/:provider/callback" element={<OAuthCallbackPage />} />
         <Route path="/" element={<div>home page</div>} />
         <Route path="/login" element={<div>login page</div>} />
+        <Route path="/profile/auth" element={<div>profile auth page</div>} />
       </Routes>
     </AuthProvider>
   );
@@ -58,5 +59,20 @@ describe('OAuthCallbackPage', () => {
     await waitFor(() => expect(received).not.toBeNull());
     expect(received).toEqual({ provider: 'Google', code: 'c', state: 's1' });
     await waitFor(() => expect(screen.getByText('home page')).toBeInTheDocument());
+  });
+
+  it('navigates to returnTo after a successful link', async () => {
+    saveSession({ token: 't', userId: 'u', email: null, expiresAt: 9e15 });
+    saveOAuthState('state-link');
+    beginLinkFlow({ returnTo: '/profile/auth' });
+
+    server.use(
+      http.post(`${apiBase}/api/auth/link-oauth`, () => new HttpResponse(null, { status: 204 })),
+    );
+
+    renderWithProviders(ui(), {
+      initialPath: '/auth/oauth/google/callback?code=c&state=state-link',
+    });
+    await waitFor(() => expect(screen.getByText('profile auth page')).toBeInTheDocument());
   });
 });

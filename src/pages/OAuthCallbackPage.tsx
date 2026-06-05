@@ -10,6 +10,7 @@ import {
   isOAuthStateProcessed,
   markOAuthStateProcessed,
   takeOAuthState,
+  takeLinkReturnTo,
 } from '@/auth/oauthFlow';
 
 const baseUrl =
@@ -69,7 +70,8 @@ export default function OAuthCallbackPage() {
           const auth = await api.oauthCallback(providerSlug, code, state);
           signIn(auth);
         }
-        navigate('/', { replace: true });
+        const returnTo = linking ? takeLinkReturnTo() : null;
+        navigate(returnTo ?? '/', { replace: true });
       } catch (err) {
         setError(err instanceof ApiError ? err.message : 'OAuth failed.');
       }

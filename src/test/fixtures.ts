@@ -68,6 +68,7 @@ export const salaryCategoryId = '00000000-0000-0000-0000-00000005a1a0';
 export const configurationFixture: ConfigurationResponse = {
   baseCurrency: 'USD',
   defaultCurrency: 'USD',
+  baseCurrencyEditable: true,
   dictionaries: {
     'expense-category': {
       entries: [{ id: foodCategoryId, name: 'Food' }],
