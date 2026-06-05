@@ -87,7 +87,7 @@ describe('CreateIncomeDialog', () => {
           description: 'Salary',
           status: 'Completed',
           failureReason: null,
-          transferType: 'Income',
+          transactionType: 'income',
           category: salaryCategoryId,
           date: '2026-06-01T00:00:00.000Z',
           labels: [],

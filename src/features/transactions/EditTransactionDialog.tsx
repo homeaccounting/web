@@ -40,10 +40,10 @@ export function EditTransactionDialog({ open, onOpenChange, tx }: EditTransactio
   const [editEpoch, setEditEpoch] = useState(0);
   const onSubCallApplied = useCallback(() => setEditEpoch((n) => n + 1), []);
 
-  const isTransfer = tx.transferType === 'Transfer';
+  const isTransfer = tx.transactionType === 'transfer';
   const kind: TransactionKind = isTransfer
     ? 'transfer'
-    : tx.transferType === 'Income'
+    : tx.transactionType === 'income'
       ? 'income'
       : 'expense';
 

@@ -98,7 +98,7 @@ describe('AdjustBalanceDialog', () => {
           description: 'Adjustment',
           status: 'Completed',
           failureReason: null,
-          transferType: 'Adjustment',
+          transactionType: 'adjustment',
           category: null,
           date: `${today}T00:00:00.000Z`,
           labels: [],

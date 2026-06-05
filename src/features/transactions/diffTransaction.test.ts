@@ -15,7 +15,7 @@ const baseTx: TransactionResponse = {
   description: 'old',
   status: 'Completed',
   failureReason: null,
-  transferType: 'Income',
+  transactionType: 'income',
   category: 'cat-1',
   date: '2026-03-04T00:00:00.000Z',
   labels: ['l1'],
@@ -87,7 +87,7 @@ describe('diffIncomeExpense', () => {
   it('expense account change touches the source leg, not target', () => {
     const expenseTx: TransactionResponse = {
       ...baseTx,
-      transferType: 'Expense',
+      transactionType: 'expense',
       sourceAccountId: 'a1',
       targetAccountId: 'ext',
     };
@@ -118,7 +118,7 @@ describe('diffIncomeExpense', () => {
 
 const transferTx: TransactionResponse = {
   ...baseTx,
-  transferType: 'Transfer',
+  transactionType: 'transfer',
   sourceAccountId: 'a1',
   targetAccountId: 'a2',
   sourceAmount: 50,

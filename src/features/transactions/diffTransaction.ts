@@ -29,7 +29,7 @@ export function diffIncomeExpense(
   if (next.date !== initial.date && next.date) diff.date = isoDayUtc(next.date);
   if (!sameLabels(initial.labels, next.labels)) diff.labels = [...next.labels];
 
-  const isIncome = tx.transferType === 'Income';
+  const isIncome = tx.transactionType === 'income';
   const externalLeg = isIncome ? tx.sourceAccountId : tx.targetAccountId;
   const externalCurrency = isIncome ? tx.sourceCurrency : tx.targetCurrency;
   const accountChanged = next.accountId !== initial.accountId;

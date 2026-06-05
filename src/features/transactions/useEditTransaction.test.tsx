@@ -39,7 +39,7 @@ const txResponse = (overrides: Partial<TransactionResponse> = {}): TransactionRe
   description: 'd',
   status: 'Completed',
   failureReason: null,
-  transferType: 'Income',
+  transactionType: 'income',
   category: 'cat-1',
   date: '2026-03-04T00:00:00.000Z',
   labels: [],

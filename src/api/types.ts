@@ -255,9 +255,13 @@ export interface AmendTransactionRequest {
 // Backend status text, see `fromTransactionStatus` in backend/src/Web/Types.hs.
 export type TransactionStatusText = 'Pending' | 'Completed' | 'Failed' | (string & {});
 
-// Backend `transferType` discriminator, see `transferTypeToText` in backend/src/Web/Types.hs.
-// Confirm exact strings in Step 8.1; the MVP UI does not branch on this.
-export type TransferTypeText = 'Income' | 'Expense' | 'Transfer' | (string & {});
+// Backend `transactionType` discriminator. Serialized as lowercase by
+// backend/src/Web/Types.hs `transactionTypeToText`:
+//   Income _   -> "income"
+//   Expense _  -> "expense"
+//   Transfer   -> "transfer"
+//   Adjustment -> "adjustment"
+export type TransferTypeText = 'income' | 'expense' | 'transfer' | 'adjustment' | (string & {});
 
 export interface TransactionResponse {
   id: UUID;
@@ -271,7 +275,7 @@ export interface TransactionResponse {
   description: string;
   status: TransactionStatusText;
   failureReason: string | null;
-  transferType: TransferTypeText;
+  transactionType: TransferTypeText;
   category: string | null;
   date: ISO8601;
   labels: UUID[];

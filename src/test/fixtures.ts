@@ -53,7 +53,7 @@ export const transactionFixture: TransactionResponse = {
   description: 'Coffee',
   status: 'Completed',
   failureReason: null,
-  transferType: 'Expense',
+  transactionType: 'expense',
   category: foodCategoryId,
   date: '2026-04-27T08:00:00Z',
   labels: [],

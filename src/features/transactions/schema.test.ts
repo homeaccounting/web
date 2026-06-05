@@ -172,7 +172,7 @@ const baseTx = (overrides: Partial<TransactionResponse>): TransactionResponse =>
   description: 'd',
   status: 'Completed',
   failureReason: null,
-  transferType: 'Income',
+  transactionType: 'income',
   category: 'cat-1',
   date: '2026-03-04T15:00:00.000Z',
   labels: ['l1'],
@@ -181,7 +181,7 @@ const baseTx = (overrides: Partial<TransactionResponse>): TransactionResponse =>
 
 describe('toIncomeExpenseFormValues', () => {
   it('income → regular leg is the target', () => {
-    const v = toIncomeExpenseFormValues(baseTx({ transferType: 'Income' }), [acc('a1')]);
+    const v = toIncomeExpenseFormValues(baseTx({ transactionType: 'income' }), [acc('a1')]);
     expect(v).toEqual({
       accountId: 'a1',
       amount: 10,
@@ -195,7 +195,7 @@ describe('toIncomeExpenseFormValues', () => {
 
   it('expense → regular leg is the source', () => {
     const tx = baseTx({
-      transferType: 'Expense',
+      transactionType: 'expense',
       sourceAccountId: 'a1',
       targetAccountId: 'ext',
     });
@@ -212,7 +212,7 @@ describe('toIncomeExpenseFormValues', () => {
 describe('toTransferFormValues', () => {
   it('seeds source/target ids and currency from the source account', () => {
     const tx = baseTx({
-      transferType: 'Transfer',
+      transactionType: 'transfer',
       sourceAccountId: 'a1',
       targetAccountId: 'a2',
       sourceAmount: 50,

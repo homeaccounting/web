@@ -88,7 +88,7 @@ export function toIncomeExpenseFormValues(
   tx: TransactionResponse,
   accounts: AccountResponse[],
 ): IncomeExpenseFormValues {
-  const isIncome = tx.transferType === 'Income';
+  const isIncome = tx.transactionType === 'income';
   const accountId = isIncome ? tx.targetAccountId : tx.sourceAccountId;
   const amount = isIncome ? tx.targetAmount : tx.sourceAmount;
   const currency =

@@ -86,7 +86,7 @@ describe('CreateExpenseDialog', () => {
           description: 'Groceries',
           status: 'Completed',
           failureReason: null,
-          transferType: 'Expense',
+          transactionType: 'expense',
           category: foodCategoryId,
           date: '2026-06-01T00:00:00.000Z',
           labels: [],
