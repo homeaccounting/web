@@ -1,12 +1,9 @@
 import { useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query';
-import { ApiClient } from '@/api/client';
+import { ApiClient, baseUrl } from '@/api/client';
 import { accountsApi } from '@/api/accounts';
 import type { AccountResponse, UUID } from '@/api/types';
 import { useAuth } from '@/auth/useAuth';
 import type { AccountEditDiff } from './diffAccount';
-
-const baseUrl =
-  (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:8080';
 
 export interface EditAccountVars {
   diff: AccountEditDiff;

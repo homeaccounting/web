@@ -10,6 +10,7 @@ import { useAccountById } from './useAccountById';
 import { CreateAccountDialog } from './CreateAccountDialog';
 import { EditAccountDialog } from './EditAccountDialog';
 import { AdjustBalanceDialog } from './AdjustBalanceDialog';
+import { SyncNowButton } from './SyncNowButton';
 import { formatAccountBalance, formatAccountSubtypeLabel } from './format';
 
 export function AccountsPane() {
@@ -46,6 +47,7 @@ export function AccountsPane() {
           >
             <Scale className="h-5 w-5" />
           </Button>
+          <SyncNowButton selectedAccount={selectedAccount} />
           <Button
             size="icon"
             variant="ghost"

@@ -299,10 +299,65 @@ export interface DictionaryResponse {
   entries: DictionaryEntryResponse[];
 }
 
+export interface BankConnectionDTO {
+  id: UUID;
+  provider: string; // "monobank"
+  name: string;
+  enabled: boolean;
+  tokenSet: boolean;
+  tokenHint: string; // masked display only
+  accountMap: Record<string, UUID>; // externalAccountId → local accountId
+}
+
+export interface ExternalAccountDTO {
+  externalId: string;
+  iban: string;
+  maskedPan: string | null;
+  currency: string;
+  balance: number; // minor units, display only
+}
+
+export interface AddBankConnectionRequest {
+  provider: string;
+  name: string;
+  token: string;
+  enabled: boolean;
+}
+export interface UpdateBankConnectionRequest {
+  name?: string;
+  enabled?: boolean;
+}
+export interface ChangeBankTokenRequest {
+  token: string;
+}
+export interface SetAccountMapRequest {
+  accountMap: Record<string, UUID>;
+}
+export interface UpdateBankingRequest {
+  defaultIncomeCategory?: UUID | null;
+  defaultExpenseCategory?: UUID | null;
+  mccExpenseCategoryMap?: Record<string, UUID>;
+}
+export interface ResyncRequest {
+  from: string;
+  to: string;
+} // ISO-8601 UTC
+export interface ResyncAccountResult {
+  externalAccountId: string;
+  localAccountId: UUID;
+  importedCount: number;
+  skippedCount: number;
+  failureCount: number;
+}
+export interface ResyncResponse {
+  accounts: ResyncAccountResult[];
+}
+
 export interface BankingConfigurationDTO {
   defaultIncomeCategory: UUID | null;
   defaultExpenseCategory: UUID | null;
   mccExpenseCategoryMap: Record<string, UUID>;
+  connections: BankConnectionDTO[];
 }
 
 export interface ConfigurationResponse {
@@ -310,6 +365,7 @@ export interface ConfigurationResponse {
   defaultCurrency: string;
   dictionaries: Record<string, DictionaryResponse>;
   banking: BankingConfigurationDTO;
+  bankingFeatureEnabled: boolean;
   // Backend Web.API.ConfigurationAPI.ConfigurationResponse adds these:
   // booksClosedThrough has been present on the backend since the books-close
   // slice landed; baseCurrencyEditable is added in the issue-#16 backend PR.

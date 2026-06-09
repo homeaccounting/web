@@ -1,7 +1,9 @@
 import type {
   AccountResponse,
   AuthResponse,
+  BankConnectionDTO,
   ConfigurationResponse,
+  ExternalAccountDTO,
   TelegramLinkCodeResponse,
   TransactionResponse,
   UserProfileResponse,
@@ -69,6 +71,7 @@ export const configurationFixture: ConfigurationResponse = {
   baseCurrency: 'USD',
   defaultCurrency: 'USD',
   baseCurrencyEditable: true,
+  bankingFeatureEnabled: false,
   dictionaries: {
     'expense-category': {
       entries: [{ id: foodCategoryId, name: 'Food' }],
@@ -82,5 +85,46 @@ export const configurationFixture: ConfigurationResponse = {
     defaultIncomeCategory: null,
     defaultExpenseCategory: null,
     mccExpenseCategoryMap: {},
+    connections: [],
+  },
+};
+
+export const bankConnectionFixture: BankConnectionDTO = {
+  id: 'conn-1',
+  provider: 'monobank',
+  name: 'Monobank',
+  enabled: true,
+  tokenSet: true,
+  tokenHint: '3f2',
+  accountMap: {},
+};
+
+export const externalAccountsFixture: ExternalAccountDTO[] = [
+  {
+    externalId: 'ext-acc-1',
+    iban: 'UA213223130000026007233566001',
+    maskedPan: '537541******1234',
+    currency: 'UAH',
+    balance: 123456,
+  },
+  {
+    externalId: 'ext-acc-2',
+    iban: 'UA213223130000026007233566002',
+    maskedPan: null,
+    currency: 'USD',
+    balance: 50000,
+  },
+];
+
+// `configurationFixture.bankingFeatureEnabled` stays `false` so existing
+// ProfilePage/profile tests keep their current behavior. Banking-specific tests
+// opt into a banking-enabled config via `server.use(...)` returning this variant
+// from an overridden GET /configuration handler.
+export const bankingEnabledConfigurationFixture: ConfigurationResponse = {
+  ...configurationFixture,
+  bankingFeatureEnabled: true,
+  banking: {
+    ...configurationFixture.banking,
+    connections: [bankConnectionFixture],
   },
 };

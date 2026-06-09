@@ -1,0 +1,23 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { ApiClient, baseUrl } from '@/api/client';
+import { configurationApi } from '@/api/configuration';
+import type { AddBankConnectionRequest, BankConnectionDTO } from '@/api/types';
+import { useAuth } from '@/auth/useAuth';
+
+export function useAddConnection() {
+  const { tokenRef, signOut } = useAuth();
+  const queryClient = useQueryClient();
+  return useMutation<BankConnectionDTO, Error, AddBankConnectionRequest>({
+    mutationFn: (body) => {
+      const client = new ApiClient({
+        baseUrl,
+        getToken: () => tokenRef.current,
+        onUnauthorized: signOut,
+      });
+      return configurationApi(client).addConnection(body);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['configuration'] });
+    },
+  });
+}

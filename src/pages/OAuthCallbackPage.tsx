@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ApiClient, ApiError } from '@/api/client';
+import { ApiClient, ApiError, baseUrl } from '@/api/client';
 import { authApi } from '@/api/auth';
 import { useAuth } from '@/auth/useAuth';
 import {
@@ -12,9 +12,6 @@ import {
   takeOAuthState,
   takeLinkReturnTo,
 } from '@/auth/oauthFlow';
-
-const baseUrl =
-  (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:8080';
 
 export default function OAuthCallbackPage() {
   const { provider } = useParams<{ provider: string }>();

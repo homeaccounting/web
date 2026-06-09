@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ApiClient, ApiError } from '@/api/client';
+import { ApiClient, ApiError, baseUrl } from '@/api/client';
 import { authApi } from '@/api/auth';
 import { useAuth } from '@/auth/useAuth';
 import { beginLinkFlow, saveOAuthState } from '@/auth/oauthFlow';
@@ -17,9 +17,6 @@ import { useUnlinkOAuth } from './useUnlinkOAuth';
 import { useUnlinkTelegram } from './useUnlinkTelegram';
 import { ProviderRow } from './ProviderRow';
 import { passwordSchema, type PasswordFormValues } from './passwordSchema';
-
-const baseUrl =
-  (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:8080';
 
 export function ProfileAuthPane() {
   const profile = useUserProfile();

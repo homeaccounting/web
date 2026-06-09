@@ -13,3 +13,6 @@ vite.config.d.ts
 vite/**/*.js
 vite/**/*.d.ts
 .playwright-mcp
+
+# Superpowers brainstorm scratch
+.superpowers/

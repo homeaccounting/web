@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { ApiClient, ApiError } from '@/api/client';
+import { ApiClient, ApiError, baseUrl } from '@/api/client';
 import { authApi } from '@/api/auth';
 import { useAuth } from '@/auth/useAuth';
 import { saveOAuthState } from '@/auth/oauthFlow';
@@ -20,9 +20,6 @@ const schema = z.object({
 });
 
 type FormValues = z.infer<typeof schema>;
-
-const baseUrl =
-  (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:8080';
 
 export default function RegisterPage() {
   const { signIn, tokenRef } = useAuth();

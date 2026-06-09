@@ -1,8 +1,15 @@
 import { http, HttpResponse } from 'msw';
+import type {
+  AddBankConnectionRequest,
+  BankConnectionDTO,
+  BankingConfigurationDTO,
+  UpdateBankingRequest,
+} from '@/api/types';
 import {
   accountFixture,
   authResponseFixture,
   configurationFixture,
+  externalAccountsFixture,
   profileFixture,
   telegramLinkCodeFixture,
   transactionFixture,
@@ -220,6 +227,51 @@ export const handlers = [
   http.delete(
     `${apiBase}/api/users/me/configuration/dictionaries/:dictId/entries/:entryId`,
     () => new HttpResponse(null, { status: 204 }),
+  ),
+  http.post(`${apiBase}/api/users/me/configuration/banking/connections`, async ({ request }) => {
+    const body = (await request.json()) as AddBankConnectionRequest;
+    const connection: BankConnectionDTO = {
+      id: 'conn-new',
+      provider: body.provider,
+      name: body.name,
+      enabled: body.enabled,
+      tokenSet: true,
+      tokenHint: body.token ? body.token.slice(-4) : '0000',
+      accountMap: {},
+    };
+    return HttpResponse.json(connection, { status: 201 });
+  }),
+  http.put(
+    `${apiBase}/api/users/me/configuration/banking/connections/:id`,
+    () => new HttpResponse(null, { status: 204 }),
+  ),
+  http.put(
+    `${apiBase}/api/users/me/configuration/banking/connections/:id/token`,
+    () => new HttpResponse(null, { status: 204 }),
+  ),
+  http.delete(
+    `${apiBase}/api/users/me/configuration/banking/connections/:id`,
+    () => new HttpResponse(null, { status: 204 }),
+  ),
+  http.put(
+    `${apiBase}/api/users/me/configuration/banking/connections/:id/accounts`,
+    () => new HttpResponse(null, { status: 204 }),
+  ),
+  http.put(`${apiBase}/api/users/me/configuration/banking`, async ({ request }) => {
+    const body = (await request.json()) as UpdateBankingRequest;
+    const banking: BankingConfigurationDTO = {
+      defaultIncomeCategory: body.defaultIncomeCategory ?? null,
+      defaultExpenseCategory: body.defaultExpenseCategory ?? null,
+      mccExpenseCategoryMap: body.mccExpenseCategoryMap ?? {},
+      connections: [],
+    };
+    return HttpResponse.json(banking);
+  }),
+  http.get(`${apiBase}/api/banking/connections/:id/external-accounts`, () =>
+    HttpResponse.json(externalAccountsFixture),
+  ),
+  http.post(`${apiBase}/api/banking/connections/:id/resync`, () =>
+    HttpResponse.json({ accounts: [] }),
   ),
   http.post(
     `${apiBase}/api/users/me/change-password`,

@@ -1,11 +1,18 @@
 import type { ApiClient } from './client';
 import type {
+  AddBankConnectionRequest,
   AddEntryRequest,
   AddEntryResponse,
+  BankConnectionDTO,
+  BankingConfigurationDTO,
+  ChangeBankTokenRequest,
   ChangeCurrencyRequest,
   ConfigurationResponse,
   DictionaryResponse,
   RenameEntryRequest,
+  SetAccountMapRequest,
+  UpdateBankConnectionRequest,
+  UpdateBankingRequest,
   UUID,
 } from './types';
 
@@ -27,4 +34,16 @@ export const configurationApi = (client: ApiClient) => ({
     client.put<void>(`/api/users/me/configuration/dictionaries/${dictId}/entries/${entryId}`, body),
   removeEntry: (dictId: string, entryId: UUID) =>
     client.delete<void>(`/api/users/me/configuration/dictionaries/${dictId}/entries/${entryId}`),
+  updateBanking: (body: UpdateBankingRequest) =>
+    client.put<BankingConfigurationDTO>('/api/users/me/configuration/banking', body),
+  addConnection: (body: AddBankConnectionRequest) =>
+    client.post<BankConnectionDTO>('/api/users/me/configuration/banking/connections', body),
+  updateConnection: (id: UUID, body: UpdateBankConnectionRequest) =>
+    client.put<void>(`/api/users/me/configuration/banking/connections/${id}`, body),
+  changeToken: (id: UUID, body: ChangeBankTokenRequest) =>
+    client.put<void>(`/api/users/me/configuration/banking/connections/${id}/token`, body),
+  removeConnection: (id: UUID) =>
+    client.delete<void>(`/api/users/me/configuration/banking/connections/${id}`),
+  setAccountMap: (id: UUID, body: SetAccountMapRequest) =>
+    client.put<void>(`/api/users/me/configuration/banking/connections/${id}/accounts`, body),
 });
