@@ -9,6 +9,7 @@ import type { AccountResponse, DictionaryEntryResponse } from '@/api/types';
 import { incomeExpenseFormSchema, type IncomeExpenseFormValues } from './schema';
 import { LabelMultiSelect } from './LabelMultiSelect';
 import { CategoryCombobox } from './CategoryCombobox';
+import { DatePicker } from '@/components/DatePicker';
 import { TRANSACTION_KIND_LABELS, type TransactionKind } from './labels';
 
 export interface IncomeExpenseFormApi {
@@ -182,13 +183,11 @@ export function IncomeExpenseForm({
             <FormItem>
               <FormLabel>Date</FormLabel>
               <FormControl>
-                <Input
-                  type="date"
+                <DatePicker
                   value={field.value ?? ''}
                   onChange={field.onChange}
                   onBlur={field.onBlur}
                   name={field.name}
-                  ref={field.ref}
                 />
               </FormControl>
               {!isEdit && (

@@ -90,6 +90,7 @@ describe('CreateExpenseDialog', () => {
           category: foodCategoryId,
           date: '2026-06-01T00:00:00.000Z',
           labels: [],
+          amendmentCount: 0,
         });
       }),
     );

@@ -102,6 +102,7 @@ describe('AdjustBalanceDialog', () => {
           category: null,
           date: `${today}T00:00:00.000Z`,
           labels: [],
+          amendmentCount: 0,
         });
       }),
     );

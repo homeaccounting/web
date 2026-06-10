@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { http, HttpResponse } from 'msw';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { server } from '@/test/server';
 import { renderWithProviders } from '@/test/utils';
@@ -8,7 +8,7 @@ import { Routes, Route } from 'react-router-dom';
 import { AuthProvider } from '@/auth/AuthContext';
 import { saveSession } from '@/auth/storage';
 import { TransactionsPane } from './TransactionsPane';
-import { transactionFixture } from '@/test/fixtures';
+import { transactionFixture, tripLabelId, foodCategoryId, salaryCategoryId } from '@/test/fixtures';
 
 const apiBase = 'http://localhost:8080';
 
@@ -51,7 +51,7 @@ describe('TransactionsPane', () => {
       ),
     );
     renderWithProviders(ui(), { initialPath: '/accounts/a1' });
-    expect(await screen.findByText(/no transactions yet/i)).toBeInTheDocument();
+    expect(await screen.findByText(/no transactions in this date range/i)).toBeInTheDocument();
   });
 
   it('fetches with the accountId from the URL', async () => {
@@ -132,9 +132,12 @@ describe('TransactionsPane', () => {
               category: null,
               date: '2026-05-01T00:00:00.000Z',
               labels: [],
+              amendmentCount: 0,
             },
           ],
           totalCount: 1,
+          limit: 50,
+          offset: 0,
         }),
       ),
     );
@@ -182,9 +185,12 @@ describe('TransactionsPane', () => {
               category: null,
               date: '2026-05-01T00:00:00.000Z',
               labels: [],
+              amendmentCount: 0,
             },
           ],
           totalCount: 1,
+          limit: 50,
+          offset: 0,
         }),
       ),
     );
@@ -202,7 +208,7 @@ describe('TransactionsPane', () => {
       ),
     );
     renderWithProviders(ui(), { initialPath: '/accounts/a99' });
-    expect(await screen.findByText(/no transactions yet/i)).toBeInTheDocument();
+    expect(await screen.findByText(/no transactions in this date range/i)).toBeInTheDocument();
     expect(screen.queryByRole('heading', { level: 2 })).not.toBeInTheDocument();
   });
 
@@ -249,5 +255,249 @@ describe('TransactionsPane', () => {
     row.focus();
     await user.keyboard('{Enter}');
     expect(await screen.findByRole('dialog', { name: /edit expense/i })).toBeInTheDocument();
+  });
+
+  it('renders label chips for a row that has labels', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    server.use(
+      http.get(`${apiBase}/api/transactions`, () =>
+        HttpResponse.json({
+          transactions: [{ ...transactionFixture, labels: [tripLabelId] }],
+          totalCount: 1,
+          limit: 50,
+          offset: 0,
+        }),
+      ),
+    );
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    expect(await screen.findByText('Trip')).toBeInTheDocument();
+  });
+
+  it('renders the transaction type icon', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    await screen.findByText(transactionFixture.description);
+    expect(screen.getByLabelText('Expense')).toBeInTheDocument();
+  });
+
+  it('narrows the visible rows when typing in the description filter', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    const user = userEvent.setup();
+    server.use(
+      http.get(`${apiBase}/api/transactions`, () =>
+        HttpResponse.json({
+          transactions: [
+            { ...transactionFixture, id: 'tx-a', description: 'Coffee' },
+            { ...transactionFixture, id: 'tx-b', description: 'Groceries' },
+          ],
+          totalCount: 2,
+          limit: 50,
+          offset: 0,
+        }),
+      ),
+    );
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    expect(await screen.findByText('Coffee')).toBeInTheDocument();
+    expect(screen.getByText('Groceries')).toBeInTheDocument();
+    await user.type(screen.getByPlaceholderText(/description/i), 'Coffee');
+    await waitFor(() => expect(screen.queryByText('Groceries')).not.toBeInTheDocument());
+    expect(screen.getByText('Coffee')).toBeInTheDocument();
+  });
+
+  it('shows a "Showing 1–N of T" pagination footer', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    await screen.findByText(transactionFixture.description);
+    expect(screen.getByText(/showing 1–1 of 1/i)).toBeInTheDocument();
+  });
+
+  it('shows a no-matches message when a filter matches nothing', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    const user = userEvent.setup();
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    await screen.findByText(transactionFixture.description);
+    await user.type(screen.getByPlaceholderText(/description/i), 'zzzznomatch');
+    expect(await screen.findByText(/no transactions match your filters/i)).toBeInTheDocument();
+  });
+
+  it('hides Failed and Cancelled rows by default', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    server.use(
+      http.get(`${apiBase}/api/transactions`, () =>
+        HttpResponse.json({
+          transactions: [
+            { ...transactionFixture, id: 'tx-ok', description: 'CompletedTx', status: 'Completed' },
+            {
+              ...transactionFixture,
+              id: 'tx-fail',
+              description: 'FailedTx',
+              status: 'Failed',
+              failureReason: 'Insufficient funds',
+            },
+            {
+              ...transactionFixture,
+              id: 'tx-cancel',
+              description: 'CancelledTx',
+              status: 'Cancelled',
+              failureReason: null,
+            },
+          ],
+          totalCount: 3,
+          limit: 50,
+          offset: 0,
+        }),
+      ),
+    );
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    expect(await screen.findByText('CompletedTx')).toBeInTheDocument();
+    expect(screen.queryByText('FailedTx')).not.toBeInTheDocument();
+    expect(screen.queryByText('CancelledTx')).not.toBeInTheDocument();
+  });
+
+  it('shows Failed and Cancelled rows with status icons after toggling the checkbox', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    const user = userEvent.setup();
+    server.use(
+      http.get(`${apiBase}/api/transactions`, () =>
+        HttpResponse.json({
+          transactions: [
+            { ...transactionFixture, id: 'tx-ok', description: 'CompletedTx', status: 'Completed' },
+            {
+              ...transactionFixture,
+              id: 'tx-fail',
+              description: 'FailedTx',
+              status: 'Failed',
+              failureReason: 'Insufficient funds',
+            },
+            {
+              ...transactionFixture,
+              id: 'tx-cancel',
+              description: 'CancelledTx',
+              status: 'Cancelled',
+              failureReason: null,
+            },
+          ],
+          totalCount: 3,
+          limit: 50,
+          offset: 0,
+        }),
+      ),
+    );
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    // Wait until the completed row is visible (ensures the list is loaded)
+    expect(await screen.findByText('CompletedTx')).toBeInTheDocument();
+
+    // Toggle the checkbox
+    await user.click(screen.getByLabelText(/cancelled & failed/i));
+
+    // All three rows should now be visible with their descriptions
+    await waitFor(() => {
+      expect(screen.getByText('FailedTx')).toBeInTheDocument();
+      expect(screen.getByText('CancelledTx')).toBeInTheDocument();
+    });
+    // Status icons are present with accessible labels (not text badges)
+    expect(screen.getByLabelText('Failed')).toBeInTheDocument();
+    expect(screen.getByLabelText('Cancelled')).toBeInTheDocument();
+  });
+
+  // The From/To inputs are now mouse-driven DatePickers (shadcn Popover +
+  // Calendar). A calendar can only emit complete, in-range dates — it never
+  // surfaces the empty '' or from > to states the old native inputs could, so
+  // those mid-edit guards no longer apply here (the isValidDateWindow guard
+  // itself stays covered by transactionFilters.test.ts). This test exercises
+  // the new control end-to-end: opening the From picker and selecting a day
+  // refetches with a valid window and keeps the rows without an error state.
+  it('picking a From date from the calendar refetches without erroring', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    const user = userEvent.setup();
+    server.use(
+      http.get(`${apiBase}/api/transactions`, ({ request }) => {
+        const url = new URL(request.url);
+        const dateFrom = url.searchParams.get('dateFrom') ?? '';
+        const dateTo = url.searchParams.get('dateTo') ?? '';
+        const validDate = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+        if (!validDate.test(dateFrom) || !validDate.test(dateTo) || dateFrom > dateTo) {
+          return HttpResponse.json({ message: 'bad range' }, { status: 400 });
+        }
+        return HttpResponse.json({
+          transactions: [{ ...transactionFixture, id: 'tx-guard', description: 'GuardRow' }],
+          totalCount: 1,
+          limit: 50,
+          offset: 0,
+        });
+      }),
+    );
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    // Wait for the row to appear (valid initial window).
+    expect(await screen.findByText('GuardRow')).toBeInTheDocument();
+
+    // Open the From picker and select an enabled day from the open calendar.
+    await user.click(screen.getByLabelText('From'));
+    const grid = await screen.findByRole('grid');
+    const days = within(grid)
+      .getAllByRole('button')
+      .filter((b) => b.getAttribute('aria-disabled') !== 'true' && !b.hasAttribute('disabled'));
+    expect(days.length).toBeGreaterThan(0);
+    await user.click(days[0]!);
+
+    // The pane must NOT show the error state and GuardRow must still render.
+    await waitFor(() => {
+      expect(screen.queryByText(/could not load transactions/i)).toBeNull();
+    });
+    expect(screen.getByText('GuardRow')).toBeInTheDocument();
+    expect(screen.getByLabelText('From')).toBeInTheDocument();
+  });
+
+  it('category filter narrows rows and "All categories" sentinel restores both', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    const user = userEvent.setup();
+    server.use(
+      http.get(`${apiBase}/api/transactions`, () =>
+        HttpResponse.json({
+          transactions: [
+            {
+              ...transactionFixture,
+              id: 'tx-income',
+              description: 'Paycheck',
+              transactionType: 'income',
+              category: salaryCategoryId,
+            },
+            {
+              ...transactionFixture,
+              id: 'tx-expense',
+              description: 'Groceries',
+              transactionType: 'expense',
+              category: foodCategoryId,
+            },
+          ],
+          totalCount: 2,
+          limit: 200,
+          offset: 0,
+        }),
+      ),
+    );
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+
+    // Both rows visible initially.
+    expect(await screen.findByText('Paycheck')).toBeInTheDocument();
+    expect(screen.getByText('Groceries')).toBeInTheDocument();
+
+    // Open the category combobox and pick "Food" (expense category).
+    const categoryInput = screen.getByPlaceholderText(/all categories/i);
+    await user.click(categoryInput);
+    await user.type(categoryInput, 'Food');
+    await user.click(await screen.findByRole('option', { name: 'Food' }));
+
+    // Only the Food row should remain.
+    await waitFor(() => expect(screen.queryByText('Paycheck')).not.toBeInTheDocument());
+    expect(screen.getByText('Groceries')).toBeInTheDocument();
+
+    // Select the "All categories" sentinel to deselect — both rows come back.
+    await user.click(categoryInput);
+    await user.clear(categoryInput);
+    await user.click(await screen.findByRole('option', { name: 'All categories' }));
+
+    await waitFor(() => expect(screen.getByText('Paycheck')).toBeInTheDocument());
+    expect(screen.getByText('Groceries')).toBeInTheDocument();
   });
 });

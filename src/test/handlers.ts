@@ -17,6 +17,21 @@ import {
 
 const apiBase = 'http://localhost:8080';
 
+// Default windowed list; tests override via server.use(...) when they need
+// more rows or specific dates.
+const listTransactions = (url: URL) => {
+  const all = [transactionFixture];
+  const limit = Number(url.searchParams.get('limit') ?? '50');
+  const offset = Number(url.searchParams.get('offset') ?? '0');
+  const page = all.slice(offset, offset + limit);
+  return HttpResponse.json({
+    transactions: page,
+    totalCount: all.length,
+    limit,
+    offset,
+  });
+};
+
 const editedTransactionFixture = (overrides: Record<string, unknown> = {}) => ({
   id: 'tx-edit',
   sourceAccountId: 'ext',
@@ -33,6 +48,7 @@ const editedTransactionFixture = (overrides: Record<string, unknown> = {}) => ({
   category: 'cat-1',
   date: '2026-03-04T00:00:00.000Z',
   labels: [],
+  amendmentCount: 0,
   ...overrides,
 });
 
@@ -92,6 +108,7 @@ export const handlers = [
       category: null,
       date: '2025-01-01T00:00:00.000Z',
       labels: [],
+      amendmentCount: 0,
     }),
   ),
   http.post(`${apiBase}/api/transactions/income`, async ({ request }) => {
@@ -117,6 +134,7 @@ export const handlers = [
       category: null,
       date: '2026-06-01T00:00:00.000Z',
       labels: [],
+      amendmentCount: 0,
     });
   }),
   http.post(`${apiBase}/api/transactions/expense`, async ({ request }) => {
@@ -142,6 +160,7 @@ export const handlers = [
       category: null,
       date: '2026-06-01T00:00:00.000Z',
       labels: [],
+      amendmentCount: 0,
     });
   }),
   http.post(`${apiBase}/api/transactions/transfer`, async ({ request }) => {
@@ -168,11 +187,10 @@ export const handlers = [
       category: null,
       date: '2026-06-01T00:00:00.000Z',
       labels: [],
+      amendmentCount: 0,
     });
   }),
-  http.get(`${apiBase}/api/transactions`, () =>
-    HttpResponse.json({ transactions: [transactionFixture], totalCount: 1 }),
-  ),
+  http.get(`${apiBase}/api/transactions`, ({ request }) => listTransactions(new URL(request.url))),
   http.put(`${apiBase}/api/transactions/:id/description`, async ({ request }) => {
     const body = (await request.json()) as { description: string };
     return HttpResponse.json(editedTransactionFixture({ description: body.description }));

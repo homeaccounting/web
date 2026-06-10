@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { useParams } from 'react-router-dom';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -18,17 +18,91 @@ import { useAccountById } from '@/features/accounts/useAccountById';
 import { formatDate, formatMoney } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { TransactionResponse } from '@/api/types';
-import { useTransactions } from './useTransactions';
+import { useWindowedTransactions } from './useWindowedTransactions';
+import {
+  applyTransactionFilters,
+  defaultDateWindow,
+  isValidDateWindow,
+  type TransactionFilters,
+} from './transactionFilters';
+import { TransactionFilterBar } from './TransactionFilterBar';
+import { TransactionTypeIcon } from './TransactionTypeIcon';
+import { LabelChips } from './LabelChips';
+import { TransactionPagination, usePersistedPageSize } from './TransactionPagination';
 import { AccountHeader } from './AccountHeader';
 import { ControlBar } from './ControlBar';
 import { EditTransactionDialog } from './EditTransactionDialog';
+import { TransactionStatusIcon } from './TransactionStatusIcon';
+
+const EMPTY_FILTERS: TransactionFilters = {
+  description: '',
+  labelIds: [],
+  categoryId: '',
+  showCancelledFailed: false,
+};
 
 export function TransactionsPane() {
   const { id } = useParams<{ id?: string }>();
-  const { data, isLoading, isError, refetch } = useTransactions(id);
+
+  const [defaultWindow] = useState(() => defaultDateWindow(new Date()));
+  const [fromInput, setFromInput] = useState(defaultWindow.from);
+  const [toInput, setToInput] = useState(defaultWindow.to);
+  const [appliedWindow, setAppliedWindow] = useState(defaultWindow);
+  const [filters, setFilters] = useState<TransactionFilters>(EMPTY_FILTERS);
+  const [pageIndex, setPageIndex] = useState(0);
+  const [pageSize, setPageSize] = usePersistedPageSize();
+
+  const { data, isLoading, isError, refetch } = useWindowedTransactions(
+    id,
+    appliedWindow.from,
+    appliedWindow.to,
+  );
   const { data: account, isLoading: accountLoading } = useAccountById(id);
   const { data: configuration } = useConfiguration();
-  const categoryNameById = useDictionaryEntryNames(configuration);
+  const labelNameById = useDictionaryEntryNames(configuration);
+  // The same id->name map resolves category names for the Category column.
+  const categoryNameById = labelNameById;
+
+  const labelOptions = configuration?.dictionaries.labels?.entries ?? [];
+  const categoryOptions = useMemo(
+    () => [
+      ...(configuration?.dictionaries['income-category']?.entries ?? []),
+      ...(configuration?.dictionaries['expense-category']?.entries ?? []),
+    ],
+    [configuration],
+  );
+
+  const filtered = useMemo(() => applyTransactionFilters(data ?? [], filters), [data, filters]);
+  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const clampedPage = Math.min(pageIndex, pageCount - 1);
+  const pageRows = filtered.slice(clampedPage * pageSize, clampedPage * pageSize + pageSize);
+
+  const updateFilters = (next: TransactionFilters) => {
+    setFilters(next);
+    setPageIndex(0);
+  };
+  const clearFilters = () => {
+    setFilters(EMPTY_FILTERS);
+    const w = defaultDateWindow(new Date());
+    setFromInput(w.from);
+    setToInput(w.to);
+    setAppliedWindow(w);
+    setPageIndex(0);
+  };
+  const onFromChange = (from: string) => {
+    setFromInput(from);
+    if (isValidDateWindow(from, toInput)) {
+      setAppliedWindow({ from, to: toInput });
+      setPageIndex(0);
+    }
+  };
+  const onToChange = (to: string) => {
+    setToInput(to);
+    if (isValidDateWindow(fromInput, to)) {
+      setAppliedWindow({ from: fromInput, to });
+      setPageIndex(0);
+    }
+  };
 
   const [editing, setEditing] = useState<TransactionResponse | null>(null);
   const openEdit = (t: TransactionResponse) => setEditing(t);
@@ -40,6 +114,9 @@ export function TransactionsPane() {
       <Skeleton className="h-8 w-full" />
     </div>
   ) : null;
+
+  const showFilterBar = !!id && !isLoading;
+  const showPagination = !!id && !isLoading && !isError && !!data && filtered.length > 0;
 
   let body: ReactNode;
   if (!id) {
@@ -64,12 +141,15 @@ export function TransactionsPane() {
       </div>
     );
   } else if (!data || data.length === 0) {
-    body = <div className="p-6 text-muted-foreground">No transactions yet.</div>;
+    body = <div className="p-6 text-muted-foreground">No transactions in this date range.</div>;
+  } else if (filtered.length === 0) {
+    body = <div className="p-6 text-muted-foreground">No transactions match your filters.</div>;
   } else {
     body = (
       <table className="w-full text-sm">
         <thead className="text-muted-foreground">
           <tr>
+            <th className="w-8 px-4 py-2" />
             <th className="px-4 py-2 text-left font-medium">Date</th>
             <th className="px-4 py-2 text-left font-medium">Description</th>
             <th className="w-40 px-4 py-2 text-left font-medium">Category</th>
@@ -77,7 +157,7 @@ export function TransactionsPane() {
           </tr>
         </thead>
         <tbody>
-          {data.map((t) => {
+          {pageRows.map((t) => {
             // Display the leg matching the currently-viewed account so the
             // amount appears in that account's currency. Adjustments are
             // booked against an External account in the base currency, so
@@ -87,11 +167,15 @@ export function TransactionsPane() {
             const amount = isTarget ? t.targetAmount : -t.sourceAmount;
             const currency = isTarget ? t.targetCurrency : t.sourceCurrency;
             const negative = amount < 0;
+            const deEmphasized = t.status === 'Failed' || t.status === 'Cancelled';
             return (
               <ContextMenu key={t.id}>
                 <ContextMenuTrigger asChild>
                   <tr
-                    className="cursor-pointer border-t hover:bg-muted/50"
+                    className={cn(
+                      'cursor-pointer border-t hover:bg-muted/50',
+                      deEmphasized && 'text-muted-foreground',
+                    )}
                     role="button"
                     tabIndex={0}
                     onDoubleClick={() => openEdit(t)}
@@ -102,15 +186,24 @@ export function TransactionsPane() {
                       }
                     }}
                   >
+                    <td className="px-4 py-2">
+                      <span className="flex items-center gap-1">
+                        <TransactionTypeIcon type={t.transactionType} />
+                        <TransactionStatusIcon status={t.status} failureReason={t.failureReason} />
+                      </span>
+                    </td>
                     <td className="px-4 py-2">{formatDate(t.date)}</td>
-                    <td className="px-4 py-2">{t.description}</td>
+                    <td className="px-4 py-2">
+                      <span className={cn(deEmphasized && 'line-through')}>{t.description}</span>
+                      <LabelChips labelIds={t.labels} nameById={labelNameById} />
+                    </td>
                     <td className="w-40 truncate px-4 py-2">
                       {t.category ? (categoryNameById.get(t.category) ?? '') : ''}
                     </td>
                     <td
                       className={cn(
                         'px-4 py-2 text-right tabular-nums',
-                        negative && 'text-destructive',
+                        negative && !deEmphasized && 'text-destructive',
                       )}
                     >
                       {formatMoney(amount, currency)}
@@ -135,7 +228,32 @@ export function TransactionsPane() {
     <>
       <ControlBar selectedAccountId={id} />
       {header}
+      {showFilterBar && (
+        <TransactionFilterBar
+          from={fromInput}
+          to={toInput}
+          filters={filters}
+          labelOptions={labelOptions}
+          categoryOptions={categoryOptions}
+          onFromChange={onFromChange}
+          onToChange={onToChange}
+          onFiltersChange={updateFilters}
+          onClear={clearFilters}
+        />
+      )}
       {body}
+      {showPagination && (
+        <TransactionPagination
+          total={filtered.length}
+          pageIndex={clampedPage}
+          pageSize={pageSize}
+          onPageIndexChange={setPageIndex}
+          onPageSizeChange={(n) => {
+            setPageSize(n);
+            setPageIndex(0);
+          }}
+        />
+      )}
       {editing && (
         <EditTransactionDialog
           open

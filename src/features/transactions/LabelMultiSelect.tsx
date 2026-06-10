@@ -14,6 +14,10 @@ export interface LabelMultiSelectProps {
   name?: string;
   'aria-invalid'?: boolean | 'true' | 'false';
   'aria-describedby'?: string;
+  // Optional override for the chip container (e.g. the filter bar pins it to a
+  // single h-10 line with horizontal scroll so its height doesn't grow as
+  // chips are added). Forms omit it and keep the default wrapping behaviour.
+  containerClassName?: string;
 }
 
 // Multi-select with type-ahead. Typing filters the option list by
@@ -28,6 +32,7 @@ export function LabelMultiSelect({
   name,
   'aria-invalid': ariaInvalid,
   'aria-describedby': ariaDescribedby,
+  containerClassName,
 }: LabelMultiSelectProps) {
   const generatedId = useId();
   const inputId = id ?? generatedId;
@@ -76,7 +81,12 @@ export function LabelMultiSelect({
 
   return (
     <div ref={wrapRef} className="relative">
-      <div className="flex min-h-10 w-full flex-wrap items-center gap-1 rounded-md border border-input bg-background px-2 py-1 text-sm focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+      <div
+        className={cn(
+          'flex min-h-10 w-full flex-wrap items-center gap-1 rounded-md border border-input bg-background px-2 py-1 text-sm focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2',
+          containerClassName,
+        )}
+      >
         {selected.map((entry) => (
           <span
             key={entry.id}

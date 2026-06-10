@@ -3,6 +3,7 @@ import type {
   ChangeTransactionDateRequest,
   ChangeTransactionDescriptionRequest,
   ExpenseRequest,
+  ISO8601,
   IncomeRequest,
   InternalTransferRequest,
   SetTransactionAllocationsRequest,
@@ -14,10 +15,19 @@ import type {
 import type { ApiClient } from './client';
 
 export const transactionsApi = (client: ApiClient) => ({
-  list: async (params: { accountId: UUID }): Promise<TransactionResponse[]> => {
-    const qs = new URLSearchParams({ accountId: params.accountId }).toString();
-    const res = await client.get<TransactionListResponse>(`/api/transactions?${qs}`);
-    return res.transactions;
+  list: async (params: {
+    accountId: UUID;
+    dateFrom?: ISO8601;
+    dateTo?: ISO8601;
+    limit?: number;
+    offset?: number;
+  }): Promise<TransactionListResponse> => {
+    const qs = new URLSearchParams({ accountId: params.accountId });
+    if (params.dateFrom) qs.set('dateFrom', params.dateFrom);
+    if (params.dateTo) qs.set('dateTo', params.dateTo);
+    if (params.limit != null) qs.set('limit', String(params.limit));
+    if (params.offset != null) qs.set('offset', String(params.offset));
+    return client.get<TransactionListResponse>(`/api/transactions?${qs.toString()}`);
   },
   createIncome: (body: IncomeRequest): Promise<TransactionResponse> =>
     client.post<TransactionResponse>('/api/transactions/income', body),

@@ -8,6 +8,7 @@ import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/comp
 import type { AccountResponse, DictionaryEntryResponse } from '@/api/types';
 import { transferFormSchema, type TransferFormValues } from './schema';
 import { LabelMultiSelect } from './LabelMultiSelect';
+import { DatePicker } from '@/components/DatePicker';
 import { TRANSACTION_KIND_LABELS } from './labels';
 
 export interface TransferFormApi {
@@ -220,13 +221,11 @@ export function TransferForm({
             <FormItem>
               <FormLabel>Date</FormLabel>
               <FormControl>
-                <Input
-                  type="date"
+                <DatePicker
                   value={field.value ?? ''}
                   onChange={field.onChange}
                   onBlur={field.onBlur}
                   name={field.name}
-                  ref={field.ref}
                 />
               </FormControl>
               {!isEdit && (

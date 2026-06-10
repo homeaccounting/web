@@ -31,6 +31,7 @@ const baseTx: TransactionResponse = {
   category: categoryId,
   date: '2026-03-04T00:00:00.000Z',
   labels: [],
+  amendmentCount: 0,
 };
 
 beforeEach(() => {

@@ -253,7 +253,12 @@ export interface AmendTransactionRequest {
 // JSON shape from backend/src/Web/Types.hs:455-472 (`TransactionResponse`).
 
 // Backend status text, see `fromTransactionStatus` in backend/src/Web/Types.hs.
-export type TransactionStatusText = 'Pending' | 'Completed' | 'Failed' | (string & {});
+export type TransactionStatusText =
+  | 'Pending'
+  | 'Completed'
+  | 'Failed'
+  | 'Cancelled'
+  | (string & {});
 
 // Backend `transactionType` discriminator. Serialized as lowercase by
 // backend/src/Web/Types.hs `transactionTypeToText`:
@@ -279,11 +284,18 @@ export interface TransactionResponse {
   category: string | null;
   date: ISO8601;
   labels: UUID[];
+  // Count of completed amendments; always 0 if never amended.
+  // Source: backend Web/Types.hs `data TransactionResponse` (amendmentCount :: Word).
+  amendmentCount: number;
 }
 
 export interface TransactionListResponse {
   transactions: TransactionResponse[];
-  totalCount: number;
+  totalCount: number; // all matches before paging
+  // Effective page size/offset applied by the server (after defaulting).
+  // Source: backend Web/Types.hs:565-575 (TransactionListResponse).
+  limit: number;
+  offset: number;
 }
 
 // --- Configuration ---
