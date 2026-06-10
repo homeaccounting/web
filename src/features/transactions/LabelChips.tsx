@@ -4,14 +4,18 @@ import { labelChipClasses } from './labelColors';
 export function LabelChips({
   labelIds,
   nameById,
+  leadingGap = true,
 }: {
   labelIds: string[];
   nameById: Map<string, string>;
+  // Left margin separating the chips from preceding text (e.g. the description).
+  // Set false when there is no preceding text so the chips hug the column edge.
+  leadingGap?: boolean;
 }) {
   const known = labelIds.filter((id) => nameById.has(id));
   if (known.length === 0) return null;
   return (
-    <span className="ml-2 inline-flex flex-wrap gap-1 align-middle">
+    <span className={cn('inline-flex flex-wrap gap-1 align-middle', leadingGap && 'ml-2')}>
       {known.map((id) => (
         <span
           key={id}

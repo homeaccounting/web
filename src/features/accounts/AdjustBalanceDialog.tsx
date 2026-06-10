@@ -36,7 +36,7 @@ export function AdjustBalanceDialog({ open, onOpenChange, account }: AdjustBalan
     resolver: zodResolver(adjustBalanceFormSchema),
     defaultValues: {
       targetBalance: account.balance,
-      reason: '',
+      description: '',
       date: today,
     },
   });
@@ -128,10 +128,10 @@ export function AdjustBalanceDialog({ open, onOpenChange, account }: AdjustBalan
 
             <FormField
               control={form.control}
-              name="reason"
+              name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Reason</FormLabel>
+                  <FormLabel>Description (optional)</FormLabel>
                   <FormControl>
                     <Input {...field} />
                   </FormControl>

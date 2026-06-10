@@ -41,6 +41,11 @@ export function EditTransactionDialog({ open, onOpenChange, tx }: EditTransactio
   const onSubCallApplied = useCallback(() => setEditEpoch((n) => n + 1), []);
 
   const isTransfer = tx.transactionType === 'transfer';
+  // Adjustments are booked External -> regular account (or vice versa) in the
+  // base currency on the External leg; they have no category and the backend
+  // cannot amend them (Commands.hs "Adjustment is out of scope"). They must
+  // not open the income/expense edit form.
+  const isAdjustment = tx.transactionType === 'adjustment';
   const kind: TransactionKind = isTransfer
     ? 'transfer'
     : tx.transactionType === 'income'
@@ -49,10 +54,10 @@ export function EditTransactionDialog({ open, onOpenChange, tx }: EditTransactio
 
   const accountIds = useMemo<UUID[]>(
     () =>
-      isTransfer
+      isTransfer || isAdjustment
         ? [tx.sourceAccountId, tx.targetAccountId]
         : [kind === 'income' ? tx.targetAccountId : tx.sourceAccountId],
-    [isTransfer, kind, tx.sourceAccountId, tx.targetAccountId],
+    [isTransfer, isAdjustment, kind, tx.sourceAccountId, tx.targetAccountId],
   );
 
   const currentTx = useMemo<TransactionResponse>(() => {
@@ -65,12 +70,14 @@ export function EditTransactionDialog({ open, onOpenChange, tx }: EditTransactio
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queryClient, tx, editEpoch]);
 
-  const title = TRANSACTION_KIND_LABELS[kind].editTitle;
+  const title = isAdjustment ? 'Balance adjustment' : TRANSACTION_KIND_LABELS[kind].editTitle;
   const close = useCallback(() => onOpenChange(false), [onOpenChange]);
 
   let body: React.ReactNode;
   if (currentTx.status !== 'Completed') {
     body = <ReadOnlyNotice status={currentTx.status} onClose={close} />;
+  } else if (isAdjustment) {
+    body = <AdjustmentNotice onClose={close} />;
   } else if (!accounts) {
     // Wait for accounts to load: react-hook-form seeds defaultValues once and
     // does not re-init when they change, so mounting the form against an empty
@@ -121,6 +128,24 @@ function ReadOnlyNotice({ status, onClose }: { status: string; onClose: () => vo
     <div className="space-y-3">
       <Alert role="alert">
         <AlertDescription>This transaction is {status} and cannot be edited.</AlertDescription>
+      </Alert>
+      <div className="flex justify-end">
+        <Button type="button" variant="outline" onClick={onClose}>
+          Close
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function AdjustmentNotice({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="space-y-3">
+      <Alert role="alert">
+        <AlertDescription>
+          This is a balance adjustment and cannot be edited. Use “Adjust balance” to record a new
+          adjustment.
+        </AlertDescription>
       </Alert>
       <div className="flex justify-end">
         <Button type="button" variant="outline" onClick={onClose}>

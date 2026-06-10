@@ -166,11 +166,14 @@ export interface SetAccountSubtypeRequest {
 // PUT /api/accounts/:id/balance. See spec §11.1 for server validation rules.
 // `date` is an ISO 8601 timestamp; the AdjustBalanceDialog converts a
 // YYYY-MM-DD date input to <YYYY-MM-DD>T00:00:00.000Z before sending.
+// Mirrors backend Web/Types.hs `AdjustBalanceRequest`. `description` is stored as
+// the synthetic adjustment transaction's description (AccountService.hs); it is
+// optional (empty string allowed), matching the income/expense/transfer DTOs.
 export interface AdjustBalanceRequest {
   targetBalance: number;
   currency: string;
   date: ISO8601;
-  reason: string;
+  description: string;
 }
 
 // --- Transaction request DTOs ---

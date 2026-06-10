@@ -69,22 +69,18 @@ describe('AccountsPane', () => {
     expect(await screen.findByRole('dialog', { name: /create account/i })).toBeInTheDocument();
   });
 
-  it('renders Edit and Adjust balance buttons disabled when no account is selected', async () => {
+  it('renders the Edit button disabled when no account is selected', async () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
     renderWithProviders(ui(), { initialPath: '/' });
     const edit = await screen.findByRole('button', { name: /edit account/i });
-    const adjust = await screen.findByRole('button', { name: /adjust balance/i });
     expect(edit).toBeDisabled();
-    expect(adjust).toBeDisabled();
   });
 
-  it('enables Edit and Adjust balance buttons when an account is selected', async () => {
+  it('enables the Edit button when an account is selected', async () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
     renderWithProviders(ui(), { initialPath: `/accounts/${accountFixture.id}` });
     const edit = await screen.findByRole('button', { name: /edit account/i });
-    const adjust = await screen.findByRole('button', { name: /adjust balance/i });
     await waitFor(() => expect(edit).not.toBeDisabled());
-    expect(adjust).not.toBeDisabled();
   });
 
   it('opens the Edit dialog from the sidebar when an account is selected', async () => {
@@ -95,15 +91,5 @@ describe('AccountsPane', () => {
     await waitFor(() => expect(edit).not.toBeDisabled());
     await user.click(edit);
     expect(await screen.findByRole('dialog', { name: /edit account/i })).toBeInTheDocument();
-  });
-
-  it('opens the Adjust balance dialog from the sidebar when an account is selected', async () => {
-    const user = userEvent.setup();
-    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
-    renderWithProviders(ui(), { initialPath: `/accounts/${accountFixture.id}` });
-    const adjust = await screen.findByRole('button', { name: /adjust balance/i });
-    await waitFor(() => expect(adjust).not.toBeDisabled());
-    await user.click(adjust);
-    expect(await screen.findByRole('dialog', { name: /adjust balance/i })).toBeInTheDocument();
   });
 });

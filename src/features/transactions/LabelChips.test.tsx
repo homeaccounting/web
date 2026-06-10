@@ -17,4 +17,14 @@ describe('LabelChips', () => {
     const { container } = render(<LabelChips labelIds={['nope']} nameById={names} />);
     expect(container).toBeEmptyDOMElement();
   });
+  it('applies a leading gap (ml-2) by default to separate from preceding text', () => {
+    const { container } = render(<LabelChips labelIds={['l1']} nameById={names} />);
+    expect(container.firstElementChild?.className).toContain('ml-2');
+  });
+  it('omits the leading gap when leadingGap is false (e.g. empty description)', () => {
+    const { container } = render(
+      <LabelChips labelIds={['l1']} nameById={names} leadingGap={false} />,
+    );
+    expect(container.firstElementChild?.className).not.toContain('ml-2');
+  });
 });

@@ -3,7 +3,10 @@ import type { ExpenseRequest, IncomeRequest, InternalTransferRequest, UUID } fro
 
 const uuid = z.string().uuid();
 const positiveAmount = z.coerce.number().positive('Amount must be positive');
-const description = z.string().min(1, 'Description is required').max(500);
+// Optional: an empty description is allowed. The backend accepts an empty
+// `description` (Web/Types.hs `description :: Text` with no non-empty validation),
+// consistent with the adjust-balance field.
+const description = z.string().max(500);
 
 const optionalIsoDate = z
   .union([z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date'), z.literal('')])

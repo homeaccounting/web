@@ -195,7 +195,11 @@ export function TransactionsPane() {
                     <td className="px-4 py-2">{formatDate(t.date)}</td>
                     <td className="px-4 py-2">
                       <span className={cn(deEmphasized && 'line-through')}>{t.description}</span>
-                      <LabelChips labelIds={t.labels} nameById={labelNameById} />
+                      <LabelChips
+                        labelIds={t.labels}
+                        nameById={labelNameById}
+                        leadingGap={!!t.description}
+                      />
                     </td>
                     <td className="w-40 truncate px-4 py-2">
                       {t.category ? (categoryNameById.get(t.category) ?? '') : ''}
@@ -226,7 +230,7 @@ export function TransactionsPane() {
 
   return (
     <>
-      <ControlBar selectedAccountId={id} />
+      <ControlBar selectedAccountId={id} selectedAccount={account} />
       {header}
       {showFilterBar && (
         <TransactionFilterBar

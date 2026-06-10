@@ -35,8 +35,8 @@ describe('incomeExpenseFormSchema', () => {
     expect(incomeExpenseFormSchema.safeParse({ ...valid, amount: -1 }).success).toBe(false);
   });
 
-  it('rejects missing description', () => {
-    expect(incomeExpenseFormSchema.safeParse({ ...valid, description: '' }).success).toBe(false);
+  it('accepts an empty description (optional)', () => {
+    expect(incomeExpenseFormSchema.safeParse({ ...valid, description: '' }).success).toBe(true);
   });
 
   it('accepts empty date (omitted) and empty labels', () => {

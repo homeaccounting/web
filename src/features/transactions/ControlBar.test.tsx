@@ -6,6 +6,7 @@ import { server } from '@/test/server';
 import { renderWithProviders } from '@/test/utils';
 import { AuthProvider } from '@/auth/AuthContext';
 import { saveSession } from '@/auth/storage';
+import type { AccountResponse } from '@/api/types';
 import { ControlBar } from './ControlBar';
 
 const apiBase = 'http://localhost:8080';
@@ -36,6 +37,24 @@ function ui() {
   return (
     <AuthProvider>
       <ControlBar />
+    </AuthProvider>
+  );
+}
+
+const selectedAccount: AccountResponse = {
+  id: '00000000-0000-0000-0000-000000000001',
+  name: 'Checking',
+  balance: 1000,
+  currency: 'USD',
+  overdraftLimit: null,
+  subtype: { type: 'bankAccount', bankName: 'ACME' },
+  version: 1,
+};
+
+function uiWithAccount() {
+  return (
+    <AuthProvider>
+      <ControlBar selectedAccountId={selectedAccount.id} selectedAccount={selectedAccount} />
     </AuthProvider>
   );
 }
@@ -84,5 +103,22 @@ describe('ControlBar', () => {
     const dialog = await screen.findByRole('dialog', { name: /add transfer/i });
     expect(dialog).toBeInTheDocument();
     expect(within(dialog).getByRole('button', { name: /add transfer/i })).toBeInTheDocument();
+  });
+
+  it('renders the Adjust balance button disabled when no account is selected', () => {
+    renderWithProviders(ui(), { initialPath: '/' });
+    expect(screen.getByRole('button', { name: /adjust balance/i })).toBeDisabled();
+  });
+
+  it('enables the Adjust balance button when an account is selected', () => {
+    renderWithProviders(uiWithAccount(), { initialPath: '/' });
+    expect(screen.getByRole('button', { name: /adjust balance/i })).not.toBeDisabled();
+  });
+
+  it('clicking "Adjust balance" opens the adjust balance dialog', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(uiWithAccount(), { initialPath: '/' });
+    await user.click(screen.getByRole('button', { name: /adjust balance/i }));
+    expect(await screen.findByRole('dialog', { name: /adjust balance/i })).toBeInTheDocument();
   });
 });

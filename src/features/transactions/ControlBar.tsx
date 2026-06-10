@@ -1,19 +1,22 @@
 import { useState } from 'react';
-import { ArrowDownToLine, ArrowLeftRight, ArrowUpFromLine } from 'lucide-react';
+import { ArrowDownToLine, ArrowLeftRight, ArrowUpFromLine, Scale } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import type { UUID } from '@/api/types';
+import type { AccountResponse, UUID } from '@/api/types';
+import { AdjustBalanceDialog } from '@/features/accounts/AdjustBalanceDialog';
 import { CreateIncomeDialog } from './CreateIncomeDialog';
 import { CreateExpenseDialog } from './CreateExpenseDialog';
 import { CreateTransferDialog } from './CreateTransferDialog';
 
 export interface ControlBarProps {
   selectedAccountId?: UUID;
+  selectedAccount?: AccountResponse;
 }
 
-export function ControlBar({ selectedAccountId }: ControlBarProps) {
+export function ControlBar({ selectedAccountId, selectedAccount }: ControlBarProps) {
   const [openIncome, setOpenIncome] = useState(false);
   const [openExpense, setOpenExpense] = useState(false);
   const [openTransfer, setOpenTransfer] = useState(false);
+  const [adjusting, setAdjusting] = useState(false);
   return (
     <>
       <div className="flex items-center justify-between border-b px-3 py-2">
@@ -46,6 +49,16 @@ export function ControlBar({ selectedAccountId }: ControlBarProps) {
           >
             <ArrowLeftRight className="h-5 w-5" />
           </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            aria-label="Adjust balance"
+            disabled={!selectedAccount}
+            onClick={() => setAdjusting(true)}
+            className="h-9 w-9"
+          >
+            <Scale className="h-5 w-5" />
+          </Button>
         </div>
       </div>
       <CreateIncomeDialog
@@ -63,6 +76,13 @@ export function ControlBar({ selectedAccountId }: ControlBarProps) {
         onOpenChange={setOpenTransfer}
         selectedAccountId={selectedAccountId}
       />
+      {selectedAccount && (
+        <AdjustBalanceDialog
+          open={adjusting}
+          onOpenChange={setAdjusting}
+          account={selectedAccount}
+        />
+      )}
     </>
   );
 }

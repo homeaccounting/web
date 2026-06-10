@@ -10,7 +10,7 @@ describe('adjustBalanceFormSchema', () => {
     expect(
       adjustBalanceFormSchema.safeParse({
         targetBalance: 100,
-        reason: 'Bank reconcile',
+        description: 'Bank reconcile',
         date: today,
       }).success,
     ).toBe(true);
@@ -18,22 +18,23 @@ describe('adjustBalanceFormSchema', () => {
 
   it('accepts a past date', () => {
     expect(
-      adjustBalanceFormSchema.safeParse({ targetBalance: 0, reason: 'foo', date: yesterday })
+      adjustBalanceFormSchema.safeParse({ targetBalance: 0, description: 'foo', date: yesterday })
         .success,
     ).toBe(true);
   });
 
-  it('rejects an empty reason', () => {
+  it('accepts an empty description (optional)', () => {
     expect(
-      adjustBalanceFormSchema.safeParse({ targetBalance: 100, reason: '', date: today }).success,
-    ).toBe(false);
+      adjustBalanceFormSchema.safeParse({ targetBalance: 100, description: '', date: today })
+        .success,
+    ).toBe(true);
   });
 
-  it('rejects reason longer than 255 chars', () => {
+  it('rejects description longer than 255 chars', () => {
     expect(
       adjustBalanceFormSchema.safeParse({
         targetBalance: 100,
-        reason: 'x'.repeat(256),
+        description: 'x'.repeat(256),
         date: today,
       }).success,
     ).toBe(false);
@@ -41,24 +42,29 @@ describe('adjustBalanceFormSchema', () => {
 
   it('rejects a future date', () => {
     expect(
-      adjustBalanceFormSchema.safeParse({ targetBalance: 100, reason: 'foo', date: tomorrow })
+      adjustBalanceFormSchema.safeParse({ targetBalance: 100, description: 'foo', date: tomorrow })
         .success,
     ).toBe(false);
   });
 
   it('rejects a malformed date', () => {
     expect(
-      adjustBalanceFormSchema.safeParse({ targetBalance: 100, reason: 'foo', date: 'not-a-date' })
-        .success,
+      adjustBalanceFormSchema.safeParse({
+        targetBalance: 100,
+        description: 'foo',
+        date: 'not-a-date',
+      }).success,
     ).toBe(false);
   });
 
   it('accepts targetBalance = 0 and negative values', () => {
     expect(
-      adjustBalanceFormSchema.safeParse({ targetBalance: 0, reason: 'foo', date: today }).success,
+      adjustBalanceFormSchema.safeParse({ targetBalance: 0, description: 'foo', date: today })
+        .success,
     ).toBe(true);
     expect(
-      adjustBalanceFormSchema.safeParse({ targetBalance: -50, reason: 'foo', date: today }).success,
+      adjustBalanceFormSchema.safeParse({ targetBalance: -50, description: 'foo', date: today })
+        .success,
     ).toBe(true);
   });
 });
@@ -66,12 +72,12 @@ describe('adjustBalanceFormSchema', () => {
 describe('toAdjustBalanceRequest', () => {
   it('converts the date input to <YYYY-MM-DD>T00:00:00.000Z', () => {
     expect(
-      toAdjustBalanceRequest({ targetBalance: 100, reason: 'foo', date: '2025-12-01' }, 'USD'),
+      toAdjustBalanceRequest({ targetBalance: 100, description: 'foo', date: '2025-12-01' }, 'USD'),
     ).toEqual({
       targetBalance: 100,
       currency: 'USD',
       date: '2025-12-01T00:00:00.000Z',
-      reason: 'foo',
+      description: 'foo',
     });
   });
 });

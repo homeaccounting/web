@@ -4,7 +4,7 @@ import type { AdjustBalanceRequest } from '@/api/types';
 export const adjustBalanceFormSchema = z
   .object({
     targetBalance: z.coerce.number().finite(),
-    reason: z.string().trim().min(1, 'Reason is required').max(255),
+    description: z.string().trim().max(255),
     date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date is required'),
   })
   .superRefine((v, ctx) => {
@@ -28,6 +28,6 @@ export function toAdjustBalanceRequest(
     targetBalance: values.targetBalance,
     currency,
     date: `${values.date}T00:00:00.000Z`,
-    reason: values.reason,
+    description: values.description,
   };
 }

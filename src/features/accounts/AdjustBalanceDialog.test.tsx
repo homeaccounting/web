@@ -34,28 +34,37 @@ beforeEach(() => {
 });
 
 describe('AdjustBalanceDialog', () => {
-  it('opens with targetBalance prefilled to account.balance, date to today, reason empty', async () => {
+  it('opens with targetBalance prefilled to account.balance, date to today, description empty', async () => {
     const qc = makeQueryClient();
     renderWithProviders(ui(fixture), { queryClient: qc });
     expect(await screen.findByRole('dialog', { name: /adjust balance/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/target balance/i)).toHaveValue(100);
     expect(screen.getByLabelText(/date/i)).toHaveValue(today);
-    expect(screen.getByLabelText(/reason/i)).toHaveValue('');
+    expect(screen.getByLabelText(/description/i)).toHaveValue('');
   });
 
-  it('submitting empty reason shows field error, does not call API', async () => {
+  it('submits with an empty description (optional): fires PUT with empty description', async () => {
     const qc = makeQueryClient();
-    let called = false;
+    let body: unknown = null;
     server.use(
-      http.put('http://localhost:8080/api/accounts/a1/balance', () => {
-        called = true;
+      http.put('http://localhost:8080/api/accounts/a1/balance', async ({ request }) => {
+        body = await request.json();
         return HttpResponse.json({});
       }),
     );
     renderWithProviders(ui(fixture), { queryClient: qc });
-    await userEvent.click(await screen.findByRole('button', { name: /ok/i }));
-    expect(await screen.findByText(/reason is required/i)).toBeInTheDocument();
-    expect(called).toBe(false);
+    const target = await screen.findByLabelText(/target balance/i);
+    await userEvent.clear(target);
+    await userEvent.type(target, '150');
+    await userEvent.click(screen.getByRole('button', { name: /ok/i }));
+    await waitFor(() => {
+      expect(body).toEqual({
+        targetBalance: 150,
+        currency: 'USD',
+        date: `${today}T00:00:00.000Z`,
+        description: '',
+      });
+    });
   });
 
   it('submitting a future date shows field error, does not call API', async () => {
@@ -69,7 +78,7 @@ describe('AdjustBalanceDialog', () => {
     );
     const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
     renderWithProviders(ui(fixture), { queryClient: qc });
-    await userEvent.type(screen.getByLabelText(/reason/i), 'Reconcile');
+    await userEvent.type(screen.getByLabelText(/description/i), 'Reconcile');
     const dateInput = screen.getByLabelText(/date/i);
     fireEvent.change(dateInput, { target: { value: tomorrow } });
     await userEvent.click(screen.getByRole('button', { name: /ok/i }));
@@ -111,7 +120,7 @@ describe('AdjustBalanceDialog', () => {
     const target = await screen.findByLabelText(/target balance/i);
     await userEvent.clear(target);
     await userEvent.type(target, '150');
-    await userEvent.type(screen.getByLabelText(/reason/i), 'Reconcile');
+    await userEvent.type(screen.getByLabelText(/description/i), 'Reconcile');
     await userEvent.click(screen.getByRole('button', { name: /ok/i }));
     await waitFor(() => {
       expect(path).toBe('/api/accounts/a1/balance');
@@ -120,7 +129,7 @@ describe('AdjustBalanceDialog', () => {
       targetBalance: 150,
       currency: 'USD',
       date: `${today}T00:00:00.000Z`,
-      reason: 'Reconcile',
+      description: 'Reconcile',
     });
     await waitFor(() => {
       expect(onOpenChange).toHaveBeenCalledWith(false);
@@ -152,7 +161,7 @@ describe('AdjustBalanceDialog', () => {
     const target = await screen.findByLabelText(/target balance/i);
     await userEvent.clear(target);
     await userEvent.type(target, '150');
-    await userEvent.type(screen.getByLabelText(/reason/i), 'Reconcile');
+    await userEvent.type(screen.getByLabelText(/description/i), 'Reconcile');
     await userEvent.click(screen.getByRole('button', { name: /ok/i }));
     expect(
       await screen.findByText(/target balance equals current balance at this date/i),
@@ -180,7 +189,7 @@ describe('AdjustBalanceDialog', () => {
     const target = await screen.findByLabelText(/target balance/i);
     await userEvent.clear(target);
     await userEvent.type(target, '150');
-    await userEvent.type(screen.getByLabelText(/reason/i), 'Reconcile');
+    await userEvent.type(screen.getByLabelText(/description/i), 'Reconcile');
     await userEvent.click(screen.getByRole('button', { name: /ok/i }));
     expect(
       await screen.findByText(/adjustment date must be in the past or present/i),

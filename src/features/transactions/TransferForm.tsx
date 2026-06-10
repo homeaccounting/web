@@ -205,7 +205,7 @@ export function TransferForm({
           name="description"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Description</FormLabel>
+              <FormLabel>Description (optional)</FormLabel>
               <FormControl>
                 <Input {...field} />
               </FormControl>

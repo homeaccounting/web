@@ -98,6 +98,31 @@ describe('EditTransactionDialog', () => {
     expect(screen.queryByRole('button', { name: /^Save$/ })).toBeNull();
   });
 
+  it('renders read-only for an adjustment instead of the expense edit form', async () => {
+    // Balance adjustments are booked External -> regular account, so the
+    // regular (viewed) account is the *target* leg in account currency while
+    // the source leg is the External account in base currency. They must not
+    // open the income/expense edit form (the backend cannot amend them).
+    const adjustment: TransactionResponse = {
+      ...baseTx,
+      transactionType: 'adjustment',
+      sourceAccountId: 'ext',
+      sourceAmount: 40.88,
+      sourceCurrency: 'USD',
+      targetAccountId: accountId,
+      targetAmount: 1833.24,
+      targetCurrency: 'UAH',
+      category: null,
+      description: 'Fix2',
+    };
+    renderDialog({ tx: adjustment });
+    expect(await screen.findByText(/balance adjustment and cannot be edited/i)).toBeInTheDocument();
+    // Must NOT render the expense edit form.
+    expect(screen.queryByRole('button', { name: /^Save$/ })).toBeNull();
+    expect(screen.queryByLabelText(/^Amount$/i)).toBeNull();
+    expect(screen.queryByText(/Edit expense/i)).toBeNull();
+  });
+
   it('description-only edit fires exactly one PUT description and closes the dialog', async () => {
     const calls: string[] = [];
     server.use(

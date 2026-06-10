@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, useParams } from 'react-router-dom';
-import { Pencil, Plus, Scale } from 'lucide-react';
+import { Pencil, Plus } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -9,7 +9,6 @@ import { useAccounts } from './useAccounts';
 import { useAccountById } from './useAccountById';
 import { CreateAccountDialog } from './CreateAccountDialog';
 import { EditAccountDialog } from './EditAccountDialog';
-import { AdjustBalanceDialog } from './AdjustBalanceDialog';
 import { SyncNowButton } from './SyncNowButton';
 import { formatAccountBalance, formatAccountSubtypeLabel } from './format';
 
@@ -19,7 +18,6 @@ export function AccountsPane() {
   const { data: selectedAccount } = useAccountById(id);
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState(false);
-  const [adjusting, setAdjusting] = useState(false);
   const accountActionsDisabled = !selectedAccount;
 
   return (
@@ -36,16 +34,6 @@ export function AccountsPane() {
             className="h-9 w-9"
           >
             <Pencil className="h-5 w-5" />
-          </Button>
-          <Button
-            size="icon"
-            variant="ghost"
-            aria-label="Adjust balance"
-            disabled={accountActionsDisabled}
-            onClick={() => setAdjusting(true)}
-            className="h-9 w-9"
-          >
-            <Scale className="h-5 w-5" />
           </Button>
           <SyncNowButton selectedAccount={selectedAccount} />
           <Button
@@ -115,14 +103,7 @@ export function AccountsPane() {
 
       <CreateAccountDialog open={creating} onOpenChange={setCreating} />
       {selectedAccount && (
-        <>
-          <EditAccountDialog open={editing} onOpenChange={setEditing} account={selectedAccount} />
-          <AdjustBalanceDialog
-            open={adjusting}
-            onOpenChange={setAdjusting}
-            account={selectedAccount}
-          />
-        </>
+        <EditAccountDialog open={editing} onOpenChange={setEditing} account={selectedAccount} />
       )}
     </>
   );
