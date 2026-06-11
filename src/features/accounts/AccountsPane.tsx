@@ -4,6 +4,7 @@ import { Pencil, Plus } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { useAccounts } from './useAccounts';
 import { useAccountById } from './useAccountById';
@@ -24,28 +25,40 @@ export function AccountsPane() {
     <>
       <div className="flex items-center justify-between border-b px-3 py-2">
         <span className="text-sm font-medium">Accounts</span>
-        <div className="flex items-center gap-1">
-          <Button
-            size="icon"
-            variant="ghost"
-            aria-label="Edit account"
-            disabled={accountActionsDisabled}
-            onClick={() => setEditing(true)}
-            className="h-9 w-9"
-          >
-            <Pencil className="h-5 w-5" />
-          </Button>
-          <SyncNowButton selectedAccount={selectedAccount} />
-          <Button
-            size="icon"
-            variant="ghost"
-            aria-label="Add account"
-            onClick={() => setCreating(true)}
-            className="h-9 w-9"
-          >
-            <Plus className="h-5 w-5" />
-          </Button>
-        </div>
+        <TooltipProvider>
+          <div className="flex items-center gap-1">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  aria-label="Edit account"
+                  disabled={accountActionsDisabled}
+                  onClick={() => setEditing(true)}
+                  className="h-9 w-9"
+                >
+                  <Pencil className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Edit account</TooltipContent>
+            </Tooltip>
+            <SyncNowButton selectedAccount={selectedAccount} />
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  aria-label="Add account"
+                  onClick={() => setCreating(true)}
+                  className="h-9 w-9"
+                >
+                  <Plus className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Add account</TooltipContent>
+            </Tooltip>
+          </div>
+        </TooltipProvider>
       </div>
 
       {isLoading && (

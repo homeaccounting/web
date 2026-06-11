@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ArrowDownToLine, ArrowLeftRight, ArrowUpFromLine, Scale } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import type { AccountResponse, UUID } from '@/api/types';
 import { AdjustBalanceDialog } from '@/features/accounts/AdjustBalanceDialog';
 import { CreateIncomeDialog } from './CreateIncomeDialog';
@@ -21,45 +22,67 @@ export function ControlBar({ selectedAccountId, selectedAccount }: ControlBarPro
     <>
       <div className="flex items-center justify-between border-b px-3 py-2">
         <span className="text-sm font-medium">Transactions</span>
-        <div className="flex items-center gap-1">
-          <Button
-            size="icon"
-            variant="ghost"
-            aria-label="Add expense"
-            onClick={() => setOpenExpense(true)}
-            className="h-9 w-9"
-          >
-            <ArrowUpFromLine className="h-5 w-5" />
-          </Button>
-          <Button
-            size="icon"
-            variant="ghost"
-            aria-label="Add income"
-            onClick={() => setOpenIncome(true)}
-            className="h-9 w-9"
-          >
-            <ArrowDownToLine className="h-5 w-5" />
-          </Button>
-          <Button
-            size="icon"
-            variant="ghost"
-            aria-label="Add transfer"
-            onClick={() => setOpenTransfer(true)}
-            className="h-9 w-9"
-          >
-            <ArrowLeftRight className="h-5 w-5" />
-          </Button>
-          <Button
-            size="icon"
-            variant="ghost"
-            aria-label="Adjust balance"
-            disabled={!selectedAccount}
-            onClick={() => setAdjusting(true)}
-            className="h-9 w-9"
-          >
-            <Scale className="h-5 w-5" />
-          </Button>
-        </div>
+        <TooltipProvider>
+          <div className="flex items-center gap-1">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  aria-label="Add expense"
+                  onClick={() => setOpenExpense(true)}
+                  className="h-9 w-9"
+                >
+                  <ArrowUpFromLine className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Add expense</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  aria-label="Add income"
+                  onClick={() => setOpenIncome(true)}
+                  className="h-9 w-9"
+                >
+                  <ArrowDownToLine className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Add income</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  aria-label="Add transfer"
+                  onClick={() => setOpenTransfer(true)}
+                  className="h-9 w-9"
+                >
+                  <ArrowLeftRight className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Add transfer</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  aria-label="Adjust balance"
+                  disabled={!selectedAccount}
+                  onClick={() => setAdjusting(true)}
+                  className="h-9 w-9"
+                >
+                  <Scale className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Adjust balance</TooltipContent>
+            </Tooltip>
+          </div>
+        </TooltipProvider>
       </div>
       <CreateIncomeDialog
         open={openIncome}

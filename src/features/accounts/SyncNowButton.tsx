@@ -4,6 +4,7 @@ import { ApiError } from '@/api/client';
 import type { AccountResponse, ResyncResponse } from '@/api/types';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { useConfiguration } from '@/features/configuration/useConfiguration';
 import { useResync } from '@/features/banking/useResync';
@@ -96,17 +97,23 @@ export function SyncNowButton({ selectedAccount }: SyncNowButtonProps) {
 
   return (
     <>
-      <Button
-        size="icon"
-        variant="ghost"
-        aria-label="Sync now"
-        title="Sync now"
-        disabled={resync.isPending}
-        onClick={onClick}
-        className="h-9 w-9"
-      >
-        <RefreshCw className={cn('h-5 w-5', resync.isPending && 'animate-spin')} />
-      </Button>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              size="icon"
+              variant="ghost"
+              aria-label="Sync now"
+              disabled={resync.isPending}
+              onClick={onClick}
+              className="h-9 w-9"
+            >
+              <RefreshCw className={cn('h-5 w-5', resync.isPending && 'animate-spin')} />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Sync now</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
 
       {/* Result feedback as a fixed toast so it never disturbs the toolbar layout. */}
       {(summary || errorMessage) && (

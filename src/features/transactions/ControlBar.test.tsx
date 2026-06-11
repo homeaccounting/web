@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
-import { screen, within } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import { server } from '@/test/server';
 import { renderWithProviders } from '@/test/utils';
 import { AuthProvider } from '@/auth/AuthContext';
@@ -120,5 +120,11 @@ describe('ControlBar', () => {
     renderWithProviders(uiWithAccount(), { initialPath: '/' });
     await user.click(screen.getByRole('button', { name: /adjust balance/i }));
     expect(await screen.findByRole('dialog', { name: /adjust balance/i })).toBeInTheDocument();
+  });
+
+  it('shows a tooltip describing the action when an icon button is focused', async () => {
+    renderWithProviders(ui(), { initialPath: '/' });
+    fireEvent.focus(screen.getByRole('button', { name: /add expense/i }));
+    expect(await screen.findByRole('tooltip', { name: /add expense/i })).toBeInTheDocument();
   });
 });
