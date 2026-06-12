@@ -3,13 +3,20 @@ import { ApiClient, baseUrl } from '@/api/client';
 import { transactionsApi } from '@/api/transactions';
 import type { TransactionResponse } from '@/api/types';
 import { useAuth } from '@/auth/useAuth';
-import { dateInputToUtcEnd, dateInputToUtcStart, sortTransactions } from './transactionFilters';
+import { dateInputToUtcEnd, dateInputToUtcStart } from './transactionFilters';
 
 const PAGE_SIZE = 200; // backend max
 
 // Fetches the whole date-bounded window by paging limit=200/offset until the
 // accumulated count reaches totalCount (or a short page signals the end).
-// `fromDate`/`toDate` are YYYY-MM-DD. Returns rows sorted date-desc, id-asc.
+// `fromDate`/`toDate` are YYYY-MM-DD.
+//
+// Rows are returned in the backend's order (business date desc, ties broken by
+// creation order — see Application/ReadModels/Transaction.hs `descendingByDate`).
+// We deliberately do NOT re-sort client-side: the wire `date` is truncated to
+// whole seconds and carries no creation-order signal, so a local (date,id) sort
+// would only reshuffle rows the backend already ordered correctly. Sequential
+// offset pages concatenated in order preserve the global ordering.
 export function useWindowedTransactions(
   accountId: string | undefined,
   fromDate: string,
@@ -44,7 +51,7 @@ export function useWindowedTransactions(
         if (res.transactions.length < PAGE_SIZE || acc.length >= res.totalCount) break;
         offset += PAGE_SIZE;
       }
-      return sortTransactions(acc);
+      return acc;
     },
   });
 }

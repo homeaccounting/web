@@ -5,6 +5,7 @@ import type {
   TransactionResponse,
   UUID,
 } from '@/api/types';
+import { dateInputToWire } from '@/lib/dates';
 import type { IncomeExpenseFormValues, TransferFormValues } from './schema';
 
 export interface TransactionEditDiff {
@@ -26,7 +27,6 @@ const bucketAllocation = (
   return isIncome ? { incomes: [slice], expenses: [] } : { incomes: [], expenses: [slice] };
 };
 
-const isoDayUtc = (yyyyMmDd: string): ISO8601 => `${yyyyMmDd}T00:00:00.000Z`;
 const sameLabels = (a: readonly UUID[], b: readonly UUID[]) =>
   a.length === b.length && a.every((id, i) => id === b[i]);
 
@@ -37,7 +37,7 @@ export function diffIncomeExpense(
 ): TransactionEditDiff {
   const diff: TransactionEditDiff = {};
   if (next.description !== initial.description) diff.description = next.description;
-  if (next.date !== initial.date && next.date) diff.date = isoDayUtc(next.date);
+  if (next.date !== initial.date && next.date) diff.date = dateInputToWire(next.date);
   if (!sameLabels(initial.labels, next.labels)) diff.labels = [...next.labels];
 
   const isIncome = tx.transactionType === 'income';
@@ -71,7 +71,7 @@ export function diffTransfer(
 ): TransactionEditDiff {
   const diff: TransactionEditDiff = {};
   if (next.description !== initial.description) diff.description = next.description;
-  if (next.date !== initial.date && next.date) diff.date = isoDayUtc(next.date);
+  if (next.date !== initial.date && next.date) diff.date = dateInputToWire(next.date);
   if (!sameLabels(initial.labels, next.labels)) diff.labels = [...next.labels];
 
   const sourceChanged = next.sourceAccountId !== initial.sourceAccountId;

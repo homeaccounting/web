@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { DatePicker } from '@/components/DatePicker';
+import { nowDateTimeInput } from '@/lib/dates';
 import { ApiError } from '@/api/client';
 import type { AccountResponse } from '@/api/types';
 import {
@@ -38,7 +39,7 @@ export function AdjustBalanceDialog({ open, onOpenChange, account }: AdjustBalan
     defaultValues: {
       targetBalance: account.balance,
       description: '',
-      date: today,
+      date: nowDateTimeInput(),
     },
   });
 
@@ -149,6 +150,7 @@ export function AdjustBalanceDialog({ open, onOpenChange, account }: AdjustBalan
                   <FormLabel>Date</FormLabel>
                   <FormControl>
                     <DatePicker
+                      withTime
                       value={field.value ?? ''}
                       onChange={field.onChange}
                       onBlur={field.onBlur}

@@ -65,7 +65,7 @@ describe('CreateExpenseDialog', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 
-  it('empty date is omitted from the request payload and POSTs to /api/transactions/expense', async () => {
+  it('defaults the date to a full timestamp and POSTs to /api/transactions/expense', async () => {
     const user = userEvent.setup();
     let capturedBody: Record<string, unknown> = {};
     let requestUrl = '';
@@ -99,7 +99,7 @@ describe('CreateExpenseDialog', () => {
     await screen.findByRole('dialog', { name: /add expense/i });
     await screen.findByLabelText(/account/i);
 
-    // Do NOT touch the date input
+    // Do NOT touch the date input — it defaults to the current date+time.
     await user.click(screen.getByRole('combobox', { name: /category/i }));
     await user.click(await screen.findByRole('option', { name: /food/i }));
     await user.clear(screen.getByLabelText(/amount/i));
@@ -109,7 +109,7 @@ describe('CreateExpenseDialog', () => {
     await user.click(screen.getByRole('button', { name: /add expense/i }));
 
     await waitFor(() => expect(Object.keys(capturedBody).length).toBeGreaterThan(0));
-    expect(capturedBody.date).toBeUndefined();
+    expect(capturedBody.date).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:00\.000Z$/);
     expect(requestUrl).toContain('/api/transactions/expense');
   });
 

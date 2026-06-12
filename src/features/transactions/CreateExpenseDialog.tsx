@@ -11,6 +11,7 @@ import { ApiError } from '@/api/client';
 import type { UUID } from '@/api/types';
 import { useAccounts } from '@/features/accounts/useAccounts';
 import { useConfiguration } from '@/features/configuration/useConfiguration';
+import { nowDateTimeInput } from '@/lib/dates';
 import { IncomeExpenseForm, type IncomeExpenseFormApi } from './IncomeExpenseForm';
 import { useCreateExpense } from './useCreateExpense';
 import { toExpenseRequest } from './schema';
@@ -45,7 +46,7 @@ export function CreateExpenseDialog({
       currency: defaultAccount?.currency ?? '',
       category: '',
       description: '',
-      date: '',
+      date: nowDateTimeInput(),
       labels: [] as UUID[],
     }),
     [defaultAccount?.id, defaultAccount?.currency],

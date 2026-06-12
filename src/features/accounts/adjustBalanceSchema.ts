@@ -1,15 +1,19 @@
 import { z } from 'zod';
 import type { AdjustBalanceRequest } from '@/api/types';
+import { dateInputToWire } from '@/lib/dates';
 
 export const adjustBalanceFormSchema = z
   .object({
     targetBalance: z.coerce.number().finite(),
     description: z.string().trim().max(255),
-    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date is required'),
+    // 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:MM' (time-enabled picker).
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/, 'Date is required'),
   })
   .superRefine((v, ctx) => {
     const today = new Date().toISOString().slice(0, 10);
-    if (v.date > today) {
+    // Compare the calendar-day part so a same-day time (e.g. today 14:30) is
+    // not misread as "future".
+    if (v.date.slice(0, 10) > today) {
       ctx.addIssue({
         path: ['date'],
         code: z.ZodIssueCode.custom,
@@ -27,7 +31,7 @@ export function toAdjustBalanceRequest(
   return {
     targetBalance: values.targetBalance,
     currency,
-    date: `${values.date}T00:00:00.000Z`,
+    date: dateInputToWire(values.date),
     description: values.description,
   };
 }

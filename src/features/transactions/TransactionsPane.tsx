@@ -16,7 +16,7 @@ import {
   useDictionaryEntryNames,
 } from '@/features/configuration/useConfiguration';
 import { useAccountById } from '@/features/accounts/useAccountById';
-import { formatDate, formatMoney } from '@/lib/format';
+import { formatDateTime, formatMoney } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { TransactionResponse } from '@/api/types';
 import { useWindowedTransactions } from './useWindowedTransactions';
@@ -198,7 +198,9 @@ export function TransactionsPane() {
                         <TransactionStatusIcon status={t.status} failureReason={t.failureReason} />
                       </span>
                     </td>
-                    <td className="px-4 py-2">{formatDate(t.date)}</td>
+                    <td className="whitespace-nowrap px-4 py-2 tabular-nums">
+                      {formatDateTime(t.date)}
+                    </td>
                     <td className="px-4 py-2">
                       <span className={cn(deEmphasized && 'line-through')}>{t.description}</span>
                       <LabelChips

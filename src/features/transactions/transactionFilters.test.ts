@@ -7,7 +7,6 @@ import {
   dateInputToUtcStart,
   isDateInputValue,
   isValidDateWindow,
-  sortTransactions,
   type TransactionFilters,
 } from './transactionFilters';
 
@@ -98,17 +97,6 @@ describe('showCancelledFailed filter', () => {
       showCancelledFailed: true,
     });
     expect(result.map((r) => r.id)).toEqual(['completed', 'pending', 'failed', 'cancelled']);
-  });
-});
-
-describe('sortTransactions', () => {
-  it('orders by date desc, ties by id asc', () => {
-    const out = sortTransactions([
-      row({ id: 'b', date: '2026-05-01T00:00:00Z' }),
-      row({ id: 'a', date: '2026-05-01T00:00:00Z' }),
-      row({ id: 'c', date: '2026-06-01T00:00:00Z' }),
-    ]);
-    expect(out.map((r) => r.id)).toEqual(['c', 'a', 'b']);
   });
 });
 

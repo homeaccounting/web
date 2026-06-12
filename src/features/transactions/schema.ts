@@ -6,6 +6,7 @@ import type {
   InternalTransferRequest,
   UUID,
 } from '@/api/types';
+import { dateInputToWire, wireToDateInput } from '@/lib/dates';
 
 const uuid = z.string().uuid();
 const positiveAmount = z.coerce.number().positive('Amount must be positive');
@@ -14,8 +15,10 @@ const positiveAmount = z.coerce.number().positive('Amount must be positive');
 // consistent with the adjust-balance field.
 const description = z.string().max(500);
 
+// Accepts a bare date ('YYYY-MM-DD') or a date+time ('YYYY-MM-DDTHH:MM', from
+// the time-enabled DatePicker); '' means "omitted" (server defaults to now).
 const optionalIsoDate = z
-  .union([z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date'), z.literal('')])
+  .union([z.string().regex(/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/, 'Invalid date'), z.literal('')])
   .optional()
   .transform((v) => (v === '' || v === undefined ? undefined : v));
 
@@ -47,7 +50,6 @@ export const transferFormSchema = z
   });
 export type TransferFormValues = z.infer<typeof transferFormSchema>;
 
-const isoDay = (yyyyMmDd: string) => `${yyyyMmDd}T00:00:00.000Z`;
 const labelsOrUndefined = (xs: readonly UUID[]) => (xs.length === 0 ? undefined : (xs as UUID[]));
 
 type IncomeExpenseInput = Omit<IncomeExpenseFormValues, 'labels'> & {
@@ -74,7 +76,7 @@ export function toIncomeRequest(v: IncomeExpenseInput): IncomeRequest {
     currency: v.currency,
     allocations: toAllocationsRequest('incomes', v.category, v.amount),
     description: v.description,
-    date: v.date ? isoDay(v.date) : undefined,
+    date: v.date ? dateInputToWire(v.date) : undefined,
     labels: labelsOrUndefined(v.labels),
   };
 }
@@ -85,7 +87,7 @@ export function toExpenseRequest(v: IncomeExpenseInput): ExpenseRequest {
     currency: v.currency,
     allocations: toAllocationsRequest('expenses', v.category, v.amount),
     description: v.description,
-    date: v.date ? isoDay(v.date) : undefined,
+    date: v.date ? dateInputToWire(v.date) : undefined,
     labels: labelsOrUndefined(v.labels),
   };
 }
@@ -106,14 +108,17 @@ export function toTransferRequest(
     currency: v.currency,
     description: v.description,
     exchangeRate: sourceCurrency === targetCurrency ? undefined : v.exchangeRate,
-    date: v.date ? isoDay(v.date) : undefined,
+    date: v.date ? dateInputToWire(v.date) : undefined,
     labels: labelsOrUndefined(v.labels),
   };
 }
 
 import type { AccountResponse, TransactionResponse } from '@/api/types';
 
-const dateToYyyyMmDd = (iso: string) => iso.slice(0, 10);
+// Seed the date field as local 'YYYY-MM-DDTHH:MM' from the backend UTC
+// timestamp so the edit form's time-enabled DatePicker shows the stored time
+// in the viewer's timezone.
+const dateToInput = (iso: string) => wireToDateInput(iso);
 
 export function toIncomeExpenseFormValues(
   tx: TransactionResponse,
@@ -131,7 +136,7 @@ export function toIncomeExpenseFormValues(
     currency,
     category: tx.category ?? '',
     description: tx.description,
-    date: dateToYyyyMmDd(tx.date),
+    date: dateToInput(tx.date),
     labels: tx.labels,
   };
 }
@@ -147,7 +152,7 @@ export function toTransferFormValues(
     currency: accounts.find((a) => a.id === tx.sourceAccountId)?.currency ?? tx.sourceCurrency,
     description: tx.description,
     exchangeRate: tx.exchangeRate ?? undefined,
-    date: dateToYyyyMmDd(tx.date),
+    date: dateToInput(tx.date),
     labels: tx.labels,
   };
 }

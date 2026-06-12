@@ -48,10 +48,10 @@ describe('AdjustBalanceDialog', () => {
 
   it('submits with an empty description (optional): fires PUT with empty description', async () => {
     const qc = makeQueryClient();
-    let body: unknown = null;
+    let body: Record<string, unknown> | null = null;
     server.use(
       http.put('http://localhost:8080/api/accounts/a1/balance', async ({ request }) => {
-        body = await request.json();
+        body = (await request.json()) as Record<string, unknown>;
         return HttpResponse.json({});
       }),
     );
@@ -61,13 +61,12 @@ describe('AdjustBalanceDialog', () => {
     await userEvent.type(target, '150');
     await userEvent.click(screen.getByRole('button', { name: /ok/i }));
     await waitFor(() => {
-      expect(body).toEqual({
-        targetBalance: 150,
-        currency: 'USD',
-        date: `${today}T00:00:00.000Z`,
-        description: '',
-      });
+      expect(body).toMatchObject({ targetBalance: 150, currency: 'USD', description: '' });
     });
+    // date is today's calendar day with a current time-of-day (minute precision).
+    expect((body as { date?: string } | null)?.date).toMatch(
+      new RegExp(`^${today}T\\d{2}:\\d{2}:00\\.000Z$`),
+    );
   });
 
   // The "Date" field uses the shared DatePicker (calendar popover) rather than a
@@ -84,12 +83,12 @@ describe('AdjustBalanceDialog', () => {
   it('happy path: fires PUT with correct body, closes dialog, invalidates queries', async () => {
     const qc = makeQueryClient();
     const invalidateSpy = vi.spyOn(qc, 'invalidateQueries');
-    let body: unknown = null;
+    let body: Record<string, unknown> | null = null;
     let path: string | null = null;
     server.use(
       http.put('http://localhost:8080/api/accounts/a1/balance', async ({ request }) => {
         path = new URL(request.url).pathname;
-        body = await request.json();
+        body = (await request.json()) as Record<string, unknown>;
         return HttpResponse.json({
           id: 'tx-1',
           sourceAccountId: 'a1',
@@ -120,12 +119,10 @@ describe('AdjustBalanceDialog', () => {
     await waitFor(() => {
       expect(path).toBe('/api/accounts/a1/balance');
     });
-    expect(body).toEqual({
-      targetBalance: 150,
-      currency: 'USD',
-      date: `${today}T00:00:00.000Z`,
-      description: 'Reconcile',
-    });
+    expect(body).toMatchObject({ targetBalance: 150, currency: 'USD', description: 'Reconcile' });
+    expect((body as { date?: string } | null)?.date).toMatch(
+      new RegExp(`^${today}T\\d{2}:\\d{2}:00\\.000Z$`),
+    );
     await waitFor(() => {
       expect(onOpenChange).toHaveBeenCalledWith(false);
     });

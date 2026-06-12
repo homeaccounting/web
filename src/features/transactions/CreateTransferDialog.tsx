@@ -11,6 +11,7 @@ import { ApiError } from '@/api/client';
 import type { UUID } from '@/api/types';
 import { useAccounts } from '@/features/accounts/useAccounts';
 import { useConfiguration } from '@/features/configuration/useConfiguration';
+import { nowDateTimeInput } from '@/lib/dates';
 import { TransferForm, type TransferFormApi } from './TransferForm';
 import { useCreateTransfer } from './useCreateTransfer';
 import { toTransferRequest, type TransferFormValues } from './schema';
@@ -45,7 +46,7 @@ export function CreateTransferDialog({
       currency: sourceAccount?.currency ?? '',
       description: '',
       exchangeRate: undefined,
-      date: '',
+      date: nowDateTimeInput(),
       labels: [] as UUID[],
     }),
     [sourceAccountId, targetAccount?.id, sourceAccount?.currency],

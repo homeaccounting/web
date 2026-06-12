@@ -3,6 +3,12 @@ import { afterAll, afterEach, beforeAll } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import { server } from './server';
 
+// Pin the timezone so local<->UTC date conversions (DatePicker / dateInputToWire
+// / formatDateTime) are deterministic regardless of the machine running tests.
+// In UTC, the local wall-clock equals the wire timestamp, so expectations can be
+// written against plain ISO strings.
+process.env.TZ = 'UTC';
+
 // happy-dom polyfills for Radix UI: in some pointerdown paths, the event
 // `target` is an element whose prototype chain doesn't expose pointer-capture
 // methods, so Radix Select's onPointerDown handler throws

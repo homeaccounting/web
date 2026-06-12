@@ -28,16 +28,11 @@ export function applyTransactionFilters(
   });
 }
 
-// Matches the backend ordering exactly: date descending, ties broken by id
-// ascending (Application/ReadModels/Transaction.hs). Defensive so pagination
-// is deterministic regardless of page-merge order.
-export function sortTransactions(rows: TransactionResponse[]): TransactionResponse[] {
-  return [...rows].sort((a, b) => {
-    if (a.date !== b.date) return a.date < b.date ? 1 : -1;
-    if (a.id !== b.id) return a.id < b.id ? -1 : 1;
-    return 0;
-  });
-}
+// NOTE: there is intentionally no client-side transaction sorter. The backend
+// returns rows already ordered (business date desc, ties broken by creation
+// order) and the wire `date` is truncated to whole seconds, so re-sorting here
+// could only reshuffle correctly-ordered rows. Consumers must preserve the
+// server order — see useWindowedTransactions.
 
 function toDateInput(d: Date): string {
   const y = d.getFullYear();

@@ -194,7 +194,7 @@ describe('toIncomeExpenseFormValues', () => {
       currency: 'USD',
       category: 'cat-1',
       description: 'd',
-      date: '2026-03-04',
+      date: '2026-03-04T15:00',
       labels: ['l1'],
     });
   });
@@ -236,7 +236,7 @@ describe('toTransferFormValues', () => {
       currency: 'USD',
       description: 'd',
       exchangeRate: 0.9,
-      date: '2026-03-04',
+      date: '2026-03-04T15:00',
       labels: ['l1'],
     });
   });

@@ -222,6 +222,7 @@ export function TransferForm({
               <FormLabel>Date</FormLabel>
               <FormControl>
                 <DatePicker
+                  withTime
                   value={field.value ?? ''}
                   onChange={field.onChange}
                   onBlur={field.onBlur}

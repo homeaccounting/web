@@ -68,7 +68,7 @@ describe('CreateIncomeDialog', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 
-  it('empty date is omitted from the request payload', async () => {
+  it('defaults the date to the current time (full timestamp) when untouched', async () => {
     const user = userEvent.setup();
     let capturedBody: Record<string, unknown> = {};
 
@@ -100,7 +100,7 @@ describe('CreateIncomeDialog', () => {
     await screen.findByRole('dialog', { name: /add income/i });
     await screen.findByLabelText(/account/i);
 
-    // Do NOT touch the date input
+    // Do NOT touch the date input — it defaults to the current date+time.
     await user.click(screen.getByRole('combobox', { name: /category/i }));
     await user.click(await screen.findByRole('option', { name: /salary/i }));
     await user.clear(screen.getByLabelText(/amount/i));
@@ -110,7 +110,8 @@ describe('CreateIncomeDialog', () => {
     await user.click(screen.getByRole('button', { name: /add income/i }));
 
     await waitFor(() => expect(Object.keys(capturedBody).length).toBeGreaterThan(0));
-    expect(capturedBody.date).toBeUndefined();
+    // Full-precision timestamp (minute-granular) so same-day rows are ordered.
+    expect(capturedBody.date).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:00\.000Z$/);
   });
 
   it('field error surfaces under the named field', async () => {
