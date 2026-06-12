@@ -222,6 +222,7 @@ export const handlers = [
       }),
     );
   }),
+  http.delete(`${apiBase}/api/transactions/:id`, () => new HttpResponse(null, { status: 204 })),
   http.get(`${apiBase}/api/users/me/configuration`, () => HttpResponse.json(configurationFixture)),
   http.put(
     `${apiBase}/api/users/me/configuration/base-currency`,

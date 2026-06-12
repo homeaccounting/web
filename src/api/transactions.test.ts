@@ -97,4 +97,14 @@ describe('transactionsApi edit endpoints', () => {
       expect.objectContaining({ method: 'PUT' }),
     );
   });
+
+  it('cancel issues DELETE /api/transactions/:id', async () => {
+    const spy = vi.fn(() => new Response(null, { status: 204 }));
+    vi.stubGlobal('fetch', spy);
+    await transactionsApi(mkClient()).cancel('tx-1');
+    expect(spy).toHaveBeenCalledWith(
+      'http://test/api/transactions/tx-1',
+      expect.objectContaining({ method: 'DELETE' }),
+    );
+  });
 });

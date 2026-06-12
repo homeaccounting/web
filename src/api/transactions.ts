@@ -45,4 +45,8 @@ export const transactionsApi = (client: ApiClient) => ({
     client.patch<TransactionResponse>(`/api/transactions/${id}/allocations`, body),
   amend: (id: UUID, body: AmendTransactionRequest) =>
     client.put<TransactionResponse>(`/api/transactions/${id}/amendment`, body),
+  // Soft-cancel a transaction. Backend DELETE /api/transactions/:id returns 204
+  // (Web/API/TransactionAPI.hs `cancelTransactionHandler`); the resulting status
+  // is `Cancelled`. There is no hard delete.
+  cancel: (id: UUID): Promise<void> => client.delete<void>(`/api/transactions/${id}`),
 });

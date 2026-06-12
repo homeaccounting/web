@@ -448,6 +448,61 @@ describe('TransactionsPane', () => {
     expect(screen.getByLabelText('From')).toBeInTheDocument();
   });
 
+  it('exposes a "Cancel" control on a non-cancelled row', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    await screen.findByText(transactionFixture.description);
+    expect(screen.getByLabelText('Cancel')).toBeInTheDocument();
+  });
+
+  it('opens the cancel dialog from the row control without opening the edit dialog', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    const user = userEvent.setup();
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    await screen.findByText(transactionFixture.description);
+    await user.click(screen.getByLabelText('Cancel'));
+    expect(await screen.findByText('Cancel this transaction?')).toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: /edit expense/i })).not.toBeInTheDocument();
+  });
+
+  it('offers a "Cancel" item in the row context menu', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    const user = userEvent.setup();
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    const cell = await screen.findByText(transactionFixture.description);
+    const row = cell.closest('tr')!;
+    await user.pointer({ keys: '[MouseRight]', target: row });
+    expect(await screen.findByRole('menuitem', { name: 'Cancel' })).toBeInTheDocument();
+  });
+
+  it('does not render a cancel control on an already-cancelled row', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    const user = userEvent.setup();
+    server.use(
+      http.get(`${apiBase}/api/transactions`, () =>
+        HttpResponse.json({
+          transactions: [
+            {
+              ...transactionFixture,
+              id: 'tx-cancel',
+              description: 'CancelledTx',
+              status: 'Cancelled',
+              failureReason: null,
+            },
+          ],
+          totalCount: 1,
+          limit: 50,
+          offset: 0,
+        }),
+      ),
+    );
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    // Cancelled rows are hidden by default; reveal them first.
+    await user.click(await screen.findByLabelText(/cancelled & failed/i));
+    expect(await screen.findByText('CancelledTx')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Cancel')).not.toBeInTheDocument();
+  });
+
   it('category filter narrows rows and "All categories" sentinel restores both', async () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
     const user = userEvent.setup();

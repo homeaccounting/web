@@ -9,7 +9,8 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu';
-import { Pencil } from 'lucide-react';
+import { Ban, Pencil } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   useConfiguration,
   useDictionaryEntryNames,
@@ -32,6 +33,7 @@ import { TransactionPagination, usePersistedPageSize } from './TransactionPagina
 import { AccountHeader } from './AccountHeader';
 import { ControlBar } from './ControlBar';
 import { EditTransactionDialog } from './EditTransactionDialog';
+import { CancelTransactionDialog } from './CancelTransactionDialog';
 import { TransactionStatusIcon } from './TransactionStatusIcon';
 
 const EMPTY_FILTERS: TransactionFilters = {
@@ -107,6 +109,9 @@ export function TransactionsPane() {
   const [editing, setEditing] = useState<TransactionResponse | null>(null);
   const openEdit = (t: TransactionResponse) => setEditing(t);
 
+  const [cancelTarget, setCancelTarget] = useState<TransactionResponse | null>(null);
+  const openCancel = (t: TransactionResponse) => setCancelTarget(t);
+
   const header = account ? (
     <AccountHeader account={account} />
   ) : accountLoading ? (
@@ -154,6 +159,7 @@ export function TransactionsPane() {
             <th className="px-4 py-2 text-left font-medium">Description</th>
             <th className="w-40 px-4 py-2 text-left font-medium">Category</th>
             <th className="px-4 py-2 text-right font-medium">Amount</th>
+            <th className="w-8 px-2 py-2" />
           </tr>
         </thead>
         <tbody>
@@ -173,7 +179,7 @@ export function TransactionsPane() {
                 <ContextMenuTrigger asChild>
                   <tr
                     className={cn(
-                      'cursor-pointer border-t hover:bg-muted/50',
+                      'group cursor-pointer border-t hover:bg-muted/50',
                       deEmphasized && 'text-muted-foreground',
                     )}
                     role="button"
@@ -212,6 +218,29 @@ export function TransactionsPane() {
                     >
                       {formatMoney(amount, currency)}
                     </td>
+                    <td className="w-8 px-2 py-2 text-right">
+                      {t.status !== 'Cancelled' && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                aria-label="Cancel"
+                                className="h-7 w-7 opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openCancel(t);
+                                }}
+                              >
+                                <Ban className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Cancel</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+                    </td>
                   </tr>
                 </ContextMenuTrigger>
                 <ContextMenuContent>
@@ -219,6 +248,12 @@ export function TransactionsPane() {
                     <Pencil className="mr-2 h-4 w-4" aria-hidden />
                     Edit
                   </ContextMenuItem>
+                  {t.status !== 'Cancelled' && (
+                    <ContextMenuItem className="text-destructive" onSelect={() => openCancel(t)}>
+                      <Ban className="mr-2 h-4 w-4" aria-hidden />
+                      Cancel
+                    </ContextMenuItem>
+                  )}
                 </ContextMenuContent>
               </ContextMenu>
             );
@@ -265,6 +300,15 @@ export function TransactionsPane() {
             if (!o) setEditing(null);
           }}
           tx={editing}
+        />
+      )}
+      {cancelTarget && (
+        <CancelTransactionDialog
+          open
+          onOpenChange={(o) => {
+            if (!o) setCancelTarget(null);
+          }}
+          transaction={cancelTarget}
         />
       )}
     </>
