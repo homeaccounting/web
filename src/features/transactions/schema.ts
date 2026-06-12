@@ -1,5 +1,11 @@
 import { z } from 'zod';
-import type { ExpenseRequest, IncomeRequest, InternalTransferRequest, UUID } from '@/api/types';
+import type {
+  AllocationsRequest,
+  ExpenseRequest,
+  IncomeRequest,
+  InternalTransferRequest,
+  UUID,
+} from '@/api/types';
 
 const uuid = z.string().uuid();
 const positiveAmount = z.coerce.number().positive('Amount must be positive');
@@ -48,19 +54,41 @@ type IncomeExpenseInput = Omit<IncomeExpenseFormValues, 'labels'> & {
   labels: readonly UUID[];
 };
 
+// The single-category UI maps to one allocation slice in the bucket that
+// matches the transaction kind (income → `incomes`, expense → `expenses`).
+// The other bucket stays empty; the categorised total is the slice amount.
+function toAllocationsRequest(
+  bucket: 'incomes' | 'expenses',
+  category: UUID,
+  amount: number,
+): AllocationsRequest {
+  const slice = { category, amount };
+  return bucket === 'incomes'
+    ? { incomes: [slice], expenses: [] }
+    : { incomes: [], expenses: [slice] };
+}
+
 export function toIncomeRequest(v: IncomeExpenseInput): IncomeRequest {
   return {
     accountId: v.accountId,
-    amount: v.amount,
     currency: v.currency,
-    category: v.category,
+    allocations: toAllocationsRequest('incomes', v.category, v.amount),
     description: v.description,
     date: v.date ? isoDay(v.date) : undefined,
     labels: labelsOrUndefined(v.labels),
   };
 }
 
-export const toExpenseRequest: (v: IncomeExpenseInput) => ExpenseRequest = toIncomeRequest;
+export function toExpenseRequest(v: IncomeExpenseInput): ExpenseRequest {
+  return {
+    accountId: v.accountId,
+    currency: v.currency,
+    allocations: toAllocationsRequest('expenses', v.category, v.amount),
+    description: v.description,
+    date: v.date ? isoDay(v.date) : undefined,
+    labels: labelsOrUndefined(v.labels),
+  };
+}
 
 type TransferInput = Omit<TransferFormValues, 'labels'> & {
   labels: readonly UUID[];

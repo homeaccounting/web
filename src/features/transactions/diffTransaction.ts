@@ -1,5 +1,5 @@
 import type {
-  Allocation,
+  Allocations,
   AmendTransactionRequest,
   ISO8601,
   TransactionResponse,
@@ -12,8 +12,19 @@ export interface TransactionEditDiff {
   date?: ISO8601;
   labels?: UUID[];
   amendment?: AmendTransactionRequest;
-  allocations?: Allocation[];
+  allocations?: Allocations;
 }
+
+// Single-category edit → one allocation slice in the bucket matching the kind.
+const bucketAllocation = (
+  isIncome: boolean,
+  categoryId: UUID,
+  amount: number,
+  currency: string,
+): Allocations => {
+  const slice = { categoryId, amount: { amount, currency } };
+  return isIncome ? { incomes: [slice], expenses: [] } : { incomes: [], expenses: [slice] };
+};
 
 const isoDayUtc = (yyyyMmDd: string): ISO8601 => `${yyyyMmDd}T00:00:00.000Z`;
 const sameLabels = (a: readonly UUID[], b: readonly UUID[]) =>
@@ -45,13 +56,9 @@ export function diffIncomeExpense(
       targetAmount: next.amount,
       targetCurrency: isIncome ? next.currency : externalCurrency,
     };
-    diff.allocations = [
-      { categoryId: next.category, amount: { amount: next.amount, currency: next.currency } },
-    ];
+    diff.allocations = bucketAllocation(isIncome, next.category, next.amount, next.currency);
   } else if (categoryChanged) {
-    diff.allocations = [
-      { categoryId: next.category, amount: { amount: next.amount, currency: next.currency } },
-    ];
+    diff.allocations = bucketAllocation(isIncome, next.category, next.amount, next.currency);
   }
 
   return diff;

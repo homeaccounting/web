@@ -64,12 +64,14 @@ describe('toIncomeRequest / toExpenseRequest', () => {
     labels: [LBL],
   } as const;
 
-  it('produces the full DTO with ISO timestamp', () => {
+  it('produces the full DTO with ISO timestamp and the slice in the incomes bucket', () => {
     expect(toIncomeRequest({ ...values })).toEqual({
       accountId: ACC_A,
-      amount: 12.5,
       currency: 'USD',
-      category: CAT,
+      allocations: {
+        incomes: [{ category: CAT, amount: 12.5 }],
+        expenses: [],
+      },
       description: 'Lunch',
       date: '2026-06-01T00:00:00.000Z',
       labels: [LBL],
@@ -86,8 +88,11 @@ describe('toIncomeRequest / toExpenseRequest', () => {
     expect(dto.labels).toBeUndefined();
   });
 
-  it('toExpenseRequest equals toIncomeRequest for the same input', () => {
-    expect(toExpenseRequest({ ...values })).toEqual(toIncomeRequest({ ...values }));
+  it('toExpenseRequest puts the slice in the expenses bucket', () => {
+    expect(toExpenseRequest({ ...values }).allocations).toEqual({
+      incomes: [],
+      expenses: [{ category: CAT, amount: 12.5 }],
+    });
   });
 });
 

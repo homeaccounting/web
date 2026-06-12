@@ -90,7 +90,10 @@ describe('useEditTransaction', () => {
           targetAmount: 25,
           targetCurrency: 'USD',
         },
-        allocations: [{ categoryId: 'cat-1', amount: { amount: 25, currency: 'USD' } }],
+        allocations: {
+          incomes: [],
+          expenses: [{ categoryId: 'cat-1', amount: { amount: 25, currency: 'USD' } }],
+        },
         description: 'new',
         date: '2026-04-05T00:00:00.000Z',
         labels: ['l1'],

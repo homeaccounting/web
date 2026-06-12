@@ -181,11 +181,32 @@ export interface AdjustBalanceRequest {
 // structurally identical there). `category` is sent as JSON `Text` but the
 // backend parses it to a `DictionaryEntryId` UUID via `parseCategoryId`
 // (Web/Types.hs:1076-1080), so we type it as `UUID` (a string) on the wire.
+// One category slice on a create request. Mirrors backend Web/Types.hs
+// `CategoryAmount { category :: UUID, amount :: Double }`. Note `amount` is a
+// bare number here (Double), unlike the Money-wrapped `Allocation` used by the
+// set-allocations / amend endpoints below.
+export interface CategoryAmount {
+  category: UUID; // dictionary entry UUID
+  amount: number;
+}
+
+// Two-bucket allocations on a create request. Mirrors backend Web/Types.hs
+// `AllocationsRequest { incomes :: [CategoryAmount], expenses :: [CategoryAmount] }`.
+// For an income the category goes in `incomes`; for an expense in `expenses`.
+// The two-bucket (contra-reimbursement) case is not surfaced by the single-
+// category UI, which always sends one slice in the bucket matching the kind.
+export interface AllocationsRequest {
+  incomes: CategoryAmount[];
+  expenses: CategoryAmount[];
+}
+
+// Mirrors backend Web/Types.hs `IncomeRequest`/`ExpenseRequest` (structurally
+// identical). There is no top-level `amount`; the categorised total is the sum
+// of the allocation slices across both buckets.
 export interface IncomeRequest {
   accountId: UUID;
-  amount: number;
   currency: string;
-  category: UUID; // wire type: string; must be a dictionary entry UUID
+  allocations: AllocationsRequest;
   description: string;
   date?: ISO8601; // omit → backend defaults to server time
   labels?: UUID[];
@@ -217,10 +238,19 @@ export interface Money {
   currency: string;
 }
 
-// Mirrors backend Domain/Core/Types.hs:961-969 (Allocation).
+// Mirrors backend Domain/Core/Types.hs (Allocation).
 export interface Allocation {
   categoryId: UUID;
   amount: Money;
+}
+
+// Two-bucket categorised side of a transaction. Mirrors backend
+// Domain/Core/Types.hs `Allocations { incomes :: [Allocation], expenses :: [Allocation] }`.
+// Carried by the set-allocations (PATCH) and amend endpoints. The single-
+// category UI places its one slice in the bucket matching the transaction kind.
+export interface Allocations {
+  incomes: Allocation[];
+  expenses: Allocation[];
 }
 
 export interface SetTransactionLabelsRequest {
@@ -228,7 +258,7 @@ export interface SetTransactionLabelsRequest {
 }
 
 export interface SetTransactionAllocationsRequest {
-  newAllocations: Allocation[];
+  newAllocations: Allocations;
 }
 
 export interface ChangeTransactionDescriptionRequest {
@@ -247,9 +277,10 @@ export interface AmendTransactionRequest {
   targetAmount: number;
   targetCurrency: string;
   exchangeRate?: number;
-  // Optional on the wire; this slice always omits it and uses the dedicated
-  // PATCH /allocations endpoint for allocation changes.
-  newAllocations?: Allocation[];
+  // Two-bucket; required by the backend only on a cross-kind amendment.
+  // This slice always omits it for within-kind amount edits and uses the
+  // dedicated PATCH /allocations endpoint for allocation changes.
+  newAllocations?: Allocations;
 }
 
 // --- Transactions ---

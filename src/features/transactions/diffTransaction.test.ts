@@ -66,9 +66,10 @@ describe('diffIncomeExpense', () => {
       targetAmount: 25,
       targetCurrency: 'USD',
     });
-    expect(d.allocations).toEqual([
-      { categoryId: 'cat-1', amount: { amount: 25, currency: 'USD' } },
-    ]);
+    expect(d.allocations).toEqual({
+      incomes: [{ categoryId: 'cat-1', amount: { amount: 25, currency: 'USD' } }],
+      expenses: [],
+    });
     expect(d.description).toBeUndefined();
   });
 
@@ -80,9 +81,10 @@ describe('diffIncomeExpense', () => {
       sourceAmount: 10,
       targetAmount: 10,
     });
-    expect(d.allocations).toEqual([
-      { categoryId: 'cat-1', amount: { amount: 10, currency: 'USD' } },
-    ]);
+    expect(d.allocations).toEqual({
+      incomes: [{ categoryId: 'cat-1', amount: { amount: 10, currency: 'USD' } }],
+      expenses: [],
+    });
   });
 
   it('expense account change touches the source leg, not target', () => {
@@ -102,18 +104,20 @@ describe('diffIncomeExpense', () => {
 
   it('category change alone emits allocations only', () => {
     const d = diffIncomeExpense(ieInitial, { ...ieInitial, category: 'cat-2' }, baseTx);
-    expect(d.allocations).toEqual([
-      { categoryId: 'cat-2', amount: { amount: 10, currency: 'USD' } },
-    ]);
+    expect(d.allocations).toEqual({
+      incomes: [{ categoryId: 'cat-2', amount: { amount: 10, currency: 'USD' } }],
+      expenses: [],
+    });
     expect(d.amendment).toBeUndefined();
   });
 
   it('amount + category change emits both, with the new pair', () => {
     const d = diffIncomeExpense(ieInitial, { ...ieInitial, amount: 30, category: 'cat-2' }, baseTx);
     expect(d.amendment).toMatchObject({ sourceAmount: 30, targetAmount: 30 });
-    expect(d.allocations).toEqual([
-      { categoryId: 'cat-2', amount: { amount: 30, currency: 'USD' } },
-    ]);
+    expect(d.allocations).toEqual({
+      incomes: [{ categoryId: 'cat-2', amount: { amount: 30, currency: 'USD' } }],
+      expenses: [],
+    });
   });
 });
 

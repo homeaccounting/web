@@ -75,7 +75,9 @@ describe('transactionsApi edit endpoints', () => {
 
   it('PATCHes allocations', async () => {
     const spy = stubFetch();
-    await transactionsApi(mkClient()).setAllocations('tx-1', { newAllocations: [] });
+    await transactionsApi(mkClient()).setAllocations('tx-1', {
+      newAllocations: { incomes: [], expenses: [] },
+    });
     expect(spy).toHaveBeenCalledWith(
       'http://test/api/transactions/tx-1/allocations',
       expect.objectContaining({ method: 'PATCH' }),

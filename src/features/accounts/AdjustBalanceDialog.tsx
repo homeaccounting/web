@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
+import { DatePicker } from '@/components/DatePicker';
 import { ApiError } from '@/api/client';
 import type { AccountResponse } from '@/api/types';
 import {
@@ -147,7 +148,13 @@ export function AdjustBalanceDialog({ open, onOpenChange, account }: AdjustBalan
                 <FormItem>
                   <FormLabel>Date</FormLabel>
                   <FormControl>
-                    <Input type="date" {...field} />
+                    <DatePicker
+                      value={field.value ?? ''}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                      maxDate={today}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
