@@ -131,7 +131,7 @@ function ReadOnlyNotice({ status, onClose }: { status: string; onClose: () => vo
       </Alert>
       <div className="flex justify-end">
         <Button type="button" variant="outline" onClick={onClose}>
-          Close
+          OK
         </Button>
       </div>
     </div>
@@ -149,7 +149,7 @@ function AdjustmentNotice({ onClose }: { onClose: () => void }) {
       </Alert>
       <div className="flex justify-end">
         <Button type="button" variant="outline" onClick={onClose}>
-          Close
+          OK
         </Button>
       </div>
     </div>

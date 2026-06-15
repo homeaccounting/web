@@ -179,7 +179,7 @@ describe('LinkAccountsDialog', () => {
     await user.click(firstSelect);
     await user.click(await screen.findByRole('option', { name: 'Checking' }));
 
-    await user.click(screen.getByRole('button', { name: /save/i }));
+    await user.click(screen.getByRole('button', { name: 'OK' }));
     await waitFor(() => {
       expect(putBody).toEqual({ accountMap: { 'ext-acc-1': 'a1' } });
     });
@@ -220,7 +220,7 @@ describe('LinkAccountsDialog', () => {
     });
     await user.click(firstSelect);
     await user.click(await screen.findByRole('option', { name: 'Checking' }));
-    await user.click(screen.getByRole('button', { name: /save/i }));
+    await user.click(screen.getByRole('button', { name: 'OK' }));
     expect(await screen.findByText(/already mapped/i)).toBeInTheDocument();
   });
 });

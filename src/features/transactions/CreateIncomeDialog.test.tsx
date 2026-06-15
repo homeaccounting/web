@@ -63,7 +63,7 @@ describe('CreateIncomeDialog', () => {
     await user.type(screen.getByLabelText(/amount/i), '100');
     await user.type(screen.getByLabelText(/description/i), 'Salary');
 
-    await user.click(screen.getByRole('button', { name: /add income/i }));
+    await user.click(screen.getByRole('button', { name: 'OK' }));
 
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
@@ -107,7 +107,7 @@ describe('CreateIncomeDialog', () => {
     await user.type(screen.getByLabelText(/amount/i), '100');
     await user.type(screen.getByLabelText(/description/i), 'Salary');
 
-    await user.click(screen.getByRole('button', { name: /add income/i }));
+    await user.click(screen.getByRole('button', { name: 'OK' }));
 
     await waitFor(() => expect(Object.keys(capturedBody).length).toBeGreaterThan(0));
     // Full-precision timestamp (minute-granular) so same-day rows are ordered.
@@ -136,7 +136,7 @@ describe('CreateIncomeDialog', () => {
     await user.type(screen.getByLabelText(/amount/i), '100');
     await user.type(screen.getByLabelText(/description/i), 'Salary');
 
-    await user.click(screen.getByRole('button', { name: /add income/i }));
+    await user.click(screen.getByRole('button', { name: 'OK' }));
 
     expect(await screen.findByText(/must be positive/i)).toBeInTheDocument();
   });
@@ -160,7 +160,7 @@ describe('CreateIncomeDialog', () => {
     await user.type(screen.getByLabelText(/amount/i), '100');
     await user.type(screen.getByLabelText(/description/i), 'Salary');
 
-    await user.click(screen.getByRole('button', { name: /add income/i }));
+    await user.click(screen.getByRole('button', { name: 'OK' }));
 
     expect(await screen.findByRole('alert')).toBeInTheDocument();
     expect(await screen.findByText(/boom/i)).toBeInTheDocument();

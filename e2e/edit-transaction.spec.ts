@@ -30,7 +30,7 @@ test.describe('edit transaction @local', () => {
     await categoryInput.fill('Fo');
     await expenseDialog.getByRole('option', { name: 'Food' }).click();
     await expenseDialog.getByLabel(/description/i).fill('Coffee');
-    await expenseDialog.getByRole('button', { name: /^add expense$/i }).click();
+    await expenseDialog.getByRole('button', { name: /^ok$/i }).click();
     await expect(expenseDialog).toBeHidden();
     const row = page.getByRole('cell', { name: 'Coffee' });
     await expect(row).toBeVisible({ timeout: 10000 });
@@ -43,7 +43,7 @@ test.describe('edit transaction @local', () => {
     // 4. Change the description and save.
     const descInput = editDialog.getByLabel(/description/i);
     await descInput.fill('Latte');
-    await editDialog.getByRole('button', { name: /^save$/i }).click();
+    await editDialog.getByRole('button', { name: /^ok$/i }).click();
     await expect(editDialog).toBeHidden();
 
     // 5. The list reflects the new description.

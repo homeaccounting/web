@@ -207,7 +207,7 @@ export function LinkAccountsDialog({ open, onOpenChange, connection }: LinkAccou
               setAccountMap.isPending
             }
           >
-            {setAccountMap.isPending ? 'Saving…' : 'Save'}
+            {setAccountMap.isPending ? 'Saving…' : 'OK'}
           </Button>
         </DialogFooter>
       </DialogContent>

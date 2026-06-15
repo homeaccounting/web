@@ -59,7 +59,7 @@ describe('CancelTransactionDialog', () => {
     );
 
     const { onOpenChange } = renderDialog();
-    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await userEvent.click(screen.getByRole('button', { name: 'OK' }));
 
     await waitFor(() => expect(deletedId).toBe('tx-1'));
     await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
@@ -80,7 +80,7 @@ describe('CancelTransactionDialog', () => {
     );
 
     const { onOpenChange } = renderDialog();
-    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await userEvent.click(screen.getByRole('button', { name: 'OK' }));
 
     expect(await screen.findByText('Transaction is already cancelled')).toBeInTheDocument();
     expect(onOpenChange).not.toHaveBeenCalledWith(false);

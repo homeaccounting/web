@@ -60,7 +60,7 @@ describe('CreateExpenseDialog', () => {
     await user.type(screen.getByLabelText(/amount/i), '50');
     await user.type(screen.getByLabelText(/description/i), 'Groceries');
 
-    await user.click(screen.getByRole('button', { name: /add expense/i }));
+    await user.click(screen.getByRole('button', { name: 'OK' }));
 
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
@@ -106,7 +106,7 @@ describe('CreateExpenseDialog', () => {
     await user.type(screen.getByLabelText(/amount/i), '50');
     await user.type(screen.getByLabelText(/description/i), 'Groceries');
 
-    await user.click(screen.getByRole('button', { name: /add expense/i }));
+    await user.click(screen.getByRole('button', { name: 'OK' }));
 
     await waitFor(() => expect(Object.keys(capturedBody).length).toBeGreaterThan(0));
     expect(capturedBody.date).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:00\.000Z$/);
@@ -135,7 +135,7 @@ describe('CreateExpenseDialog', () => {
     await user.type(screen.getByLabelText(/amount/i), '50');
     await user.type(screen.getByLabelText(/description/i), 'Groceries');
 
-    await user.click(screen.getByRole('button', { name: /add expense/i }));
+    await user.click(screen.getByRole('button', { name: 'OK' }));
 
     expect(await screen.findByText(/must be positive/i)).toBeInTheDocument();
   });
@@ -159,7 +159,7 @@ describe('CreateExpenseDialog', () => {
     await user.type(screen.getByLabelText(/amount/i), '50');
     await user.type(screen.getByLabelText(/description/i), 'Groceries');
 
-    await user.click(screen.getByRole('button', { name: /add expense/i }));
+    await user.click(screen.getByRole('button', { name: 'OK' }));
 
     expect(await screen.findByRole('alert')).toBeInTheDocument();
     expect(await screen.findByText(/boom/i)).toBeInTheDocument();

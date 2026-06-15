@@ -114,7 +114,7 @@ describe('TransferForm', () => {
       expect(screen.queryByText(/Defaults to today/)).not.toBeInTheDocument();
     });
 
-    it('shows a "Save" submit button', () => {
+    it('shows an "OK" submit button', () => {
       renderWithProviders(
         <TransferForm
           mode="edit"
@@ -126,10 +126,10 @@ describe('TransferForm', () => {
           onCancel={vi.fn()}
         />,
       );
-      expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'OK' })).toBeInTheDocument();
     });
 
-    it('disables Save when form is clean (no user input)', () => {
+    it('disables OK when form is clean (no user input)', () => {
       renderWithProviders(
         <TransferForm
           mode="edit"
@@ -141,7 +141,7 @@ describe('TransferForm', () => {
           onCancel={vi.fn()}
         />,
       );
-      expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'OK' })).toBeDisabled();
     });
   });
 
@@ -159,7 +159,7 @@ describe('TransferForm', () => {
       />,
     );
     await user.selectOptions(screen.getByLabelText(/target account/i), A1);
-    await user.click(screen.getByRole('button', { name: /add transfer/i }));
+    await user.click(screen.getByRole('button', { name: 'OK' }));
     expect(await screen.findByText(/must differ/i)).toBeInTheDocument();
   });
 });

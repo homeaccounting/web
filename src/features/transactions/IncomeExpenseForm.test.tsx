@@ -212,7 +212,7 @@ describe('IncomeExpenseForm', () => {
       expect(screen.queryByText(/Defaults to today/)).not.toBeInTheDocument();
     });
 
-    it('shows a "Save" submit button', () => {
+    it('shows an "OK" submit button', () => {
       renderWithProviders(
         <IncomeExpenseForm
           kind="expense"
@@ -226,10 +226,10 @@ describe('IncomeExpenseForm', () => {
           onCancel={vi.fn()}
         />,
       );
-      expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'OK' })).toBeInTheDocument();
     });
 
-    it('disables Save when form is clean (no user input)', () => {
+    it('disables OK when form is clean (no user input)', () => {
       renderWithProviders(
         <IncomeExpenseForm
           kind="expense"
@@ -243,7 +243,7 @@ describe('IncomeExpenseForm', () => {
           onCancel={vi.fn()}
         />,
       );
-      expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'OK' })).toBeDisabled();
     });
   });
 

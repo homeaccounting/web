@@ -40,7 +40,7 @@ test.describe('create transaction @local', () => {
     // Date intentionally left empty — server defaults to today.
 
     // 6. Submit, expect the new row.
-    await expenseDialog.getByRole('button', { name: /^add expense$/i }).click();
+    await expenseDialog.getByRole('button', { name: /^ok$/i }).click();
     await expect(expenseDialog).toBeHidden();
     await expect(page.getByRole('cell', { name: 'Coffee' })).toBeVisible({ timeout: 10000 });
   });

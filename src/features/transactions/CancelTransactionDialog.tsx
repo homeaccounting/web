@@ -75,7 +75,7 @@ export function CancelTransactionDialog({
             disabled={cancel.isPending}
             onClick={() => void onConfirm()}
           >
-            Cancel
+            OK
           </Button>
         </AlertDialogFooter>
       </AlertDialogContent>

@@ -1,24 +1,24 @@
 export const TRANSACTION_KIND_LABELS = {
   income: {
     title: 'Add income',
-    submit: 'Add income',
+    submit: 'OK',
     aria: 'Add income',
     editTitle: 'Edit income',
-    editSubmit: 'Save',
+    editSubmit: 'OK',
   },
   expense: {
     title: 'Add expense',
-    submit: 'Add expense',
+    submit: 'OK',
     aria: 'Add expense',
     editTitle: 'Edit expense',
-    editSubmit: 'Save',
+    editSubmit: 'OK',
   },
   transfer: {
     title: 'Add transfer',
-    submit: 'Add transfer',
+    submit: 'OK',
     aria: 'Add transfer',
     editTitle: 'Edit transfer',
-    editSubmit: 'Save',
+    editSubmit: 'OK',
   },
 } as const;
 

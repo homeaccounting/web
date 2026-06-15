@@ -118,7 +118,7 @@ describe('CreateTransferDialog', () => {
     await user.type(screen.getByLabelText(/amount/i), '100');
     await user.type(screen.getByLabelText(/description/i), 'Transfer');
 
-    await user.click(screen.getByRole('button', { name: /add transfer/i }));
+    await user.click(screen.getByRole('button', { name: 'OK' }));
 
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(requestUrl).toContain('/api/transactions/transfer');
@@ -166,7 +166,7 @@ describe('CreateTransferDialog', () => {
     await user.type(screen.getByLabelText(/amount/i), '50');
     await user.type(screen.getByLabelText(/description/i), 'Move');
 
-    await user.click(screen.getByRole('button', { name: /add transfer/i }));
+    await user.click(screen.getByRole('button', { name: 'OK' }));
 
     await waitFor(() => expect(Object.keys(capturedBody).length).toBeGreaterThan(0));
     expect(capturedBody.exchangeRate).toBeUndefined();
@@ -215,7 +215,7 @@ describe('CreateTransferDialog', () => {
     await user.clear(screen.getByLabelText(/exchange rate/i));
     await user.type(screen.getByLabelText(/exchange rate/i), '0.92');
 
-    await user.click(screen.getByRole('button', { name: /add transfer/i }));
+    await user.click(screen.getByRole('button', { name: 'OK' }));
 
     await waitFor(() => expect(Object.keys(capturedBody).length).toBeGreaterThan(0));
     expect(capturedBody.exchangeRate).toBe(0.92);
@@ -241,7 +241,7 @@ describe('CreateTransferDialog', () => {
     await user.type(screen.getByLabelText(/amount/i), '100');
     await user.type(screen.getByLabelText(/description/i), 'Move');
 
-    await user.click(screen.getByRole('button', { name: /add transfer/i }));
+    await user.click(screen.getByRole('button', { name: 'OK' }));
 
     expect(await screen.findByText(/must be positive/i)).toBeInTheDocument();
   });
@@ -263,7 +263,7 @@ describe('CreateTransferDialog', () => {
     await user.type(screen.getByLabelText(/amount/i), '100');
     await user.type(screen.getByLabelText(/description/i), 'Move');
 
-    await user.click(screen.getByRole('button', { name: /add transfer/i }));
+    await user.click(screen.getByRole('button', { name: 'OK' }));
 
     expect(await screen.findByRole('alert')).toBeInTheDocument();
     expect(await screen.findByText(/boom/i)).toBeInTheDocument();

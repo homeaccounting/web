@@ -79,7 +79,7 @@ describe('ControlBar', () => {
     const dialog = await screen.findByRole('dialog', { name: /add income/i });
     expect(dialog).toBeInTheDocument();
     // Verify the submit button lives inside the dialog
-    expect(within(dialog).getByRole('button', { name: /add income/i })).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'OK' })).toBeInTheDocument();
   });
 
   it('clicking "Add expense" opens the expense dialog', async () => {
@@ -88,7 +88,7 @@ describe('ControlBar', () => {
     await user.click(screen.getByRole('button', { name: /add expense/i }));
     const dialog = await screen.findByRole('dialog', { name: /add expense/i });
     expect(dialog).toBeInTheDocument();
-    expect(within(dialog).getByRole('button', { name: /add expense/i })).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'OK' })).toBeInTheDocument();
   });
 
   it('clicking "Add transfer" opens the transfer dialog', async () => {
@@ -103,7 +103,7 @@ describe('ControlBar', () => {
     await user.click(screen.getByRole('button', { name: /add transfer/i }));
     const dialog = await screen.findByRole('dialog', { name: /add transfer/i });
     expect(dialog).toBeInTheDocument();
-    expect(within(dialog).getByRole('button', { name: /add transfer/i })).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'OK' })).toBeInTheDocument();
   });
 
   it('renders the Adjust balance button disabled when no account is selected', () => {

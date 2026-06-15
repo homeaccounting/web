@@ -95,7 +95,9 @@ describe('EditTransactionDialog', () => {
     expect(
       await screen.findByText(/This transaction is Failed and cannot be edited/i),
     ).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /^Save$/ })).toBeNull();
+    // The editable form (and thus its submit button, now "OK") must not render;
+    // only the read-only notice with its own "OK" dismiss button is shown.
+    expect(screen.queryByRole('form')).toBeNull();
   });
 
   it('renders read-only for an adjustment instead of the expense edit form', async () => {
@@ -117,8 +119,10 @@ describe('EditTransactionDialog', () => {
     };
     renderDialog({ tx: adjustment });
     expect(await screen.findByText(/balance adjustment and cannot be edited/i)).toBeInTheDocument();
-    // Must NOT render the expense edit form.
-    expect(screen.queryByRole('button', { name: /^Save$/ })).toBeNull();
+    // Must NOT render the expense edit form (its submit button is now "OK",
+    // indistinguishable by name from the notice's dismiss button, so assert on
+    // the absence of the form element instead).
+    expect(screen.queryByRole('form')).toBeNull();
     expect(screen.queryByLabelText(/^Amount$/i)).toBeNull();
     expect(screen.queryByText(/Edit expense/i)).toBeNull();
   });
@@ -137,8 +141,8 @@ describe('EditTransactionDialog', () => {
     const descInput = await screen.findByLabelText(/Description/i);
     await user.clear(descInput);
     await user.type(descInput, 'new');
-    await user.click(screen.getByRole('button', { name: /^Save$/ }));
-    await screen.findByRole('button', { name: /^Save$/ });
+    await user.click(screen.getByRole('button', { name: 'OK' }));
+    await screen.findByRole('button', { name: 'OK' });
     expect(calls).toEqual(['description']);
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
@@ -160,8 +164,8 @@ describe('EditTransactionDialog', () => {
     const amount = await screen.findByLabelText(/^Amount$/i);
     await user.clear(amount);
     await user.type(amount, '25');
-    await user.click(screen.getByRole('button', { name: /^Save$/ }));
-    await screen.findByRole('button', { name: /^Save$/ });
+    await user.click(screen.getByRole('button', { name: 'OK' }));
+    await screen.findByRole('button', { name: 'OK' });
     expect(calls).toEqual(['amendment', 'allocations']);
   });
 
@@ -182,7 +186,7 @@ describe('EditTransactionDialog', () => {
     const amount = await screen.findByLabelText(/^Amount$/i);
     await user.clear(amount);
     await user.type(amount, '25');
-    await user.click(screen.getByRole('button', { name: /^Save$/ }));
+    await user.click(screen.getByRole('button', { name: 'OK' }));
     expect(await screen.findByRole('alert')).toHaveTextContent(/amount too small/i);
     expect(calls).toEqual(['amendment']);
   });
@@ -212,7 +216,7 @@ describe('EditTransactionDialog', () => {
     const amount = await screen.findByLabelText(/^Amount$/i);
     await user.clear(amount);
     await user.type(amount, '25');
-    await user.click(screen.getByRole('button', { name: /^Save$/ }));
+    await user.click(screen.getByRole('button', { name: 'OK' }));
     // The Account select's error must be rendered.
     expect(await screen.findByText(/unknown account/i)).toBeInTheDocument();
   });
