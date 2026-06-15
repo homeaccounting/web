@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { NavLink, useParams } from 'react-router-dom';
-import { Archive, ArchiveRestore, Pencil, Plus, X } from 'lucide-react';
+import { Archive, ArchiveRestore, ChevronDown, ChevronRight, Pencil, Plus, X } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import type { AccountResponse } from '@/api/types';
+import { ACCOUNT_SUBTYPE_KINDS } from '@/api/types';
 import { ApiError } from '@/api/client';
+import { ACCOUNT_SUBTYPE_LABELS } from './labels';
 import { useAccounts } from './useAccounts';
 import { useAccountById } from './useAccountById';
 import { CreateAccountDialog } from './CreateAccountDialog';
@@ -16,16 +18,25 @@ import { CloseAccountDialog } from './CloseAccountDialog';
 import { AccountContextMenu } from './AccountContextMenu';
 import { useReopenAccount } from './useAccountStatus';
 import { SyncNowButton } from './SyncNowButton';
-import { formatAccountBalance, formatAccountSubtypeLabel } from './format';
+import { formatAccountBalance } from './format';
 
 export function AccountsPane() {
   const { data, isLoading, isError, refetch } = useAccounts();
   const { id } = useParams<{ id?: string }>();
   const { data: selectedAccount } = useAccountById(id);
   const [creating, setCreating] = useState(false);
-  const [editing, setEditing] = useState(false);
+  const [editingAccount, setEditingAccount] = useState<AccountResponse | null>(null);
   const [closingAccount, setClosingAccount] = useState<AccountResponse | null>(null);
   const [showClosed, setShowClosed] = useState(false);
+  const [collapsedGroups, setCollapsedGroups] = useState<ReadonlySet<string>>(new Set());
+
+  const toggleGroup = (key: string) =>
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
   const [reopenError, setReopenError] = useState<string | null>(null);
   const reopenMutation = useReopenAccount();
   const accountActionsDisabled = !selectedAccount;
@@ -47,31 +58,48 @@ export function AccountsPane() {
   const closedAccounts = data?.filter((a) => a.status === 'Closed') ?? [];
   const selectedIsClosed = selectedAccount?.status === 'Closed';
 
+  // Group open accounts by subtype, ordered by the canonical subtype list;
+  // accounts without a (known) subtype fall into a trailing "Other" group.
+  // Empty groups are omitted.
+  const openGroups: { key: string; label: string; accounts: AccountResponse[] }[] = [
+    ...ACCOUNT_SUBTYPE_KINDS.map((kind) => ({
+      key: kind,
+      label: ACCOUNT_SUBTYPE_LABELS[kind],
+      accounts: openAccounts.filter((a) => a.subtype?.type === kind),
+    })),
+    {
+      key: 'other',
+      label: 'Other',
+      accounts: openAccounts.filter(
+        (a) => !a.subtype || !ACCOUNT_SUBTYPE_KINDS.includes(a.subtype.type as never),
+      ),
+    },
+  ].filter((g) => g.accounts.length > 0);
+
   const renderAccountRow = (a: AccountResponse) => {
     const isClosed = a.status === 'Closed';
     return (
-      <AccountContextMenu account={a} onRequestClose={setClosingAccount} onRequestReopen={reopen}>
+      <AccountContextMenu
+        account={a}
+        onRequestEdit={setEditingAccount}
+        onRequestClose={setClosingAccount}
+        onRequestReopen={reopen}
+      >
         <NavLink
           to={`/accounts/${a.id}`}
-          className={({ isActive }) =>
-            cn(
-              'block rounded-md p-2 text-sm hover:bg-muted',
-              isActive && 'bg-muted font-medium',
-              isClosed && 'opacity-60',
-            )
-          }
-        >
-          <div className="flex items-baseline justify-between gap-2">
-            <span>{a.name}</span>
-            <span className="tabular-nums">{formatAccountBalance(a)}</span>
-          </div>
-          {isClosed ? (
-            <div className="text-xs text-muted-foreground">Closed</div>
-          ) : (
-            a.subtype && (
-              <div className="text-xs text-muted-foreground">{formatAccountSubtypeLabel(a)}</div>
-            )
+          onDoubleClick={() => setEditingAccount(a)}
+          className={cn(
+            // Static (non-function) className: this NavLink is cloned by Radix's
+            // ContextMenuTrigger `asChild` Slot, which does not resolve a
+            // function-form className — so the active state uses the
+            // `aria-current` attribute NavLink sets, via a Tailwind variant.
+            'flex items-baseline justify-between gap-2 rounded-md px-2 py-1 text-sm hover:bg-muted',
+            'aria-[current=page]:bg-muted aria-[current=page]:font-medium',
+            isClosed && 'opacity-60',
           )}
+        >
+          <span className="truncate">{a.name}</span>
+          <span className="tabular-nums">{formatAccountBalance(a)}</span>
         </NavLink>
       </AccountContextMenu>
     );
@@ -90,7 +118,7 @@ export function AccountsPane() {
                   variant="ghost"
                   aria-label="Edit account"
                   disabled={accountActionsDisabled}
-                  onClick={() => setEditing(true)}
+                  onClick={() => selectedAccount && setEditingAccount(selectedAccount)}
                   className="h-9 w-9"
                 >
                   <Pencil className="h-5 w-5" />
@@ -170,11 +198,33 @@ export function AccountsPane() {
 
       {!isLoading && !isError && data && data.length > 0 && (
         <div className="p-2">
-          <ul className="space-y-1">
-            {openAccounts.map((a) => (
-              <li key={a.id}>{renderAccountRow(a)}</li>
-            ))}
-          </ul>
+          {openGroups.map((group) => {
+            const collapsed = collapsedGroups.has(group.key);
+            return (
+              <div key={group.key} className="mb-2 last:mb-0">
+                <button
+                  type="button"
+                  onClick={() => toggleGroup(group.key)}
+                  aria-expanded={!collapsed}
+                  className="flex w-full items-center gap-1 rounded-md px-2 pb-0.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+                >
+                  {collapsed ? (
+                    <ChevronRight className="h-3 w-3" />
+                  ) : (
+                    <ChevronDown className="h-3 w-3" />
+                  )}
+                  {group.label}
+                </button>
+                {!collapsed && (
+                  <ul className="space-y-0.5">
+                    {group.accounts.map((a) => (
+                      <li key={a.id}>{renderAccountRow(a)}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            );
+          })}
 
           {closedAccounts.length > 0 && (
             <>
@@ -186,7 +236,7 @@ export function AccountsPane() {
                 {showClosed ? 'Hide closed' : `Show closed (${closedAccounts.length})`}
               </button>
               {showClosed && (
-                <ul className="mt-1 space-y-1 border-t pt-2">
+                <ul className="mt-1 space-y-0.5 border-t pt-2">
                   {closedAccounts.map((a) => (
                     <li key={a.id}>{renderAccountRow(a)}</li>
                   ))}
@@ -198,8 +248,14 @@ export function AccountsPane() {
       )}
 
       <CreateAccountDialog open={creating} onOpenChange={setCreating} />
-      {selectedAccount && (
-        <EditAccountDialog open={editing} onOpenChange={setEditing} account={selectedAccount} />
+      {editingAccount && (
+        <EditAccountDialog
+          open
+          onOpenChange={(next) => {
+            if (!next) setEditingAccount(null);
+          }}
+          account={editingAccount}
+        />
       )}
       {closingAccount && (
         <CloseAccountDialog

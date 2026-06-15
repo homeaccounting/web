@@ -101,6 +101,44 @@ describe('AccountsPane', () => {
     expect(await screen.findByRole('dialog', { name: /edit account/i })).toBeInTheDocument();
   });
 
+  it('opens the Edit dialog when a row is double-clicked', async () => {
+    const user = userEvent.setup();
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    renderWithProviders(ui(), { initialPath: '/' });
+    const row = await screen.findByText('Checking');
+    await user.dblClick(row);
+    expect(await screen.findByRole('dialog', { name: /edit account/i })).toBeInTheDocument();
+  });
+
+  it('opens the Edit dialog from a row right-click context menu', async () => {
+    const user = userEvent.setup();
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    renderWithProviders(ui(), { initialPath: '/' });
+    const row = await screen.findByText('Checking');
+    await user.pointer({ keys: '[MouseRight]', target: row });
+    await user.click(await screen.findByRole('menuitem', { name: /^edit$/i }));
+    expect(await screen.findByRole('dialog', { name: /edit account/i })).toBeInTheDocument();
+  });
+
+  it('groups open accounts under a subtype header', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    renderWithProviders(ui(), { initialPath: '/' });
+    await screen.findByText('Checking');
+    expect(screen.getByText('Bank account')).toBeInTheDocument();
+  });
+
+  it('collapses and expands an account-type group when its header is clicked', async () => {
+    const user = userEvent.setup();
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    renderWithProviders(ui(), { initialPath: '/' });
+    await screen.findByText('Checking');
+    const header = screen.getByRole('button', { name: /bank account/i });
+    await user.click(header);
+    expect(screen.queryByText('Checking')).not.toBeInTheDocument();
+    await user.click(header);
+    expect(await screen.findByText('Checking')).toBeInTheDocument();
+  });
+
   it('shows a tooltip describing the action when an icon button is focused', async () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
     renderWithProviders(ui(), { initialPath: '/' });
