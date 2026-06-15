@@ -9,7 +9,7 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu';
-import { Ban, Pencil } from 'lucide-react';
+import { Ban, ChevronDown, ChevronRight, Pencil } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   useConfiguration,
@@ -51,6 +51,8 @@ export function TransactionsPane() {
   const [toInput, setToInput] = useState(defaultWindow.to);
   const [appliedWindow, setAppliedWindow] = useState(defaultWindow);
   const [filters, setFilters] = useState<TransactionFilters>(EMPTY_FILTERS);
+  // Filter controls are collapsed by default to keep the pane simple.
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize, setPageSize] = usePersistedPageSize();
 
@@ -75,6 +77,14 @@ export function TransactionsPane() {
   );
 
   const filtered = useMemo(() => applyTransactionFilters(data ?? [], filters), [data, filters]);
+  // Count of active filter facets, surfaced on the (collapsed) toggle so the
+  // user knows filters are narrowing the list. The date window is a primary
+  // range control rather than a filter, so it is excluded here.
+  const activeFilterCount =
+    (filters.description.trim() ? 1 : 0) +
+    (filters.labelIds.length > 0 ? 1 : 0) +
+    (filters.categoryId ? 1 : 0) +
+    (filters.showCancelledFailed ? 1 : 0);
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const clampedPage = Math.min(pageIndex, pageCount - 1);
   const pageRows = filtered.slice(clampedPage * pageSize, clampedPage * pageSize + pageSize);
@@ -270,6 +280,28 @@ export function TransactionsPane() {
       <ControlBar selectedAccountId={id} selectedAccount={account} />
       {header}
       {showFilterBar && (
+        <div className={cn('flex items-center px-3 py-2 text-sm', !filtersOpen && 'border-b')}>
+          <button
+            type="button"
+            onClick={() => setFiltersOpen((v) => !v)}
+            aria-expanded={filtersOpen}
+            className="flex items-center gap-1 font-medium text-muted-foreground hover:text-foreground"
+          >
+            {filtersOpen ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
+            Filters
+            {activeFilterCount > 0 && (
+              <span className="ml-1 rounded-full bg-primary px-1.5 text-xs font-medium text-primary-foreground">
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
+        </div>
+      )}
+      {showFilterBar && filtersOpen && (
         <TransactionFilterBar
           from={fromInput}
           to={toInput}

@@ -23,6 +23,12 @@ function ui() {
   );
 }
 
+// The filter panel is collapsed by default; expand it before driving any
+// filter control.
+async function openFilters(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(await screen.findByRole('button', { name: /^filters/i }));
+}
+
 describe('TransactionsPane', () => {
   it('shows placeholder when no account selected', () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
@@ -280,6 +286,41 @@ describe('TransactionsPane', () => {
     expect(screen.getByLabelText('Expense')).toBeInTheDocument();
   });
 
+  it('keeps the filter controls collapsed by default', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    await screen.findByText(transactionFixture.description);
+    // The toggle is present, but the controls are not mounted until expanded.
+    expect(screen.getByRole('button', { name: /^filters/i })).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(/description/i)).not.toBeInTheDocument();
+  });
+
+  it('reveals and hides the filter controls when the Filters toggle is clicked', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    const user = userEvent.setup();
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    await screen.findByText(transactionFixture.description);
+    await openFilters(user);
+    expect(screen.getByPlaceholderText(/description/i)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /^filters/i }));
+    expect(screen.queryByPlaceholderText(/description/i)).not.toBeInTheDocument();
+  });
+
+  it('shows an active-filter count on the toggle while collapsed', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    const user = userEvent.setup();
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    await screen.findByText(transactionFixture.description);
+    // No active filters → toggle reads just "Filters".
+    expect(screen.getByRole('button', { name: /^filters$/i })).toBeInTheDocument();
+    // Apply a description filter, then collapse.
+    await openFilters(user);
+    await user.type(screen.getByPlaceholderText(/description/i), 'Coffee');
+    await user.click(screen.getByRole('button', { name: /^filters/i }));
+    // Collapsed toggle now advertises one active filter.
+    expect(screen.getByRole('button', { name: /filters.*1/i })).toBeInTheDocument();
+  });
+
   it('narrows the visible rows when typing in the description filter', async () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
     const user = userEvent.setup();
@@ -299,6 +340,7 @@ describe('TransactionsPane', () => {
     renderWithProviders(ui(), { initialPath: '/accounts/a1' });
     expect(await screen.findByText('Coffee')).toBeInTheDocument();
     expect(screen.getByText('Groceries')).toBeInTheDocument();
+    await openFilters(user);
     await user.type(screen.getByPlaceholderText(/description/i), 'Coffee');
     await waitFor(() => expect(screen.queryByText('Groceries')).not.toBeInTheDocument());
     expect(screen.getByText('Coffee')).toBeInTheDocument();
@@ -316,6 +358,7 @@ describe('TransactionsPane', () => {
     const user = userEvent.setup();
     renderWithProviders(ui(), { initialPath: '/accounts/a1' });
     await screen.findByText(transactionFixture.description);
+    await openFilters(user);
     await user.type(screen.getByPlaceholderText(/description/i), 'zzzznomatch');
     expect(await screen.findByText(/no transactions match your filters/i)).toBeInTheDocument();
   });
@@ -388,6 +431,7 @@ describe('TransactionsPane', () => {
     expect(await screen.findByText('CompletedTx')).toBeInTheDocument();
 
     // Toggle the checkbox
+    await openFilters(user);
     await user.click(screen.getByLabelText(/cancelled & failed/i));
 
     // All three rows should now be visible with their descriptions
@@ -432,6 +476,7 @@ describe('TransactionsPane', () => {
     expect(await screen.findByText('GuardRow')).toBeInTheDocument();
 
     // Open the From picker and select an enabled day from the open calendar.
+    await openFilters(user);
     await user.click(screen.getByLabelText('From'));
     const grid = await screen.findByRole('grid');
     const days = within(grid)
@@ -498,6 +543,7 @@ describe('TransactionsPane', () => {
     );
     renderWithProviders(ui(), { initialPath: '/accounts/a1' });
     // Cancelled rows are hidden by default; reveal them first.
+    await openFilters(user);
     await user.click(await screen.findByLabelText(/cancelled & failed/i));
     expect(await screen.findByText('CancelledTx')).toBeInTheDocument();
     expect(screen.queryByLabelText('Cancel')).not.toBeInTheDocument();
@@ -538,6 +584,7 @@ describe('TransactionsPane', () => {
     expect(screen.getByText('Groceries')).toBeInTheDocument();
 
     // Open the category combobox and pick "Food" (expense category).
+    await openFilters(user);
     const categoryInput = screen.getByPlaceholderText(/all categories/i);
     await user.click(categoryInput);
     await user.type(categoryInput, 'Food');
