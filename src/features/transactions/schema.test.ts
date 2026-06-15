@@ -162,6 +162,7 @@ const acc = (id: string, currency = 'USD'): AccountResponse => ({
   balance: 0,
   overdraftLimit: null,
   subtype: { type: 'cash' },
+  status: 'Opened',
   version: 1,
 });
 

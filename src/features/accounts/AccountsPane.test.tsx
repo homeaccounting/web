@@ -8,9 +8,17 @@ import { Routes, Route } from 'react-router-dom';
 import { AuthProvider } from '@/auth/AuthContext';
 import { saveSession } from '@/auth/storage';
 import { AccountsPane } from './AccountsPane';
-import { accountFixture } from '@/test/fixtures';
+import { accountFixture, closedAccountFixture } from '@/test/fixtures';
 
 const apiBase = 'http://localhost:8080';
+
+function serveMixedAccounts() {
+  server.use(
+    http.get(`${apiBase}/api/accounts`, () =>
+      HttpResponse.json({ accounts: [accountFixture, closedAccountFixture], totalCount: 2 }),
+    ),
+  );
+}
 
 function ui() {
   return (
@@ -98,5 +106,97 @@ describe('AccountsPane', () => {
     renderWithProviders(ui(), { initialPath: '/' });
     fireEvent.focus(await screen.findByRole('button', { name: /add account/i }));
     expect(await screen.findByRole('tooltip', { name: /add account/i })).toBeInTheDocument();
+  });
+
+  it('hides closed accounts from the list by default', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    serveMixedAccounts();
+    renderWithProviders(ui(), { initialPath: '/' });
+    expect(await screen.findByText('Checking')).toBeInTheDocument();
+    expect(screen.queryByText('Old Savings')).not.toBeInTheDocument();
+  });
+
+  it('reveals closed accounts when "Show closed" is toggled', async () => {
+    const user = userEvent.setup();
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    serveMixedAccounts();
+    renderWithProviders(ui(), { initialPath: '/' });
+    await screen.findByText('Checking');
+    await user.click(screen.getByRole('button', { name: /show closed/i }));
+    expect(await screen.findByText('Old Savings')).toBeInTheDocument();
+  });
+
+  it('does not render the "Show closed" toggle when there are no closed accounts', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    renderWithProviders(ui(), { initialPath: '/' }); // default handler: only the open accountFixture
+    await screen.findByText('Checking');
+    expect(screen.queryByRole('button', { name: /show closed/i })).not.toBeInTheDocument();
+  });
+
+  it('shows a Close action in the toolbar for a selected open account', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    serveMixedAccounts();
+    renderWithProviders(ui(), { initialPath: `/accounts/${accountFixture.id}` });
+    const btn = await screen.findByRole('button', { name: /close account/i });
+    await waitFor(() => expect(btn).not.toBeDisabled());
+  });
+
+  it('toolbar Close opens the confirmation dialog', async () => {
+    const user = userEvent.setup();
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    serveMixedAccounts();
+    renderWithProviders(ui(), { initialPath: `/accounts/${accountFixture.id}` });
+    const btn = await screen.findByRole('button', { name: /close account/i });
+    await waitFor(() => expect(btn).not.toBeDisabled());
+    await user.click(btn);
+    expect(await screen.findByText('Close this account?')).toBeInTheDocument();
+  });
+
+  it('shows a Reopen action in the toolbar for a selected closed account and reopens it', async () => {
+    const user = userEvent.setup();
+    let hit: string | undefined;
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    serveMixedAccounts();
+    server.use(
+      http.post(`${apiBase}/api/accounts/:id/reopen`, ({ params }) => {
+        hit = params.id as string;
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+    renderWithProviders(ui(), { initialPath: `/accounts/${closedAccountFixture.id}` });
+    const btn = await screen.findByRole('button', { name: /reopen account/i });
+    await waitFor(() => expect(btn).not.toBeDisabled());
+    await user.click(btn);
+    await waitFor(() => expect(hit).toBe('a2'));
+  });
+
+  it('opens the confirmation dialog from a row right-click context menu', async () => {
+    const user = userEvent.setup();
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    serveMixedAccounts();
+    renderWithProviders(ui(), { initialPath: '/' });
+    const row = await screen.findByText('Checking');
+    await user.pointer({ keys: '[MouseRight]', target: row });
+    await user.click(await screen.findByRole('menuitem', { name: /^close$/i }));
+    expect(await screen.findByText('Close this account?')).toBeInTheDocument();
+  });
+
+  it('surfaces a dismissible error toast when reopen fails', async () => {
+    const user = userEvent.setup();
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    serveMixedAccounts();
+    server.use(
+      http.post(`${apiBase}/api/accounts/:id/reopen`, () =>
+        HttpResponse.json(
+          { status: 400, code: 'ACCOUNT_ERROR', message: 'Account command rejected by domain' },
+          { status: 400 },
+        ),
+      ),
+    );
+    renderWithProviders(ui(), { initialPath: `/accounts/${closedAccountFixture.id}` });
+    const btn = await screen.findByRole('button', { name: /reopen account/i });
+    await waitFor(() => expect(btn).not.toBeDisabled());
+    await user.click(btn);
+    expect(await screen.findByText('Account command rejected by domain')).toBeInTheDocument();
   });
 });

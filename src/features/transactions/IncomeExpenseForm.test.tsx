@@ -18,6 +18,7 @@ const accounts: AccountResponse[] = [
     currency: 'USD',
     overdraftLimit: null,
     subtype: null,
+    status: 'Opened',
     version: 1,
   },
   {
@@ -27,6 +28,7 @@ const accounts: AccountResponse[] = [
     currency: 'EUR',
     overdraftLimit: null,
     subtype: null,
+    status: 'Opened',
     version: 1,
   },
 ];

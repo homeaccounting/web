@@ -23,6 +23,7 @@ const localAccounts: AccountResponse[] = [
     currency: 'UAH',
     overdraftLimit: null,
     subtype: null,
+    status: 'Opened',
     version: 1,
   },
   {
@@ -32,6 +33,7 @@ const localAccounts: AccountResponse[] = [
     currency: 'USD',
     overdraftLimit: null,
     subtype: null,
+    status: 'Opened',
     version: 1,
   },
 ];
@@ -108,6 +110,7 @@ describe('LinkAccountsDialog', () => {
             currency: 'UAH',
             overdraftLimit: null,
             subtype: null,
+            status: 'Opened',
             version: 1,
           },
         ];

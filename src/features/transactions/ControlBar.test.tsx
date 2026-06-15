@@ -48,6 +48,7 @@ const selectedAccount: AccountResponse = {
   currency: 'USD',
   overdraftLimit: null,
   subtype: { type: 'bankAccount', bankName: 'ACME' },
+  status: 'Opened',
   version: 1,
 };
 

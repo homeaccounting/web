@@ -80,6 +80,7 @@ export const handlers = [
         currency: body.currency,
         overdraftLimit: null,
         subtype: { type: 'cash' },
+        status: 'Opened',
         version: 1,
       },
       { status: 201 },
@@ -91,6 +92,8 @@ export const handlers = [
     () => new HttpResponse(null, { status: 200 }),
   ),
   http.put(`${apiBase}/api/accounts/:id/type`, () => new HttpResponse(null, { status: 200 })),
+  http.post(`${apiBase}/api/accounts/:id/close`, () => new HttpResponse(null, { status: 204 })),
+  http.post(`${apiBase}/api/accounts/:id/reopen`, () => new HttpResponse(null, { status: 204 })),
   http.put(`${apiBase}/api/accounts/:id/balance`, () =>
     HttpResponse.json({
       id: 'tx-0',

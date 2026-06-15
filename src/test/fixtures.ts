@@ -35,6 +35,18 @@ export const accountFixture: AccountResponse = {
   currency: 'USD',
   overdraftLimit: null,
   subtype: { type: 'bankAccount', bankName: 'ACME' },
+  status: 'Opened',
+  version: 1,
+};
+
+export const closedAccountFixture: AccountResponse = {
+  id: 'a2',
+  name: 'Old Savings',
+  balance: 0,
+  currency: 'USD',
+  overdraftLimit: null,
+  subtype: { type: 'bankAccount', bankName: 'ACME' },
+  status: 'Closed',
   version: 1,
 };
 

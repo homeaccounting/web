@@ -85,6 +85,10 @@ export interface AccountSubtype {
   [key: string]: unknown;
 }
 
+// Account lifecycle status. Mirrors backend fromAccountStatus
+// (../server-infra/src/Web/Types.hs:793-795): every account starts "Opened".
+export type AccountStatus = 'Opened' | 'Closed';
+
 export interface AccountResponse {
   id: UUID;
   name: string;
@@ -92,6 +96,7 @@ export interface AccountResponse {
   currency: string;
   overdraftLimit: number | null;
   subtype: AccountSubtype | null;
+  status: AccountStatus; // backend Web/Types.hs:260
   version: number;
 }
 

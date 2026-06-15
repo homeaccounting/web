@@ -17,6 +17,7 @@ const fixture: AccountResponse = {
   currency: 'USD',
   overdraftLimit: null,
   subtype: { type: 'cash', storageLocation: 'wallet' },
+  status: 'Opened',
   version: 1,
 };
 
