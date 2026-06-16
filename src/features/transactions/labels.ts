@@ -5,6 +5,7 @@ export const TRANSACTION_KIND_LABELS = {
     aria: 'Add income',
     editTitle: 'Edit income',
     editSubmit: 'OK',
+    copyTitle: 'Copy income',
   },
   expense: {
     title: 'Add expense',
@@ -12,6 +13,7 @@ export const TRANSACTION_KIND_LABELS = {
     aria: 'Add expense',
     editTitle: 'Edit expense',
     editSubmit: 'OK',
+    copyTitle: 'Copy expense',
   },
   transfer: {
     title: 'Add transfer',
@@ -19,6 +21,7 @@ export const TRANSACTION_KIND_LABELS = {
     aria: 'Add transfer',
     editTitle: 'Edit transfer',
     editSubmit: 'OK',
+    copyTitle: 'Copy transfer',
   },
 } as const;
 

@@ -7,6 +7,7 @@ import type {
 } from '@/api/types';
 import { dateInputToWire } from '@/lib/dates';
 import type { IncomeExpenseFormValues, TransferFormValues } from './schema';
+import { isIncome } from './transactionType';
 
 export interface TransactionEditDiff {
   description?: string;
@@ -18,13 +19,13 @@ export interface TransactionEditDiff {
 
 // Single-category edit → one allocation slice in the bucket matching the kind.
 const bucketAllocation = (
-  isIncome: boolean,
+  income: boolean,
   categoryId: UUID,
   amount: number,
   currency: string,
 ): Allocations => {
   const slice = { categoryId, amount: { amount, currency } };
-  return isIncome ? { incomes: [slice], expenses: [] } : { incomes: [], expenses: [slice] };
+  return income ? { incomes: [slice], expenses: [] } : { incomes: [], expenses: [slice] };
 };
 
 const sameLabels = (a: readonly UUID[], b: readonly UUID[]) =>
@@ -40,25 +41,25 @@ export function diffIncomeExpense(
   if (next.date !== initial.date && next.date) diff.date = dateInputToWire(next.date);
   if (!sameLabels(initial.labels, next.labels)) diff.labels = [...next.labels];
 
-  const isIncome = tx.transactionType === 'income';
-  const externalLeg = isIncome ? tx.sourceAccountId : tx.targetAccountId;
-  const externalCurrency = isIncome ? tx.sourceCurrency : tx.targetCurrency;
+  const income = isIncome(tx.transactionType);
+  const externalLeg = income ? tx.sourceAccountId : tx.targetAccountId;
+  const externalCurrency = income ? tx.sourceCurrency : tx.targetCurrency;
   const accountChanged = next.accountId !== initial.accountId;
   const amountChanged = next.amount !== initial.amount;
   const categoryChanged = next.category !== initial.category;
 
   if (accountChanged || amountChanged) {
     diff.amendment = {
-      sourceAccountId: isIncome ? externalLeg : next.accountId,
-      targetAccountId: isIncome ? next.accountId : externalLeg,
+      sourceAccountId: income ? externalLeg : next.accountId,
+      targetAccountId: income ? next.accountId : externalLeg,
       sourceAmount: next.amount,
-      sourceCurrency: isIncome ? externalCurrency : next.currency,
+      sourceCurrency: income ? externalCurrency : next.currency,
       targetAmount: next.amount,
-      targetCurrency: isIncome ? next.currency : externalCurrency,
+      targetCurrency: income ? next.currency : externalCurrency,
     };
-    diff.allocations = bucketAllocation(isIncome, next.category, next.amount, next.currency);
+    diff.allocations = bucketAllocation(income, next.category, next.amount, next.currency);
   } else if (categoryChanged) {
-    diff.allocations = bucketAllocation(isIncome, next.category, next.amount, next.currency);
+    diff.allocations = bucketAllocation(income, next.category, next.amount, next.currency);
   }
 
   return diff;

@@ -6,6 +6,7 @@ import type {
   InternalTransferRequest,
   UUID,
 } from '@/api/types';
+import { isIncome } from './transactionType';
 import { dateInputToWire, wireToDateInput } from '@/lib/dates';
 
 const uuid = z.string().uuid();
@@ -124,12 +125,12 @@ export function toIncomeExpenseFormValues(
   tx: TransactionResponse,
   accounts: AccountResponse[],
 ): IncomeExpenseFormValues {
-  const isIncome = tx.transactionType === 'income';
-  const accountId = isIncome ? tx.targetAccountId : tx.sourceAccountId;
-  const amount = isIncome ? tx.targetAmount : tx.sourceAmount;
+  const income = isIncome(tx.transactionType);
+  const accountId = income ? tx.targetAccountId : tx.sourceAccountId;
+  const amount = income ? tx.targetAmount : tx.sourceAmount;
   const currency =
     accounts.find((a) => a.id === accountId)?.currency ??
-    (isIncome ? tx.targetCurrency : tx.sourceCurrency);
+    (income ? tx.targetCurrency : tx.sourceCurrency);
   return {
     accountId,
     amount,

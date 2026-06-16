@@ -305,7 +305,18 @@ export type TransactionStatusText =
 //   Expense _  -> "expense"
 //   Transfer   -> "transfer"
 //   Adjustment -> "adjustment"
-export type TransferTypeText = 'income' | 'expense' | 'transfer' | 'adjustment' | (string & {});
+// Runtime values for the discriminator. Compare `transactionType` against
+// these instead of hardcoding the string literals at each call site.
+export const TRANSACTION_TYPE = {
+  income: 'income',
+  expense: 'expense',
+  transfer: 'transfer',
+  adjustment: 'adjustment',
+} as const;
+
+export type TransferTypeText =
+  | (typeof TRANSACTION_TYPE)[keyof typeof TRANSACTION_TYPE]
+  | (string & {});
 
 export interface TransactionResponse {
   id: UUID;

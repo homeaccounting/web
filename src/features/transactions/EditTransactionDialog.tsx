@@ -25,6 +25,7 @@ import {
 import { diffIncomeExpense, diffTransfer } from './diffTransaction';
 import { useEditTransaction } from './useEditTransaction';
 import { TRANSACTION_KIND_LABELS, type TransactionKind } from './labels';
+import { isAdjustment, isIncome, isTransfer, transactionKind } from './transactionType';
 
 export interface EditTransactionDialogProps {
   open: boolean;
@@ -40,24 +41,21 @@ export function EditTransactionDialog({ open, onOpenChange, tx }: EditTransactio
   const [editEpoch, setEditEpoch] = useState(0);
   const onSubCallApplied = useCallback(() => setEditEpoch((n) => n + 1), []);
 
-  const isTransfer = tx.transactionType === 'transfer';
+  const transfer = isTransfer(tx.transactionType);
   // Adjustments are booked External -> regular account (or vice versa) in the
   // base currency on the External leg; they have no category and the backend
   // cannot amend them (Commands.hs "Adjustment is out of scope"). They must
   // not open the income/expense edit form.
-  const isAdjustment = tx.transactionType === 'adjustment';
-  const kind: TransactionKind = isTransfer
-    ? 'transfer'
-    : tx.transactionType === 'income'
-      ? 'income'
-      : 'expense';
+  const adjustment = isAdjustment(tx.transactionType);
+  const income = isIncome(tx.transactionType);
+  const kind: TransactionKind = transactionKind(tx.transactionType);
 
   const accountIds = useMemo<UUID[]>(
     () =>
-      isTransfer || isAdjustment
+      transfer || adjustment
         ? [tx.sourceAccountId, tx.targetAccountId]
-        : [kind === 'income' ? tx.targetAccountId : tx.sourceAccountId],
-    [isTransfer, isAdjustment, kind, tx.sourceAccountId, tx.targetAccountId],
+        : [income ? tx.targetAccountId : tx.sourceAccountId],
+    [transfer, adjustment, income, tx.sourceAccountId, tx.targetAccountId],
   );
 
   const currentTx = useMemo<TransactionResponse>(() => {
@@ -70,20 +68,20 @@ export function EditTransactionDialog({ open, onOpenChange, tx }: EditTransactio
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queryClient, tx, editEpoch]);
 
-  const title = isAdjustment ? 'Balance adjustment' : TRANSACTION_KIND_LABELS[kind].editTitle;
+  const title = adjustment ? 'Balance adjustment' : TRANSACTION_KIND_LABELS[kind].editTitle;
   const close = useCallback(() => onOpenChange(false), [onOpenChange]);
 
   let body: React.ReactNode;
   if (currentTx.status !== 'Completed') {
     body = <ReadOnlyNotice status={currentTx.status} onClose={close} />;
-  } else if (isAdjustment) {
+  } else if (adjustment) {
     body = <AdjustmentNotice onClose={close} />;
   } else if (!accounts) {
     // Wait for accounts to load: react-hook-form seeds defaultValues once and
     // does not re-init when they change, so mounting the form against an empty
     // account list would leave the picker empty for the dialog's lifetime.
     body = <BodyLoader />;
-  } else if (isTransfer) {
+  } else if (transfer) {
     body = (
       <EditTransferBody
         tx={currentTx}

@@ -9,7 +9,7 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu';
-import { Ban, ChevronDown, ChevronRight, Pencil } from 'lucide-react';
+import { Ban, ChevronDown, ChevronRight, Copy, Pencil } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   useConfiguration,
@@ -28,12 +28,14 @@ import {
 } from './transactionFilters';
 import { TransactionFilterBar } from './TransactionFilterBar';
 import { TransactionTypeIcon } from './TransactionTypeIcon';
+import { isAdjustment } from './transactionType';
 import { LabelChips } from './LabelChips';
 import { TransactionPagination, usePersistedPageSize } from './TransactionPagination';
 import { AccountHeader } from './AccountHeader';
 import { ControlBar } from './ControlBar';
 import { EditTransactionDialog } from './EditTransactionDialog';
 import { CancelTransactionDialog } from './CancelTransactionDialog';
+import { CopyTransactionDialog } from './CopyTransactionDialog';
 import { TransactionStatusIcon } from './TransactionStatusIcon';
 
 const EMPTY_FILTERS: TransactionFilters = {
@@ -122,6 +124,9 @@ export function TransactionsPane() {
   const [cancelTarget, setCancelTarget] = useState<TransactionResponse | null>(null);
   const openCancel = (t: TransactionResponse) => setCancelTarget(t);
 
+  const [copying, setCopying] = useState<TransactionResponse | null>(null);
+  const openCopy = (t: TransactionResponse) => setCopying(t);
+
   const header = account ? (
     <AccountHeader account={account} />
   ) : accountLoading ? (
@@ -169,7 +174,7 @@ export function TransactionsPane() {
             <th className="px-4 py-2 text-left font-medium">Description</th>
             <th className="w-40 px-4 py-2 text-left font-medium">Category</th>
             <th className="px-4 py-2 text-right font-medium">Amount</th>
-            <th className="w-8 px-2 py-2" />
+            <th className="w-20 px-2 py-2" />
           </tr>
         </thead>
         <tbody>
@@ -230,28 +235,51 @@ export function TransactionsPane() {
                     >
                       {formatMoney(amount, currency)}
                     </td>
-                    <td className="w-8 px-2 py-2 text-right">
-                      {t.status !== 'Cancelled' && (
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                aria-label="Cancel"
-                                className="h-7 w-7 opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openCancel(t);
-                                }}
-                              >
-                                <Ban className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Cancel</TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      )}
+                    <td className="w-20 px-2 py-2 text-right">
+                      <span className="flex items-center justify-end gap-1">
+                        {!isAdjustment(t.transactionType) && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  aria-label="Duplicate"
+                                  className="h-7 w-7 opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openCopy(t);
+                                  }}
+                                >
+                                  <Copy className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Duplicate</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
+                        {t.status !== 'Cancelled' && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  aria-label="Cancel"
+                                  className="h-7 w-7 opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openCancel(t);
+                                  }}
+                                >
+                                  <Ban className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Cancel</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
+                      </span>
                     </td>
                   </tr>
                 </ContextMenuTrigger>
@@ -260,6 +288,12 @@ export function TransactionsPane() {
                     <Pencil className="mr-2 h-4 w-4" aria-hidden />
                     Edit
                   </ContextMenuItem>
+                  {!isAdjustment(t.transactionType) && (
+                    <ContextMenuItem onSelect={() => openCopy(t)}>
+                      <Copy className="mr-2 h-4 w-4" aria-hidden />
+                      Duplicate
+                    </ContextMenuItem>
+                  )}
                   {t.status !== 'Cancelled' && (
                     <ContextMenuItem className="text-destructive" onSelect={() => openCancel(t)}>
                       <Ban className="mr-2 h-4 w-4" aria-hidden />
@@ -343,6 +377,15 @@ export function TransactionsPane() {
             if (!o) setCancelTarget(null);
           }}
           transaction={cancelTarget}
+        />
+      )}
+      {copying && (
+        <CopyTransactionDialog
+          open
+          onOpenChange={(o) => {
+            if (!o) setCopying(null);
+          }}
+          tx={copying}
         />
       )}
     </>

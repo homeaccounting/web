@@ -549,6 +549,58 @@ describe('TransactionsPane', () => {
     expect(screen.queryByLabelText('Cancel')).not.toBeInTheDocument();
   });
 
+  it('opens CopyTransactionDialog via the context menu Duplicate item', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    const user = userEvent.setup();
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    const cell = await screen.findByText(transactionFixture.description);
+    const row = cell.closest('tr')!;
+    await user.pointer({ keys: '[MouseRight]', target: row });
+    await user.click(await screen.findByRole('menuitem', { name: /duplicate/i }));
+    expect(await screen.findByRole('dialog', { name: /copy expense/i })).toBeInTheDocument();
+  });
+
+  it('exposes a Duplicate icon control that opens the copy dialog (not edit)', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    const user = userEvent.setup();
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    await screen.findByText(transactionFixture.description);
+    await user.click(screen.getByLabelText('Duplicate'));
+    expect(await screen.findByRole('dialog', { name: /copy expense/i })).toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: /edit expense/i })).not.toBeInTheDocument();
+  });
+
+  it('hides the Duplicate control for adjustment rows', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    const user = userEvent.setup();
+    server.use(
+      http.get(`${apiBase}/api/transactions`, () =>
+        HttpResponse.json({
+          transactions: [
+            {
+              ...transactionFixture,
+              id: 'adj-1',
+              description: 'AdjustmentTx',
+              transactionType: 'adjustment',
+              category: null,
+            },
+          ],
+          totalCount: 1,
+        }),
+      ),
+    );
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    await screen.findByText('AdjustmentTx');
+    expect(screen.queryByLabelText('Duplicate')).not.toBeInTheDocument();
+
+    // Also verify the context menu suppresses Duplicate for adjustment rows.
+    const row = screen.getByText('AdjustmentTx').closest('tr')!;
+    await user.pointer({ keys: '[MouseRight]', target: row });
+    // Edit is always present — confirms the menu opened.
+    expect(await screen.findByRole('menuitem', { name: /edit/i })).toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: /duplicate/i })).not.toBeInTheDocument();
+  });
+
   it('category filter narrows rows and "All categories" sentinel restores both', async () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
     const user = userEvent.setup();
