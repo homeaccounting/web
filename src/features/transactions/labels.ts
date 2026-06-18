@@ -6,6 +6,7 @@ export const TRANSACTION_KIND_LABELS = {
     editTitle: 'Edit income',
     editSubmit: 'OK',
     copyTitle: 'Copy income',
+    convertTitle: 'Convert to income',
   },
   expense: {
     title: 'Add expense',
@@ -14,6 +15,7 @@ export const TRANSACTION_KIND_LABELS = {
     editTitle: 'Edit expense',
     editSubmit: 'OK',
     copyTitle: 'Copy expense',
+    convertTitle: 'Convert to expense',
   },
   transfer: {
     title: 'Add transfer',
@@ -22,6 +24,7 @@ export const TRANSACTION_KIND_LABELS = {
     editTitle: 'Edit transfer',
     editSubmit: 'OK',
     copyTitle: 'Copy transfer',
+    convertTitle: 'Convert to transfer',
   },
 } as const;
 

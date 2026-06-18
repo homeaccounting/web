@@ -601,6 +601,70 @@ describe('TransactionsPane', () => {
     expect(screen.queryByRole('menuitem', { name: /duplicate/i })).not.toBeInTheDocument();
   });
 
+  it('offers the two other kinds in the Convert submenu and opens the dialog', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    const user = userEvent.setup();
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    const cell = await screen.findByText(transactionFixture.description); // an expense fixture
+    const row = cell.closest('tr')!;
+    await user.pointer({ keys: '[MouseRight]', target: row });
+    const convertTrigger = await screen.findByRole('menuitem', { name: /convert to/i });
+    await user.hover(convertTrigger);
+    // expense source → offers Income and Transfer, not Expense
+    const incomeItem = await screen.findByRole('menuitem', { name: /^income$/i });
+    expect(incomeItem).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: /^transfer$/i })).toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: /^expense$/i })).not.toBeInTheDocument();
+    await user.pointer({ keys: '[MouseLeft]', target: incomeItem });
+    expect(await screen.findByRole('dialog', { name: /convert to income/i })).toBeInTheDocument();
+  });
+
+  it('hides the Convert submenu for adjustment rows', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    const user = userEvent.setup();
+    server.use(
+      http.get(`${apiBase}/api/transactions`, () =>
+        HttpResponse.json({
+          transactions: [
+            {
+              ...transactionFixture,
+              id: 'adj-1',
+              description: 'AdjustmentTx',
+              transactionType: 'adjustment',
+              category: null,
+            },
+          ],
+          totalCount: 1,
+        }),
+      ),
+    );
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    const row = (await screen.findByText('AdjustmentTx')).closest('tr')!;
+    await user.pointer({ keys: '[MouseRight]', target: row });
+    await screen.findByRole('menuitem', { name: /edit/i });
+    expect(screen.queryByRole('menuitem', { name: /convert to/i })).not.toBeInTheDocument();
+  });
+
+  it('hides the Convert submenu for non-completed rows', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    const user = userEvent.setup();
+    server.use(
+      http.get(`${apiBase}/api/transactions`, () =>
+        HttpResponse.json({
+          transactions: [
+            { ...transactionFixture, id: 'pend-1', description: 'PendingTx', status: 'Pending' },
+          ],
+          totalCount: 1,
+        }),
+      ),
+    );
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    const row = (await screen.findByText('PendingTx')).closest('tr')!;
+    await user.pointer({ keys: '[MouseRight]', target: row });
+    await screen.findByRole('menuitem', { name: /edit/i });
+    expect(screen.queryByRole('menuitem', { name: /convert to/i })).not.toBeInTheDocument();
+  });
+
   it('category filter narrows rows and "All categories" sentinel restores both', async () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
     const user = userEvent.setup();

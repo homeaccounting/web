@@ -8,8 +8,11 @@ import {
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuTrigger,
+  ContextMenuSub,
+  ContextMenuSubContent,
+  ContextMenuSubTrigger,
 } from '@/components/ui/context-menu';
-import { Ban, ChevronDown, ChevronRight, Copy, Pencil } from 'lucide-react';
+import { ArrowLeftRight, Ban, ChevronDown, ChevronRight, Copy, Pencil } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   useConfiguration,
@@ -18,7 +21,7 @@ import {
 import { useAccountById } from '@/features/accounts/useAccountById';
 import { formatDateTime, formatMoney } from '@/lib/format';
 import { cn } from '@/lib/utils';
-import type { TransactionResponse } from '@/api/types';
+import type { TransactionResponse, TransferTypeText } from '@/api/types';
 import { useWindowedTransactions } from './useWindowedTransactions';
 import {
   applyTransactionFilters,
@@ -28,7 +31,8 @@ import {
 } from './transactionFilters';
 import { TransactionFilterBar } from './TransactionFilterBar';
 import { TransactionTypeIcon } from './TransactionTypeIcon';
-import { isAdjustment } from './transactionType';
+import { isAdjustment, transactionKind, transactionTypeMeta } from './transactionType';
+import type { TransactionKind } from './labels';
 import { LabelChips } from './LabelChips';
 import { TransactionPagination, usePersistedPageSize } from './TransactionPagination';
 import { AccountHeader } from './AccountHeader';
@@ -36,7 +40,17 @@ import { ControlBar } from './ControlBar';
 import { EditTransactionDialog } from './EditTransactionDialog';
 import { CancelTransactionDialog } from './CancelTransactionDialog';
 import { CopyTransactionDialog } from './CopyTransactionDialog';
+import { ConvertTransactionDialog } from './ConvertTransactionDialog';
 import { TransactionStatusIcon } from './TransactionStatusIcon';
+
+// The two kinds a transaction can convert to (everything but its current kind;
+// Adjustment is never a source or target). Caller must ensure `type` is not
+// 'adjustment' — the submenu guard upstream enforces this.
+const CONVERT_KINDS = ['income', 'expense', 'transfer'] as const;
+function convertTargets(type: TransferTypeText): TransactionKind[] {
+  const current = transactionKind(type);
+  return CONVERT_KINDS.filter((k) => k !== current);
+}
 
 const EMPTY_FILTERS: TransactionFilters = {
   description: '',
@@ -126,6 +140,13 @@ export function TransactionsPane() {
 
   const [copying, setCopying] = useState<TransactionResponse | null>(null);
   const openCopy = (t: TransactionResponse) => setCopying(t);
+
+  const [converting, setConverting] = useState<{
+    tx: TransactionResponse;
+    targetKind: TransactionKind;
+  } | null>(null);
+  const openConvert = (tx: TransactionResponse, targetKind: TransactionKind) =>
+    setConverting({ tx, targetKind });
 
   const header = account ? (
     <AccountHeader account={account} />
@@ -294,6 +315,21 @@ export function TransactionsPane() {
                       Duplicate
                     </ContextMenuItem>
                   )}
+                  {t.status === 'Completed' && !isAdjustment(t.transactionType) && (
+                    <ContextMenuSub>
+                      <ContextMenuSubTrigger>
+                        <ArrowLeftRight className="mr-2 h-4 w-4" aria-hidden />
+                        Convert to
+                      </ContextMenuSubTrigger>
+                      <ContextMenuSubContent>
+                        {convertTargets(t.transactionType).map((k) => (
+                          <ContextMenuItem key={k} onSelect={() => openConvert(t, k)}>
+                            {transactionTypeMeta(k).label}
+                          </ContextMenuItem>
+                        ))}
+                      </ContextMenuSubContent>
+                    </ContextMenuSub>
+                  )}
                   {t.status !== 'Cancelled' && (
                     <ContextMenuItem className="text-destructive" onSelect={() => openCancel(t)}>
                       <Ban className="mr-2 h-4 w-4" aria-hidden />
@@ -386,6 +422,16 @@ export function TransactionsPane() {
             if (!o) setCopying(null);
           }}
           tx={copying}
+        />
+      )}
+      {converting && (
+        <ConvertTransactionDialog
+          open
+          onOpenChange={(o) => {
+            if (!o) setConverting(null);
+          }}
+          tx={converting.tx}
+          targetKind={converting.targetKind}
         />
       )}
     </>
