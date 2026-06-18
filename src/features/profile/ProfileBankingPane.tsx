@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { BankConnectionDialog } from './BankConnectionDialog';
 import { LinkAccountsDialog } from './LinkAccountsDialog';
-import { MccMappingEditor, DefaultCategoryField } from './MccMappingEditor';
+import { MccMappingEditor } from './MccMappingEditor';
 
 function ConnectionRow({ connection }: { connection: BankConnectionDTO }) {
   const update = useUpdateConnection();
@@ -115,7 +115,6 @@ export function ProfileBankingPane() {
 
   const c = config.data;
   const expenseCategories = c.dictionaries['expense-category']?.entries ?? [];
-  const incomeCategories = c.dictionaries['income-category']?.entries ?? [];
 
   return (
     <div className="space-y-6">
@@ -138,26 +137,6 @@ export function ProfileBankingPane() {
             Add connection
           </Button>
           <BankConnectionDialog open={addOpen} onOpenChange={setAddOpen} />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Default categories</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <DefaultCategoryField
-            field="defaultIncomeCategory"
-            label="Default income category"
-            current={c.banking.defaultIncomeCategory}
-            categories={incomeCategories}
-          />
-          <DefaultCategoryField
-            field="defaultExpenseCategory"
-            label="Default expense category"
-            current={c.banking.defaultExpenseCategory}
-            categories={expenseCategories}
-          />
         </CardContent>
       </Card>
 

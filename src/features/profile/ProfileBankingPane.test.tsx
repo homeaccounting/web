@@ -75,6 +75,12 @@ describe('ProfileBankingPane', () => {
     await waitFor(() => expect(deleted).toBe(true));
   });
 
+  it('no longer renders the Default categories card (moved to Dictionaries)', async () => {
+    render();
+    await screen.findByText('Monobank');
+    expect(screen.queryByText('Default categories')).not.toBeInTheDocument();
+  });
+
   it('shows an empty state when there are no connections', async () => {
     server.use(
       http.get(configUrl, () =>

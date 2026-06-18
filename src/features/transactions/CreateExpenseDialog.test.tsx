@@ -7,7 +7,7 @@ import { server } from '@/test/server';
 import { renderWithProviders } from '@/test/utils';
 import { AuthProvider } from '@/auth/AuthContext';
 import { saveSession } from '@/auth/storage';
-import { foodCategoryId } from '@/test/fixtures';
+import { foodCategoryId, configurationFixture } from '@/test/fixtures';
 import { CreateExpenseDialog } from './CreateExpenseDialog';
 
 const apiBase = 'http://localhost:8080';
@@ -47,6 +47,35 @@ function Wrapper() {
 }
 
 describe('CreateExpenseDialog', () => {
+  it('seeds the category from the global default expense category', async () => {
+    const user = userEvent.setup();
+    let capturedBody: Record<string, unknown> = {};
+    server.use(
+      http.get(`${apiBase}/api/users/me/configuration`, () =>
+        HttpResponse.json({ ...configurationFixture, defaultExpenseCategory: foodCategoryId }),
+      ),
+      http.post(`${apiBase}/api/transactions/expense`, async ({ request }) => {
+        capturedBody = (await request.json()) as Record<string, unknown>;
+        return new HttpResponse(null, { status: 201 });
+      }),
+    );
+
+    renderWithProviders(<Wrapper />, { initialPath: '/' });
+    await screen.findByLabelText(/account/i);
+
+    // Do NOT pick a category — it should come pre-seeded from the global default.
+    await user.clear(screen.getByLabelText(/amount/i));
+    await user.type(screen.getByLabelText(/amount/i), '50');
+    await user.type(screen.getByLabelText(/description/i), 'Groceries');
+    await user.click(screen.getByRole('button', { name: 'OK' }));
+
+    await waitFor(() => {
+      const expenses = (capturedBody.allocations as { expenses?: { category: string }[] })
+        ?.expenses;
+      expect(expenses?.[0]?.category).toBe(foodCategoryId);
+    });
+  });
+
   it('happy path: closes dialog after successful submit', async () => {
     const user = userEvent.setup();
     renderWithProviders(<Wrapper />, { initialPath: '/' });

@@ -52,15 +52,12 @@ beforeEach(() => {
         totalCount: 2,
       }),
     ),
-    // Default config has null banking defaults; override with a default expense category.
+    // Default config has null defaults; override with top-level default categories.
     http.get(`${apiBase}/api/users/me/configuration`, () =>
       HttpResponse.json({
         ...configurationFixture,
-        banking: {
-          ...configurationFixture.banking,
-          defaultExpenseCategory: foodCategoryId,
-          defaultIncomeCategory: salaryCategoryId,
-        },
+        defaultExpenseCategory: foodCategoryId,
+        defaultIncomeCategory: salaryCategoryId,
       }),
     ),
   );

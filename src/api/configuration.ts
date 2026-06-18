@@ -13,6 +13,7 @@ import type {
   SetAccountMapRequest,
   UpdateBankConnectionRequest,
   UpdateBankingRequest,
+  UpdateDefaultsRequest,
   UUID,
 } from './types';
 
@@ -36,6 +37,8 @@ export const configurationApi = (client: ApiClient) => ({
     client.delete<void>(`/api/users/me/configuration/dictionaries/${dictId}/entries/${entryId}`),
   updateBanking: (body: UpdateBankingRequest) =>
     client.put<BankingConfigurationDTO>('/api/users/me/configuration/banking', body),
+  updateDefaults: (body: UpdateDefaultsRequest) =>
+    client.put<ConfigurationResponse>('/api/users/me/configuration/defaults', body),
   addConnection: (body: AddBankConnectionRequest) =>
     client.post<BankConnectionDTO>('/api/users/me/configuration/banking/connections', body),
   updateConnection: (id: UUID, body: UpdateBankConnectionRequest) =>

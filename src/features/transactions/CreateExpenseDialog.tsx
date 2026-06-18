@@ -38,18 +38,19 @@ export function CreateExpenseDialog({
   const labels = config?.dictionaries.labels?.entries ?? [];
 
   const defaultAccount = accounts?.find((a) => a.id === selectedAccountId) ?? accounts?.[0];
+  const defaultCategory = config?.defaultExpenseCategory ?? '';
 
   const defaults = useMemo(
     () => ({
       accountId: defaultAccount?.id ?? '',
       amount: 0,
       currency: defaultAccount?.currency ?? '',
-      category: '',
+      category: defaultCategory,
       description: '',
       date: nowDateTimeInput(),
       labels: [] as UUID[],
     }),
-    [defaultAccount?.id, defaultAccount?.currency],
+    [defaultAccount?.id, defaultAccount?.currency, defaultCategory],
   );
 
   const apiRef = useRef<IncomeExpenseFormApi | null>(null);

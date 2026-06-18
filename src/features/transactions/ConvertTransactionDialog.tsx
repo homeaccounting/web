@@ -127,9 +127,8 @@ function ConvertIncomeExpenseBody({
   const categories = config?.dictionaries[categoryDictId]?.entries ?? [];
   const labels = config?.dictionaries.labels?.entries ?? [];
   const defaultCategory =
-    (targetKind === 'income'
-      ? config?.banking.defaultIncomeCategory
-      : config?.banking.defaultExpenseCategory) ?? null;
+    (targetKind === 'income' ? config?.defaultIncomeCategory : config?.defaultExpenseCategory) ??
+    null;
 
   const defaultValues = useMemo(
     () => toConvertIncomeExpenseDefaults(tx, targetKind, accounts, defaultCategory),

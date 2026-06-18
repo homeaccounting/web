@@ -7,7 +7,7 @@ import { server } from '@/test/server';
 import { renderWithProviders } from '@/test/utils';
 import { AuthProvider } from '@/auth/AuthContext';
 import { saveSession } from '@/auth/storage';
-import { salaryCategoryId } from '@/test/fixtures';
+import { salaryCategoryId, configurationFixture } from '@/test/fixtures';
 import { CreateIncomeDialog } from './CreateIncomeDialog';
 
 const apiBase = 'http://localhost:8080';
@@ -48,6 +48,34 @@ function Wrapper() {
 }
 
 describe('CreateIncomeDialog', () => {
+  it('seeds the category from the global default income category', async () => {
+    const user = userEvent.setup();
+    let capturedBody: Record<string, unknown> = {};
+    server.use(
+      http.get(`${apiBase}/api/users/me/configuration`, () =>
+        HttpResponse.json({ ...configurationFixture, defaultIncomeCategory: salaryCategoryId }),
+      ),
+      http.post(`${apiBase}/api/transactions/income`, async ({ request }) => {
+        capturedBody = (await request.json()) as Record<string, unknown>;
+        return new HttpResponse(null, { status: 201 });
+      }),
+    );
+
+    renderWithProviders(<Wrapper />, { initialPath: '/' });
+    await screen.findByLabelText(/account/i);
+
+    // Do NOT pick a category — it should come pre-seeded from the global default.
+    await user.clear(screen.getByLabelText(/amount/i));
+    await user.type(screen.getByLabelText(/amount/i), '50');
+    await user.type(screen.getByLabelText(/description/i), 'Paycheck');
+    await user.click(screen.getByRole('button', { name: 'OK' }));
+
+    await waitFor(() => {
+      const incomes = (capturedBody.allocations as { incomes?: { category: string }[] })?.incomes;
+      expect(incomes?.[0]?.category).toBe(salaryCategoryId);
+    });
+  });
+
   it('happy path: closes dialog after successful submit', async () => {
     const user = userEvent.setup();
     renderWithProviders(<Wrapper />, { initialPath: '/' });

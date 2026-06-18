@@ -4,6 +4,7 @@ import type {
   BankConnectionDTO,
   BankingConfigurationDTO,
   UpdateBankingRequest,
+  UpdateDefaultsRequest,
 } from '@/api/types';
 import {
   accountFixture,
@@ -282,12 +283,18 @@ export const handlers = [
   http.put(`${apiBase}/api/users/me/configuration/banking`, async ({ request }) => {
     const body = (await request.json()) as UpdateBankingRequest;
     const banking: BankingConfigurationDTO = {
-      defaultIncomeCategory: body.defaultIncomeCategory ?? null,
-      defaultExpenseCategory: body.defaultExpenseCategory ?? null,
       mccExpenseCategoryMap: body.mccExpenseCategoryMap ?? {},
       connections: [],
     };
     return HttpResponse.json(banking);
+  }),
+  http.put(`${apiBase}/api/users/me/configuration/defaults`, async ({ request }) => {
+    const body = (await request.json()) as UpdateDefaultsRequest;
+    return HttpResponse.json({
+      ...configurationFixture,
+      defaultIncomeCategory: body.defaultIncomeCategory ?? null,
+      defaultExpenseCategory: body.defaultExpenseCategory ?? null,
+    });
   }),
   http.get(`${apiBase}/api/banking/connections/:id/external-accounts`, () =>
     HttpResponse.json(externalAccountsFixture),

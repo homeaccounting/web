@@ -3,6 +3,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DictionaryList } from './DictionaryList';
+import { DefaultCategoryField } from './DefaultCategoryField';
 
 export function ProfileDictionariesPane() {
   const config = useConfiguration();
@@ -22,6 +23,8 @@ export function ProfileDictionariesPane() {
     );
   }
   const c = config.data;
+  const incomeCategories = c.dictionaries['income-category']?.entries ?? [];
+  const expenseCategories = c.dictionaries['expense-category']?.entries ?? [];
   return (
     <div className="space-y-6">
       <Card>
@@ -53,6 +56,25 @@ export function ProfileDictionariesPane() {
             title="Labels"
             entries={c.dictionaries.labels?.entries ?? []}
             addLabel="Add label"
+          />
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Default categories</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <DefaultCategoryField
+            field="defaultIncomeCategory"
+            label="Default income category"
+            current={c.defaultIncomeCategory}
+            categories={incomeCategories}
+          />
+          <DefaultCategoryField
+            field="defaultExpenseCategory"
+            label="Default expense category"
+            current={c.defaultExpenseCategory}
+            categories={expenseCategories}
           />
         </CardContent>
       </Card>

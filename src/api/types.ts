@@ -351,6 +351,9 @@ export interface TransactionListResponse {
 // --- Configuration ---
 // JSON shape from backend/src/Web/API/ConfigurationAPI.hs (ConfigurationResponse,
 // DictionaryResponse, DictionaryEntryResponse, BankingConfigurationDTO).
+// defaultIncomeCategory / defaultExpenseCategory are now TOP-LEVEL fields on
+// ConfigurationResponse (no longer under banking); set via
+// PUT /api/users/me/configuration/defaults.
 
 export interface DictionaryEntryResponse {
   id: UUID;
@@ -396,9 +399,11 @@ export interface SetAccountMapRequest {
   accountMap: Record<string, UUID>;
 }
 export interface UpdateBankingRequest {
+  mccExpenseCategoryMap?: Record<string, UUID>;
+}
+export interface UpdateDefaultsRequest {
   defaultIncomeCategory?: UUID | null;
   defaultExpenseCategory?: UUID | null;
-  mccExpenseCategoryMap?: Record<string, UUID>;
 }
 export interface ResyncRequest {
   from: string;
@@ -416,8 +421,6 @@ export interface ResyncResponse {
 }
 
 export interface BankingConfigurationDTO {
-  defaultIncomeCategory: UUID | null;
-  defaultExpenseCategory: UUID | null;
   mccExpenseCategoryMap: Record<string, UUID>;
   connections: BankConnectionDTO[];
 }
@@ -426,6 +429,8 @@ export interface ConfigurationResponse {
   baseCurrency: string;
   defaultCurrency: string;
   dictionaries: Record<string, DictionaryResponse>;
+  defaultIncomeCategory: UUID | null;
+  defaultExpenseCategory: UUID | null;
   banking: BankingConfigurationDTO;
   bankingFeatureEnabled: boolean;
   // Backend Web.API.ConfigurationAPI.ConfigurationResponse adds these:
