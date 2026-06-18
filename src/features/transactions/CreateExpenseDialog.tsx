@@ -96,6 +96,7 @@ export function CreateExpenseDialog({
           <IncomeExpenseForm
             kind="expense"
             mode="create"
+            enforceBalance
             accounts={accounts}
             categories={categories}
             labels={labels}

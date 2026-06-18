@@ -97,6 +97,7 @@ export function CreateTransferDialog({
         {hasEnoughAccounts && (
           <TransferForm
             mode="create"
+            enforceBalance
             accounts={accounts}
             labels={labels}
             defaultValues={defaults}

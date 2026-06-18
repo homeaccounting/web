@@ -8,6 +8,7 @@ import type {
 } from '@/api/types';
 import { isIncome } from './transactionType';
 import { dateInputToWire, wireToDateInput } from '@/lib/dates';
+import { formatMoney } from '@/lib/format';
 
 const uuid = z.string().uuid();
 const positiveAmount = z.coerce.number().positive('Amount must be positive');
@@ -50,6 +51,47 @@ export const transferFormSchema = z
     path: ['targetAccountId'],
   });
 export type TransferFormValues = z.infer<typeof transferFormSchema>;
+
+// Issue #46: client-side guard mirroring the backend debit rule
+// (../server-infra/src/Domain/Account/CommandHandler.hs): a debit is rejected
+// when `balance - amount < -overdraftLimit`. `overdraftLimit === null` means no
+// limit (no check). The boundary is inclusive. `amount` is already in the source
+// account's currency (the create form locks `currency` to the selected source),
+// so no FX conversion is needed here.
+function balanceIssue(
+  accounts: AccountResponse[],
+  accountId: string,
+  amount: number,
+): string | null {
+  const acc = accounts.find((a) => a.id === accountId);
+  if (!acc || acc.overdraftLimit === null || !Number.isFinite(amount)) return null;
+  const available = acc.balance + acc.overdraftLimit;
+  if (amount <= available) return null;
+  return `Exceeds available balance (${formatMoney(available, acc.currency)})`;
+}
+
+// Create-only: expense debits `accountId`; income only credits, so it is never
+// funds-constrained and the refine is a no-op for it.
+export function makeIncomeExpenseFormSchema(
+  accounts: AccountResponse[],
+  kind: 'income' | 'expense',
+) {
+  return incomeExpenseFormSchema.superRefine((v, ctx) => {
+    if (kind === 'income') return;
+    const message = balanceIssue(accounts, v.accountId, v.amount);
+    if (message) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['amount'], message });
+  });
+}
+
+// Create-only: transfer debits `sourceAccountId`. `transferFormSchema` is a
+// `ZodEffects` (it carries the source ≠ target refine), so chain `.superRefine`
+// — `.extend` is not available on effects.
+export function makeTransferFormSchema(accounts: AccountResponse[]) {
+  return transferFormSchema.superRefine((v, ctx) => {
+    const message = balanceIssue(accounts, v.sourceAccountId, v.amount);
+    if (message) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['amount'], message });
+  });
+}
 
 const labelsOrUndefined = (xs: readonly UUID[]) => (xs.length === 0 ? undefined : (xs as UUID[]));
 

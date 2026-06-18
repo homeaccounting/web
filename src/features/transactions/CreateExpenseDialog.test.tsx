@@ -169,6 +169,51 @@ describe('CreateExpenseDialog', () => {
     expect(await screen.findByText(/must be positive/i)).toBeInTheDocument();
   });
 
+  it('blocks submitting an expense that exceeds the account available balance', async () => {
+    const user = userEvent.setup();
+    let posted = false;
+
+    server.use(
+      // Low-balance account with a finite overdraft limit (0 → balance must stay ≥ 0).
+      http.get(`${apiBase}/api/accounts`, () =>
+        HttpResponse.json({
+          accounts: [
+            {
+              id: accountId,
+              name: 'Checking',
+              balance: 100,
+              currency: 'USD',
+              overdraftLimit: 0,
+              subtype: { type: 'bankAccount', bankName: 'ACME' },
+              version: 1,
+            },
+          ],
+          totalCount: 1,
+        }),
+      ),
+      http.post(`${apiBase}/api/transactions/expense`, () => {
+        posted = true;
+        return new HttpResponse(null, { status: 201 });
+      }),
+    );
+
+    renderWithProviders(<Wrapper />, { initialPath: '/' });
+    await screen.findByRole('dialog', { name: /add expense/i });
+    await screen.findByLabelText(/account/i);
+
+    await user.click(screen.getByRole('combobox', { name: /category/i }));
+    await user.click(await screen.findByRole('option', { name: /food/i }));
+    await user.clear(screen.getByLabelText(/amount/i));
+    await user.type(screen.getByLabelText(/amount/i), '150'); // > balance 100, overdraft 0
+    await user.type(screen.getByLabelText(/description/i), 'Groceries');
+
+    await user.click(screen.getByRole('button', { name: 'OK' }));
+
+    expect(await screen.findByText(/exceeds available balance/i)).toBeInTheDocument();
+    expect(posted).toBe(false);
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+  });
+
   it('shows destructive alert banner for generic 500 error', async () => {
     const user = userEvent.setup();
 

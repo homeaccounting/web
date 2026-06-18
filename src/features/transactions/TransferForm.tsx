@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useForm, FormProvider, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { DialogFooter } from '@/components/ui/dialog';
@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import type { AccountResponse, DictionaryEntryResponse } from '@/api/types';
-import { transferFormSchema, type TransferFormValues } from './schema';
+import { transferFormSchema, makeTransferFormSchema, type TransferFormValues } from './schema';
 import { LabelMultiSelect } from './LabelMultiSelect';
 import { DatePicker } from '@/components/DatePicker';
 import { TRANSACTION_KIND_LABELS } from './labels';
@@ -21,6 +21,8 @@ export interface TransferFormProps {
   labels: DictionaryEntryResponse[];
   defaultValues: TransferFormValues;
   isSubmitting: boolean;
+  /** When set, validate the debit against the source account balance (create only). */
+  enforceBalance?: boolean;
   onSubmit: (values: TransferFormValues) => void | Promise<void>;
   onCancel: () => void;
   onReady?: (api: TransferFormApi) => void;
@@ -32,12 +34,21 @@ export function TransferForm({
   labels,
   defaultValues,
   isSubmitting,
+  enforceBalance = false,
   onSubmit,
   onCancel,
   onReady,
 }: TransferFormProps) {
+  const resolver = useMemo<Resolver<TransferFormValues>>(
+    () =>
+      zodResolver(
+        enforceBalance ? makeTransferFormSchema(accounts) : transferFormSchema,
+      ) as Resolver<TransferFormValues>,
+    [enforceBalance, accounts],
+  );
+
   const form = useForm<TransferFormValues>({
-    resolver: zodResolver(transferFormSchema) as Resolver<TransferFormValues>,
+    resolver,
     defaultValues,
   });
 

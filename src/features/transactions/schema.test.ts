@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   incomeExpenseFormSchema,
   transferFormSchema,
+  makeIncomeExpenseFormSchema,
+  makeTransferFormSchema,
   toIncomeRequest,
   toExpenseRequest,
   toTransferRequest,
@@ -213,6 +215,87 @@ describe('toIncomeExpenseFormValues', () => {
   it('defensive: missing category collapses to empty string', () => {
     const v = toIncomeExpenseFormValues(baseTx({ category: null }), [acc('a1')]);
     expect(v.category).toBe('');
+  });
+});
+
+const accBal = (id: string, balance: number, overdraftLimit: number | null): AccountResponse => ({
+  id,
+  name: id,
+  currency: 'USD',
+  balance,
+  overdraftLimit,
+  subtype: { type: 'cash' },
+  status: 'Opened',
+  version: 1,
+});
+
+describe('makeIncomeExpenseFormSchema (expense balance check)', () => {
+  const base = {
+    accountId: ACC_A,
+    currency: 'USD',
+    category: CAT,
+    description: '',
+    date: '',
+    labels: [] as string[],
+  };
+
+  it('passes when amount is below available (balance + overdraftLimit)', () => {
+    const schema = makeIncomeExpenseFormSchema([accBal(ACC_A, 100, 0)], 'expense');
+    expect(schema.safeParse({ ...base, amount: 50 }).success).toBe(true);
+  });
+
+  it('passes at the inclusive boundary (amount === available)', () => {
+    const schema = makeIncomeExpenseFormSchema([accBal(ACC_A, 100, 20)], 'expense');
+    expect(schema.safeParse({ ...base, amount: 120 }).success).toBe(true);
+  });
+
+  it('fails when amount exceeds available, with the error on the amount path', () => {
+    const schema = makeIncomeExpenseFormSchema([accBal(ACC_A, 100, 20)], 'expense');
+    const res = schema.safeParse({ ...base, amount: 120.01 });
+    expect(res.success).toBe(false);
+    if (!res.success) {
+      expect(res.error.issues.some((i) => i.path[0] === 'amount')).toBe(true);
+    }
+  });
+
+  it('skips the check when overdraftLimit is null (unlimited)', () => {
+    const schema = makeIncomeExpenseFormSchema([accBal(ACC_A, 0, null)], 'expense');
+    expect(schema.safeParse({ ...base, amount: 999999 }).success).toBe(true);
+  });
+
+  it('skips the check when the source account is not in the snapshot', () => {
+    const schema = makeIncomeExpenseFormSchema([accBal(ACC_B, 0, 0)], 'expense');
+    expect(schema.safeParse({ ...base, amount: 999999 }).success).toBe(true);
+  });
+
+  it('never adds the check for income', () => {
+    const schema = makeIncomeExpenseFormSchema([accBal(ACC_A, 0, 0)], 'income');
+    expect(schema.safeParse({ ...base, amount: 999999 }).success).toBe(true);
+  });
+});
+
+describe('makeTransferFormSchema (source balance check)', () => {
+  const base = {
+    sourceAccountId: ACC_A,
+    targetAccountId: ACC_B,
+    currency: 'USD',
+    description: '',
+    date: '',
+    labels: [] as string[],
+  };
+
+  it('fails when amount exceeds the source available balance', () => {
+    const schema = makeTransferFormSchema([accBal(ACC_A, 100, 0), accBal(ACC_B, 0, 0)]);
+    const res = schema.safeParse({ ...base, amount: 150 });
+    expect(res.success).toBe(false);
+    if (!res.success) {
+      expect(res.error.issues.some((i) => i.path[0] === 'amount')).toBe(true);
+    }
+  });
+
+  it('passes when amount is within the source available balance', () => {
+    const schema = makeTransferFormSchema([accBal(ACC_A, 100, 50), accBal(ACC_B, 0, 0)]);
+    expect(schema.safeParse({ ...base, amount: 120 }).success).toBe(true);
   });
 });
 

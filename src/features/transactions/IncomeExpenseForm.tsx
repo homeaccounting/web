@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useForm, FormProvider, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { DialogFooter } from '@/components/ui/dialog';
@@ -6,7 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import type { AccountResponse, DictionaryEntryResponse } from '@/api/types';
-import { incomeExpenseFormSchema, type IncomeExpenseFormValues } from './schema';
+import {
+  incomeExpenseFormSchema,
+  makeIncomeExpenseFormSchema,
+  type IncomeExpenseFormValues,
+} from './schema';
 import { LabelMultiSelect } from './LabelMultiSelect';
 import { CategoryCombobox } from './CategoryCombobox';
 import { DatePicker } from '@/components/DatePicker';
@@ -24,6 +28,8 @@ export interface IncomeExpenseFormProps {
   labels: DictionaryEntryResponse[];
   defaultValues: IncomeExpenseFormValues;
   isSubmitting: boolean;
+  /** When set, validate the debit against the source account balance (create only). */
+  enforceBalance?: boolean;
   onSubmit: (values: IncomeExpenseFormValues) => void | Promise<void>;
   onCancel: () => void;
   onReady?: (api: IncomeExpenseFormApi) => void;
@@ -37,12 +43,21 @@ export function IncomeExpenseForm({
   labels,
   defaultValues,
   isSubmitting,
+  enforceBalance = false,
   onSubmit,
   onCancel,
   onReady,
 }: IncomeExpenseFormProps) {
+  const resolver = useMemo<Resolver<IncomeExpenseFormValues>>(
+    () =>
+      zodResolver(
+        enforceBalance ? makeIncomeExpenseFormSchema(accounts, kind) : incomeExpenseFormSchema,
+      ) as Resolver<IncomeExpenseFormValues>,
+    [enforceBalance, accounts, kind],
+  );
+
   const form = useForm<IncomeExpenseFormValues>({
-    resolver: zodResolver(incomeExpenseFormSchema) as Resolver<IncomeExpenseFormValues>,
+    resolver,
     defaultValues,
   });
 
