@@ -125,6 +125,7 @@ function ConvertIncomeExpenseBody({
   const edit = useEditTransaction();
   const categoryDictId = targetKind === 'income' ? 'income-category' : 'expense-category';
   const categories = config?.dictionaries[categoryDictId]?.entries ?? [];
+  const reimbursementCategories = config?.dictionaries['expense-category']?.entries ?? [];
   const labels = config?.dictionaries.labels?.entries ?? [];
   const defaultCategory =
     (targetKind === 'income' ? config?.defaultIncomeCategory : config?.defaultExpenseCategory) ??
@@ -175,6 +176,7 @@ function ConvertIncomeExpenseBody({
         // account/currency, so all accounts must be selectable.
         accounts={accounts}
         categories={categories}
+        reimbursementCategories={reimbursementCategories}
         labels={labels}
         defaultValues={defaultValues}
         isSubmitting={edit.isPending}

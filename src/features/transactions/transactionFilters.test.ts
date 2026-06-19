@@ -23,54 +23,89 @@ const base: TransactionResponse = {
   status: 'Completed',
   failureReason: null,
   transactionType: 'expense',
-  category: 'cat-food',
+  allocations: { incomes: [], expenses: [] },
   date: '2026-05-01T00:00:00Z',
   labels: ['lbl-trip'],
   amendmentCount: 0,
 };
+// A single expense (or income) slice carrying `categoryId` (or no slice for
+// null), so the category filter (which scans allocation slices) can match.
+const alloc = (categoryId: string | null): TransactionResponse['allocations'] =>
+  categoryId === null
+    ? { incomes: [], expenses: [] }
+    : { incomes: [], expenses: [{ categoryId, amount: { amount: 1, currency: 'USD' } }] };
+const incomeAlloc = (categoryId: string): TransactionResponse['allocations'] => ({
+  incomes: [{ categoryId, amount: { amount: 1, currency: 'USD' } }],
+  expenses: [],
+});
 const row = (o: Partial<TransactionResponse>): TransactionResponse => ({ ...base, ...o });
 const noFilter: TransactionFilters = {
   description: '',
   labelIds: [],
-  categoryId: '',
+  category: '',
   showCancelledFailed: true,
 };
 
+// The filter matches by NAME. "Other" is seeded into BOTH dictionaries with
+// distinct ids — both resolve to the name "Other".
+const names = new Map<string, string>([
+  ['cat-food', 'Food'],
+  ['cat-salary', 'Salary'],
+  ['inc-other', 'Other'],
+  ['exp-other', 'Other'],
+]);
+
 describe('applyTransactionFilters', () => {
   const rows = [
-    row({ id: '1', description: 'Coffee', category: 'cat-food', labels: ['lbl-trip'] }),
-    row({ id: '2', description: 'Salary', category: 'cat-salary', labels: [] }),
-    row({ id: '3', description: 'Transfer', category: null, labels: ['lbl-fun'] }),
+    row({ id: '1', description: 'Coffee', allocations: alloc('cat-food'), labels: ['lbl-trip'] }),
+    row({ id: '2', description: 'Salary', allocations: alloc('cat-salary'), labels: [] }),
+    row({ id: '3', description: 'Transfer', allocations: alloc(null), labels: ['lbl-fun'] }),
   ];
 
   it('returns all rows when no filter is set', () => {
-    expect(applyTransactionFilters(rows, noFilter)).toHaveLength(3);
+    expect(applyTransactionFilters(rows, noFilter, names)).toHaveLength(3);
   });
   it('filters by case-insensitive partial description', () => {
     expect(
-      applyTransactionFilters(rows, { ...noFilter, description: 'coff' }).map((r) => r.id),
+      applyTransactionFilters(rows, { ...noFilter, description: 'coff' }, names).map((r) => r.id),
     ).toEqual(['1']);
   });
   it('filters by label (ANY of)', () => {
     expect(
-      applyTransactionFilters(rows, { ...noFilter, labelIds: ['lbl-trip', 'lbl-fun'] }).map(
+      applyTransactionFilters(rows, { ...noFilter, labelIds: ['lbl-trip', 'lbl-fun'] }, names).map(
         (r) => r.id,
       ),
     ).toEqual(['1', '3']);
   });
-  it('filters by exact category and excludes null-category rows', () => {
+  it('filters by category name and excludes null-category rows', () => {
     expect(
-      applyTransactionFilters(rows, { ...noFilter, categoryId: 'cat-food' }).map((r) => r.id),
+      applyTransactionFilters(rows, { ...noFilter, category: 'Food' }, names).map((r) => r.id),
     ).toEqual(['1']);
+  });
+  it('matches a name shared across dictionaries (income & expense "Other")', () => {
+    const otherRows = [
+      row({ id: 'inc', allocations: incomeAlloc('inc-other') }),
+      row({ id: 'exp', allocations: alloc('exp-other') }),
+      row({ id: 'food', allocations: alloc('cat-food') }),
+    ];
+    expect(
+      applyTransactionFilters(otherRows, { ...noFilter, category: 'Other' }, names).map(
+        (r) => r.id,
+      ),
+    ).toEqual(['inc', 'exp']);
   });
   it('composes filters with AND', () => {
     expect(
-      applyTransactionFilters(rows, {
-        description: 'o',
-        labelIds: ['lbl-trip'],
-        categoryId: 'cat-food',
-        showCancelledFailed: true,
-      }).map((r) => r.id),
+      applyTransactionFilters(
+        rows,
+        {
+          description: 'o',
+          labelIds: ['lbl-trip'],
+          category: 'Food',
+          showCancelledFailed: true,
+        },
+        names,
+      ).map((r) => r.id),
     ).toEqual(['1']);
   });
 });
@@ -84,18 +119,20 @@ describe('showCancelledFailed filter', () => {
   ];
 
   it('hides Failed and Cancelled rows when showCancelledFailed is false', () => {
-    const result = applyTransactionFilters(statusRows, {
-      ...noFilter,
-      showCancelledFailed: false,
-    });
+    const result = applyTransactionFilters(
+      statusRows,
+      { ...noFilter, showCancelledFailed: false },
+      names,
+    );
     expect(result.map((r) => r.id)).toEqual(['completed', 'pending']);
   });
 
   it('shows all rows when showCancelledFailed is true', () => {
-    const result = applyTransactionFilters(statusRows, {
-      ...noFilter,
-      showCancelledFailed: true,
-    });
+    const result = applyTransactionFilters(
+      statusRows,
+      { ...noFilter, showCancelledFailed: true },
+      names,
+    );
     expect(result.map((r) => r.id)).toEqual(['completed', 'pending', 'failed', 'cancelled']);
   });
 });

@@ -194,6 +194,7 @@ function EditIncomeExpenseBody({
 
   const categoryDictId = kind === 'income' ? 'income-category' : 'expense-category';
   const categories = config?.dictionaries[categoryDictId]?.entries ?? [];
+  const reimbursementCategories = config?.dictionaries['expense-category']?.entries ?? [];
   const labels = config?.dictionaries.labels?.entries ?? [];
 
   const defaultValues = useMemo(() => toIncomeExpenseFormValues(tx, accounts), [tx, accounts]);
@@ -205,22 +206,36 @@ function EditIncomeExpenseBody({
     apiRef.current = api;
   }, []);
 
+  // Track whether the last failure had field errors that all mapped to a real
+  // form field. When a categorised amend rejects with bucket-level errors
+  // (sourceAmount/targetAmount/newAllocations/allocations) the mapper returns
+  // null for every entry, so none can be surfaced inline — fall back to the
+  // banner instead of silently swallowing the error.
+  const [unmappedError, setUnmappedError] = useState(false);
+
   const handleSubmit = async (values: IncomeExpenseFormValues) => {
+    setUnmappedError(false);
     try {
       const diff = diffIncomeExpense(baselineRef.current, values, tx);
       await edit.mutateAsync({ id: tx.id, accountIds, diff, onSubCallApplied });
       onClose();
     } catch (e) {
       if (e instanceof ApiError && e.fieldErrors) {
+        let mappedAny = false;
         for (const [field, message] of Object.entries(e.fieldErrors)) {
           const target = mapIncomeExpenseFieldError(field, kind);
-          if (target) apiRef.current?.setFieldError(target, message);
+          if (target) {
+            apiRef.current?.setFieldError(target, message);
+            mappedAny = true;
+          }
         }
+        if (!mappedAny) setUnmappedError(true);
       }
     }
   };
 
-  const showBanner = edit.isError && !(edit.error instanceof ApiError && edit.error.fieldErrors);
+  const showBanner =
+    edit.isError && (!(edit.error instanceof ApiError && edit.error.fieldErrors) || unmappedError);
   const bannerMessage =
     edit.error instanceof ApiError ? edit.error.message : 'Something went wrong. Please try again.';
 
@@ -236,6 +251,7 @@ function EditIncomeExpenseBody({
         mode="edit"
         accounts={filteredAccounts}
         categories={categories}
+        reimbursementCategories={reimbursementCategories}
         labels={labels}
         defaultValues={defaultValues}
         isSubmitting={edit.isPending}

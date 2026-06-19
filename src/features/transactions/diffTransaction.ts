@@ -1,4 +1,5 @@
 import type {
+  Allocation,
   Allocations,
   AmendTransactionRequest,
   ISO8601,
@@ -17,16 +18,33 @@ export interface TransactionEditDiff {
   allocations?: Allocations;
 }
 
-// Single-category edit → one allocation slice in the bucket matching the kind.
-const bucketAllocation = (
-  income: boolean,
-  categoryId: UUID,
-  amount: number,
+// Each form row maps 1:1 to an allocation slice (money tagged with the form
+// currency). The transaction total is the sum of all slice amounts across both
+// buckets — there is no separate top-level amount.
+const toMoneySlices = (
+  rows: { category: string; amount: number }[],
   currency: string,
-): Allocations => {
-  const slice = { categoryId, amount: { amount, currency } };
-  return income ? { incomes: [slice], expenses: [] } : { incomes: [], expenses: [slice] };
-};
+): Allocation[] =>
+  rows.map((r) => ({ categoryId: r.category, amount: { amount: r.amount, currency } }));
+
+export const buildAllocations = (v: IncomeExpenseFormValues, currency: string): Allocations => ({
+  incomes: toMoneySlices(v.incomes, currency),
+  expenses: toMoneySlices(v.expenses, currency),
+});
+
+// Precondition: callers pass cleaned/finite slice amounts — the baseline comes
+// from `toIncomeExpenseFormValues` (always finite) and the next values are
+// cleaned by `dropEmptySlices` in IncomeExpenseForm before submit. A NaN here
+// would make `newTotal !== oldTotal` spuriously true and emit a bogus amendment.
+const sumSlices = (v: IncomeExpenseFormValues) =>
+  [...v.incomes, ...v.expenses].reduce((s, r) => s + r.amount, 0);
+
+const sameSlices = (
+  a: { category: string; amount: number }[],
+  b: { category: string; amount: number }[],
+) =>
+  a.length === b.length &&
+  a.every((s, i) => s.category === b[i]!.category && s.amount === b[i]!.amount);
 
 const sameLabels = (a: readonly UUID[], b: readonly UUID[]) =>
   a.length === b.length && a.every((id, i) => id === b[i]);
@@ -45,21 +63,29 @@ export function diffIncomeExpense(
   const externalLeg = income ? tx.sourceAccountId : tx.targetAccountId;
   const externalCurrency = income ? tx.sourceCurrency : tx.targetCurrency;
   const accountChanged = next.accountId !== initial.accountId;
-  const amountChanged = next.amount !== initial.amount;
-  const categoryChanged = next.category !== initial.category;
+  const newTotal = sumSlices(next);
+  const oldTotal = sumSlices(initial);
+  const totalChanged = newTotal !== oldTotal;
+  const splitChanged =
+    !sameSlices(initial.incomes, next.incomes) || !sameSlices(initial.expenses, next.expenses);
 
-  if (accountChanged || amountChanged) {
+  // The backend requires `newAllocations` on EVERY categorised amend (omitting
+  // them is rejected with AllocationsRequiredForCategorisedKind). So when the
+  // total or account changes we fold BOTH buckets into the amendment and never
+  // also emit a separate diff.allocations. A pure re-split (same total) uses the
+  // dedicated PATCH /allocations endpoint instead.
+  if (accountChanged || totalChanged) {
     diff.amendment = {
       sourceAccountId: income ? externalLeg : next.accountId,
       targetAccountId: income ? next.accountId : externalLeg,
-      sourceAmount: next.amount,
+      sourceAmount: newTotal,
       sourceCurrency: income ? externalCurrency : next.currency,
-      targetAmount: next.amount,
+      targetAmount: newTotal,
       targetCurrency: income ? next.currency : externalCurrency,
+      newAllocations: buildAllocations(next, next.currency),
     };
-    diff.allocations = bucketAllocation(income, next.category, next.amount, next.currency);
-  } else if (categoryChanged) {
-    diff.allocations = bucketAllocation(income, next.category, next.amount, next.currency);
+  } else if (splitChanged) {
+    diff.allocations = buildAllocations(next, next.currency);
   }
 
   return diff;

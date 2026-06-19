@@ -106,16 +106,16 @@ function CopyIncomeExpenseBody({
 
   const categoryDictId = kind === 'income' ? 'income-category' : 'expense-category';
   const categories = config?.dictionaries[categoryDictId]?.entries ?? [];
+  const reimbursementCategories = config?.dictionaries['expense-category']?.entries ?? [];
   const labels = config?.dictionaries.labels?.entries ?? [];
 
-  // Seed from the source, then: (1) default the date to now (a copy is a new
-  // transaction recorded now, not a clone of the original's timestamp), and
-  // (2) take the magnitude of the amount. Expense wire amounts are negative
-  // (money leaving the source account), but the create form/schema requires a
-  // positive amount (`positiveAmount` in schema.ts), so seed the magnitude.
+  // Seed from the source, then default the date to now: a copy is a new
+  // transaction recorded now, not a clone of the original's timestamp. The
+  // allocation slice amounts in `tx.allocations` are already positive
+  // magnitudes, so they need no sign adjustment.
   const defaultValues = useMemo(() => {
     const seed = toIncomeExpenseFormValues(tx, accounts);
-    return { ...seed, amount: Math.abs(seed.amount), date: nowDateTimeInput() };
+    return { ...seed, date: nowDateTimeInput() };
   }, [tx, accounts]);
 
   const apiRef = useRef<IncomeExpenseFormApi | null>(null);
@@ -161,6 +161,7 @@ function CopyIncomeExpenseBody({
         mode="create"
         accounts={accounts}
         categories={categories}
+        reimbursementCategories={reimbursementCategories}
         labels={labels}
         defaultValues={defaultValues}
         isSubmitting={create.isPending}

@@ -6,6 +6,7 @@ import type {
 } from '@/api/types';
 import { wireToDateInput } from '@/lib/dates';
 import type { IncomeExpenseFormValues, TransferFormValues } from './schema';
+import { buildAllocations } from './diffTransaction';
 import { isExpense, isIncome } from './transactionType';
 
 // Seed a target-kind income/expense form from a source transaction. The "kept"
@@ -27,11 +28,14 @@ export function toConvertIncomeExpenseDefaults(
   const currency =
     accounts.find((a) => a.id === accountId)?.currency ??
     (keepSource ? tx.sourceCurrency : tx.targetCurrency);
+  // Seed a single slice row in the target-kind bucket, carrying the magnitude
+  // as the row amount. The other bucket starts empty.
+  const slice = { category: defaultCategory ?? '', amount };
   return {
     accountId,
-    amount,
     currency,
-    category: defaultCategory ?? '',
+    incomes: targetKind === 'income' ? [slice] : [],
+    expenses: targetKind === 'expense' ? [slice] : [],
     description: tx.description,
     date: wireToDateInput(tx.date),
     labels: tx.labels,
@@ -68,27 +72,28 @@ export function toConvertTransferDefaults(
   };
 }
 
-// Build a cross-kind amend request for an income/expense target. `newAllocations`
-// is carried INLINE (a true cross-kind change requires it; the separate
-// PATCH /allocations is only for within-kind edits). Income/expense are
-// single-currency, so both legs share the account amount/currency.
+// Build an amend request for an income/expense target. `newAllocations` is
+// carried INLINE: the backend requires allocations on EVERY categorised amend
+// (no within-kind/cross-kind distinction); the separate PATCH /allocations is
+// only for allocation-only edits that leave the total unchanged. Income/expense
+// are single-currency, so both legs share the account amount/currency.
 export function toIncomeExpenseAmendment(
   targetKind: 'income' | 'expense',
   v: IncomeExpenseFormValues,
   externalAccountId: UUID,
 ): AmendTransactionRequest {
   const income = targetKind === 'income';
-  const slice = { categoryId: v.category, amount: { amount: v.amount, currency: v.currency } };
+  // The total is the sum of all slice amounts across both buckets; both legs
+  // share it (single-currency income/expense).
+  const total = [...v.incomes, ...v.expenses].reduce((s, r) => s + r.amount, 0);
   return {
     sourceAccountId: income ? externalAccountId : v.accountId,
     targetAccountId: income ? v.accountId : externalAccountId,
-    sourceAmount: v.amount,
+    sourceAmount: total,
     sourceCurrency: v.currency,
-    targetAmount: v.amount,
+    targetAmount: total,
     targetCurrency: v.currency,
-    newAllocations: income
-      ? { incomes: [slice], expenses: [] }
-      : { incomes: [], expenses: [slice] },
+    newAllocations: buildAllocations(v, v.currency),
   };
 }
 

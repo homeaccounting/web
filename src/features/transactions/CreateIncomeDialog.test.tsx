@@ -76,6 +76,16 @@ describe('CreateIncomeDialog', () => {
     });
   });
 
+  it('renders the collapsed reimbursement section', async () => {
+    renderWithProviders(<Wrapper />, { initialPath: '/' });
+    await screen.findByLabelText(/account/i);
+
+    // The reimbursement (expense-category) section is offered on the income
+    // form, collapsed by default.
+    const toggle = screen.getByRole('button', { name: /reimbursement/i });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  });
+
   it('happy path: closes dialog after successful submit', async () => {
     const user = userEvent.setup();
     renderWithProviders(<Wrapper />, { initialPath: '/' });
@@ -148,7 +158,7 @@ describe('CreateIncomeDialog', () => {
     server.use(
       http.post(`${apiBase}/api/transactions/income`, () =>
         HttpResponse.json(
-          { message: 'Validation failed', fieldErrors: { amount: 'Must be positive' } },
+          { message: 'Validation failed', fieldErrors: { incomes: 'Must be positive' } },
           { status: 422 },
         ),
       ),

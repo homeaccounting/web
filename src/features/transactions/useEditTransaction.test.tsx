@@ -40,7 +40,10 @@ const txResponse = (overrides: Partial<TransactionResponse> = {}): TransactionRe
   status: 'Completed',
   failureReason: null,
   transactionType: 'income',
-  category: 'cat-1',
+  allocations: {
+    incomes: [{ categoryId: 'cat-1', amount: { amount: 10, currency: 'USD' } }],
+    expenses: [],
+  },
   date: '2026-03-04T00:00:00.000Z',
   labels: [],
   amendmentCount: 0,

@@ -58,24 +58,33 @@ function Wrapper({ tx }: { tx: TransactionResponse }) {
   );
 }
 
+const rentCategoryId = '00000000-0000-0000-0000-0000000054e7';
+
+// Two expense slices (42 + 8 = 50) so the copy must preserve BOTH rows.
 const expenseSource: TransactionResponse = {
   ...transactionFixture,
   id: 'src-expense',
   sourceAccountId: accountA,
   targetAccountId: 'external-1',
-  sourceAmount: -42,
+  sourceAmount: -50,
   sourceCurrency: 'USD',
-  targetAmount: -42,
+  targetAmount: -50,
   targetCurrency: 'USD',
   description: 'Lunch',
   transactionType: 'expense',
-  category: foodCategoryId,
+  allocations: {
+    incomes: [],
+    expenses: [
+      { categoryId: foodCategoryId, amount: { amount: 42, currency: 'USD' } },
+      { categoryId: rentCategoryId, amount: { amount: 8, currency: 'USD' } },
+    ],
+  },
   date: '2026-01-15T08:00:00.000Z',
   labels: [tripLabelId],
 };
 
 describe('CopyTransactionDialog', () => {
-  it('seeds an expense copy from the source and defaults the date to now', async () => {
+  it('seeds an expense copy preserving all slices and defaults the date to now', async () => {
     const user = userEvent.setup();
     let capturedBody: Record<string, unknown> = {};
     server.use(
@@ -91,7 +100,11 @@ describe('CopyTransactionDialog', () => {
     await screen.findByLabelText(/account/i);
 
     expect(screen.getByLabelText(/description/i)).toHaveValue('Lunch');
-    expect(screen.getByLabelText(/amount/i)).toHaveValue(42);
+    // Both expense slices are seeded as separate rows.
+    const amounts = screen.getAllByLabelText(/amount/i);
+    expect(amounts).toHaveLength(2);
+    expect(amounts[0]).toHaveValue(42);
+    expect(amounts[1]).toHaveValue(8);
 
     await user.click(screen.getByRole('button', { name: 'OK' }));
 
@@ -100,9 +113,12 @@ describe('CopyTransactionDialog', () => {
     expect(capturedBody.date).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:00\.000Z$/);
     expect(capturedBody.accountId).toBe(accountA);
     expect(capturedBody.labels).toEqual([tripLabelId]);
-    expect(
-      (capturedBody.allocations as { expenses: { category: string }[] }).expenses[0]?.category,
-    ).toBe(foodCategoryId);
+    const expenses = (
+      capturedBody.allocations as { expenses: { category: string; amount: number }[] }
+    ).expenses;
+    expect(expenses).toHaveLength(2);
+    expect(expenses[0]).toMatchObject({ category: foodCategoryId, amount: 42 });
+    expect(expenses[1]).toMatchObject({ category: rentCategoryId, amount: 8 });
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 
@@ -127,7 +143,7 @@ describe('CopyTransactionDialog', () => {
       targetCurrency: 'USD',
       description: 'Move',
       transactionType: 'transfer',
-      category: null,
+      allocations: { incomes: [], expenses: [] },
       labels: [],
     };
 
@@ -185,7 +201,7 @@ describe('CopyTransactionDialog', () => {
       ...transactionFixture,
       id: 'src-adjustment',
       transactionType: 'adjustment',
-      category: null,
+      allocations: { incomes: [], expenses: [] },
     };
     renderWithProviders(<Wrapper tx={adjustment} />, { initialPath: '/' });
     expect(await screen.findByText(/balance adjustments can't be copied/i)).toBeInTheDocument();

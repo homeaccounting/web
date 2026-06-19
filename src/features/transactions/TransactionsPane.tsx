@@ -34,6 +34,8 @@ import { TransactionTypeIcon } from './TransactionTypeIcon';
 import { isAdjustment, transactionKind, transactionTypeMeta } from './transactionType';
 import type { TransactionKind } from './labels';
 import { LabelChips } from './LabelChips';
+import { CategoryChips } from './CategoryChips';
+import { allocationCategoryIds } from './allocations';
 import { TransactionPagination, usePersistedPageSize } from './TransactionPagination';
 import { AccountHeader } from './AccountHeader';
 import { ControlBar } from './ControlBar';
@@ -55,7 +57,7 @@ function convertTargets(type: TransferTypeText): TransactionKind[] {
 const EMPTY_FILTERS: TransactionFilters = {
   description: '',
   labelIds: [],
-  categoryId: '',
+  category: '',
   showCancelledFailed: false,
 };
 
@@ -84,22 +86,30 @@ export function TransactionsPane() {
   const categoryNameById = labelNameById;
 
   const labelOptions = configuration?.dictionaries.labels?.entries ?? [];
-  const categoryOptions = useMemo(
-    () => [
+  // The filter matches by category NAME (so a name shared across the income and
+  // expense dictionaries — e.g. "Other" — matches either). The dropdown is
+  // therefore deduped by name, and each option's value IS the name.
+  const categoryOptions = useMemo(() => {
+    const entries = [
       ...(configuration?.dictionaries['income-category']?.entries ?? []),
       ...(configuration?.dictionaries['expense-category']?.entries ?? []),
-    ],
-    [configuration],
-  );
+    ];
+    const byName = new Map<string, string>();
+    for (const e of entries) if (!byName.has(e.name)) byName.set(e.name, e.name);
+    return [...byName.keys()].map((name) => ({ id: name, name }));
+  }, [configuration]);
 
-  const filtered = useMemo(() => applyTransactionFilters(data ?? [], filters), [data, filters]);
+  const filtered = useMemo(
+    () => applyTransactionFilters(data ?? [], filters, categoryNameById),
+    [data, filters, categoryNameById],
+  );
   // Count of active filter facets, surfaced on the (collapsed) toggle so the
   // user knows filters are narrowing the list. The date window is a primary
   // range control rather than a filter, so it is excluded here.
   const activeFilterCount =
     (filters.description.trim() ? 1 : 0) +
     (filters.labelIds.length > 0 ? 1 : 0) +
-    (filters.categoryId ? 1 : 0) +
+    (filters.category ? 1 : 0) +
     (filters.showCancelledFailed ? 1 : 0);
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const clampedPage = Math.min(pageIndex, pageCount - 1);
@@ -245,8 +255,16 @@ export function TransactionsPane() {
                         leadingGap={!!t.description}
                       />
                     </td>
-                    <td className="w-40 truncate px-4 py-2">
-                      {t.category ? (categoryNameById.get(t.category) ?? '') : ''}
+                    <td className="w-40 overflow-hidden px-4 py-2">
+                      {/* A (possibly split) transaction's categories render as
+                          colored chips — the same treatment as labels. Chips
+                          stay on one clipped line (full list in the title) so
+                          the row height and column width never grow. */}
+                      <CategoryChips
+                        categoryIds={allocationCategoryIds(t)}
+                        nameById={categoryNameById}
+                        nowrap
+                      />
                     </td>
                     <td
                       className={cn(

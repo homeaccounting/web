@@ -15,6 +15,7 @@ export interface CategoryComboboxProps {
   placeholder?: string;
   name?: string;
   id?: string;
+  'aria-label'?: string;
   'aria-invalid'?: boolean | 'true' | 'false';
   'aria-describedby'?: string;
 }
@@ -31,6 +32,7 @@ export function CategoryCombobox({
   placeholder = 'Select a category…',
   name,
   id,
+  'aria-label': ariaLabel,
   'aria-invalid': ariaInvalid,
   'aria-describedby': ariaDescribedby,
 }: CategoryComboboxProps) {
@@ -84,6 +86,7 @@ export function CategoryCombobox({
           name={name}
           autoComplete="off"
           role="combobox"
+          aria-label={ariaLabel}
           aria-expanded={open}
           aria-controls={listId}
           aria-activedescendant={

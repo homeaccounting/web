@@ -47,24 +47,28 @@ const base: TransactionResponse = {
   status: 'Completed',
   failureReason: null,
   transactionType: 'expense',
-  category: 'cat-x',
+  allocations: {
+    incomes: [],
+    expenses: [{ categoryId: 'cat-x', amount: { amount: 42, currency: 'USD' } }],
+  },
   date: '2026-01-15T08:00:00.000Z',
   labels: ['lbl-1'],
   amendmentCount: 0,
 };
 
 describe('toConvertIncomeExpenseDefaults', () => {
-  it('expense → income keeps the source (regular) leg and seeds the default category', () => {
+  it('expense → income seeds a single income slice on the source (regular) leg', () => {
     const d = toConvertIncomeExpenseDefaults(base, 'income', accounts, 'def-income');
     expect(d.accountId).toBe(A);
-    expect(d.amount).toBe(42); // magnitude
     expect(d.currency).toBe('USD');
-    expect(d.category).toBe('def-income');
+    // One seeded row in the income bucket carrying the magnitude; expenses empty.
+    expect(d.incomes).toEqual([{ category: 'def-income', amount: 42 }]);
+    expect(d.expenses).toEqual([]);
     expect(d.description).toBe('Lunch');
     expect(d.labels).toEqual(['lbl-1']);
   });
 
-  it('income → expense keeps the target (regular) leg', () => {
+  it('income → expense seeds a single expense slice on the target (regular) leg', () => {
     const income: TransactionResponse = {
       ...base,
       transactionType: 'income',
@@ -77,9 +81,9 @@ describe('toConvertIncomeExpenseDefaults', () => {
     };
     const d = toConvertIncomeExpenseDefaults(income, 'expense', accounts, 'def-expense');
     expect(d.accountId).toBe(B);
-    expect(d.amount).toBe(100);
     expect(d.currency).toBe('EUR');
-    expect(d.category).toBe('def-expense');
+    expect(d.expenses).toEqual([{ category: 'def-expense', amount: 100 }]);
+    expect(d.incomes).toEqual([]);
   });
 
   it('transfer → income keeps the "to" leg; transfer → expense keeps the "from" leg', () => {
@@ -92,14 +96,16 @@ describe('toConvertIncomeExpenseDefaults', () => {
       targetAmount: 30,
       sourceCurrency: 'USD',
       targetCurrency: 'EUR',
-      category: null,
+      allocations: { incomes: [], expenses: [] },
     };
     expect(toConvertIncomeExpenseDefaults(transfer, 'income', accounts, null).accountId).toBe(B);
     expect(toConvertIncomeExpenseDefaults(transfer, 'expense', accounts, null).accountId).toBe(A);
   });
 
   it('falls back to an empty category when no default is configured', () => {
-    expect(toConvertIncomeExpenseDefaults(base, 'income', accounts, null).category).toBe('');
+    expect(toConvertIncomeExpenseDefaults(base, 'income', accounts, null).incomes).toEqual([
+      { category: '', amount: 42 },
+    ]);
   });
 });
 
@@ -136,9 +142,12 @@ describe('toIncomeExpenseAmendment', () => {
       'income',
       {
         accountId: A,
-        amount: 42,
         currency: 'USD',
-        category: 'c',
+        incomes: [
+          { category: 'c', amount: 42 },
+          { category: 'd', amount: 8 },
+        ],
+        expenses: [],
         description: '',
         date: undefined,
         labels: [],
@@ -147,9 +156,14 @@ describe('toIncomeExpenseAmendment', () => {
     );
     expect(a.sourceAccountId).toBe(EXT);
     expect(a.targetAccountId).toBe(A);
-    expect(a.targetAmount).toBe(42);
+    // Total is the sum of all slice amounts across both buckets.
+    expect(a.sourceAmount).toBe(50);
+    expect(a.targetAmount).toBe(50);
     expect(a.newAllocations).toEqual({
-      incomes: [{ categoryId: 'c', amount: { amount: 42, currency: 'USD' } }],
+      incomes: [
+        { categoryId: 'c', amount: { amount: 42, currency: 'USD' } },
+        { categoryId: 'd', amount: { amount: 8, currency: 'USD' } },
+      ],
       expenses: [],
     });
   });
@@ -159,9 +173,9 @@ describe('toIncomeExpenseAmendment', () => {
       'expense',
       {
         accountId: A,
-        amount: 42,
         currency: 'USD',
-        category: 'c',
+        incomes: [],
+        expenses: [{ category: 'c', amount: 42 }],
         description: '',
         date: undefined,
         labels: [],
@@ -170,6 +184,8 @@ describe('toIncomeExpenseAmendment', () => {
     );
     expect(a.sourceAccountId).toBe(A);
     expect(a.targetAccountId).toBe(EXT);
+    expect(a.sourceAmount).toBe(42);
+    expect(a.targetAmount).toBe(42);
     expect(a.newAllocations).toEqual({
       incomes: [],
       expenses: [{ categoryId: 'c', amount: { amount: 42, currency: 'USD' } }],

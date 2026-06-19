@@ -37,6 +37,7 @@ export function CreateIncomeDialog({
   // (labelsDictId). Income/expense have separate category dictionaries that the
   // backend enforces per transaction type.
   const categories = config?.dictionaries['income-category']?.entries ?? [];
+  const reimbursementCategories = config?.dictionaries['expense-category']?.entries ?? [];
   const labels = config?.dictionaries.labels?.entries ?? [];
 
   const defaultAccount = accounts?.find((a) => a.id === selectedAccountId) ?? accounts?.[0];
@@ -45,9 +46,9 @@ export function CreateIncomeDialog({
   const defaults = useMemo(
     () => ({
       accountId: defaultAccount?.id ?? '',
-      amount: 0,
       currency: defaultAccount?.currency ?? '',
-      category: defaultCategory,
+      incomes: [{ category: defaultCategory, amount: NaN }],
+      expenses: [],
       description: '',
       date: nowDateTimeInput(),
       labels: [] as UUID[],
@@ -100,6 +101,7 @@ export function CreateIncomeDialog({
             mode="create"
             accounts={accounts}
             categories={categories}
+            reimbursementCategories={reimbursementCategories}
             labels={labels}
             defaultValues={defaults}
             isSubmitting={create.isPending}

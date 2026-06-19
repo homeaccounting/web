@@ -43,9 +43,9 @@ export function CreateExpenseDialog({
   const defaults = useMemo(
     () => ({
       accountId: defaultAccount?.id ?? '',
-      amount: 0,
       currency: defaultAccount?.currency ?? '',
-      category: defaultCategory,
+      incomes: [],
+      expenses: [{ category: defaultCategory, amount: NaN }],
       description: '',
       date: nowDateTimeInput(),
       labels: [] as UUID[],

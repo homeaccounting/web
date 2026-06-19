@@ -46,7 +46,47 @@ describe('TransactionsPane', () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
     renderWithProviders(ui(), { initialPath: '/accounts/a1' });
     expect(await screen.findByText('Food')).toBeInTheDocument();
-    expect(screen.queryByText(transactionFixture.category as string)).not.toBeInTheDocument();
+    // The raw category id must not leak into the cell; only its resolved name.
+    expect(
+      screen.queryByText(transactionFixture.allocations.expenses[0]!.categoryId),
+    ).not.toBeInTheDocument();
+  });
+
+  it('renders a single-slice category as one chip with just the name', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    const cell = await screen.findByText('Food');
+    expect(cell.textContent).toBe('Food');
+    expect(screen.queryByText(/\+\d/)).not.toBeInTheDocument();
+  });
+
+  it('renders a multi-slice category as a chip per slice (all names shown)', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    server.use(
+      http.get(`${apiBase}/api/transactions`, () =>
+        HttpResponse.json({
+          transactions: [
+            {
+              ...transactionFixture,
+              id: 'tx-split',
+              description: 'Split',
+              allocations: {
+                incomes: [
+                  { categoryId: salaryCategoryId, amount: { amount: 100, currency: 'USD' } },
+                ],
+                expenses: [{ categoryId: foodCategoryId, amount: { amount: 50, currency: 'USD' } }],
+              },
+            },
+          ],
+          totalCount: 1,
+        }),
+      ),
+    );
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    // Both categories render as separate chips; no "+N" summary.
+    expect(await screen.findByText('Salary')).toBeInTheDocument();
+    expect(screen.getByText('Food')).toBeInTheDocument();
+    expect(screen.queryByText(/\+\d/)).not.toBeInTheDocument();
   });
 
   it('renders empty state when there are no transactions', async () => {
@@ -135,7 +175,7 @@ describe('TransactionsPane', () => {
               status: 'Completed',
               failureReason: null,
               transactionType: 'adjustment',
-              category: null,
+              allocations: { incomes: [], expenses: [] },
               date: '2026-05-01T00:00:00.000Z',
               labels: [],
               amendmentCount: 0,
@@ -188,7 +228,7 @@ describe('TransactionsPane', () => {
               status: 'Completed',
               failureReason: null,
               transactionType: 'adjustment',
-              category: null,
+              allocations: { incomes: [], expenses: [] },
               date: '2026-05-01T00:00:00.000Z',
               labels: [],
               amendmentCount: 0,
@@ -582,7 +622,7 @@ describe('TransactionsPane', () => {
               id: 'adj-1',
               description: 'AdjustmentTx',
               transactionType: 'adjustment',
-              category: null,
+              allocations: { incomes: [], expenses: [] },
             },
           ],
           totalCount: 1,
@@ -631,7 +671,7 @@ describe('TransactionsPane', () => {
               id: 'adj-1',
               description: 'AdjustmentTx',
               transactionType: 'adjustment',
-              category: null,
+              allocations: { incomes: [], expenses: [] },
             },
           ],
           totalCount: 1,
@@ -677,14 +717,22 @@ describe('TransactionsPane', () => {
               id: 'tx-income',
               description: 'Paycheck',
               transactionType: 'income',
-              category: salaryCategoryId,
+              allocations: {
+                incomes: [
+                  { categoryId: salaryCategoryId, amount: { amount: 100, currency: 'USD' } },
+                ],
+                expenses: [],
+              },
             },
             {
               ...transactionFixture,
               id: 'tx-expense',
               description: 'Groceries',
               transactionType: 'expense',
-              category: foodCategoryId,
+              allocations: {
+                incomes: [],
+                expenses: [{ categoryId: foodCategoryId, amount: { amount: 50, currency: 'USD' } }],
+              },
             },
           ],
           totalCount: 2,

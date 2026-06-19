@@ -9,20 +9,22 @@ import {
   toTransferRequest,
   toIncomeExpenseFormValues,
   toTransferFormValues,
+  type IncomeExpenseFormValues,
 } from './schema';
 import type { AccountResponse, TransactionResponse } from '@/api/types';
 
 const ACC_A = '11111111-1111-1111-1111-111111111111';
 const ACC_B = '22222222-2222-2222-2222-222222222222';
 const CAT = '33333333-3333-3333-3333-333333333333';
+const CAT2 = '55555555-5555-5555-5555-555555555555';
 const LBL = '44444444-4444-4444-4444-444444444444';
 
 describe('incomeExpenseFormSchema', () => {
   const valid = {
     accountId: ACC_A,
-    amount: 12.5,
     currency: 'USD',
-    category: CAT,
+    incomes: [{ category: CAT, amount: 12.5 }],
+    expenses: [],
     description: 'Lunch',
     date: '2026-06-01',
     labels: [LBL],
@@ -32,9 +34,19 @@ describe('incomeExpenseFormSchema', () => {
     expect(incomeExpenseFormSchema.parse(valid)).toMatchObject(valid);
   });
 
-  it('rejects non-positive amounts', () => {
-    expect(incomeExpenseFormSchema.safeParse({ ...valid, amount: 0 }).success).toBe(false);
-    expect(incomeExpenseFormSchema.safeParse({ ...valid, amount: -1 }).success).toBe(false);
+  it('rejects non-positive slice amounts', () => {
+    expect(
+      incomeExpenseFormSchema.safeParse({
+        ...valid,
+        incomes: [{ category: CAT, amount: 0 }],
+      }).success,
+    ).toBe(false);
+    expect(
+      incomeExpenseFormSchema.safeParse({
+        ...valid,
+        incomes: [{ category: CAT, amount: -1 }],
+      }).success,
+    ).toBe(false);
   });
 
   it('accepts an empty description (optional)', () => {
@@ -56,17 +68,17 @@ describe('incomeExpenseFormSchema', () => {
 });
 
 describe('toIncomeRequest / toExpenseRequest', () => {
-  const values = {
+  const values: IncomeExpenseFormValues = {
     accountId: ACC_A,
-    amount: 12.5,
     currency: 'USD',
-    category: CAT,
+    incomes: [{ category: CAT, amount: 12.5 }],
+    expenses: [],
     description: 'Lunch',
     date: '2026-06-01',
     labels: [LBL],
-  } as const;
+  };
 
-  it('produces the full DTO with ISO timestamp and the slice in the incomes bucket', () => {
+  it('produces the full DTO with ISO timestamp and one income slice', () => {
     expect(toIncomeRequest({ ...values })).toEqual({
       accountId: ACC_A,
       currency: 'USD',
@@ -80,6 +92,30 @@ describe('toIncomeRequest / toExpenseRequest', () => {
     });
   });
 
+  it('maps two income rows into the incomes bucket', () => {
+    const dto = toIncomeRequest({
+      ...values,
+      incomes: [
+        { category: CAT, amount: 10 },
+        { category: CAT2, amount: 5 },
+      ],
+    });
+    expect(dto.allocations.incomes).toHaveLength(2);
+    expect(dto.allocations.expenses).toHaveLength(0);
+  });
+
+  it('income with a reimbursement (one income + one expense) fills both buckets', () => {
+    const dto = toIncomeRequest({
+      ...values,
+      incomes: [{ category: CAT, amount: 10 }],
+      expenses: [{ category: CAT2, amount: 3 }],
+    });
+    expect(dto.allocations).toEqual({
+      incomes: [{ category: CAT, amount: 10 }],
+      expenses: [{ category: CAT2, amount: 3 }],
+    });
+  });
+
   it('omits date when undefined', () => {
     const dto = toIncomeRequest({ ...values, date: undefined });
     expect(dto.date).toBeUndefined();
@@ -90,10 +126,21 @@ describe('toIncomeRequest / toExpenseRequest', () => {
     expect(dto.labels).toBeUndefined();
   });
 
-  it('toExpenseRequest puts the slice in the expenses bucket', () => {
-    expect(toExpenseRequest({ ...values }).allocations).toEqual({
+  it('toExpenseRequest maps two expense rows into the expenses bucket', () => {
+    const dto = toExpenseRequest({
+      ...values,
       incomes: [],
-      expenses: [{ category: CAT, amount: 12.5 }],
+      expenses: [
+        { category: CAT, amount: 4 },
+        { category: CAT2, amount: 6 },
+      ],
+    });
+    expect(dto.allocations).toEqual({
+      incomes: [],
+      expenses: [
+        { category: CAT, amount: 4 },
+        { category: CAT2, amount: 6 },
+      ],
     });
   });
 });
@@ -168,6 +215,8 @@ const acc = (id: string, currency = 'USD'): AccountResponse => ({
   version: 1,
 });
 
+const money = (amount: number, currency = 'USD') => ({ amount, currency });
+
 const baseTx = (overrides: Partial<TransactionResponse>): TransactionResponse => ({
   id: 'tx-1',
   sourceAccountId: 'ext',
@@ -181,7 +230,10 @@ const baseTx = (overrides: Partial<TransactionResponse>): TransactionResponse =>
   status: 'Completed',
   failureReason: null,
   transactionType: 'income',
-  category: 'cat-1',
+  allocations: {
+    incomes: [{ categoryId: 'cat-1', amount: money(10) }],
+    expenses: [],
+  },
   date: '2026-03-04T15:00:00.000Z',
   labels: ['l1'],
   amendmentCount: 0,
@@ -189,13 +241,13 @@ const baseTx = (overrides: Partial<TransactionResponse>): TransactionResponse =>
 });
 
 describe('toIncomeExpenseFormValues', () => {
-  it('income → regular leg is the target', () => {
+  it('income → regular leg is the target, slices seeded from allocations', () => {
     const v = toIncomeExpenseFormValues(baseTx({ transactionType: 'income' }), [acc('a1')]);
     expect(v).toEqual({
       accountId: 'a1',
-      amount: 10,
       currency: 'USD',
-      category: 'cat-1',
+      incomes: [{ category: 'cat-1', amount: 10 }],
+      expenses: [],
       description: 'd',
       date: '2026-03-04T15:00',
       labels: ['l1'],
@@ -207,14 +259,28 @@ describe('toIncomeExpenseFormValues', () => {
       transactionType: 'expense',
       sourceAccountId: 'a1',
       targetAccountId: 'ext',
+      allocations: {
+        incomes: [],
+        expenses: [{ categoryId: 'cat-2', amount: money(10) }],
+      },
     });
     const v = toIncomeExpenseFormValues(tx, [acc('a1')]);
     expect(v.accountId).toBe('a1');
+    expect(v.expenses).toEqual([{ category: 'cat-2', amount: 10 }]);
+    expect(v.incomes).toEqual([]);
   });
 
-  it('defensive: missing category collapses to empty string', () => {
-    const v = toIncomeExpenseFormValues(baseTx({ category: null }), [acc('a1')]);
-    expect(v.category).toBe('');
+  it('seeds both buckets for a reimbursement income', () => {
+    const tx = baseTx({
+      transactionType: 'income',
+      allocations: {
+        incomes: [{ categoryId: 'cat-1', amount: money(10) }],
+        expenses: [{ categoryId: 'cat-2', amount: money(3) }],
+      },
+    });
+    const v = toIncomeExpenseFormValues(tx, [acc('a1')]);
+    expect(v.incomes).toEqual([{ category: 'cat-1', amount: 10 }]);
+    expect(v.expenses).toEqual([{ category: 'cat-2', amount: 3 }]);
   });
 });
 
@@ -229,48 +295,114 @@ const accBal = (id: string, balance: number, overdraftLimit: number | null): Acc
   version: 1,
 });
 
-describe('makeIncomeExpenseFormSchema (expense balance check)', () => {
+describe('makeIncomeExpenseFormSchema (allocation refinement)', () => {
   const base = {
     accountId: ACC_A,
     currency: 'USD',
-    category: CAT,
     description: '',
     date: '',
     labels: [] as string[],
   };
 
-  it('passes when amount is below available (balance + overdraftLimit)', () => {
-    const schema = makeIncomeExpenseFormSchema([accBal(ACC_A, 100, 0)], 'expense');
-    expect(schema.safeParse({ ...base, amount: 50 }).success).toBe(true);
-  });
-
-  it('passes at the inclusive boundary (amount === available)', () => {
-    const schema = makeIncomeExpenseFormSchema([accBal(ACC_A, 100, 20)], 'expense');
-    expect(schema.safeParse({ ...base, amount: 120 }).success).toBe(true);
-  });
-
-  it('fails when amount exceeds available, with the error on the amount path', () => {
-    const schema = makeIncomeExpenseFormSchema([accBal(ACC_A, 100, 20)], 'expense');
-    const res = schema.safeParse({ ...base, amount: 120.01 });
+  it('rejects when both buckets are empty (issue at expenses)', () => {
+    const schema = makeIncomeExpenseFormSchema(null, 'income');
+    const res = schema.safeParse({ ...base, incomes: [], expenses: [] });
     expect(res.success).toBe(false);
     if (!res.success) {
-      expect(res.error.issues.some((i) => i.path[0] === 'amount')).toBe(true);
+      expect(res.error.issues.some((i) => i.path[0] === 'expenses')).toBe(true);
     }
   });
 
-  it('skips the check when overdraftLimit is null (unlimited)', () => {
-    const schema = makeIncomeExpenseFormSchema([accBal(ACC_A, 0, null)], 'expense');
-    expect(schema.safeParse({ ...base, amount: 999999 }).success).toBe(true);
+  it('rejects an expense carrying income categories (issue at incomes)', () => {
+    const schema = makeIncomeExpenseFormSchema(null, 'expense');
+    const res = schema.safeParse({
+      ...base,
+      incomes: [{ category: CAT, amount: 5 }],
+      expenses: [{ category: CAT2, amount: 5 }],
+    });
+    expect(res.success).toBe(false);
+    if (!res.success) {
+      expect(res.error.issues.some((i) => i.path[0] === 'incomes')).toBe(true);
+    }
   });
 
-  it('skips the check when the source account is not in the snapshot', () => {
-    const schema = makeIncomeExpenseFormSchema([accBal(ACC_B, 0, 0)], 'expense');
-    expect(schema.safeParse({ ...base, amount: 999999 }).success).toBe(true);
+  it('rejects a slice with a non-positive amount', () => {
+    const schema = makeIncomeExpenseFormSchema(null, 'income');
+    expect(
+      schema.safeParse({ ...base, incomes: [{ category: CAT, amount: 0 }], expenses: [] }).success,
+    ).toBe(false);
   });
 
-  it('never adds the check for income', () => {
-    const schema = makeIncomeExpenseFormSchema([accBal(ACC_A, 0, 0)], 'income');
-    expect(schema.safeParse({ ...base, amount: 999999 }).success).toBe(true);
+  it('accepts a valid income with two income rows', () => {
+    const schema = makeIncomeExpenseFormSchema(null, 'income');
+    expect(
+      schema.safeParse({
+        ...base,
+        incomes: [
+          { category: CAT, amount: 10 },
+          { category: CAT2, amount: 5 },
+        ],
+        expenses: [],
+      }).success,
+    ).toBe(true);
+  });
+
+  describe('expense balance check', () => {
+    it('passes when the expense total is below available (balance + overdraftLimit)', () => {
+      const schema = makeIncomeExpenseFormSchema([accBal(ACC_A, 100, 0)], 'expense');
+      expect(
+        schema.safeParse({ ...base, incomes: [], expenses: [{ category: CAT, amount: 50 }] })
+          .success,
+      ).toBe(true);
+    });
+
+    it('passes at the inclusive boundary (total === available)', () => {
+      const schema = makeIncomeExpenseFormSchema([accBal(ACC_A, 100, 20)], 'expense');
+      expect(
+        schema.safeParse({ ...base, incomes: [], expenses: [{ category: CAT, amount: 120 }] })
+          .success,
+      ).toBe(true);
+    });
+
+    it('fails when the expense total exceeds available, with the error on the expenses path', () => {
+      const schema = makeIncomeExpenseFormSchema([accBal(ACC_A, 100, 20)], 'expense');
+      const res = schema.safeParse({
+        ...base,
+        incomes: [],
+        expenses: [
+          { category: CAT, amount: 100 },
+          { category: CAT2, amount: 20.01 },
+        ],
+      });
+      expect(res.success).toBe(false);
+      if (!res.success) {
+        expect(res.error.issues.some((i) => i.path[0] === 'expenses')).toBe(true);
+      }
+    });
+
+    it('skips the check when overdraftLimit is null (unlimited)', () => {
+      const schema = makeIncomeExpenseFormSchema([accBal(ACC_A, 0, null)], 'expense');
+      expect(
+        schema.safeParse({ ...base, incomes: [], expenses: [{ category: CAT, amount: 999999 }] })
+          .success,
+      ).toBe(true);
+    });
+
+    it('skips the check when accounts is null', () => {
+      const schema = makeIncomeExpenseFormSchema(null, 'expense');
+      expect(
+        schema.safeParse({ ...base, incomes: [], expenses: [{ category: CAT, amount: 999999 }] })
+          .success,
+      ).toBe(true);
+    });
+
+    it('never adds the balance check for income', () => {
+      const schema = makeIncomeExpenseFormSchema([accBal(ACC_A, 0, 0)], 'income');
+      expect(
+        schema.safeParse({ ...base, incomes: [{ category: CAT, amount: 999999 }], expenses: [] })
+          .success,
+      ).toBe(true);
+    });
   });
 });
 
@@ -310,7 +442,7 @@ describe('toTransferFormValues', () => {
       targetAmount: 45,
       targetCurrency: 'EUR',
       exchangeRate: 0.9,
-      category: null,
+      allocations: { incomes: [], expenses: [] },
     });
     const v = toTransferFormValues(tx, [acc('a1', 'USD'), acc('a2', 'EUR')]);
     expect(v).toEqual({

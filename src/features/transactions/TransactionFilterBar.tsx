@@ -79,9 +79,9 @@ export function TransactionFilterBar({
       <div className="w-56">
         <CategoryCombobox
           options={categoryOpts}
-          value={filters.categoryId}
+          value={filters.category}
           placeholder="All categories"
-          onChange={(categoryId) => onFiltersChange({ ...filters, categoryId })}
+          onChange={(category) => onFiltersChange({ ...filters, category })}
         />
       </div>
       <label className="flex cursor-pointer items-center gap-1.5">

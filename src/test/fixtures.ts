@@ -68,7 +68,10 @@ export const transactionFixture: TransactionResponse = {
   status: 'Completed',
   failureReason: null,
   transactionType: 'expense',
-  category: foodCategoryId,
+  allocations: {
+    incomes: [],
+    expenses: [{ categoryId: foodCategoryId, amount: { amount: 3.5, currency: 'USD' } }],
+  },
   date: '2026-04-27T08:00:00Z',
   labels: [],
   amendmentCount: 0,

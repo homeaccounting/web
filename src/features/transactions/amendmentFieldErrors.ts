@@ -12,15 +12,21 @@ export function mapIncomeExpenseFieldError(
       return 'date';
     case 'labels':
       return 'labels';
-    case 'sourceAmount':
-    case 'targetAmount':
     case 'sourceCurrency':
     case 'targetCurrency':
     case 'exchangeRate':
       return 'amount';
+    // The total (sourceAmount/targetAmount) and the allocation buckets
+    // (newAllocations/allocations) no longer correspond to a single form field —
+    // the amount lives on each slice row and there is no top-level `category`
+    // field. There is no per-row path to target from a bucket-level backend
+    // error, so surface these on the dialog's error banner instead (the mapper
+    // returns null and the dialog falls back to the banner).
+    case 'sourceAmount':
+    case 'targetAmount':
     case 'newAllocations':
     case 'allocations':
-      return 'category';
+      return null;
     case 'sourceAccountId':
       return kind === 'expense' ? 'accountId' : null;
     case 'targetAccountId':

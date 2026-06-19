@@ -24,7 +24,7 @@ const baseTx: TransactionResponse = {
   status: 'Completed',
   failureReason: null,
   transactionType: 'expense',
-  category: null,
+  allocations: { incomes: [], expenses: [] },
   date: '2026-03-04T00:00:00.000Z',
   labels: [],
   amendmentCount: 0,

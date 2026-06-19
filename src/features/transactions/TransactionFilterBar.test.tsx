@@ -10,7 +10,7 @@ function setup(overrides = {}) {
   const props = {
     from: '2026-05-10',
     to: '2026-06-10',
-    filters: { description: '', labelIds: [], categoryId: '', showCancelledFailed: false },
+    filters: { description: '', labelIds: [], category: '', showCancelledFailed: false },
     labelOptions: labels,
     categoryOptions: categories,
     onFromChange: vi.fn(),

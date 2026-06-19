@@ -1,27 +1,37 @@
 import type { TransactionResponse } from '@/api/types';
+import { allocationCategoryIds } from './allocations';
 
 export interface TransactionFilters {
   description: string;
   labelIds: string[];
-  categoryId: string; // '' = no category constraint (UUID | '')
+  // Category NAME to match ('' = no constraint). Matched by name, not id, so a
+  // name shared across the income- and expense-category dictionaries (e.g.
+  // "Other", which is seeded into both with distinct ids) matches slices from
+  // either dictionary. See spec §5.
+  category: string;
   showCancelledFailed: boolean; // false (default) hides Failed & Cancelled rows
 }
 
 // Browser-side filtering over the loaded window. AND across fields; an empty
 // field imposes no constraint. Label match is ANY-of (backend overlap
-// semantics). Category is exact-match on the head allocation surfaced by the
-// backend; null-category rows (transfer/adjustment) are excluded when a
-// category is selected. See spec §5.
+// semantics). Category matches by NAME against any of a row's allocation slices
+// (`categoryNameById` resolves slice ids to names); null-category rows
+// (transfer/adjustment) are excluded when a category is selected. See spec §5.
 export function applyTransactionFilters(
   rows: TransactionResponse[],
   filters: TransactionFilters,
+  categoryNameById: Map<string, string>,
 ): TransactionResponse[] {
   const q = filters.description.trim().toLowerCase();
   return rows.filter((row) => {
     if (q && !row.description.toLowerCase().includes(q)) return false;
     if (filters.labelIds.length > 0 && !filters.labelIds.some((id) => row.labels.includes(id)))
       return false;
-    if (filters.categoryId && row.category !== filters.categoryId) return false;
+    if (
+      filters.category &&
+      !allocationCategoryIds(row).some((id) => categoryNameById.get(id) === filters.category)
+    )
+      return false;
     if (!filters.showCancelledFailed && (row.status === 'Failed' || row.status === 'Cancelled'))
       return false;
     return true;

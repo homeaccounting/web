@@ -76,7 +76,10 @@ const expenseSource: TransactionResponse = {
   status: 'Completed',
   failureReason: null,
   transactionType: 'expense',
-  category: foodCategoryId,
+  allocations: {
+    incomes: [],
+    expenses: [{ categoryId: foodCategoryId, amount: { amount: 42, currency: 'USD' } }],
+  },
   date: '2026-01-15T08:00:00.000Z',
   labels: [tripLabelId],
   amendmentCount: 0,
@@ -172,7 +175,7 @@ describe('ConvertTransactionDialog', () => {
       targetAccountId: accountB,
       sourceAmount: 30,
       targetAmount: 30,
-      category: null,
+      allocations: { incomes: [], expenses: [] },
     };
     server.use(
       http.put(`${apiBase}/api/transactions/:id/amendment`, async ({ request }) => {
@@ -202,7 +205,10 @@ describe('ConvertTransactionDialog', () => {
       targetAmount: 55,
       targetCurrency: 'USD',
       transactionType: 'income',
-      category: salaryCategoryId,
+      allocations: {
+        incomes: [{ categoryId: salaryCategoryId, amount: { amount: 55, currency: 'USD' } }],
+        expenses: [],
+      },
     };
     server.use(
       http.put(`${apiBase}/api/transactions/:id/amendment`, async ({ request }) => {
@@ -235,7 +241,10 @@ describe('ConvertTransactionDialog', () => {
       targetAmount: 55,
       targetCurrency: 'USD',
       transactionType: 'income',
-      category: salaryCategoryId,
+      allocations: {
+        incomes: [{ categoryId: salaryCategoryId, amount: { amount: 55, currency: 'USD' } }],
+        expenses: [],
+      },
     };
     server.use(
       http.put(`${apiBase}/api/transactions/:id/amendment`, async ({ request }) => {
@@ -291,7 +300,7 @@ describe('ConvertTransactionDialog', () => {
       targetAccountId: accountB,
       sourceAmount: 30,
       targetAmount: 30,
-      category: null,
+      allocations: { incomes: [], expenses: [] },
     };
     server.use(
       http.put(`${apiBase}/api/transactions/:id/amendment`, async ({ request }) => {

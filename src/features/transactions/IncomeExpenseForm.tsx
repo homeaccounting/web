@@ -6,13 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import type { AccountResponse, DictionaryEntryResponse } from '@/api/types';
-import {
-  incomeExpenseFormSchema,
-  makeIncomeExpenseFormSchema,
-  type IncomeExpenseFormValues,
-} from './schema';
+import { makeIncomeExpenseFormSchema, type IncomeExpenseFormValues } from './schema';
 import { LabelMultiSelect } from './LabelMultiSelect';
-import { CategoryCombobox } from './CategoryCombobox';
+import { AllocationsEditor, type AllocationSection } from './AllocationsEditor';
+import { dropEmptySlices } from './allocations';
 import { DatePicker } from '@/components/DatePicker';
 import { TRANSACTION_KIND_LABELS, type TransactionKind } from './labels';
 
@@ -24,7 +21,10 @@ export interface IncomeExpenseFormProps {
   kind: Extract<TransactionKind, 'income' | 'expense'>;
   mode: 'create' | 'edit';
   accounts: AccountResponse[];
+  /** The kind's primary dictionary (income-category for income, expense-category for expense). */
   categories: DictionaryEntryResponse[];
+  /** Expense-category dictionary, used only by the income form's reimbursement section. */
+  reimbursementCategories?: DictionaryEntryResponse[];
   labels: DictionaryEntryResponse[];
   defaultValues: IncomeExpenseFormValues;
   isSubmitting: boolean;
@@ -40,6 +40,7 @@ export function IncomeExpenseForm({
   mode,
   accounts,
   categories,
+  reimbursementCategories = [],
   labels,
   defaultValues,
   isSubmitting,
@@ -48,13 +49,22 @@ export function IncomeExpenseForm({
   onCancel,
   onReady,
 }: IncomeExpenseFormProps) {
-  const resolver = useMemo<Resolver<IncomeExpenseFormValues>>(
-    () =>
-      zodResolver(
-        enforceBalance ? makeIncomeExpenseFormSchema(accounts, kind) : incomeExpenseFormSchema,
-      ) as Resolver<IncomeExpenseFormValues>,
-    [enforceBalance, accounts, kind],
-  );
+  const resolver = useMemo<Resolver<IncomeExpenseFormValues>>(() => {
+    const base = zodResolver(
+      makeIncomeExpenseFormSchema(enforceBalance ? accounts : null, kind),
+    ) as Resolver<IncomeExpenseFormValues>;
+    // Fully-empty rows are a UI affordance (the "+ Add" button seeds a blank
+    // row); they must not trip per-row validation. Strip them before zod runs
+    // so only meaningful slices are validated and surfaced.
+    return (values, context, options) => {
+      const cleaned: IncomeExpenseFormValues = {
+        ...values,
+        incomes: dropEmptySlices(values.incomes),
+        expenses: dropEmptySlices(values.expenses),
+      };
+      return base(cleaned, context, options);
+    };
+  }, [enforceBalance, accounts, kind]);
 
   const form = useForm<IncomeExpenseFormValues>({
     resolver,
@@ -78,8 +88,31 @@ export function IncomeExpenseForm({
   }, [form, onReady]);
 
   const submit = form.handleSubmit(async (values) => {
-    await onSubmit(values);
+    await onSubmit({
+      ...values,
+      incomes: dropEmptySlices(values.incomes),
+      expenses: dropEmptySlices(values.expenses),
+    });
   });
+
+  const sections: AllocationSection[] =
+    kind === 'income'
+      ? [
+          {
+            name: 'incomes',
+            title: 'Income categories',
+            addLabel: '+ Add income category',
+            categories,
+          },
+          {
+            name: 'expenses',
+            title: 'Reimbursements (reduces an expense)',
+            addLabel: '+ Add reimbursement',
+            categories: reimbursementCategories,
+            collapsible: true,
+          },
+        ]
+      : [{ name: 'expenses', title: 'Expense categories', addLabel: '+ Add category', categories }];
 
   return (
     <FormProvider {...form}>
@@ -113,42 +146,8 @@ export function IncomeExpenseForm({
           )}
         />
 
-        <div className="flex items-end gap-2">
-          <FormField
-            control={form.control}
-            name="amount"
-            render={({ field }) => (
-              <FormItem className="flex-1">
-                <FormLabel>Amount</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    step="any"
-                    name={field.name}
-                    ref={field.ref}
-                    onBlur={field.onBlur}
-                    value={
-                      field.value === undefined ||
-                      field.value === null ||
-                      (typeof field.value === 'number' && Number.isNaN(field.value))
-                        ? ''
-                        : field.value
-                    }
-                    onChange={(e) => {
-                      const raw = e.target.value;
-                      if (raw === '' || raw === '-') {
-                        field.onChange(raw);
-                        return;
-                      }
-                      const n = e.target.valueAsNumber;
-                      field.onChange(Number.isNaN(n) ? raw : n);
-                    }}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-muted-foreground">Currency</span>
           <div
             data-testid="currency-badge"
             className="inline-flex h-10 items-center rounded-md border bg-muted px-3 text-sm tabular-nums text-muted-foreground"
@@ -158,24 +157,7 @@ export function IncomeExpenseForm({
           </div>
         </div>
 
-        <FormField
-          control={form.control}
-          name="category"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Category</FormLabel>
-              <FormControl>
-                <CategoryCombobox
-                  options={categories}
-                  value={field.value}
-                  onChange={field.onChange}
-                  name={field.name}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <AllocationsEditor sections={sections} currency={form.watch('currency') || ''} />
 
         <FormField
           control={form.control}

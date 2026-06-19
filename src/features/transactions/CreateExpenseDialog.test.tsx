@@ -76,6 +76,13 @@ describe('CreateExpenseDialog', () => {
     });
   });
 
+  it('does not render a reimbursement section', async () => {
+    renderWithProviders(<Wrapper />, { initialPath: '/' });
+    await screen.findByLabelText(/account/i);
+
+    expect(screen.queryByRole('button', { name: /reimbursement/i })).not.toBeInTheDocument();
+  });
+
   it('happy path: closes dialog after successful submit', async () => {
     const user = userEvent.setup();
     renderWithProviders(<Wrapper />, { initialPath: '/' });
@@ -148,7 +155,7 @@ describe('CreateExpenseDialog', () => {
     server.use(
       http.post(`${apiBase}/api/transactions/expense`, () =>
         HttpResponse.json(
-          { message: 'Validation failed', fieldErrors: { amount: 'Must be positive' } },
+          { message: 'Validation failed', fieldErrors: { expenses: 'Must be positive' } },
           { status: 422 },
         ),
       ),

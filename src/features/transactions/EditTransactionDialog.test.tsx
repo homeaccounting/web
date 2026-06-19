@@ -28,7 +28,10 @@ const baseTx: TransactionResponse = {
   status: 'Completed',
   failureReason: null,
   transactionType: 'income',
-  category: categoryId,
+  allocations: {
+    incomes: [{ categoryId, amount: { amount: 10, currency: 'USD' } }],
+    expenses: [],
+  },
   date: '2026-03-04T00:00:00.000Z',
   labels: [],
   amendmentCount: 0,
@@ -114,7 +117,7 @@ describe('EditTransactionDialog', () => {
       targetAccountId: accountId,
       targetAmount: 1833.24,
       targetCurrency: 'UAH',
-      category: null,
+      allocations: { incomes: [], expenses: [] },
       description: 'Fix2',
     };
     renderDialog({ tx: adjustment });
@@ -147,7 +150,11 @@ describe('EditTransactionDialog', () => {
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
-  it('amount edit fires amendment then allocations in order', async () => {
+  it('total change fires a single amendment carrying the allocations', async () => {
+    // A total change folds BOTH allocation buckets into the amendment's
+    // `newAllocations` (the backend requires them on every categorised amend),
+    // so it must NOT also emit a separate PATCH /allocations. A pure re-split
+    // that keeps the total unchanged uses the dedicated allocations endpoint.
     const calls: string[] = [];
     server.use(
       http.put(`${apiBase}/api/transactions/:id/amendment`, () => {
@@ -166,7 +173,7 @@ describe('EditTransactionDialog', () => {
     await user.type(amount, '25');
     await user.click(screen.getByRole('button', { name: 'OK' }));
     await screen.findByRole('button', { name: 'OK' });
-    expect(calls).toEqual(['amendment', 'allocations']);
+    expect(calls).toEqual(['amendment']);
   });
 
   it('first-failure surfaces a banner and stops further requests', async () => {
@@ -219,5 +226,28 @@ describe('EditTransactionDialog', () => {
     await user.click(screen.getByRole('button', { name: 'OK' }));
     // The Account select's error must be rendered.
     expect(await screen.findByText(/unknown account/i)).toBeInTheDocument();
+  });
+
+  it('falls back to the banner when allocation/total field errors have no inline target', async () => {
+    server.use(
+      http.put(`${apiBase}/api/transactions/:id/amendment`, () =>
+        HttpResponse.json(
+          {
+            status: 422,
+            message: 'fallback message',
+            fieldErrors: { newAllocations: 'invalid split', sourceAmount: 'too small' },
+          },
+          { status: 422 },
+        ),
+      ),
+    );
+    const user = userEvent.setup();
+    renderDialog({});
+    const amount = await screen.findByLabelText(/^Amount$/i);
+    await user.clear(amount);
+    await user.type(amount, '25');
+    await user.click(screen.getByRole('button', { name: 'OK' }));
+    // Neither field maps to a form field, so the dialog surfaces the banner.
+    expect(await screen.findByRole('alert')).toHaveTextContent(/fallback message/i);
   });
 });

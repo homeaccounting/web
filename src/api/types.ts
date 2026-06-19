@@ -282,9 +282,12 @@ export interface AmendTransactionRequest {
   targetAmount: number;
   targetCurrency: string;
   exchangeRate?: number;
-  // Two-bucket; required by the backend only on a cross-kind amendment.
-  // This slice always omits it for within-kind amount edits and uses the
-  // dedicated PATCH /allocations endpoint for allocation changes.
+  // Two-bucket allocations. The backend requires these on EVERY categorised
+  // (income/expense) amendment — there is no within-kind/cross-kind
+  // distinction; omitting them is rejected with
+  // AllocationsRequiredForCategorisedKind. Optional here only because transfer
+  // amendments (uncategorised) carry none. Allocation-only edits that leave the
+  // total unchanged use the dedicated PATCH /allocations endpoint instead.
   newAllocations?: Allocations;
 }
 
@@ -331,7 +334,11 @@ export interface TransactionResponse {
   status: TransactionStatusText;
   failureReason: string | null;
   transactionType: TransferTypeText;
-  category: string | null;
+  // Two-bucket categorisation of the transaction. Mirrors backend
+  // Web/Types.hs `TransactionResponse.allocations`. The previously flattened
+  // `category :: string | null` was removed when the backend started returning
+  // the full `Allocations` instead.
+  allocations: Allocations;
   date: ISO8601;
   labels: UUID[];
   // Count of completed amendments; always 0 if never amended.

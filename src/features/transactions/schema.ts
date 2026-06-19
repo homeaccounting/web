@@ -7,6 +7,7 @@ import type {
   UUID,
 } from '@/api/types';
 import { isIncome } from './transactionType';
+import { sliceArraysFromTx } from './allocations';
 import { dateInputToWire, wireToDateInput } from '@/lib/dates';
 import { formatMoney } from '@/lib/format';
 
@@ -24,16 +25,34 @@ const optionalIsoDate = z
   .optional()
   .transform((v) => (v === '' || v === undefined ? undefined : v));
 
+// One allocation row in the form. The total of a transaction is the sum of all
+// slice amounts across both buckets; there is no separate top-level amount.
+const sliceSchema = z.object({
+  category: uuid,
+  amount: z.coerce.number().positive('Amount must be positive'),
+});
+
 export const incomeExpenseFormSchema = z.object({
   accountId: uuid,
-  amount: positiveAmount,
   currency: z.string().min(1),
-  category: uuid,
+  incomes: z.array(sliceSchema),
+  expenses: z.array(sliceSchema),
   description,
   date: optionalIsoDate,
   labels: z.array(uuid).default([]),
 });
-export type IncomeExpenseFormValues = z.infer<typeof incomeExpenseFormSchema>;
+
+// The form-values shape (post-parse, slices coerced). Declared explicitly so the
+// `labels` default surfaces as a required `string[]` to consumers.
+export type IncomeExpenseFormValues = {
+  accountId: string;
+  currency: string;
+  incomes: { category: string; amount: number }[];
+  expenses: { category: string; amount: number }[];
+  description: string;
+  date?: string;
+  labels: string[];
+};
 
 export const transferFormSchema = z
   .object({
@@ -70,17 +89,37 @@ function balanceIssue(
   return `Exceeds available balance (${formatMoney(available, acc.currency)})`;
 }
 
-// Create-only: expense debits `accountId`; income only credits, so it is never
-// funds-constrained and the refine is a no-op for it.
+// Kind-aware refinement shared by create AND edit. Pass `accounts: null` when
+// balance enforcement is off — the empty/contra checks still run.
+function refineAllocations(kind: 'income' | 'expense', accounts: AccountResponse[] | null) {
+  return (v: IncomeExpenseFormValues, ctx: z.RefinementCtx) => {
+    if (v.incomes.length + v.expenses.length === 0)
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['expenses'],
+        message: 'Add at least one category',
+      });
+    if (kind === 'expense' && v.incomes.length > 0)
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['incomes'],
+        message: 'An expense cannot carry income categories',
+      });
+    if (kind === 'expense' && accounts) {
+      // Expense debits `accountId`; the debited total is the sum of expense
+      // slices. Income only credits, so it is never funds-constrained.
+      const total = v.expenses.reduce((s, r) => s + r.amount, 0);
+      const message = balanceIssue(accounts, v.accountId, total);
+      if (message) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['expenses'], message });
+    }
+  };
+}
+
 export function makeIncomeExpenseFormSchema(
-  accounts: AccountResponse[],
+  accounts: AccountResponse[] | null,
   kind: 'income' | 'expense',
 ) {
-  return incomeExpenseFormSchema.superRefine((v, ctx) => {
-    if (kind === 'income') return;
-    const message = balanceIssue(accounts, v.accountId, v.amount);
-    if (message) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['amount'], message });
-  });
+  return incomeExpenseFormSchema.superRefine(refineAllocations(kind, accounts));
 }
 
 // Create-only: transfer debits `sourceAccountId`. `transferFormSchema` is a
@@ -99,41 +138,25 @@ type IncomeExpenseInput = Omit<IncomeExpenseFormValues, 'labels'> & {
   labels: readonly UUID[];
 };
 
-// The single-category UI maps to one allocation slice in the bucket that
-// matches the transaction kind (income → `incomes`, expense → `expenses`).
-// The other bucket stays empty; the categorised total is the slice amount.
-function toAllocationsRequest(
-  bucket: 'incomes' | 'expenses',
-  category: UUID,
-  amount: number,
-): AllocationsRequest {
-  const slice = { category, amount };
-  return bucket === 'incomes'
-    ? { incomes: [slice], expenses: [] }
-    : { incomes: [], expenses: [slice] };
-}
+// Each form row maps 1:1 to an allocation slice. The categorised total is the
+// sum of the slice amounts across both buckets (no top-level amount).
+const toReqSlices = (rows: { category: string; amount: number }[]): AllocationsRequest['incomes'] =>
+  rows.map((r) => ({ category: r.category, amount: r.amount }));
 
 export function toIncomeRequest(v: IncomeExpenseInput): IncomeRequest {
   return {
     accountId: v.accountId,
     currency: v.currency,
-    allocations: toAllocationsRequest('incomes', v.category, v.amount),
+    allocations: { incomes: toReqSlices(v.incomes), expenses: toReqSlices(v.expenses) },
     description: v.description,
     date: v.date ? dateInputToWire(v.date) : undefined,
     labels: labelsOrUndefined(v.labels),
   };
 }
 
-export function toExpenseRequest(v: IncomeExpenseInput): ExpenseRequest {
-  return {
-    accountId: v.accountId,
-    currency: v.currency,
-    allocations: toAllocationsRequest('expenses', v.category, v.amount),
-    description: v.description,
-    date: v.date ? dateInputToWire(v.date) : undefined,
-    labels: labelsOrUndefined(v.labels),
-  };
-}
+// Structurally identical: the expense form guarantees `incomes: []` by
+// construction (refineAllocations rejects income slices on an expense).
+export const toExpenseRequest: (v: IncomeExpenseInput) => ExpenseRequest = toIncomeRequest;
 
 type TransferInput = Omit<TransferFormValues, 'labels'> & {
   labels: readonly UUID[];
@@ -169,15 +192,15 @@ export function toIncomeExpenseFormValues(
 ): IncomeExpenseFormValues {
   const income = isIncome(tx.transactionType);
   const accountId = income ? tx.targetAccountId : tx.sourceAccountId;
-  const amount = income ? tx.targetAmount : tx.sourceAmount;
   const currency =
     accounts.find((a) => a.id === accountId)?.currency ??
     (income ? tx.targetCurrency : tx.sourceCurrency);
+  const { incomes, expenses } = sliceArraysFromTx(tx);
   return {
     accountId,
-    amount,
     currency,
-    category: tx.category ?? '',
+    incomes,
+    expenses,
     description: tx.description,
     date: dateToInput(tx.date),
     labels: tx.labels,
