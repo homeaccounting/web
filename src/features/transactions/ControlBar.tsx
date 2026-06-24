@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { ArrowDownToLine, ArrowLeftRight, ArrowUpFromLine, Scale } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 import type { AccountResponse, UUID } from '@/api/types';
+import { useAccounts } from '@/features/accounts/useAccounts';
 import { AdjustBalanceDialog } from '@/features/accounts/AdjustBalanceDialog';
 import { CreateIncomeDialog } from './CreateIncomeDialog';
 import { CreateExpenseDialog } from './CreateExpenseDialog';
@@ -13,7 +15,41 @@ export interface ControlBarProps {
   selectedAccount?: AccountResponse;
 }
 
+const NO_ACCOUNTS_HINT = 'Create an account first';
+
+function IconAction({
+  label,
+  icon,
+  disabled,
+  onClick,
+}: {
+  label: string;
+  icon: ReactNode;
+  disabled: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          size="icon"
+          variant="ghost"
+          aria-label={label}
+          aria-disabled={disabled}
+          onClick={disabled ? undefined : onClick}
+          className={cn('h-9 w-9', disabled && 'opacity-50')}
+        >
+          {icon}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{disabled ? NO_ACCOUNTS_HINT : label}</TooltipContent>
+    </Tooltip>
+  );
+}
+
 export function ControlBar({ selectedAccountId, selectedAccount }: ControlBarProps) {
+  const { data: accounts } = useAccounts();
+  const hasAccounts = (accounts?.length ?? 0) > 0;
   const [openIncome, setOpenIncome] = useState(false);
   const [openExpense, setOpenExpense] = useState(false);
   const [openTransfer, setOpenTransfer] = useState(false);
@@ -24,63 +60,30 @@ export function ControlBar({ selectedAccountId, selectedAccount }: ControlBarPro
         <span className="text-sm font-medium">Transactions</span>
         <TooltipProvider>
           <div className="flex items-center gap-1">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  aria-label="Add expense"
-                  onClick={() => setOpenExpense(true)}
-                  className="h-9 w-9"
-                >
-                  <ArrowUpFromLine className="h-5 w-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Add expense</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  aria-label="Add income"
-                  onClick={() => setOpenIncome(true)}
-                  className="h-9 w-9"
-                >
-                  <ArrowDownToLine className="h-5 w-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Add income</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  aria-label="Add transfer"
-                  onClick={() => setOpenTransfer(true)}
-                  className="h-9 w-9"
-                >
-                  <ArrowLeftRight className="h-5 w-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Add transfer</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  aria-label="Adjust balance"
-                  disabled={!selectedAccount}
-                  onClick={() => setAdjusting(true)}
-                  className="h-9 w-9"
-                >
-                  <Scale className="h-5 w-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Adjust balance</TooltipContent>
-            </Tooltip>
+            <IconAction
+              label="Add expense"
+              icon={<ArrowUpFromLine className="h-5 w-5" />}
+              disabled={!hasAccounts}
+              onClick={() => setOpenExpense(true)}
+            />
+            <IconAction
+              label="Add income"
+              icon={<ArrowDownToLine className="h-5 w-5" />}
+              disabled={!hasAccounts}
+              onClick={() => setOpenIncome(true)}
+            />
+            <IconAction
+              label="Add transfer"
+              icon={<ArrowLeftRight className="h-5 w-5" />}
+              disabled={!hasAccounts}
+              onClick={() => setOpenTransfer(true)}
+            />
+            <IconAction
+              label="Adjust balance"
+              icon={<Scale className="h-5 w-5" />}
+              disabled={!hasAccounts}
+              onClick={() => setAdjusting(true)}
+            />
           </div>
         </TooltipProvider>
       </div>
@@ -99,13 +102,11 @@ export function ControlBar({ selectedAccountId, selectedAccount }: ControlBarPro
         onOpenChange={setOpenTransfer}
         selectedAccountId={selectedAccountId}
       />
-      {selectedAccount && (
-        <AdjustBalanceDialog
-          open={adjusting}
-          onOpenChange={setAdjusting}
-          account={selectedAccount}
-        />
-      )}
+      <AdjustBalanceDialog
+        open={adjusting}
+        onOpenChange={setAdjusting}
+        selectedAccountId={selectedAccountId ?? selectedAccount?.id}
+      />
     </>
   );
 }

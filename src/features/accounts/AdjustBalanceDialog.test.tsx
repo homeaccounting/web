@@ -10,21 +10,43 @@ import { saveSession } from '@/auth/storage';
 import { AdjustBalanceDialog } from './AdjustBalanceDialog';
 import type { AccountResponse } from '@/api/types';
 
-const fixture: AccountResponse = {
-  id: 'a1',
-  name: 'Savings',
-  balance: 100,
-  currency: 'USD',
-  overdraftLimit: null,
-  subtype: { type: 'cash', storageLocation: 'wallet' },
-  status: 'Opened',
-  version: 1,
-};
+const apiBase = 'http://localhost:8080';
 
-function ui(account: AccountResponse, onOpenChange: (open: boolean) => void = () => {}) {
+const accounts: AccountResponse[] = [
+  {
+    id: 'a1',
+    name: 'Savings',
+    balance: 100,
+    currency: 'USD',
+    overdraftLimit: null,
+    subtype: { type: 'cash', storageLocation: 'wallet' },
+    status: 'Opened',
+    version: 1,
+  },
+  {
+    id: 'a2',
+    name: 'Euro Wallet',
+    balance: 42.5,
+    currency: 'EUR',
+    overdraftLimit: null,
+    subtype: { type: 'cash', storageLocation: 'wallet' },
+    status: 'Opened',
+    version: 1,
+  },
+];
+
+function seedAccounts(list: AccountResponse[]) {
+  server.use(
+    http.get(`${apiBase}/api/accounts`, () =>
+      HttpResponse.json({ accounts: list, totalCount: list.length }),
+    ),
+  );
+}
+
+function ui(selectedAccountId?: string, onOpenChange: (open: boolean) => void = () => {}) {
   return (
     <AuthProvider>
-      <AdjustBalanceDialog open onOpenChange={onOpenChange} account={account} />
+      <AdjustBalanceDialog open onOpenChange={onOpenChange} selectedAccountId={selectedAccountId} />
     </AuthProvider>
   );
 }
@@ -39,15 +61,17 @@ beforeEach(() => {
 
 describe('AdjustBalanceDialog', () => {
   it('opens with targetBalance prefilled to account.balance, date to today, description empty', async () => {
+    seedAccounts(accounts);
     const qc = makeQueryClient();
-    renderWithProviders(ui(fixture), { queryClient: qc });
+    renderWithProviders(ui('a1'), { queryClient: qc });
     expect(await screen.findByRole('dialog', { name: /adjust balance/i })).toBeInTheDocument();
-    expect(screen.getByLabelText(/target balance/i)).toHaveValue(100);
+    expect(await screen.findByLabelText(/target balance/i)).toHaveValue(100);
     expect(screen.getByLabelText(/date/i)).toHaveTextContent(todayLabel);
     expect(screen.getByLabelText(/description/i)).toHaveValue('');
   });
 
   it('submits with an empty description (optional): fires PUT with empty description', async () => {
+    seedAccounts(accounts);
     const qc = makeQueryClient();
     let body: Record<string, unknown> | null = null;
     server.use(
@@ -56,7 +80,7 @@ describe('AdjustBalanceDialog', () => {
         return HttpResponse.json({});
       }),
     );
-    renderWithProviders(ui(fixture), { queryClient: qc });
+    renderWithProviders(ui('a1'), { queryClient: qc });
     const target = await screen.findByLabelText(/target balance/i);
     await userEvent.clear(target);
     await userEvent.type(target, '150');
@@ -76,12 +100,14 @@ describe('AdjustBalanceDialog', () => {
   // adjustBalanceSchema.test.ts; here we only confirm the common control is wired
   // in and the picker is bounded to today via maxDate.
   it('uses the shared date picker: clicking the field opens a calendar', async () => {
-    renderWithProviders(ui(fixture), { queryClient: makeQueryClient() });
+    seedAccounts(accounts);
+    renderWithProviders(ui('a1'), { queryClient: makeQueryClient() });
     await userEvent.click(await screen.findByLabelText(/date/i));
     expect(await screen.findByRole('grid')).toBeInTheDocument();
   });
 
   it('happy path: fires PUT with correct body, closes dialog, invalidates queries', async () => {
+    seedAccounts(accounts);
     const qc = makeQueryClient();
     const invalidateSpy = vi.spyOn(qc, 'invalidateQueries');
     let body: Record<string, unknown> | null = null;
@@ -111,7 +137,7 @@ describe('AdjustBalanceDialog', () => {
       }),
     );
     const onOpenChange = vi.fn();
-    renderWithProviders(ui(fixture, onOpenChange), { queryClient: qc });
+    renderWithProviders(ui('a1', onOpenChange), { queryClient: qc });
     const target = await screen.findByLabelText(/target balance/i);
     await userEvent.clear(target);
     await userEvent.type(target, '150');
@@ -135,6 +161,7 @@ describe('AdjustBalanceDialog', () => {
   });
 
   it('server returns 400 with fieldErrors.targetBalance: field error shown, dialog stays open', async () => {
+    seedAccounts(accounts);
     const qc = makeQueryClient();
     server.use(
       http.put('http://localhost:8080/api/accounts/a1/balance', () =>
@@ -150,7 +177,7 @@ describe('AdjustBalanceDialog', () => {
       ),
     );
     const onOpenChange = vi.fn();
-    renderWithProviders(ui(fixture, onOpenChange), { queryClient: qc });
+    renderWithProviders(ui('a1', onOpenChange), { queryClient: qc });
     const target = await screen.findByLabelText(/target balance/i);
     await userEvent.clear(target);
     await userEvent.type(target, '150');
@@ -163,6 +190,7 @@ describe('AdjustBalanceDialog', () => {
   });
 
   it('server returns 400 with fieldErrors.date: field error shown, dialog stays open', async () => {
+    seedAccounts(accounts);
     const qc = makeQueryClient();
     server.use(
       http.put('http://localhost:8080/api/accounts/a1/balance', () =>
@@ -178,7 +206,7 @@ describe('AdjustBalanceDialog', () => {
       ),
     );
     const onOpenChange = vi.fn();
-    renderWithProviders(ui(fixture, onOpenChange), { queryClient: qc });
+    renderWithProviders(ui('a1', onOpenChange), { queryClient: qc });
     const target = await screen.findByLabelText(/target balance/i);
     await userEvent.clear(target);
     await userEvent.type(target, '150');
@@ -188,5 +216,60 @@ describe('AdjustBalanceDialog', () => {
       await screen.findByText(/adjustment date must be in the past or present/i),
     ).toBeInTheDocument();
     expect(onOpenChange).not.toHaveBeenCalledWith(false);
+  });
+
+  it('pre-selects the highlighted account and shows its current balance', async () => {
+    seedAccounts(accounts);
+    renderWithProviders(ui('a2'), { queryClient: makeQueryClient() });
+    const select = await screen.findByLabelText(/account/i);
+    expect(select).toHaveValue('a2');
+    expect(screen.getByText(/current balance/i)).toHaveTextContent('EUR');
+  });
+
+  it('defaults to the first account when no account is highlighted', async () => {
+    seedAccounts(accounts);
+    renderWithProviders(ui(undefined), { queryClient: makeQueryClient() });
+    expect(await screen.findByLabelText(/account/i)).toHaveValue('a1');
+  });
+
+  it('switching the account updates the current balance, currency, and PUT target', async () => {
+    seedAccounts(accounts);
+    let path: string | null = null;
+    let body: Record<string, unknown> | null = null;
+    server.use(
+      http.put(`${apiBase}/api/accounts/:id/balance`, async ({ request }) => {
+        path = new URL(request.url).pathname;
+        body = (await request.json()) as Record<string, unknown>;
+        return HttpResponse.json({});
+      }),
+    );
+    renderWithProviders(ui('a1'), { queryClient: makeQueryClient() });
+    const select = await screen.findByLabelText(/account/i);
+    await userEvent.selectOptions(select, 'a2');
+    expect(screen.getByText(/current balance/i)).toHaveTextContent('EUR');
+    const target = screen.getByLabelText(/target balance/i);
+    await userEvent.clear(target);
+    await userEvent.type(target, '60');
+    await userEvent.click(screen.getByRole('button', { name: /ok/i }));
+    await waitFor(() => expect(path).toBe('/api/accounts/a2/balance'));
+    expect(body).toMatchObject({ targetBalance: 60, currency: 'EUR' });
+  });
+
+  it('re-prefills target balance to the newly selected account balance on switch', async () => {
+    seedAccounts(accounts);
+    renderWithProviders(ui('a1'), { queryClient: makeQueryClient() });
+    const select = await screen.findByLabelText(/account/i);
+    expect(screen.getByLabelText(/target balance/i)).toHaveValue(100);
+    await userEvent.selectOptions(select, 'a2');
+    expect(screen.getByLabelText(/target balance/i)).toHaveValue(42.5);
+  });
+
+  it('shows a fallback message when there are no accounts', async () => {
+    seedAccounts([]);
+    renderWithProviders(ui(undefined), { queryClient: makeQueryClient() });
+    expect(
+      await screen.findByText(/create an account first to adjust a balance/i),
+    ).toBeInTheDocument();
+    expect(screen.queryByLabelText(/target balance/i)).not.toBeInTheDocument();
   });
 });
