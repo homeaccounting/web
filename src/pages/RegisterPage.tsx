@@ -13,6 +13,7 @@ import { ApiClient, ApiError, baseUrl } from '@/api/client';
 import { authApi } from '@/api/auth';
 import { useAuth } from '@/auth/useAuth';
 import { saveOAuthState } from '@/auth/oauthFlow';
+import { BrandLogo } from '@/components/BrandLogo';
 
 const schema = z.object({
   email: z.string().email('Invalid email'),
@@ -55,7 +56,11 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
+    <div className="flex min-h-screen flex-col items-center justify-center px-4">
+      <div className="mb-6 flex flex-col items-center gap-2">
+        <BrandLogo className="h-24" />
+        <span className="text-2xl font-semibold">Home Accounting</span>
+      </div>
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Create an account</CardTitle>

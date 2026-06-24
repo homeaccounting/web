@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from '@/auth/ProtectedRoute';
 import HomePage from '@/pages/HomePage';
 import LoginPage from '@/pages/LoginPage';
@@ -6,6 +6,7 @@ import RegisterPage from '@/pages/RegisterPage';
 import OAuthCallbackPage from '@/pages/OAuthCallbackPage';
 import NotFoundPage from '@/pages/NotFoundPage';
 import ProfilePage from '@/pages/ProfilePage';
+import ReportsPage from '@/pages/ReportsPage';
 
 export default function App() {
   return (
@@ -15,7 +16,10 @@ export default function App() {
       <Route path="/auth/oauth/:provider/callback" element={<OAuthCallbackPage />} />
       <Route element={<ProtectedRoute />}>
         <Route path="/" element={<HomePage />} />
+        {/* Bare /accounts has no index view — canonicalize to the home URL. */}
+        <Route path="/accounts" element={<Navigate to="/" replace />} />
         <Route path="/accounts/:id" element={<HomePage />} />
+        <Route path="/reports" element={<ReportsPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/profile/:tab" element={<ProfilePage />} />
       </Route>

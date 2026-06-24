@@ -22,6 +22,11 @@ function ui() {
 }
 
 describe('LoginPage', () => {
+  it('shows the brand logo so users recognize the app', () => {
+    renderWithProviders(ui(), { initialPath: '/login' });
+    expect(screen.getByRole('img', { name: 'Home Accounting' })).toBeInTheDocument();
+  });
+
   it('logs in and navigates to /', async () => {
     const user = userEvent.setup();
     renderWithProviders(ui(), { initialPath: '/login' });

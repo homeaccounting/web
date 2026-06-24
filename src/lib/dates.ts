@@ -31,3 +31,13 @@ export function dateInputToWire(v: string): ISO8601 {
 export function wireToDateInput(iso: string): string {
   return toLocalInput(new Date(iso));
 }
+
+// Inclusive UTC day bounds for backend from/to (UTCTime) params. Start-of-day
+// mirrors the isoDay pattern; end-of-day is correct because the backend
+// compares the ISO text lexically (Range.within).
+export function dateInputToUtcStart(yyyyMmDd: string): string {
+  return `${yyyyMmDd}T00:00:00.000Z`;
+}
+export function dateInputToUtcEnd(yyyyMmDd: string): string {
+  return `${yyyyMmDd}T23:59:59.999Z`;
+}

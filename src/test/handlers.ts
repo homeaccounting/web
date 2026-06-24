@@ -11,7 +11,10 @@ import {
   authResponseFixture,
   configurationFixture,
   externalAccountsFixture,
+  incomeVsExpenseFixture,
+  netWorthFixture,
   profileFixture,
+  spendingByCategoryFixture,
   telegramLinkCodeFixture,
   transactionFixture,
 } from './fixtures';
@@ -311,4 +314,11 @@ export const handlers = [
     () => new HttpResponse(null, { status: 204 }),
   ),
   http.delete(`${apiBase}/api/users/me/telegram`, () => new HttpResponse(null, { status: 204 })),
+  http.get(`${apiBase}/api/reports/spending-by-category`, () =>
+    HttpResponse.json(spendingByCategoryFixture),
+  ),
+  http.get(`${apiBase}/api/reports/income-vs-expense`, () =>
+    HttpResponse.json(incomeVsExpenseFixture),
+  ),
+  http.get(`${apiBase}/api/reports/net-worth`, () => HttpResponse.json(netWorthFixture)),
 ];

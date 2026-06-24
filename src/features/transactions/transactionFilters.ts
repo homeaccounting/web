@@ -75,11 +75,10 @@ export function isValidDateWindow(from: string, to: string): boolean {
 }
 
 // Inclusive UTC bounds for the backend dateFrom/dateTo params. Start-of-day
-// mirrors the existing isoDay pattern (schema.ts); end-of-day is new to this
-// slice and correct because Range.within compares the ISO text lexically.
-export function dateInputToUtcStart(yyyyMmDd: string): string {
-  return `${yyyyMmDd}T00:00:00.000Z`;
-}
-export function dateInputToUtcEnd(yyyyMmDd: string): string {
-  return `${yyyyMmDd}T23:59:59.999Z`;
-}
+// mirrors the existing isoDay pattern (schema.ts); end-of-day is correct
+// because Range.within compares the ISO text lexically.
+//
+// Re-exported from lib/dates so reporting can share the same inclusive-UTC
+// bounds without importing across features. Definitions moved there; the
+// public surface of this module is unchanged.
+export { dateInputToUtcStart, dateInputToUtcEnd } from '@/lib/dates';

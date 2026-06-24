@@ -4,6 +4,9 @@ import type {
   BankConnectionDTO,
   ConfigurationResponse,
   ExternalAccountDTO,
+  IncomeVsExpenseResponse,
+  NetWorthResponse,
+  SpendingByCategoryResponse,
   TelegramLinkCodeResponse,
   TransactionResponse,
   UserProfileResponse,
@@ -103,6 +106,31 @@ export const configurationFixture: ConfigurationResponse = {
     mccExpenseCategoryMap: {},
     connections: [],
   },
+};
+
+export const spendingByCategoryFixture: SpendingByCategoryResponse = {
+  categories: [
+    { categoryId: foodCategoryId, total: { amount: 120, currency: 'USD' } },
+    { categoryId: salaryCategoryId, total: { amount: 30, currency: 'USD' } },
+  ],
+  total: { amount: 150, currency: 'USD' },
+};
+
+export const incomeVsExpenseFixture: IncomeVsExpenseResponse = {
+  income: { amount: 500, currency: 'USD' },
+  expense: { amount: 150, currency: 'USD' },
+  net: { amount: 350, currency: 'USD' },
+};
+
+export const netWorthFixture: NetWorthResponse = {
+  accounts: [
+    {
+      accountId: 'a1',
+      balance: { amount: 1234.56, currency: 'USD' },
+      baseBalance: { amount: 1234.56, currency: 'USD' },
+    },
+  ],
+  total: { amount: 1234.56, currency: 'USD' },
 };
 
 export const bankConnectionFixture: BankConnectionDTO = {

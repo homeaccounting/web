@@ -18,6 +18,11 @@ function ui() {
 }
 
 describe('RegisterPage', () => {
+  it('shows the brand logo so users recognize the app', () => {
+    renderWithProviders(ui(), { initialPath: '/register' });
+    expect(screen.getByRole('img', { name: 'Home Accounting' })).toBeInTheDocument();
+  });
+
   it('rejects short passwords client-side', async () => {
     const user = userEvent.setup();
     renderWithProviders(ui(), { initialPath: '/register' });

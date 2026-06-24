@@ -482,3 +482,42 @@ export interface ApiError {
   message: string;
   fieldErrors?: Record<string, string>;
 }
+
+// --- Reporting (mirrors server-infra/src/Web/Types.hs:683-737) ---
+
+// CategorySpend { categoryId :: Text, total :: Money } — categoryId is a
+// dictionary-entry UUID (same wire format as allocation DTOs).
+export interface CategorySpend {
+  categoryId: string;
+  total: Money;
+}
+
+// SpendingByCategoryResponse { categories :: [CategorySpend], total :: Money }
+// All amounts in base currency.
+export interface SpendingByCategoryResponse {
+  categories: CategorySpend[];
+  total: Money;
+}
+
+// IncomeVsExpenseResponse { income, expense, net :: Money } — base currency.
+export interface IncomeVsExpenseResponse {
+  income: Money;
+  expense: Money;
+  net: Money;
+}
+
+// AccountNetWorth { accountId :: UUID, balance :: Money, baseBalance :: Money }
+// balance is the account's NATIVE currency; baseBalance is its base-currency
+// equivalent.
+export interface AccountNetWorth {
+  accountId: string;
+  balance: Money;
+  baseBalance: Money;
+}
+
+// NetWorthResponse { accounts :: [AccountNetWorth], total :: Money } — total in
+// base currency. Period-independent (endpoint takes no date params).
+export interface NetWorthResponse {
+  accounts: AccountNetWorth[];
+  total: Money;
+}
