@@ -47,7 +47,7 @@ export function CreateIncomeDialog({
     () => ({
       accountId: defaultAccount?.id ?? '',
       currency: defaultAccount?.currency ?? '',
-      incomes: [{ category: defaultCategory, amount: NaN }],
+      incomes: [{ category: defaultCategory, amount: NaN, comment: '' }],
       expenses: [],
       description: '',
       date: nowDateTimeInput(),

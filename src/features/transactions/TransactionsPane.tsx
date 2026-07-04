@@ -35,7 +35,7 @@ import { isAdjustment, transactionKind, transactionTypeMeta } from './transactio
 import type { TransactionKind } from './labels';
 import { LabelChips } from './LabelChips';
 import { CategoryChips } from './CategoryChips';
-import { allocationCategoryIds } from './allocations';
+import { allocationCategoryIds, allocationComments } from './allocations';
 import { TransactionPagination, usePersistedPageSize } from './TransactionPagination';
 import { AccountHeader } from './AccountHeader';
 import { ControlBar } from './ControlBar';
@@ -248,12 +248,38 @@ export function TransactionsPane() {
                       {formatDateTime(t.date)}
                     </td>
                     <td className="px-4 py-2">
-                      <span className={cn(deEmphasized && 'line-through')}>{t.description}</span>
-                      <LabelChips
-                        labelIds={t.labels}
-                        nameById={labelNameById}
-                        leadingGap={!!t.description}
-                      />
+                      {(() => {
+                        // Per-allocation comments are the item-level "what exactly"; show
+                        // them muted after the description. When the description is empty
+                        // they become the primary text; when they exactly equal the
+                        // description (common for NL-created rows) the tail is suppressed.
+                        const comments = allocationComments(t).join(', ');
+                        const showComments = comments !== '' && comments !== t.description;
+                        const hasText = !!t.description || showComments;
+                        return (
+                          <>
+                            <span
+                              className={cn(deEmphasized && 'line-through')}
+                              title={[t.description, showComments ? comments : '']
+                                .filter(Boolean)
+                                .join(' · ')}
+                            >
+                              {t.description}
+                              {showComments && (
+                                <span className="text-muted-foreground">
+                                  {t.description ? ' · ' : ''}
+                                  {comments}
+                                </span>
+                              )}
+                            </span>
+                            <LabelChips
+                              labelIds={t.labels}
+                              nameById={labelNameById}
+                              leadingGap={hasText}
+                            />
+                          </>
+                        );
+                      })()}
                     </td>
                     <td className="w-40 overflow-hidden px-4 py-2">
                       {/* A (possibly split) transaction's categories render as

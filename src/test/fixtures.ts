@@ -73,7 +73,9 @@ export const transactionFixture: TransactionResponse = {
   transactionType: 'expense',
   allocations: {
     incomes: [],
-    expenses: [{ categoryId: foodCategoryId, amount: { amount: 3.5, currency: 'USD' } }],
+    expenses: [
+      { categoryId: foodCategoryId, amount: { amount: 3.5, currency: 'USD' }, comment: 'latte' },
+    ],
   },
   date: '2026-04-27T08:00:00Z',
   labels: [],

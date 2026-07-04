@@ -197,6 +197,9 @@ export interface AdjustBalanceRequest {
 export interface CategoryAmount {
   category: UUID; // dictionary entry UUID
   amount: number;
+  // Web/Types.hs:350 — comment :: Maybe Text. Free-text item note; trimmed and
+  // blank → null server-side (Domain/Core/Types.hs:1077 normalizeComment).
+  comment?: string | null;
 }
 
 // Two-bucket allocations on a create request. Mirrors backend Web/Types.hs
@@ -251,6 +254,8 @@ export interface Money {
 export interface Allocation {
   categoryId: UUID;
   amount: Money;
+  // Domain/Core/Types.hs:1050 — comment :: Maybe Text.
+  comment?: string | null;
 }
 
 // Two-bucket categorised side of a transaction. Mirrors backend

@@ -24,7 +24,7 @@ export interface AllocationsEditorProps {
   currency: string;
 }
 
-type Slice = { category: string; amount: number };
+type Slice = { category: string; amount: number; comment: string };
 
 // Sum every row across all sections, ignoring blank/non-finite amounts.
 function sumSlices(rows: Slice[] | undefined): number {
@@ -42,77 +42,101 @@ function AllocationSectionRows({ section }: { section: AllocationSection }) {
   return (
     <div className="space-y-3">
       {fields.map((field, i) => (
-        <div key={field.id} className="flex items-start gap-2">
+        <div key={field.id} className="space-y-1.5 rounded-md border p-3">
+          <div className="flex items-start gap-2">
+            <FormField
+              control={control}
+              name={`${section.name}.${i}.category`}
+              render={({ field: f }) => (
+                <FormItem className="flex-1">
+                  <FormControl>
+                    <CategoryCombobox
+                      options={section.categories}
+                      value={(f.value as string) ?? ''}
+                      onChange={f.onChange}
+                      name={f.name}
+                      aria-label="Category"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={control}
+              name={`${section.name}.${i}.amount`}
+              render={({ field: f }) => (
+                <FormItem className="w-32">
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="any"
+                      aria-label="Amount"
+                      placeholder="Amount"
+                      name={f.name}
+                      ref={f.ref}
+                      onBlur={f.onBlur}
+                      value={
+                        f.value === undefined ||
+                        f.value === null ||
+                        (typeof f.value === 'number' && Number.isNaN(f.value))
+                          ? ''
+                          : (f.value as number | string)
+                      }
+                      onChange={(e) => {
+                        const raw = e.target.value;
+                        if (raw === '' || raw === '-') {
+                          f.onChange(raw);
+                          return;
+                        }
+                        const n = e.target.valueAsNumber;
+                        f.onChange(Number.isNaN(n) ? raw : n);
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            {/* Match the dialog's own close affordance: a bare 16px icon with an
+                opacity hover, not a full-size icon Button (which dwarfed it). */}
+            <button
+              type="button"
+              aria-label="Remove row"
+              onClick={() => remove(i)}
+              className="mt-3 shrink-0 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+            >
+              <X className="h-4 w-4" aria-hidden />
+            </button>
+          </div>
           <FormField
             control={control}
-            name={`${section.name}.${i}.category`}
+            name={`${section.name}.${i}.comment`}
             render={({ field: f }) => (
-              <FormItem className="flex-1">
-                <FormControl>
-                  <CategoryCombobox
-                    options={section.categories}
-                    value={(f.value as string) ?? ''}
-                    onChange={f.onChange}
-                    name={f.name}
-                    aria-label="Category"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={control}
-            name={`${section.name}.${i}.amount`}
-            render={({ field: f }) => (
-              <FormItem className="w-32">
+              <FormItem>
                 <FormControl>
                   <Input
-                    type="number"
-                    step="any"
-                    aria-label="Amount"
+                    type="text"
+                    aria-label="Comment"
+                    placeholder="Comment (optional)"
+                    className="h-8 text-sm"
                     name={f.name}
                     ref={f.ref}
                     onBlur={f.onBlur}
-                    value={
-                      f.value === undefined ||
-                      f.value === null ||
-                      (typeof f.value === 'number' && Number.isNaN(f.value))
-                        ? ''
-                        : (f.value as number | string)
-                    }
-                    onChange={(e) => {
-                      const raw = e.target.value;
-                      if (raw === '' || raw === '-') {
-                        f.onChange(raw);
-                        return;
-                      }
-                      const n = e.target.valueAsNumber;
-                      f.onChange(Number.isNaN(n) ? raw : n);
-                    }}
+                    onChange={f.onChange}
+                    value={(f.value as string) ?? ''}
                   />
                 </FormControl>
-                <FormMessage />
               </FormItem>
             )}
           />
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="mt-0.5"
-            aria-label="Remove row"
-            onClick={() => remove(i)}
-          >
-            <X className="h-4 w-4" aria-hidden />
-          </Button>
         </div>
       ))}
       <Button
         type="button"
         variant="outline"
         size="sm"
-        onClick={() => append({ category: '', amount: NaN })}
+        onClick={() => append({ category: '', amount: NaN, comment: '' })}
       >
         {section.addLabel}
       </Button>

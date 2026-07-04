@@ -116,6 +116,16 @@ describe('toIncomeRequest / toExpenseRequest', () => {
     });
   });
 
+  it('carries trimmed allocation comments and omits blank ones', () => {
+    const dto = toIncomeRequest({
+      ...values,
+      incomes: [{ category: CAT, amount: 10, comment: '  salary ' }],
+      expenses: [{ category: CAT2, amount: 5, comment: '   ' }],
+    });
+    expect(dto.allocations.incomes[0]!.comment).toBe('salary');
+    expect(dto.allocations.expenses[0]!.comment).toBeUndefined();
+  });
+
   it('omits date when undefined', () => {
     const dto = toIncomeRequest({ ...values, date: undefined });
     expect(dto.date).toBeUndefined();
@@ -246,7 +256,7 @@ describe('toIncomeExpenseFormValues', () => {
     expect(v).toEqual({
       accountId: 'a1',
       currency: 'USD',
-      incomes: [{ category: 'cat-1', amount: 10 }],
+      incomes: [{ category: 'cat-1', amount: 10, comment: '' }],
       expenses: [],
       description: 'd',
       date: '2026-03-04T15:00',
@@ -266,7 +276,7 @@ describe('toIncomeExpenseFormValues', () => {
     });
     const v = toIncomeExpenseFormValues(tx, [acc('a1')]);
     expect(v.accountId).toBe('a1');
-    expect(v.expenses).toEqual([{ category: 'cat-2', amount: 10 }]);
+    expect(v.expenses).toEqual([{ category: 'cat-2', amount: 10, comment: '' }]);
     expect(v.incomes).toEqual([]);
   });
 
@@ -279,8 +289,8 @@ describe('toIncomeExpenseFormValues', () => {
       },
     });
     const v = toIncomeExpenseFormValues(tx, [acc('a1')]);
-    expect(v.incomes).toEqual([{ category: 'cat-1', amount: 10 }]);
-    expect(v.expenses).toEqual([{ category: 'cat-2', amount: 3 }]);
+    expect(v.incomes).toEqual([{ category: 'cat-1', amount: 10, comment: '' }]);
+    expect(v.expenses).toEqual([{ category: 'cat-2', amount: 3, comment: '' }]);
   });
 });
 

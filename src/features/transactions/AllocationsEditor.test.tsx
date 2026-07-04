@@ -17,7 +17,7 @@ const expenseCategories: DictionaryEntryResponse[] = [
   { id: C2, name: 'Rent' },
 ];
 
-type Slice = { category: string; amount: number };
+type Slice = { category: string; amount: number; comment?: string };
 interface HostValues {
   incomes: Slice[];
   expenses: Slice[];
@@ -68,6 +68,22 @@ describe('AllocationsEditor', () => {
     );
     expect(screen.getAllByRole('combobox')).toHaveLength(2);
     expect(screen.getAllByRole('spinbutton')).toHaveLength(2);
+  });
+
+  it('renders a comment input per row seeded from form values', () => {
+    render(
+      <Host
+        sections={[expenseSection]}
+        expenses={[{ category: C1, amount: 5, comment: 'milk' }]}
+      />,
+    );
+    expect(screen.getByLabelText('Comment')).toHaveValue('milk');
+  });
+
+  it('appends a blank-comment row when Add is clicked', () => {
+    render(<Host sections={[expenseSection]} expenses={[]} />);
+    fireEvent.click(screen.getByRole('button', { name: '+ Add expense category' }));
+    expect(screen.getByLabelText('Comment')).toHaveValue('');
   });
 
   it('appends a row when the section Add button is clicked', () => {

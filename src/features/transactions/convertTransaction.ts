@@ -30,7 +30,7 @@ export function toConvertIncomeExpenseDefaults(
     (keepSource ? tx.sourceCurrency : tx.targetCurrency);
   // Seed a single slice row in the target-kind bucket, carrying the magnitude
   // as the row amount. The other bucket starts empty.
-  const slice = { category: defaultCategory ?? '', amount };
+  const slice = { category: defaultCategory ?? '', amount, comment: '' };
   return {
     accountId,
     currency,

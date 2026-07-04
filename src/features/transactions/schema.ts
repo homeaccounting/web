@@ -7,7 +7,7 @@ import type {
   UUID,
 } from '@/api/types';
 import { isIncome } from './transactionType';
-import { sliceArraysFromTx } from './allocations';
+import { normalizeComment, sliceArraysFromTx } from './allocations';
 import { dateInputToWire, wireToDateInput } from '@/lib/dates';
 import { formatMoney } from '@/lib/format';
 
@@ -30,6 +30,7 @@ const optionalIsoDate = z
 const sliceSchema = z.object({
   category: uuid,
   amount: z.coerce.number().positive('Amount must be positive'),
+  comment: z.string().max(500).optional(),
 });
 
 export const incomeExpenseFormSchema = z.object({
@@ -47,8 +48,8 @@ export const incomeExpenseFormSchema = z.object({
 export type IncomeExpenseFormValues = {
   accountId: string;
   currency: string;
-  incomes: { category: string; amount: number }[];
-  expenses: { category: string; amount: number }[];
+  incomes: { category: string; amount: number; comment?: string }[];
+  expenses: { category: string; amount: number; comment?: string }[];
   description: string;
   date?: string;
   labels: string[];
@@ -140,8 +141,14 @@ type IncomeExpenseInput = Omit<IncomeExpenseFormValues, 'labels'> & {
 
 // Each form row maps 1:1 to an allocation slice. The categorised total is the
 // sum of the slice amounts across both buckets (no top-level amount).
-const toReqSlices = (rows: { category: string; amount: number }[]): AllocationsRequest['incomes'] =>
-  rows.map((r) => ({ category: r.category, amount: r.amount }));
+const toReqSlices = (
+  rows: { category: string; amount: number; comment?: string }[],
+): AllocationsRequest['incomes'] =>
+  rows.map((r) => ({
+    category: r.category,
+    amount: r.amount,
+    comment: normalizeComment(r.comment),
+  }));
 
 export function toIncomeRequest(v: IncomeExpenseInput): IncomeRequest {
   return {

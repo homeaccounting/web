@@ -62,7 +62,7 @@ describe('toConvertIncomeExpenseDefaults', () => {
     expect(d.accountId).toBe(A);
     expect(d.currency).toBe('USD');
     // One seeded row in the income bucket carrying the magnitude; expenses empty.
-    expect(d.incomes).toEqual([{ category: 'def-income', amount: 42 }]);
+    expect(d.incomes).toEqual([{ category: 'def-income', amount: 42, comment: '' }]);
     expect(d.expenses).toEqual([]);
     expect(d.description).toBe('Lunch');
     expect(d.labels).toEqual(['lbl-1']);
@@ -82,7 +82,7 @@ describe('toConvertIncomeExpenseDefaults', () => {
     const d = toConvertIncomeExpenseDefaults(income, 'expense', accounts, 'def-expense');
     expect(d.accountId).toBe(B);
     expect(d.currency).toBe('EUR');
-    expect(d.expenses).toEqual([{ category: 'def-expense', amount: 100 }]);
+    expect(d.expenses).toEqual([{ category: 'def-expense', amount: 100, comment: '' }]);
     expect(d.incomes).toEqual([]);
   });
 
@@ -104,7 +104,7 @@ describe('toConvertIncomeExpenseDefaults', () => {
 
   it('falls back to an empty category when no default is configured', () => {
     expect(toConvertIncomeExpenseDefaults(base, 'income', accounts, null).incomes).toEqual([
-      { category: '', amount: 42 },
+      { category: '', amount: 42, comment: '' },
     ]);
   });
 });

@@ -89,6 +89,59 @@ describe('TransactionsPane', () => {
     expect(screen.queryByText(/\+\d/)).not.toBeInTheDocument();
   });
 
+  // A transactions response carrying one expense with two commented slices.
+  function commentedTx(description: string, comments: [string, string]) {
+    return {
+      ...transactionFixture,
+      id: 'tx-comments',
+      description,
+      allocations: {
+        incomes: [],
+        expenses: [
+          {
+            categoryId: foodCategoryId,
+            amount: { amount: 3, currency: 'USD' },
+            comment: comments[0],
+          },
+          {
+            categoryId: salaryCategoryId,
+            amount: { amount: 2, currency: 'USD' },
+            comment: comments[1],
+          },
+        ],
+      },
+    };
+  }
+  const seed = (tx: object) =>
+    server.use(
+      http.get(`${apiBase}/api/transactions`, () =>
+        HttpResponse.json({ transactions: [tx], totalCount: 1 }),
+      ),
+    );
+
+  it('shows allocation comments after the description, muted', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    seed(commentedTx('Groceries', ['milk', 'eggs']));
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    const cell = (await screen.findByText('Groceries')).closest('td')!;
+    expect(cell).toHaveTextContent('Groceries · milk, eggs');
+  });
+
+  it('shows comments as the primary text when the description is empty', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    seed(commentedTx('', ['milk', 'eggs']));
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    expect(await screen.findByText('milk, eggs')).toBeInTheDocument();
+  });
+
+  it('suppresses the comment tail when it equals the description', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    seed(commentedTx('milk, eggs', ['milk', 'eggs']));
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    const cell = (await screen.findByText('milk, eggs')).closest('td')!;
+    expect(cell.textContent).not.toContain('·');
+  });
+
   it('renders empty state when there are no transactions', async () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
     server.use(

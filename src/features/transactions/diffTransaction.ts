@@ -8,6 +8,7 @@ import type {
 } from '@/api/types';
 import { dateInputToWire } from '@/lib/dates';
 import type { IncomeExpenseFormValues, TransferFormValues } from './schema';
+import { normalizeComment } from './allocations';
 import { isIncome } from './transactionType';
 
 export interface TransactionEditDiff {
@@ -22,10 +23,14 @@ export interface TransactionEditDiff {
 // currency). The transaction total is the sum of all slice amounts across both
 // buckets — there is no separate top-level amount.
 const toMoneySlices = (
-  rows: { category: string; amount: number }[],
+  rows: { category: string; amount: number; comment?: string }[],
   currency: string,
 ): Allocation[] =>
-  rows.map((r) => ({ categoryId: r.category, amount: { amount: r.amount, currency } }));
+  rows.map((r) => ({
+    categoryId: r.category,
+    amount: { amount: r.amount, currency },
+    comment: normalizeComment(r.comment),
+  }));
 
 export const buildAllocations = (v: IncomeExpenseFormValues, currency: string): Allocations => ({
   incomes: toMoneySlices(v.incomes, currency),
@@ -40,11 +45,16 @@ const sumSlices = (v: IncomeExpenseFormValues) =>
   [...v.incomes, ...v.expenses].reduce((s, r) => s + r.amount, 0);
 
 const sameSlices = (
-  a: { category: string; amount: number }[],
-  b: { category: string; amount: number }[],
+  a: { category: string; amount: number; comment?: string }[],
+  b: { category: string; amount: number; comment?: string }[],
 ) =>
   a.length === b.length &&
-  a.every((s, i) => s.category === b[i]!.category && s.amount === b[i]!.amount);
+  a.every(
+    (s, i) =>
+      s.category === b[i]!.category &&
+      s.amount === b[i]!.amount &&
+      normalizeComment(s.comment) === normalizeComment(b[i]!.comment),
+  );
 
 const sameLabels = (a: readonly UUID[], b: readonly UUID[]) =>
   a.length === b.length && a.every((id, i) => id === b[i]);

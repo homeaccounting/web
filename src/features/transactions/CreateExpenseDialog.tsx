@@ -45,7 +45,7 @@ export function CreateExpenseDialog({
       accountId: defaultAccount?.id ?? '',
       currency: defaultAccount?.currency ?? '',
       incomes: [],
-      expenses: [{ category: defaultCategory, amount: NaN }],
+      expenses: [{ category: defaultCategory, amount: NaN, comment: '' }],
       description: '',
       date: nowDateTimeInput(),
       labels: [] as UUID[],

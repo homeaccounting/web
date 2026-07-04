@@ -93,6 +93,30 @@ describe('diffIncomeExpense', () => {
     expect(d.allocations).toBeUndefined();
   });
 
+  describe('comments', () => {
+    const withExpense = (comment: string): IncomeExpenseFormValues => ({
+      ...expenseInitial,
+      expenses: [{ category: 'cat-1', amount: 100, comment }],
+    });
+
+    it('treats a comment-only change as a re-split (PATCH /allocations, no amendment)', () => {
+      const d = diffIncomeExpense(withExpense('old'), withExpense('new'), expenseTx);
+      expect(d.amendment).toBeUndefined();
+      expect(d.allocations?.expenses[0]!.comment).toBe('new');
+    });
+
+    it('does not diff when only trailing whitespace differs', () => {
+      const d = diffIncomeExpense(withExpense('milk'), withExpense('milk '), expenseTx);
+      expect(d.allocations).toBeUndefined();
+      expect(d.amendment).toBeUndefined();
+    });
+
+    it('normalizes a blank comment to undefined on the built allocation', () => {
+      const d = diffIncomeExpense(withExpense('milk'), withExpense('   '), expenseTx);
+      expect(d.allocations?.expenses[0]!.comment).toBeUndefined();
+    });
+  });
+
   it('SAME-TOTAL RE-SPLIT (expense [100] → [60,40]): allocations only, no amendment', () => {
     const d = diffIncomeExpense(
       expenseInitial,
