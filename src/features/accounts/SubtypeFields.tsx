@@ -8,7 +8,7 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select';
-import { ASSET_TYPE_KINDS, CARD_NETWORK_KINDS } from '@/api/types';
+import { ASSET_TYPES, CARD_NETWORKS } from '@/api/types';
 import type { CreateAccountFormValues } from './schema';
 import { ASSET_TYPE_LABELS, CARD_NETWORK_LABELS } from './labels';
 
@@ -74,7 +74,7 @@ export function SubtypeFields() {
                     <SelectValue placeholder="Select…" />
                   </SelectTrigger>
                   <SelectContent>
-                    {CARD_NETWORK_KINDS.map((kind) => (
+                    {CARD_NETWORKS.map((kind) => (
                       <SelectItem key={kind} value={kind}>
                         {CARD_NETWORK_LABELS[kind]}
                       </SelectItem>
@@ -136,7 +136,7 @@ export function SubtypeFields() {
                     <SelectValue placeholder="Select…" />
                   </SelectTrigger>
                   <SelectContent>
-                    {ASSET_TYPE_KINDS.map((kind) => (
+                    {ASSET_TYPES.map((kind) => (
                       <SelectItem key={kind} value={kind}>
                         {ASSET_TYPE_LABELS[kind]}
                       </SelectItem>

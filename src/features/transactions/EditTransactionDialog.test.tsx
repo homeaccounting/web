@@ -69,8 +69,12 @@ beforeEach(() => {
           },
           labels: { entries: [] },
         },
-        defaultIncomeCategory: null,
-        defaultExpenseCategory: null,
+        defaults: {
+          incomeCategory: null,
+          expenseCategory: null,
+          account: null,
+          subtypeAccounts: {},
+        },
         banking: {
           mccExpenseCategoryMap: {},
         },

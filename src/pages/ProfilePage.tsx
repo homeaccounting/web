@@ -5,10 +5,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useConfiguration } from '@/features/configuration/useConfiguration';
 import { ProfileGeneralPane } from '@/features/profile/ProfileGeneralPane';
 import { ProfileDictionariesPane } from '@/features/profile/ProfileDictionariesPane';
+import { ProfileDefaultsPane } from '@/features/profile/ProfileDefaultsPane';
 import { ProfileAuthPane } from '@/features/profile/ProfileAuthPane';
 import { ProfileBankingPane } from '@/features/profile/ProfileBankingPane';
 
-const STATIC_TABS = ['general', 'dictionaries', 'auth'] as const;
+const STATIC_TABS = ['general', 'dictionaries', 'defaults', 'auth'] as const;
 type StaticTab = (typeof STATIC_TABS)[number];
 type Tab = StaticTab | 'banking';
 
@@ -65,6 +66,7 @@ export default function ProfilePage() {
           <TabsList>
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="dictionaries">Dictionaries</TabsTrigger>
+            <TabsTrigger value="defaults">Defaults</TabsTrigger>
             <TabsTrigger value="auth">Auth</TabsTrigger>
             {bankingEnabled && <TabsTrigger value="banking">Banking</TabsTrigger>}
           </TabsList>
@@ -73,6 +75,9 @@ export default function ProfilePage() {
           </TabsContent>
           <TabsContent value="dictionaries">
             <ProfileDictionariesPane />
+          </TabsContent>
+          <TabsContent value="defaults">
+            <ProfileDefaultsPane />
           </TabsContent>
           <TabsContent value="auth">
             <ProfileAuthPane />

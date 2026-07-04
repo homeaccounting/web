@@ -4,7 +4,7 @@ import { renderWithProviders, makeQueryClient } from '@/test/utils';
 import { AuthProvider } from '@/auth/AuthContext';
 import { saveSession } from '@/auth/storage';
 import { AccountHeader } from './AccountHeader';
-import type { AccountResponse, AccountSubtypeKind } from '@/api/types';
+import type { AccountResponse, AccountSubtypeType } from '@/api/types';
 
 function fixture(overrides: Partial<AccountResponse> = {}): AccountResponse {
   return {
@@ -50,7 +50,7 @@ describe('AccountHeader', () => {
     expect(screen.queryByRole('button', { name: /adjust balance/i })).not.toBeInTheDocument();
   });
 
-  it.each<[AccountSubtypeKind, string]>([
+  it.each<[AccountSubtypeType, string]>([
     ['cash', 'Cash'],
     ['bankAccount', 'Bank account'],
     ['eWallet', 'E-wallet'],

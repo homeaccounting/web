@@ -1,12 +1,12 @@
 import { cn } from '@/lib/utils';
-import type { TransferTypeText } from '@/api/types';
+import type { TransactionTypeText } from '@/api/types';
 import { transactionTypeMeta } from './transactionType';
 
 export function TransactionTypeIcon({
   type,
   className,
 }: {
-  type: TransferTypeText;
+  type: TransactionTypeText;
   className?: string;
 }) {
   const { Icon, colorClass, label } = transactionTypeMeta(type);

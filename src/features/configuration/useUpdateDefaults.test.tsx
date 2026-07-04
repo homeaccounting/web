@@ -19,7 +19,10 @@ describe('useUpdateDefaults', () => {
         method = request.method;
         body = await request.json();
         return HttpResponse.json(
-          { ...configurationFixture, defaultIncomeCategory: 'cat-income' },
+          {
+            ...configurationFixture,
+            defaults: { ...configurationFixture.defaults, incomeCategory: 'cat-income' },
+          },
           { status: 200 },
         );
       }),
@@ -31,10 +34,10 @@ describe('useUpdateDefaults', () => {
       </QueryClientProvider>
     );
     const { result } = renderHook(() => useUpdateDefaults(), { wrapper });
-    result.current.mutate({ defaultIncomeCategory: 'cat-income' });
+    result.current.mutate({ incomeCategory: 'cat-income' });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(method).toBe('PUT');
-    expect(body).toEqual({ defaultIncomeCategory: 'cat-income' });
-    expect(result.current.data?.defaultIncomeCategory).toBe('cat-income');
+    expect(body).toEqual({ incomeCategory: 'cat-income' });
+    expect(result.current.data?.defaults.incomeCategory).toBe('cat-income');
   });
 });

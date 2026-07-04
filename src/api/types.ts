@@ -110,16 +110,20 @@ export interface AccountListResponse {
 // Single source of truth for the closed enum values that mirror backend
 // `Web.Types`. Components, schemas, and label maps import these arrays so
 // no call site repeats the literal list.
-export const ACCOUNT_SUBTYPE_KINDS = ['cash', 'bankAccount', 'eWallet', 'asset', 'loan'] as const;
-export type AccountSubtypeKind = (typeof ACCOUNT_SUBTYPE_KINDS)[number];
+// The account subtype *discriminator* — the `type` tag the backend emits/accepts
+// on an AccountSubtype object (Web/Types.hs `fromAccountSubtype`: "cash", …).
+// Distinct from AccountSubtypeKind (the CashKind/… enum used as map keys); see
+// SUBTYPE_TYPE_TO_KIND below.
+export const ACCOUNT_SUBTYPE_TYPES = ['cash', 'bankAccount', 'eWallet', 'asset', 'loan'] as const;
+export type AccountSubtypeType = (typeof ACCOUNT_SUBTYPE_TYPES)[number];
 
 // Backend enums (closed sets at the Haskell level; backend also accepts
 // freeform OtherCardNetwork/OtherAsset, but the web UI does not expose those).
-export const CARD_NETWORK_KINDS = ['visa', 'mastercard', 'amex'] as const;
-export type CardNetworkKind = (typeof CARD_NETWORK_KINDS)[number];
+export const CARD_NETWORKS = ['visa', 'mastercard', 'amex'] as const;
+export type CardNetwork = (typeof CARD_NETWORKS)[number];
 
-export const ASSET_TYPE_KINDS = ['property', 'vehicle', 'stocks', 'retirementFund'] as const;
-export type AssetTypeKind = (typeof ASSET_TYPE_KINDS)[number];
+export const ASSET_TYPES = ['property', 'vehicle', 'stocks', 'retirementFund'] as const;
+export type AssetType = (typeof ASSET_TYPES)[number];
 
 // Currencies the web UI offers at account creation. Matches the backend's
 // `parseCurrency` accepted values for the create endpoint.
@@ -129,14 +133,14 @@ export type SupportedCurrency = (typeof SUPPORTED_CURRENCIES)[number];
 // Mirrors backend AccountSubtypeRequest (Web/Types.hs:153-167). Backend's
 // JSON shape is "type plus optional fields"; we keep the same flat shape.
 export interface AccountSubtypeRequest {
-  type: AccountSubtypeKind;
+  type: AccountSubtypeType;
   storageLocation?: string;
   bankName?: string;
   accountNumber?: string;
-  cardNetwork?: CardNetworkKind;
+  cardNetwork?: CardNetwork;
   provider?: string;
   accountIdentifier?: string;
-  assetType?: AssetTypeKind;
+  assetType?: AssetType;
   description?: string;
   lender?: string;
   interestRate?: number;
@@ -317,7 +321,7 @@ export const TRANSACTION_TYPE = {
   adjustment: 'adjustment',
 } as const;
 
-export type TransferTypeText =
+export type TransactionTypeText =
   | (typeof TRANSACTION_TYPE)[keyof typeof TRANSACTION_TYPE]
   | (string & {});
 
@@ -333,7 +337,7 @@ export interface TransactionResponse {
   description: string;
   status: TransactionStatusText;
   failureReason: string | null;
-  transactionType: TransferTypeText;
+  transactionType: TransactionTypeText;
   // Two-bucket categorisation of the transaction. Mirrors backend
   // Web/Types.hs `TransactionResponse.allocations`. The previously flattened
   // `category :: string | null` was removed when the backend started returning
@@ -356,11 +360,10 @@ export interface TransactionListResponse {
 }
 
 // --- Configuration ---
-// JSON shape from backend/src/Web/API/ConfigurationAPI.hs (ConfigurationResponse,
-// DictionaryResponse, DictionaryEntryResponse, BankingConfigurationDTO).
-// defaultIncomeCategory / defaultExpenseCategory are now TOP-LEVEL fields on
-// ConfigurationResponse (no longer under banking); set via
-// PUT /api/users/me/configuration/defaults.
+// JSON shape from server-infra/src/Web/API/ConfigurationAPI.hs (ConfigurationResponse,
+// ConfigurationDefaultsDTO, DictionaryResponse, BankingConfigurationDTO).
+// Defaults are nested under `defaults` (incomeCategory/expenseCategory/account/
+// subtypeAccounts); set via PUT /api/users/me/configuration/defaults.
 
 export interface DictionaryEntryResponse {
   id: UUID;
@@ -409,8 +412,11 @@ export interface UpdateBankingRequest {
   mccExpenseCategoryMap?: Record<string, UUID>;
 }
 export interface UpdateDefaultsRequest {
-  defaultIncomeCategory?: UUID | null;
-  defaultExpenseCategory?: UUID | null;
+  incomeCategory?: UUID | null;
+  expenseCategory?: UUID | null;
+  account?: UUID | null;
+  // Present = replaces the whole per-subtype map wholesale (omit a key to clear it).
+  subtypeAccounts?: Partial<Record<AccountSubtypeKind, UUID>>;
 }
 export interface ResyncRequest {
   from: string;
@@ -432,12 +438,31 @@ export interface BankingConfigurationDTO {
   connections: BankConnectionDTO[];
 }
 
+// The account subtype *kind* — the backend `AccountSubtypeKind` enum
+// (Domain/Core/Types.hs), whose constructor names ("CashKind", …) are used
+// verbatim as the JSON keys of the `subtypeAccounts` map. SUBTYPE_TYPE_TO_KIND
+// maps each discriminator type (cash, …) to its kind (CashKind, …).
+export const SUBTYPE_TYPE_TO_KIND = {
+  cash: 'CashKind',
+  bankAccount: 'BankAccountKind',
+  eWallet: 'EWalletKind',
+  asset: 'AssetKind',
+  loan: 'LoanKind',
+} as const satisfies Record<AccountSubtypeType, string>;
+export type AccountSubtypeKind = (typeof SUBTYPE_TYPE_TO_KIND)[AccountSubtypeType];
+
+export interface ConfigurationDefaultsDTO {
+  incomeCategory: UUID | null;
+  expenseCategory: UUID | null;
+  account: UUID | null;
+  subtypeAccounts: Partial<Record<AccountSubtypeKind, UUID>>;
+}
+
 export interface ConfigurationResponse {
   baseCurrency: string;
   defaultCurrency: string;
   dictionaries: Record<string, DictionaryResponse>;
-  defaultIncomeCategory: UUID | null;
-  defaultExpenseCategory: UUID | null;
+  defaults: ConfigurationDefaultsDTO;
   banking: BankingConfigurationDTO;
   bankingFeatureEnabled: boolean;
   // Backend Web.API.ConfigurationAPI.ConfigurationResponse adds these:

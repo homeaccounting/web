@@ -6,20 +6,20 @@ import {
   Scale,
   type LucideIcon,
 } from 'lucide-react';
-import { TRANSACTION_TYPE, type TransferTypeText } from '@/api/types';
+import { TRANSACTION_TYPE, type TransactionTypeText } from '@/api/types';
 import type { TransactionKind } from './labels';
 
 // Predicates on the backend `transactionType` discriminator. Prefer these over
 // hardcoding the string literals at each call site.
-export const isIncome = (type: TransferTypeText) => type === TRANSACTION_TYPE.income;
-export const isExpense = (type: TransferTypeText) => type === TRANSACTION_TYPE.expense;
-export const isTransfer = (type: TransferTypeText) => type === TRANSACTION_TYPE.transfer;
-export const isAdjustment = (type: TransferTypeText) => type === TRANSACTION_TYPE.adjustment;
+export const isIncome = (type: TransactionTypeText) => type === TRANSACTION_TYPE.income;
+export const isExpense = (type: TransactionTypeText) => type === TRANSACTION_TYPE.expense;
+export const isTransfer = (type: TransactionTypeText) => type === TRANSACTION_TYPE.transfer;
+export const isAdjustment = (type: TransactionTypeText) => type === TRANSACTION_TYPE.adjustment;
 
 // Maps a transaction's type to the editable form kind (income / expense /
 // transfer). Adjustments have no editable form; callers guard them separately,
 // so they fall through to `expense` here.
-export function transactionKind(type: TransferTypeText): TransactionKind {
+export function transactionKind(type: TransactionTypeText): TransactionKind {
   if (isTransfer(type)) return TRANSACTION_TYPE.transfer;
   if (isIncome(type)) return TRANSACTION_TYPE.income;
   return TRANSACTION_TYPE.expense;
@@ -33,8 +33,8 @@ export interface TransactionTypeMeta {
 
 // Maps the backend `transactionType` discriminator to a leading icon + color
 // for the list row. Unknown values (the open `(string & {})` arm of
-// TransferTypeText) fall back to a neutral dot labelled with the raw value.
-export function transactionTypeMeta(type: TransferTypeText): TransactionTypeMeta {
+// TransactionTypeText) fall back to a neutral dot labelled with the raw value.
+export function transactionTypeMeta(type: TransactionTypeText): TransactionTypeMeta {
   switch (type) {
     case TRANSACTION_TYPE.income:
       return {

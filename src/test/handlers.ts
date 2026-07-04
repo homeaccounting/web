@@ -295,8 +295,13 @@ export const handlers = [
     const body = (await request.json()) as UpdateDefaultsRequest;
     return HttpResponse.json({
       ...configurationFixture,
-      defaultIncomeCategory: body.defaultIncomeCategory ?? null,
-      defaultExpenseCategory: body.defaultExpenseCategory ?? null,
+      defaults: {
+        ...configurationFixture.defaults,
+        ...(body.incomeCategory !== undefined ? { incomeCategory: body.incomeCategory } : {}),
+        ...(body.expenseCategory !== undefined ? { expenseCategory: body.expenseCategory } : {}),
+        ...(body.account !== undefined ? { account: body.account } : {}),
+        ...(body.subtypeAccounts !== undefined ? { subtypeAccounts: body.subtypeAccounts } : {}),
+      },
     });
   }),
   http.get(`${apiBase}/api/banking/connections/:id/external-accounts`, () =>

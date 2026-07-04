@@ -21,7 +21,7 @@ import {
 import { useAccountById } from '@/features/accounts/useAccountById';
 import { formatDateTime, formatMoney } from '@/lib/format';
 import { cn } from '@/lib/utils';
-import type { TransactionResponse, TransferTypeText } from '@/api/types';
+import type { TransactionResponse, TransactionTypeText } from '@/api/types';
 import { useWindowedTransactions } from './useWindowedTransactions';
 import {
   applyTransactionFilters,
@@ -49,7 +49,7 @@ import { TransactionStatusIcon } from './TransactionStatusIcon';
 // Adjustment is never a source or target). Caller must ensure `type` is not
 // 'adjustment' — the submenu guard upstream enforces this.
 const CONVERT_KINDS = ['income', 'expense', 'transfer'] as const;
-function convertTargets(type: TransferTypeText): TransactionKind[] {
+function convertTargets(type: TransactionTypeText): TransactionKind[] {
   const current = transactionKind(type);
   return CONVERT_KINDS.filter((k) => k !== current);
 }

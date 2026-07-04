@@ -128,8 +128,9 @@ function ConvertIncomeExpenseBody({
   const reimbursementCategories = config?.dictionaries['expense-category']?.entries ?? [];
   const labels = config?.dictionaries.labels?.entries ?? [];
   const defaultCategory =
-    (targetKind === 'income' ? config?.defaultIncomeCategory : config?.defaultExpenseCategory) ??
-    null;
+    (targetKind === 'income'
+      ? config?.defaults.incomeCategory
+      : config?.defaults.expenseCategory) ?? null;
 
   const defaultValues = useMemo(
     () => toConvertIncomeExpenseDefaults(tx, targetKind, accounts, defaultCategory),

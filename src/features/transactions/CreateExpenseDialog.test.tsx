@@ -52,7 +52,10 @@ describe('CreateExpenseDialog', () => {
     let capturedBody: Record<string, unknown> = {};
     server.use(
       http.get(`${apiBase}/api/users/me/configuration`, () =>
-        HttpResponse.json({ ...configurationFixture, defaultExpenseCategory: foodCategoryId }),
+        HttpResponse.json({
+          ...configurationFixture,
+          defaults: { ...configurationFixture.defaults, expenseCategory: foodCategoryId },
+        }),
       ),
       http.post(`${apiBase}/api/transactions/expense`, async ({ request }) => {
         capturedBody = (await request.json()) as Record<string, unknown>;

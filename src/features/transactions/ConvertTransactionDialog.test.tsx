@@ -56,8 +56,11 @@ beforeEach(() => {
     http.get(`${apiBase}/api/users/me/configuration`, () =>
       HttpResponse.json({
         ...configurationFixture,
-        defaultExpenseCategory: foodCategoryId,
-        defaultIncomeCategory: salaryCategoryId,
+        defaults: {
+          ...configurationFixture.defaults,
+          expenseCategory: foodCategoryId,
+          incomeCategory: salaryCategoryId,
+        },
       }),
     ),
   );

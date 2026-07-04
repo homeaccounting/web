@@ -100,8 +100,12 @@ export const configurationFixture: ConfigurationResponse = {
     },
     labels: { entries: [{ id: tripLabelId, name: 'Trip' }] },
   },
-  defaultIncomeCategory: null,
-  defaultExpenseCategory: null,
+  defaults: {
+    incomeCategory: null,
+    expenseCategory: null,
+    account: null,
+    subtypeAccounts: {},
+  },
   banking: {
     mccExpenseCategoryMap: {},
     connections: [],

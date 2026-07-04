@@ -12,7 +12,7 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select';
-import { ACCOUNT_SUBTYPE_KINDS, SUPPORTED_CURRENCIES } from '@/api/types';
+import { ACCOUNT_SUBTYPE_TYPES, SUPPORTED_CURRENCIES } from '@/api/types';
 import {
   createAccountFormSchema,
   editAccountFormSchema,
@@ -259,7 +259,7 @@ export function AccountForm({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {ACCOUNT_SUBTYPE_KINDS.map((kind) => (
+                    {ACCOUNT_SUBTYPE_TYPES.map((kind) => (
                       <SelectItem key={kind} value={kind}>
                         {ACCOUNT_SUBTYPE_LABELS[kind]}
                       </SelectItem>

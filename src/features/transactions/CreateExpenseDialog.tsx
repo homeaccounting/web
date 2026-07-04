@@ -38,7 +38,7 @@ export function CreateExpenseDialog({
   const labels = config?.dictionaries.labels?.entries ?? [];
 
   const defaultAccount = accounts?.find((a) => a.id === selectedAccountId) ?? accounts?.[0];
-  const defaultCategory = config?.defaultExpenseCategory ?? '';
+  const defaultCategory = config?.defaults.expenseCategory ?? '';
 
   const defaults = useMemo(
     () => ({

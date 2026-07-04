@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import {
-  ASSET_TYPE_KINDS,
-  CARD_NETWORK_KINDS,
+  ASSET_TYPES,
+  CARD_NETWORKS,
   SUPPORTED_CURRENCIES,
   type AccountResponse,
   type CreateAccountRequest,
@@ -16,7 +16,7 @@ const bankAccountSchema = z.object({
   type: z.literal('bankAccount'),
   bankName: z.string().trim().optional(),
   accountNumber: z.string().trim().optional(),
-  cardNetwork: z.enum(CARD_NETWORK_KINDS).optional(),
+  cardNetwork: z.enum(CARD_NETWORKS).optional(),
 });
 
 const eWalletSchema = z.object({
@@ -27,7 +27,7 @@ const eWalletSchema = z.object({
 
 const assetSchema = z.object({
   type: z.literal('asset'),
-  assetType: z.enum(ASSET_TYPE_KINDS).optional(),
+  assetType: z.enum(ASSET_TYPES).optional(),
   description: z.string().trim().optional(),
 });
 
@@ -136,7 +136,7 @@ function normaliseSubtype(subtype: AccountResponse['subtype']): EditAccountFormV
         type: 'bankAccount',
         bankName: typeof s.bankName === 'string' ? s.bankName : undefined,
         accountNumber: typeof s.accountNumber === 'string' ? s.accountNumber : undefined,
-        cardNetwork: asEnum(CARD_NETWORK_KINDS, s.cardNetwork),
+        cardNetwork: asEnum(CARD_NETWORKS, s.cardNetwork),
       };
     case 'eWallet':
       return {
@@ -148,7 +148,7 @@ function normaliseSubtype(subtype: AccountResponse['subtype']): EditAccountFormV
     case 'asset':
       return {
         type: 'asset',
-        assetType: asEnum(ASSET_TYPE_KINDS, s.assetType),
+        assetType: asEnum(ASSET_TYPES, s.assetType),
         description: typeof s.description === 'string' ? s.description : undefined,
       };
     case 'loan':

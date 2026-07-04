@@ -41,7 +41,7 @@ export function CreateIncomeDialog({
   const labels = config?.dictionaries.labels?.entries ?? [];
 
   const defaultAccount = accounts?.find((a) => a.id === selectedAccountId) ?? accounts?.[0];
-  const defaultCategory = config?.defaultIncomeCategory ?? '';
+  const defaultCategory = config?.defaults.incomeCategory ?? '';
 
   const defaults = useMemo(
     () => ({

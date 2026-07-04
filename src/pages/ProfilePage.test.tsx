@@ -28,10 +28,11 @@ describe('ProfilePage', () => {
     saveSession({ token: 't', userId: 'u', email: 'e@x', expiresAt: 9e15 });
   });
 
-  it('renders three tabs with General selected by default', () => {
+  it('renders the static tabs with General selected by default', () => {
     renderWithProviders(ui(), { initialPath: '/profile' });
     expect(screen.getByRole('tab', { name: /general/i })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByRole('tab', { name: /dictionaries/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /defaults/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /auth/i })).toBeInTheDocument();
   });
 

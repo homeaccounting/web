@@ -7,7 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import type { AccountResponse } from '@/api/types';
-import { ACCOUNT_SUBTYPE_KINDS } from '@/api/types';
+import { ACCOUNT_SUBTYPE_TYPES } from '@/api/types';
 import { ApiError } from '@/api/client';
 import { ACCOUNT_SUBTYPE_LABELS } from './labels';
 import { useAccounts } from './useAccounts';
@@ -62,7 +62,7 @@ export function AccountsPane() {
   // accounts without a (known) subtype fall into a trailing "Other" group.
   // Empty groups are omitted.
   const openGroups: { key: string; label: string; accounts: AccountResponse[] }[] = [
-    ...ACCOUNT_SUBTYPE_KINDS.map((kind) => ({
+    ...ACCOUNT_SUBTYPE_TYPES.map((kind) => ({
       key: kind,
       label: ACCOUNT_SUBTYPE_LABELS[kind],
       accounts: openAccounts.filter((a) => a.subtype?.type === kind),
@@ -71,7 +71,7 @@ export function AccountsPane() {
       key: 'other',
       label: 'Other',
       accounts: openAccounts.filter(
-        (a) => !a.subtype || !ACCOUNT_SUBTYPE_KINDS.includes(a.subtype.type as never),
+        (a) => !a.subtype || !ACCOUNT_SUBTYPE_TYPES.includes(a.subtype.type as never),
       ),
     },
   ].filter((g) => g.accounts.length > 0);
