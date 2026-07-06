@@ -14,7 +14,7 @@ import { useConfiguration } from '@/features/configuration/useConfiguration';
 import { nowDateTimeInput } from '@/lib/dates';
 import { IncomeExpenseForm, type IncomeExpenseFormApi } from './IncomeExpenseForm';
 import { useCreateExpense } from './useCreateExpense';
-import { toExpenseRequest } from './schema';
+import { toExpenseRequest, type IncomeExpenseFormValues } from './schema';
 import { TRANSACTION_KIND_LABELS } from './labels';
 
 export interface CreateExpenseDialogProps {
@@ -41,14 +41,16 @@ export function CreateExpenseDialog({
   const defaultCategory = config?.defaults.expenseCategory ?? '';
 
   const defaults = useMemo(
-    () => ({
+    (): IncomeExpenseFormValues => ({
       accountId: defaultAccount?.id ?? '',
       currency: defaultAccount?.currency ?? '',
       incomes: [],
       expenses: [{ category: defaultCategory, amount: NaN, comment: '' }],
       description: '',
       date: nowDateTimeInput(),
-      labels: [] as UUID[],
+      labels: [],
+      targetMode: false,
+      targetTotal: '',
     }),
     [defaultAccount?.id, defaultAccount?.currency, defaultCategory],
   );

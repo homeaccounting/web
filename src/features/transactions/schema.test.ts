@@ -261,7 +261,23 @@ describe('toIncomeExpenseFormValues', () => {
       description: 'd',
       date: '2026-03-04T15:00',
       labels: ['l1'],
+      targetMode: false,
+      targetTotal: '',
     });
+  });
+
+  it('seeds target mode off when editing an existing transaction', () => {
+    // Expense path — the income snapshot above already covers the income case;
+    // this asserts the seed on the other kind.
+    const tx = baseTx({
+      transactionType: 'expense',
+      sourceAccountId: 'a1',
+      targetAccountId: 'ext',
+      allocations: { incomes: [], expenses: [{ categoryId: 'cat-2', amount: money(10) }] },
+    });
+    const values = toIncomeExpenseFormValues(tx, [acc('a1')]);
+    expect(values.targetMode).toBe(false);
+    expect(values.targetTotal).toBe('');
   });
 
   it('expense → regular leg is the source', () => {
@@ -412,6 +428,113 @@ describe('makeIncomeExpenseFormSchema (allocation refinement)', () => {
         schema.safeParse({ ...base, incomes: [{ category: CAT, amount: 999999 }], expenses: [] })
           .success,
       ).toBe(true);
+    });
+  });
+
+  describe('target total gate', () => {
+    const t = { ...base, currency: 'USD' };
+
+    it('passes when sum equals the target', () => {
+      const schema = makeIncomeExpenseFormSchema(null, 'expense');
+      const res = schema.safeParse({
+        ...t,
+        incomes: [],
+        expenses: [{ category: CAT, amount: 80 }],
+        targetMode: true,
+        targetTotal: 80,
+      });
+      expect(res.success).toBe(true);
+    });
+
+    it('rejects (issue at expenses) when sum is short of the target', () => {
+      const schema = makeIncomeExpenseFormSchema(null, 'expense');
+      const res = schema.safeParse({
+        ...t,
+        incomes: [],
+        expenses: [{ category: CAT, amount: 55 }],
+        targetMode: true,
+        targetTotal: 80,
+      });
+      expect(res.success).toBe(false);
+      if (!res.success) {
+        const issue = res.error.issues.find((i) => i.path[0] === 'expenses');
+        expect(issue?.message).toContain('short');
+        expect(issue?.message).toContain('$25.00');
+      }
+    });
+
+    it('rejects (issue at expenses) when sum is over the target', () => {
+      const schema = makeIncomeExpenseFormSchema(null, 'expense');
+      const res = schema.safeParse({
+        ...t,
+        incomes: [],
+        expenses: [{ category: CAT, amount: 90 }],
+        targetMode: true,
+        targetTotal: 80,
+      });
+      expect(res.success).toBe(false);
+      if (!res.success) {
+        const issue = res.error.issues.find((i) => i.path[0] === 'expenses');
+        expect(issue?.message).toContain('over');
+        expect(issue?.message).toContain('$10.00');
+      }
+    });
+
+    it('rejects (issue at targetTotal) when target mode is on but target is blank', () => {
+      const schema = makeIncomeExpenseFormSchema(null, 'expense');
+      const res = schema.safeParse({
+        ...t,
+        incomes: [],
+        expenses: [{ category: CAT, amount: 55 }],
+        targetMode: true,
+        targetTotal: '',
+      });
+      expect(res.success).toBe(false);
+      if (!res.success) {
+        expect(res.error.issues.some((i) => i.path[0] === 'targetTotal')).toBe(true);
+      }
+    });
+
+    it('treats a sub-cent difference as balanced', () => {
+      const schema = makeIncomeExpenseFormSchema(null, 'expense');
+      const res = schema.safeParse({
+        ...t,
+        incomes: [],
+        expenses: [
+          { category: CAT, amount: 26.66 },
+          { category: CAT2, amount: 26.67 },
+          { category: CAT, amount: 26.67 },
+        ],
+        targetMode: true,
+        targetTotal: 80,
+      });
+      expect(res.success).toBe(true);
+    });
+
+    it('ignores the target when target mode is off', () => {
+      const schema = makeIncomeExpenseFormSchema(null, 'expense');
+      const res = schema.safeParse({
+        ...t,
+        incomes: [],
+        expenses: [{ category: CAT, amount: 55 }],
+        targetMode: false,
+        targetTotal: 80,
+      });
+      expect(res.success).toBe(true);
+    });
+
+    it('defaults targetMode to false when omitted', () => {
+      const parsed = incomeExpenseFormSchema.parse({
+        accountId: ACC_A,
+        currency: 'USD',
+        incomes: [{ category: CAT, amount: 12.5 }],
+        expenses: [],
+        description: '',
+        date: '',
+        labels: [],
+      });
+      expect(parsed.targetMode).toBe(false);
+      expect(parsed.targetTotal).toBe('');
     });
   });
 });

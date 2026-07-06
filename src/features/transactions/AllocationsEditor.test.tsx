@@ -21,6 +21,8 @@ type Slice = { category: string; amount: number; comment?: string };
 interface HostValues {
   incomes: Slice[];
   expenses: Slice[];
+  targetMode?: boolean;
+  targetTotal?: number | '';
 }
 
 function Host({
@@ -28,13 +30,19 @@ function Host({
   currency = 'USD',
   incomes = [],
   expenses = [],
+  targetMode = false,
+  targetTotal = '',
 }: {
   sections: AllocationSection[];
   currency?: string;
   incomes?: Slice[];
   expenses?: Slice[];
+  targetMode?: boolean;
+  targetTotal?: number | '';
 }) {
-  const form = useForm<HostValues>({ defaultValues: { incomes, expenses } });
+  const form = useForm<HostValues>({
+    defaultValues: { incomes, expenses, targetMode, targetTotal },
+  });
   return (
     <FormProvider {...form}>
       <AllocationsEditor sections={sections} currency={currency} />
@@ -151,5 +159,137 @@ describe('AllocationsEditor', () => {
       />,
     );
     expect(screen.getByTestId('allocations-total')).toHaveTextContent(formatMoney(100, 'USD'));
+  });
+});
+
+describe('target total mode', () => {
+  it('is off by default: no target input, no diff, plain total shown', () => {
+    render(<Host sections={[expenseSection]} expenses={[{ category: C1, amount: 100 }]} />);
+    expect(screen.queryByLabelText('Target total')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('allocations-diff')).not.toBeInTheDocument();
+    expect(screen.getByTestId('allocations-total')).toHaveTextContent(formatMoney(100, 'USD'));
+  });
+
+  it('reveals the target input when the toggle is switched on', () => {
+    render(<Host sections={[expenseSection]} expenses={[{ category: C1, amount: 100 }]} />);
+    fireEvent.click(screen.getByLabelText('Target'));
+    expect(screen.getByLabelText('Target total')).toBeInTheDocument();
+  });
+
+  // The readout is a progress bar (fills sum/target) plus a short colored caption
+  // giving the exact remaining. Color signals the under/over/balanced state.
+  it('shows a partial bar and a muted "left" caption when under', () => {
+    render(
+      <Host
+        sections={[expenseSection]}
+        expenses={[{ category: C1, amount: 55 }]}
+        targetMode
+        targetTotal={80}
+      />,
+    );
+    const bar = screen.getByRole('progressbar');
+    expect(bar).toHaveAttribute('aria-valuenow', '55');
+    expect(bar).toHaveAttribute('aria-valuemax', '80');
+    const diff = screen.getByTestId('allocations-diff');
+    expect(diff).toHaveTextContent(`${formatMoney(25, 'USD')} left`);
+    expect(diff.className).toContain('text-muted-foreground');
+  });
+
+  it('shows a destructive "over" caption when over target', () => {
+    render(
+      <Host
+        sections={[expenseSection]}
+        expenses={[{ category: C1, amount: 90 }]}
+        targetMode
+        targetTotal={80}
+      />,
+    );
+    const diff = screen.getByTestId('allocations-diff');
+    // remaining = 80 - 90 = -10 → "$10.00 over".
+    expect(diff).toHaveTextContent(`${formatMoney(10, 'USD')} over`);
+    expect(diff.className).toContain('text-destructive');
+  });
+
+  it('shows an emerald "Balanced" caption when exact', () => {
+    render(
+      <Host
+        sections={[expenseSection]}
+        expenses={[{ category: C1, amount: 80 }]}
+        targetMode
+        targetTotal={80}
+      />,
+    );
+    const diff = screen.getByTestId('allocations-diff');
+    expect(diff).toHaveTextContent(/balanced/i);
+    expect(diff.className).toContain('text-emerald-600');
+  });
+
+  it('fills an empty row to the outstanding diff', () => {
+    render(
+      <Host
+        sections={[expenseSection]}
+        expenses={[
+          { category: C1, amount: 55 },
+          { category: C2, amount: NaN },
+        ]}
+        targetMode
+        targetTotal={80}
+      />,
+    );
+    const fill = screen.getByRole('button', { name: /fill/i });
+    fireEvent.click(fill);
+    const amounts = screen.getAllByRole('spinbutton');
+    expect(amounts[1]).toHaveValue(25);
+  });
+
+  it('shows Fill only on the empty row while a blank row exists (fill blanks first)', () => {
+    render(
+      <Host
+        sections={[expenseSection]}
+        expenses={[
+          { category: C1, amount: 55 },
+          { category: C2, amount: NaN },
+        ]}
+        targetMode
+        targetTotal={80}
+      />,
+    );
+    // Only one Fill button (on the empty row 2), not one per row.
+    expect(screen.getAllByRole('button', { name: /fill/i })).toHaveLength(1);
+  });
+
+  it('tops up a partial row so the total reaches the target', () => {
+    render(
+      <Host
+        sections={[expenseSection]}
+        expenses={[
+          { category: C1, amount: 55 },
+          { category: C2, amount: 10 },
+        ]}
+        targetMode
+        targetTotal={80}
+      />,
+    );
+    const fills = screen.getAllByRole('button', { name: /fill/i });
+    fireEvent.click(fills[1]!);
+    const amounts = screen.getAllByRole('spinbutton');
+    expect(amounts[1]).toHaveValue(25);
+  });
+
+  it('hides Fill when already balanced', () => {
+    render(
+      <Host
+        sections={[expenseSection]}
+        expenses={[{ category: C1, amount: 80 }]}
+        targetMode
+        targetTotal={80}
+      />,
+    );
+    expect(screen.queryByRole('button', { name: /fill/i })).not.toBeInTheDocument();
+  });
+
+  it('does not render Fill when target mode is off', () => {
+    render(<Host sections={[expenseSection]} expenses={[{ category: C1, amount: 55 }]} />);
+    expect(screen.queryByRole('button', { name: /fill/i })).not.toBeInTheDocument();
   });
 });

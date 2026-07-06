@@ -14,7 +14,7 @@ import { useConfiguration } from '@/features/configuration/useConfiguration';
 import { nowDateTimeInput } from '@/lib/dates';
 import { IncomeExpenseForm, type IncomeExpenseFormApi } from './IncomeExpenseForm';
 import { useCreateIncome } from './useCreateIncome';
-import { toIncomeRequest } from './schema';
+import { toIncomeRequest, type IncomeExpenseFormValues } from './schema';
 import { TRANSACTION_KIND_LABELS } from './labels';
 
 export interface CreateIncomeDialogProps {
@@ -44,14 +44,16 @@ export function CreateIncomeDialog({
   const defaultCategory = config?.defaults.incomeCategory ?? '';
 
   const defaults = useMemo(
-    () => ({
+    (): IncomeExpenseFormValues => ({
       accountId: defaultAccount?.id ?? '',
       currency: defaultAccount?.currency ?? '',
       incomes: [{ category: defaultCategory, amount: NaN, comment: '' }],
       expenses: [],
       description: '',
       date: nowDateTimeInput(),
-      labels: [] as UUID[],
+      labels: [],
+      targetMode: false,
+      targetTotal: '',
     }),
     [defaultAccount?.id, defaultAccount?.currency, defaultCategory],
   );

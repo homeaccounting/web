@@ -10,6 +10,7 @@ import { isIncome } from './transactionType';
 import { normalizeComment, sliceArraysFromTx } from './allocations';
 import { dateInputToWire, wireToDateInput } from '@/lib/dates';
 import { formatMoney } from '@/lib/format';
+import { roundMoney } from '@/lib/money';
 
 const uuid = z.string().uuid();
 const positiveAmount = z.coerce.number().positive('Amount must be positive');
@@ -41,6 +42,13 @@ export const incomeExpenseFormSchema = z.object({
   description,
   date: optionalIsoDate,
   labels: z.array(uuid).default([]),
+  // Client-side authoring aid for multi-allocation entry (tracker#32). Never
+  // sent to the backend — request mappers read only their known fields.
+  targetMode: z.boolean().default(false),
+  // Blank stays blank; a typed value coerces to a number. The empty-vs-mismatch
+  // distinction is validated in refineAllocations. z.literal('') must come
+  // first so an empty string is preserved rather than coerced to 0.
+  targetTotal: z.union([z.literal(''), z.coerce.number()]).default(''),
 });
 
 // The form-values shape (post-parse, slices coerced). Declared explicitly so the
@@ -53,6 +61,8 @@ export type IncomeExpenseFormValues = {
   description: string;
   date?: string;
   labels: string[];
+  targetMode?: boolean;
+  targetTotal?: number | '';
 };
 
 export const transferFormSchema = z
@@ -112,6 +122,38 @@ function refineAllocations(kind: 'income' | 'expense', accounts: AccountResponse
       const total = v.expenses.reduce((s, r) => s + r.amount, 0);
       const message = balanceIssue(accounts, v.accountId, total);
       if (message) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['expenses'], message });
+    }
+    if (v.targetMode) {
+      // `targetTotal` is `'' | number` after zod defaults, so `=== undefined`
+      // never fires via `superRefine`; it's defensive for the optional param type.
+      if (
+        v.targetTotal === '' ||
+        v.targetTotal === undefined ||
+        !Number.isFinite(Number(v.targetTotal))
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['targetTotal'],
+          message: 'Enter a target total',
+        });
+      } else {
+        const sum = roundMoney(
+          v.incomes.reduce((s, r) => s + r.amount, 0) +
+            v.expenses.reduce((s, r) => s + r.amount, 0),
+        );
+        const target = roundMoney(Number(v.targetTotal));
+        const diff = roundMoney(target - sum);
+        if (Math.abs(diff) >= 0.005) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['expenses'],
+            message:
+              diff > 0
+                ? `Allocations are ${formatMoney(diff, v.currency)} short of the target`
+                : `Allocations are ${formatMoney(-diff, v.currency)} over the target`,
+          });
+        }
+      }
     }
   };
 }
@@ -211,6 +253,8 @@ export function toIncomeExpenseFormValues(
     description: tx.description,
     date: dateToInput(tx.date),
     labels: tx.labels,
+    targetMode: false,
+    targetTotal: '',
   };
 }
 
