@@ -54,6 +54,7 @@ const base: TransactionResponse = {
   date: '2026-01-15T08:00:00.000Z',
   labels: ['lbl-1'],
   amendmentCount: 0,
+  relations: [],
 };
 
 describe('toConvertIncomeExpenseDefaults', () => {

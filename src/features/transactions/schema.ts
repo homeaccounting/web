@@ -102,7 +102,16 @@ function balanceIssue(
 
 // Kind-aware refinement shared by create AND edit. Pass `accounts: null` when
 // balance enforcement is off — the empty/contra checks still run.
-function refineAllocations(kind: 'income' | 'expense', accounts: AccountResponse[] | null) {
+//
+// `opts.targetCeiling` (tracker#33): when true, a locked target is a CEILING, not
+// an exact target — allocations may sum to <= target (partial allowed); only
+// going OVER is blocked. Default (false/absent) keeps the equality gate used by
+// create/edit's target-total UX (tracker#32) exactly as-is.
+function refineAllocations(
+  kind: 'income' | 'expense',
+  accounts: AccountResponse[] | null,
+  opts?: { targetCeiling?: boolean },
+) {
   return (v: IncomeExpenseFormValues, ctx: z.RefinementCtx) => {
     if (v.incomes.length + v.expenses.length === 0)
       ctx.addIssue({
@@ -143,7 +152,18 @@ function refineAllocations(kind: 'income' | 'expense', accounts: AccountResponse
         );
         const target = roundMoney(Number(v.targetTotal));
         const diff = roundMoney(target - sum);
-        if (Math.abs(diff) >= 0.005) {
+        if (opts?.targetCeiling) {
+          // Ceiling mode: only block going OVER the target (diff < 0); a sum
+          // <= target (short or exact) is allowed. `diff < -0.005` ⇔ over by
+          // more than sub-cent.
+          if (diff < -0.005) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              path: ['expenses'],
+              message: `Allocations are ${formatMoney(-diff, v.currency)} over the target`,
+            });
+          }
+        } else if (Math.abs(diff) >= 0.005) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
             path: ['expenses'],
@@ -161,8 +181,47 @@ function refineAllocations(kind: 'income' | 'expense', accounts: AccountResponse
 export function makeIncomeExpenseFormSchema(
   accounts: AccountResponse[] | null,
   kind: 'income' | 'expense',
+  opts?: { targetCeiling?: boolean },
 ) {
-  return incomeExpenseFormSchema.superRefine(refineAllocations(kind, accounts));
+  return incomeExpenseFormSchema.superRefine(refineAllocations(kind, accounts, opts));
+}
+
+// Produces a `superRefine` callback that enforces partial-refund caps. Each
+// expense slice must not exceed its per-category remaining, and the total of
+// all expense slices must not exceed `remainingTotal`. Used by the refund
+// dialog (tracker#33) to chain onto the shared income/expense form schema.
+export function refundAllocationCaps(
+  remainingByCategory: Record<string, number>,
+  remainingTotal: number,
+) {
+  return (v: IncomeExpenseFormValues, ctx: z.RefinementCtx) => {
+    let total = 0;
+    v.expenses.forEach((row, index) => {
+      total += row.amount;
+      const cap = roundMoney(remainingByCategory[row.category] ?? 0);
+      if (roundMoney(row.amount) - cap > 0.005) {
+        // Per-slice cap lives on the row's amount field so it surfaces at the
+        // row's FormMessage, distinct from the section-level `['expenses']` path
+        // used by the total cap below and by the shared target-total check
+        // (schema.ts refineAllocations). The resolver keeps only the first issue
+        // per path, so a same-path collision would let the target message mask
+        // this more specific cap. `path[0]` stays `'expenses'`, so schema-level
+        // assertions keyed on the bucket are unaffected.
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['expenses', index, 'amount'],
+          message: `Refund for a category can't exceed ${formatMoney(cap, v.currency)} left to refund`,
+        });
+      }
+    });
+    if (roundMoney(total) - roundMoney(remainingTotal) > 0.005) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['expenses'],
+        message: `Refund can't exceed ${formatMoney(remainingTotal, v.currency)} left on this transaction`,
+      });
+    }
+  };
 }
 
 // Create-only: transfer debits `sourceAccountId`. `transferFormSchema` is a

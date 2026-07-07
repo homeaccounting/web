@@ -186,10 +186,11 @@ export interface AdjustBalanceRequest {
 }
 
 // --- Transaction request DTOs ---
-// Mirrors backend Web/Types.hs:349-380 (IncomeRequest and ExpenseRequest are
-// structurally identical there). `category` is sent as JSON `Text` but the
-// backend parses it to a `DictionaryEntryId` UUID via `parseCategoryId`
-// (Web/Types.hs:1076-1080), so we type it as `UUID` (a string) on the wire.
+// Mirrors backend Web/Types.hs:349-389. ExpenseRequest is the base; IncomeRequest
+// extends it with an optional `relation` field (Web/Types.hs:389). `category` is
+// sent as JSON `Text` but the backend parses it to a `DictionaryEntryId` UUID via
+// `parseCategoryId` (Web/Types.hs:1076-1080), so we type it as `UUID` on the wire.
+
 // One category slice on a create request. Mirrors backend Web/Types.hs
 // `CategoryAmount { category :: UUID, amount :: Double }`. Note `amount` is a
 // bare number here (Double), unlike the Money-wrapped `Allocation` used by the
@@ -212,10 +213,26 @@ export interface AllocationsRequest {
   expenses: CategoryAmount[];
 }
 
-// Mirrors backend Web/Types.hs `IncomeRequest`/`ExpenseRequest` (structurally
-// identical). There is no top-level `amount`; the categorised total is the sum
-// of the allocation slices across both buckets.
-export interface IncomeRequest {
+// Typed transaction relationships. Mirrors backend Web/Types.hs:649
+// (TransactionRelation) — used for BOTH request and response. relationKind wire
+// tokens come from Domain/Core/Types.hs renderRelationKind.
+export type RelationKind = 'refund' | 'merge' | 'split' | 'associated';
+
+export interface TransactionRelation {
+  relatedTransactionId: UUID;
+  relationKind: RelationKind;
+}
+
+// Mirrors backend Web/Types.hs:661 (GET /api/transactions/:id/relations).
+export interface TransactionRelationsResponse {
+  outbound: TransactionRelation[];
+  inbound: TransactionRelation[];
+}
+
+// Mirrors backend Web/Types.hs `ExpenseRequest` (Web/Types.hs:349-380). There
+// is no top-level `amount`; the categorised total is the sum of the allocation
+// slices across both buckets. ExpenseRequest has no relation field.
+export interface ExpenseRequest {
   accountId: UUID;
   currency: string;
   allocations: AllocationsRequest;
@@ -224,7 +241,10 @@ export interface IncomeRequest {
   labels?: UUID[];
 }
 
-export type ExpenseRequest = IncomeRequest;
+// Mirrors backend Web/Types.hs:389 (IncomeRequest.relation :: Maybe TransactionRelation).
+// IncomeRequest is a superset of ExpenseRequest — it adds an optional `relation`
+// field used when creating a refund (or other linked income transaction).
+export type IncomeRequest = ExpenseRequest & { relation?: TransactionRelation };
 
 // Mirrors backend Web/Types.hs:406-422. `currency` here is the SOURCE
 // account's currency (the form locks it to the source); the backend computes
@@ -353,6 +373,10 @@ export interface TransactionResponse {
   // Count of completed amendments; always 0 if never amended.
   // Source: backend Web/Types.hs `data TransactionResponse` (amendmentCount :: Word).
   amendmentCount: number;
+  // Relations this transaction participates in. Mirrors backend Web/Types.hs:633
+  // (TransactionResponse.relations :: [TransactionRelation]). Always present in
+  // responses; empty array when the transaction has no relations.
+  relations: TransactionRelation[];
 }
 
 export interface TransactionListResponse {

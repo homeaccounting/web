@@ -4,6 +4,7 @@ import {
   transferFormSchema,
   makeIncomeExpenseFormSchema,
   makeTransferFormSchema,
+  refundAllocationCaps,
   toIncomeRequest,
   toExpenseRequest,
   toTransferRequest,
@@ -247,6 +248,7 @@ const baseTx = (overrides: Partial<TransactionResponse>): TransactionResponse =>
   date: '2026-03-04T15:00:00.000Z',
   labels: ['l1'],
   amendmentCount: 0,
+  relations: [],
   ...overrides,
 });
 
@@ -537,6 +539,66 @@ describe('makeIncomeExpenseFormSchema (allocation refinement)', () => {
       expect(parsed.targetTotal).toBe('');
     });
   });
+
+  describe('target ceiling mode ({ targetCeiling: true })', () => {
+    const t = { ...base, currency: 'USD' };
+
+    it('allows a sum UNDER the target (partial) — no target issue', () => {
+      const schema = makeIncomeExpenseFormSchema(null, 'expense', { targetCeiling: true });
+      const res = schema.safeParse({
+        ...t,
+        incomes: [],
+        expenses: [{ category: CAT, amount: 55 }],
+        targetMode: true,
+        targetTotal: 80,
+      });
+      expect(res.success).toBe(true);
+    });
+
+    it('blocks a sum OVER the target with an "over the target" issue on [expenses]', () => {
+      const schema = makeIncomeExpenseFormSchema(null, 'expense', { targetCeiling: true });
+      const res = schema.safeParse({
+        ...t,
+        incomes: [],
+        expenses: [{ category: CAT, amount: 90 }],
+        targetMode: true,
+        targetTotal: 80,
+      });
+      expect(res.success).toBe(false);
+      if (!res.success) {
+        const issue = res.error.issues.find((i) => i.path[0] === 'expenses');
+        expect(issue?.message).toContain('over the target');
+        expect(issue?.message).toContain('$10.00');
+      }
+    });
+
+    it('allows a sum EQUAL to the target', () => {
+      const schema = makeIncomeExpenseFormSchema(null, 'expense', { targetCeiling: true });
+      const res = schema.safeParse({
+        ...t,
+        incomes: [],
+        expenses: [{ category: CAT, amount: 80 }],
+        targetMode: true,
+        targetTotal: 80,
+      });
+      expect(res.success).toBe(true);
+    });
+
+    it('still requires a target total when target mode is on but target is blank', () => {
+      const schema = makeIncomeExpenseFormSchema(null, 'expense', { targetCeiling: true });
+      const res = schema.safeParse({
+        ...t,
+        incomes: [],
+        expenses: [{ category: CAT, amount: 55 }],
+        targetMode: true,
+        targetTotal: '',
+      });
+      expect(res.success).toBe(false);
+      if (!res.success) {
+        expect(res.error.issues.some((i) => i.path[0] === 'targetTotal')).toBe(true);
+      }
+    });
+  });
 });
 
 describe('makeTransferFormSchema (source balance check)', () => {
@@ -588,5 +650,134 @@ describe('toTransferFormValues', () => {
       date: '2026-03-04T15:00',
       labels: ['l1'],
     });
+  });
+});
+
+describe('refundAllocationCaps', () => {
+  // remaining: { [CAT]: 30, [CAT2]: 40 }, remainingTotal: 70
+  const remaining = { [CAT]: 30, [CAT2]: 40 };
+  const remainingTotal = 70;
+
+  const base = {
+    accountId: ACC_A,
+    currency: 'USD',
+    incomes: [] as { category: string; amount: number }[],
+    description: '',
+    date: '',
+    labels: [] as string[],
+  };
+
+  const schema = () =>
+    incomeExpenseFormSchema.superRefine(refundAllocationCaps(remaining, remainingTotal));
+
+  it('passes when each slice is within its category cap and total is within remainingTotal', () => {
+    const res = schema().safeParse({
+      ...base,
+      expenses: [
+        { category: CAT, amount: 30 },
+        { category: CAT2, amount: 40 },
+      ],
+    });
+    // Only cap violations — the empty-bucket issue from incomeExpenseFormSchema is
+    // not our concern here; just assert no cap-related issues.
+    const capIssues = res.success
+      ? []
+      : res.error.issues.filter(
+          (i) => i.message.includes("can't exceed") || i.message.includes('left'),
+        );
+    expect(capIssues).toHaveLength(0);
+  });
+
+  it('adds an issue on [expenses] when a per-category slice exceeds its remaining', () => {
+    const res = schema().safeParse({
+      ...base,
+      expenses: [{ category: CAT, amount: 40 }], // 40 > 30 remaining
+    });
+    expect(res.success).toBe(false);
+    if (!res.success) {
+      const issue = res.error.issues.find(
+        (i) => i.path[0] === 'expenses' && i.message.includes('category'),
+      );
+      expect(issue).toBeDefined();
+      expect(issue?.message).toContain('$30.00'); // cap for CAT
+      // Full path must be ['expenses', <index>, 'amount'] so RHF highlights the
+      // correct amount cell; a regression that flattens to ['expenses'] would be caught here.
+      expect(issue?.path).toEqual(['expenses', 0, 'amount']);
+    }
+  });
+
+  it('adds both a category and a total issue when a single slice breaches both caps', () => {
+    // 80 > 30 (CAT category cap) AND 80 > 70 (remainingTotal) — both issues fire.
+    const res = schema().safeParse({
+      ...base,
+      expenses: [{ category: CAT, amount: 80 }],
+    });
+    expect(res.success).toBe(false);
+    if (!res.success) {
+      expect(
+        res.error.issues.some((i) => i.path[0] === 'expenses' && i.message.includes('category')),
+      ).toBe(true);
+      expect(
+        res.error.issues.some((i) => i.path[0] === 'expenses' && i.message.includes('transaction')),
+      ).toBe(true);
+    }
+  });
+
+  it('adds an issue on [expenses] for a pure total-only breach (no per-category violation)', () => {
+    // CAT cap = 50, CAT2 cap = 50, but remainingTotal = 60
+    // expenses: [{CAT: 40}, {CAT2: 30}] → total 70 > 60, but each slice ok
+    const smallRemaining = { [CAT]: 50, [CAT2]: 50 };
+    const smallTotal = 60;
+    const s = incomeExpenseFormSchema.superRefine(refundAllocationCaps(smallRemaining, smallTotal));
+    const res = s.safeParse({
+      ...base,
+      expenses: [
+        { category: CAT, amount: 40 },
+        { category: CAT2, amount: 30 },
+      ],
+    });
+    expect(res.success).toBe(false);
+    if (!res.success) {
+      const totalIssue = res.error.issues.find(
+        (i) => i.path[0] === 'expenses' && i.message.includes('transaction'),
+      );
+      expect(totalIssue).toBeDefined();
+      expect(totalIssue?.message).toContain('$60.00');
+      // Total-cap issue stays on ['expenses'] (bucket-level), NOT the per-row path.
+      expect(totalIssue?.path).toEqual(['expenses']);
+    }
+  });
+
+  it('caps at 0 (and issues a violation) when the category is not in remainingByCategory', () => {
+    const CAT_UNKNOWN = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+    const res = schema().safeParse({
+      ...base,
+      expenses: [{ category: CAT_UNKNOWN, amount: 1 }], // unknown → cap 0
+    });
+    expect(res.success).toBe(false);
+    if (!res.success) {
+      const issue = res.error.issues.find(
+        (i) => i.path[0] === 'expenses' && i.message.includes('category'),
+      );
+      expect(issue).toBeDefined();
+      expect(issue?.message).toContain('$0.00'); // cap is 0
+    }
+  });
+
+  it('does not issue when expenses is empty', () => {
+    const res = schema().safeParse({
+      ...base,
+      expenses: [],
+    });
+    // No cap issues (there may be an "add at least one category" issue from incomeExpenseFormSchema,
+    // but no cap violations).
+    const capIssues = res.success
+      ? []
+      : res.error.issues.filter(
+          (i) =>
+            i.path[0] === 'expenses' &&
+            (i.message.includes("can't exceed") || i.message.includes('left')),
+        );
+    expect(capIssues).toHaveLength(0);
   });
 });

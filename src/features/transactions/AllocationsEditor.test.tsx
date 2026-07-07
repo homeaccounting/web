@@ -32,6 +32,7 @@ function Host({
   expenses = [],
   targetMode = false,
   targetTotal = '',
+  lockTarget,
 }: {
   sections: AllocationSection[];
   currency?: string;
@@ -39,13 +40,14 @@ function Host({
   expenses?: Slice[];
   targetMode?: boolean;
   targetTotal?: number | '';
+  lockTarget?: boolean;
 }) {
   const form = useForm<HostValues>({
     defaultValues: { incomes, expenses, targetMode, targetTotal },
   });
   return (
     <FormProvider {...form}>
-      <AllocationsEditor sections={sections} currency={currency} />
+      <AllocationsEditor sections={sections} currency={currency} lockTarget={lockTarget} />
     </FormProvider>
   );
 }
@@ -291,5 +293,30 @@ describe('target total mode', () => {
   it('does not render Fill when target mode is off', () => {
     render(<Host sections={[expenseSection]} expenses={[{ category: C1, amount: 55 }]} />);
     expect(screen.queryByRole('button', { name: /fill/i })).not.toBeInTheDocument();
+  });
+});
+
+describe('lockTarget', () => {
+  it('hides the Target toggle and shows the target as read-only text', () => {
+    render(
+      <Host
+        sections={[expenseSection]}
+        expenses={[{ category: C1, amount: 55 }]}
+        targetMode
+        targetTotal={80}
+        lockTarget
+      />,
+    );
+    // The toggle checkbox is not rendered.
+    expect(screen.queryByLabelText('Target')).not.toBeInTheDocument();
+    // The editable target input is not rendered either.
+    expect(screen.queryByLabelText('Target total')).not.toBeInTheDocument();
+    // The target amount is shown as static read-only text.
+    expect(screen.getByTestId('allocations-target-readout')).toHaveTextContent(
+      formatMoney(80, 'USD'),
+    );
+    // The diff/remaining readout still works (target still seeded in form state).
+    const diff = screen.getByTestId('allocations-diff');
+    expect(diff).toHaveTextContent(`${formatMoney(25, 'USD')} left`);
   });
 });

@@ -80,6 +80,7 @@ export const transactionFixture: TransactionResponse = {
   date: '2026-04-27T08:00:00Z',
   labels: [],
   amendmentCount: 0,
+  relations: [],
 };
 
 export const salaryCategoryId = '00000000-0000-0000-0000-00000005a1a0';

@@ -9,12 +9,17 @@ import type {
   SetTransactionAllocationsRequest,
   SetTransactionLabelsRequest,
   TransactionListResponse,
+  TransactionRelationsResponse,
   TransactionResponse,
   UUID,
 } from './types';
 import type { ApiClient } from './client';
 
 export const transactionsApi = (client: ApiClient) => ({
+  get: (id: UUID): Promise<TransactionResponse> =>
+    client.get<TransactionResponse>(`/api/transactions/${id}`),
+  relations: (id: UUID): Promise<TransactionRelationsResponse> =>
+    client.get<TransactionRelationsResponse>(`/api/transactions/${id}/relations`),
   list: async (params: {
     accountId: UUID;
     dateFrom?: ISO8601;

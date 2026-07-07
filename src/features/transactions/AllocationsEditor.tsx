@@ -24,6 +24,14 @@ export interface AllocationsEditorProps {
   sections: AllocationSection[];
   /** Currency for the total display; '' renders the plain number. */
   currency: string;
+  /**
+   * When true, the target is fixed: hide the "Target" toggle and render the
+   * target amount as read-only text instead of the editable input.
+   * `targetMode`/`targetTotal` still come from form state (the caller seeds
+   * them), so the diff/remaining readout is unchanged. Defaults to the
+   * create/edit behavior (toggle visible, target editable).
+   */
+  lockTarget?: boolean;
 }
 
 type Slice = { category: string; amount: number; comment: string };
@@ -258,7 +266,7 @@ function Section({ section, currency }: { section: AllocationSection; currency: 
   );
 }
 
-export function AllocationsEditor({ sections, currency }: AllocationsEditorProps) {
+export function AllocationsEditor({ sections, currency, lockTarget }: AllocationsEditorProps) {
   const { control, watch, setValue } = useFormContext();
   const incomes = watch('incomes') as Slice[] | undefined;
   const expenses = watch('expenses') as Slice[] | undefined;
@@ -290,23 +298,34 @@ export function AllocationsEditor({ sections, currency }: AllocationsEditorProps
           the target with a short remaining caption. Colour signals the state
           (primary/muted = under, destructive = over, emerald = balanced). */}
       <Card className="space-y-3 p-4">
-        <label className="flex items-center gap-2 text-sm font-medium">
-          <input
-            type="checkbox"
-            checked={targetMode}
-            onChange={(e) =>
-              setValue('targetMode', e.target.checked, {
-                shouldDirty: true,
-                shouldValidate: true,
-              })
-            }
-          />
-          Target
-        </label>
+        {/* When the target is locked (e.g. refund flow) the toggle is hidden and
+            the target is shown read-only; otherwise it's a user checkbox. */}
+        {lockTarget ? (
+          <div className="flex items-center justify-between text-sm font-medium">
+            <span>Target</span>
+            <span data-testid="allocations-target-readout" className="tabular-nums">
+              {money(hasTarget ? target : 0)}
+            </span>
+          </div>
+        ) : (
+          <label className="flex items-center gap-2 text-sm font-medium">
+            <input
+              type="checkbox"
+              checked={targetMode}
+              onChange={(e) =>
+                setValue('targetMode', e.target.checked, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                })
+              }
+            />
+            Target
+          </label>
+        )}
         {/* Target input (when on) sits on the same row as the Total, input left,
             Total right. */}
         <div className={cn('flex items-end gap-3', targetMode ? 'justify-between' : 'justify-end')}>
-          {targetMode && (
+          {targetMode && !lockTarget && (
             <FormField
               control={control}
               name="targetTotal"

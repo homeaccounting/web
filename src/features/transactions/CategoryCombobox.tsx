@@ -42,6 +42,13 @@ export function CategoryCombobox({
 
   const selected = options.find((o) => o.id === value);
   const [open, setOpen] = useState(false);
+  // Archived category: a committed value that no longer exists in the dictionary
+  // (the entry was renamed/removed). There is no option to select, so an editable
+  // combobox would render blank and silently drop the value on the next edit.
+  // Render it as static, read-only text instead so the row still shows its
+  // category and the value survives an unrelated save (e.g. the refund flow,
+  // tracker#33). A non-empty value with no matching option triggers this.
+  const isArchived = value !== '' && !selected;
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);
   const wrapRef = useRef<HTMLDivElement | null>(null);
@@ -77,6 +84,20 @@ export function CategoryCombobox({
   };
 
   const inputValue = open ? query : (selected?.name ?? '');
+
+  if (isArchived) {
+    // aria-invalid / aria-describedby are intentionally dropped here: this branch
+    // is non-interactive and has no validation state to convey to assistive tech.
+    return (
+      <div
+        id={inputId}
+        aria-label={ariaLabel}
+        className="flex h-10 w-full items-center rounded-md border border-input bg-muted px-3 text-sm text-muted-foreground"
+      >
+        Archived category
+      </div>
+    );
+  }
 
   return (
     <div ref={wrapRef} className="relative">

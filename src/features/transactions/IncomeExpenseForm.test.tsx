@@ -375,6 +375,108 @@ describe('IncomeExpenseForm', () => {
     });
   });
 
+  describe('lockTarget (target acts as a ceiling)', () => {
+    const lockDefaults: IncomeExpenseFormValues = {
+      accountId: A1,
+      currency: 'USD',
+      incomes: [],
+      expenses: [{ category: C1, amount: 100 }],
+      description: 'Refund',
+      date: '2026-03-04',
+      labels: [],
+      targetMode: true,
+      targetTotal: 100,
+    };
+
+    it('submits when allocations sum UNDER the locked target (partial)', async () => {
+      const onSubmit = vi.fn().mockResolvedValue(undefined);
+      const user = userEvent.setup();
+      renderWithProviders(
+        <IncomeExpenseForm
+          kind="expense"
+          mode="create"
+          accounts={accounts}
+          categories={categories}
+          labels={labels}
+          defaultValues={lockDefaults}
+          isSubmitting={false}
+          lockTarget
+          onSubmit={onSubmit}
+          onCancel={vi.fn()}
+        />,
+      );
+      // Lower the only slice from 100 to 60 — a partial (sum 60 < target 100).
+      const amount = screen.getByRole('spinbutton');
+      await user.clear(amount);
+      await user.type(amount, '60');
+      fireEvent.submit(screen.getByRole('form'));
+      await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+      const arg = onSubmit.mock.calls[0]![0] as IncomeExpenseFormValues;
+      expect(arg.expenses).toEqual([{ category: C1, amount: 60 }]);
+    });
+
+    it('blocks when allocations sum OVER the locked target', async () => {
+      const onSubmit = vi.fn().mockResolvedValue(undefined);
+      const user = userEvent.setup();
+      renderWithProviders(
+        <IncomeExpenseForm
+          kind="expense"
+          mode="create"
+          accounts={accounts}
+          categories={categories}
+          labels={labels}
+          defaultValues={lockDefaults}
+          isSubmitting={false}
+          lockTarget
+          onSubmit={onSubmit}
+          onCancel={vi.fn()}
+        />,
+      );
+      const amount = screen.getByRole('spinbutton');
+      await user.clear(amount);
+      await user.type(amount, '150');
+      fireEvent.submit(screen.getByRole('form'));
+      await waitFor(() => expect(screen.getByText(/over the target/i)).toBeInTheDocument());
+      expect(onSubmit).not.toHaveBeenCalled();
+    });
+  });
+
+  it('runs an extraRefine that blocks submit and shows its message', async () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    renderWithProviders(
+      <IncomeExpenseForm
+        kind="expense"
+        mode="create"
+        accounts={accounts}
+        categories={categories}
+        labels={labels}
+        defaultValues={expenseDefaults}
+        isSubmitting={false}
+        onSubmit={onSubmit}
+        onCancel={vi.fn()}
+        extraRefine={(_v, ctx) => {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['expenses'],
+            message: 'extra refine blocked this',
+          });
+        }}
+      />,
+    );
+    // Fill a valid row so only the extraRefine can block submission.
+    const categoryCb = screen.getByPlaceholderText(/select a category/i);
+    await user.click(categoryCb);
+    await user.type(categoryCb, 'fo');
+    await user.click(await screen.findByRole('option', { name: /food/i }));
+    const amount = screen.getByRole('spinbutton');
+    await user.clear(amount);
+    await user.type(amount, '5');
+    fireEvent.submit(screen.getByRole('form'));
+    await waitFor(() => expect(screen.getByText('extra refine blocked this')).toBeInTheDocument());
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
   it('exposes setFieldError via onReady so server errors render under fields', async () => {
     let api!: IncomeExpenseFormApi;
     renderWithProviders(

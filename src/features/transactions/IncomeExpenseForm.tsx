@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { useForm, FormProvider, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import type { z } from 'zod';
 import { DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,6 +31,14 @@ export interface IncomeExpenseFormProps {
   isSubmitting: boolean;
   /** When set, validate the debit against the source account balance (create only). */
   enforceBalance?: boolean;
+  /**
+   * Extra zod `superRefine` chained onto the form schema — lets a caller inject
+   * additional cross-field validation (e.g. the refund dialog's per-slice/total
+   * caps) without baking it into the shared schema.
+   */
+  extraRefine?: (values: IncomeExpenseFormValues, ctx: z.RefinementCtx) => void;
+  /** Forwarded to AllocationsEditor: fix the target (hide toggle, read-only). */
+  lockTarget?: boolean;
   onSubmit: (values: IncomeExpenseFormValues) => void | Promise<void>;
   onCancel: () => void;
   onReady?: (api: IncomeExpenseFormApi) => void;
@@ -45,13 +54,20 @@ export function IncomeExpenseForm({
   defaultValues,
   isSubmitting,
   enforceBalance = false,
+  extraRefine,
+  lockTarget,
   onSubmit,
   onCancel,
   onReady,
 }: IncomeExpenseFormProps) {
   const resolver = useMemo<Resolver<IncomeExpenseFormValues>>(() => {
+    const schema = makeIncomeExpenseFormSchema(enforceBalance ? accounts : null, kind, {
+      // A locked target is a ceiling (partial allowed), not an exact target
+      // (tracker#33). Unlocked (create/edit) keeps the equality gate.
+      targetCeiling: Boolean(lockTarget),
+    });
     const base = zodResolver(
-      makeIncomeExpenseFormSchema(enforceBalance ? accounts : null, kind),
+      extraRefine ? schema.superRefine(extraRefine) : schema,
     ) as Resolver<IncomeExpenseFormValues>;
     // Fully-empty rows are a UI affordance (the "+ Add" button seeds a blank
     // row); they must not trip per-row validation. Strip them before zod runs
@@ -64,7 +80,7 @@ export function IncomeExpenseForm({
       };
       return base(cleaned, context, options);
     };
-  }, [enforceBalance, accounts, kind]);
+  }, [enforceBalance, accounts, kind, extraRefine, lockTarget]);
 
   const form = useForm<IncomeExpenseFormValues>({
     resolver,
@@ -157,7 +173,11 @@ export function IncomeExpenseForm({
           </div>
         </div>
 
-        <AllocationsEditor sections={sections} currency={form.watch('currency') || ''} />
+        <AllocationsEditor
+          sections={sections}
+          currency={form.watch('currency') || ''}
+          lockTarget={lockTarget}
+        />
 
         <FormField
           control={form.control}

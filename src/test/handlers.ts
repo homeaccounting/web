@@ -198,6 +198,12 @@ export const handlers = [
     });
   }),
   http.get(`${apiBase}/api/transactions`, ({ request }) => listTransactions(new URL(request.url))),
+  // Relations + single-transaction fetch. Default to the base fixture / empty
+  // relations; tests override per-id via server.use(...).
+  http.get(`${apiBase}/api/transactions/:id/relations`, () =>
+    HttpResponse.json({ outbound: [], inbound: [] }),
+  ),
+  http.get(`${apiBase}/api/transactions/:id`, () => HttpResponse.json(transactionFixture)),
   http.put(`${apiBase}/api/transactions/:id/description`, async ({ request }) => {
     const body = (await request.json()) as { description: string };
     return HttpResponse.json(editedTransactionFixture({ description: body.description }));

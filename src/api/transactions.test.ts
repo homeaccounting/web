@@ -26,6 +26,7 @@ const txJson = (overrides: Record<string, unknown> = {}) => ({
   date: '2026-01-01T00:00:00.000Z',
   labels: [],
   amendmentCount: 0,
+  relations: [],
   ...overrides,
 });
 
@@ -45,6 +46,31 @@ describe('transactionsApi edit endpoints', () => {
     vi.stubGlobal('fetch', spy);
     return spy;
   }
+
+  it('get() GETs a single transaction by id', async () => {
+    const spy = stubFetch();
+    await transactionsApi(mkClient()).get('abc');
+    expect(spy).toHaveBeenCalledWith(
+      'http://test/api/transactions/abc',
+      expect.objectContaining({ method: 'GET' }),
+    );
+  });
+
+  it('relations() GETs the relations endpoint', async () => {
+    const spy = vi.fn(
+      () =>
+        new Response(JSON.stringify([]), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+    );
+    vi.stubGlobal('fetch', spy);
+    await transactionsApi(mkClient()).relations('abc');
+    expect(spy).toHaveBeenCalledWith(
+      'http://test/api/transactions/abc/relations',
+      expect.objectContaining({ method: 'GET' }),
+    );
+  });
 
   it('PUTs description', async () => {
     const spy = stubFetch();

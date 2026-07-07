@@ -232,6 +232,7 @@ describe('TransactionsPane', () => {
               date: '2026-05-01T00:00:00.000Z',
               labels: [],
               amendmentCount: 0,
+              relations: [],
             },
           ],
           totalCount: 1,
@@ -285,6 +286,7 @@ describe('TransactionsPane', () => {
               date: '2026-05-01T00:00:00.000Z',
               labels: [],
               amendmentCount: 0,
+              relations: [],
             },
           ],
           totalCount: 1,
@@ -756,6 +758,221 @@ describe('TransactionsPane', () => {
     await user.pointer({ keys: '[MouseRight]', target: row });
     await screen.findByRole('menuitem', { name: /edit/i });
     expect(screen.queryByRole('menuitem', { name: /convert to/i })).not.toBeInTheDocument();
+  });
+
+  it('offers a "Refund" item on a completed expense row and opens the dialog', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    const user = userEvent.setup();
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' }); // fixture is a completed expense
+    const cell = await screen.findByText(transactionFixture.description);
+    const row = cell.closest('tr')!;
+    await user.pointer({ keys: '[MouseRight]', target: row });
+    const refundItem = await screen.findByRole('menuitem', { name: /refund/i });
+    await user.click(refundItem);
+    expect(await screen.findByRole('dialog', { name: /refund transaction/i })).toBeInTheDocument();
+  });
+
+  it('does not offer a "Refund" item on an income row', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    const user = userEvent.setup();
+    server.use(
+      http.get(`${apiBase}/api/transactions`, () =>
+        HttpResponse.json({
+          transactions: [
+            {
+              ...transactionFixture,
+              id: 'tx-income',
+              description: 'Paycheck',
+              transactionType: 'income',
+              allocations: {
+                incomes: [
+                  { categoryId: salaryCategoryId, amount: { amount: 100, currency: 'USD' } },
+                ],
+                expenses: [],
+              },
+            },
+          ],
+          totalCount: 1,
+        }),
+      ),
+    );
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    const row = (await screen.findByText('Paycheck')).closest('tr')!;
+    await user.pointer({ keys: '[MouseRight]', target: row });
+    await screen.findByRole('menuitem', { name: /edit/i });
+    expect(screen.queryByRole('menuitem', { name: /refund/i })).not.toBeInTheDocument();
+  });
+
+  it('does not offer a "Refund" item on a cancelled expense row', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    const user = userEvent.setup();
+    server.use(
+      http.get(`${apiBase}/api/transactions`, () =>
+        HttpResponse.json({
+          transactions: [
+            {
+              ...transactionFixture,
+              id: 'tx-cancel',
+              description: 'CancelledTx',
+              status: 'Cancelled',
+              failureReason: null,
+            },
+          ],
+          totalCount: 1,
+        }),
+      ),
+    );
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    // Cancelled rows are hidden by default; reveal them first.
+    await openFilters(user);
+    await user.click(await screen.findByLabelText(/cancelled & failed/i));
+    const row = (await screen.findByText('CancelledTx')).closest('tr')!;
+    await user.pointer({ keys: '[MouseRight]', target: row });
+    await screen.findByRole('menuitem', { name: /edit/i });
+    expect(screen.queryByRole('menuitem', { name: /refund/i })).not.toBeInTheDocument();
+  });
+
+  it('shows a "partially refunded" badge on an expense refunded for less than its total', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    server.use(
+      http.get(`${apiBase}/api/transactions`, () =>
+        HttpResponse.json({
+          transactions: [
+            {
+              ...transactionFixture,
+              id: 'exp-1',
+              description: 'Laptop',
+              allocations: {
+                incomes: [],
+                expenses: [
+                  { categoryId: foodCategoryId, amount: { amount: 100, currency: 'USD' } },
+                ],
+              },
+              relations: [],
+            },
+            {
+              ...transactionFixture,
+              id: 'ref-1',
+              description: 'Laptop refund',
+              transactionType: 'income',
+              allocations: {
+                incomes: [],
+                expenses: [{ categoryId: foodCategoryId, amount: { amount: 30, currency: 'USD' } }],
+              },
+              relations: [{ relatedTransactionId: 'exp-1', relationKind: 'refund' }],
+            },
+          ],
+          totalCount: 2,
+        }),
+      ),
+    );
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    expect(await screen.findByText('partially refunded ($30.00 of $100.00)')).toBeInTheDocument();
+  });
+
+  it('shows a "refunded in full" badge on an expense refunded for its full total', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    server.use(
+      http.get(`${apiBase}/api/transactions`, () =>
+        HttpResponse.json({
+          transactions: [
+            {
+              ...transactionFixture,
+              id: 'exp-1',
+              description: 'Laptop',
+              allocations: {
+                incomes: [],
+                expenses: [
+                  { categoryId: foodCategoryId, amount: { amount: 100, currency: 'USD' } },
+                ],
+              },
+              relations: [],
+            },
+            {
+              ...transactionFixture,
+              id: 'ref-1',
+              description: 'Laptop refund',
+              transactionType: 'income',
+              allocations: {
+                incomes: [],
+                expenses: [
+                  { categoryId: foodCategoryId, amount: { amount: 100, currency: 'USD' } },
+                ],
+              },
+              relations: [{ relatedTransactionId: 'exp-1', relationKind: 'refund' }],
+            },
+          ],
+          totalCount: 2,
+        }),
+      ),
+    );
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    expect(await screen.findByText('refunded in full')).toBeInTheDocument();
+  });
+
+  it('shows a "refund of <description>" badge on the refund income row', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    server.use(
+      http.get(`${apiBase}/api/transactions`, () =>
+        HttpResponse.json({
+          transactions: [
+            {
+              ...transactionFixture,
+              id: 'exp-1',
+              description: 'Laptop',
+              allocations: {
+                incomes: [],
+                expenses: [
+                  { categoryId: foodCategoryId, amount: { amount: 100, currency: 'USD' } },
+                ],
+              },
+              relations: [],
+            },
+            {
+              ...transactionFixture,
+              id: 'ref-1',
+              description: 'Laptop refund',
+              transactionType: 'income',
+              allocations: {
+                incomes: [],
+                expenses: [{ categoryId: foodCategoryId, amount: { amount: 30, currency: 'USD' } }],
+              },
+              relations: [{ relatedTransactionId: 'exp-1', relationKind: 'refund' }],
+            },
+          ],
+          totalCount: 2,
+        }),
+      ),
+    );
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    expect(await screen.findByText('refund of Laptop')).toBeInTheDocument();
+  });
+
+  it('shows a generic "refund" badge when the refunded original is not in the window', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    server.use(
+      http.get(`${apiBase}/api/transactions`, () =>
+        HttpResponse.json({
+          transactions: [
+            {
+              ...transactionFixture,
+              id: 'ref-1',
+              description: 'Some refund',
+              transactionType: 'income',
+              allocations: {
+                incomes: [],
+                expenses: [{ categoryId: foodCategoryId, amount: { amount: 30, currency: 'USD' } }],
+              },
+              relations: [{ relatedTransactionId: 'exp-missing', relationKind: 'refund' }],
+            },
+          ],
+          totalCount: 1,
+        }),
+      ),
+    );
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    await screen.findByText('Some refund');
+    expect(screen.getByText('refund')).toBeInTheDocument();
   });
 
   it('category filter narrows rows and "All categories" sentinel restores both', async () => {

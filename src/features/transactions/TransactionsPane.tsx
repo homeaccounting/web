@@ -12,7 +12,7 @@ import {
   ContextMenuSubContent,
   ContextMenuSubTrigger,
 } from '@/components/ui/context-menu';
-import { ArrowLeftRight, Ban, ChevronDown, ChevronRight, Copy, Pencil } from 'lucide-react';
+import { ArrowLeftRight, Ban, ChevronDown, ChevronRight, Copy, Pencil, Undo2 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   useConfiguration,
@@ -35,6 +35,8 @@ import { isAdjustment, transactionKind, transactionTypeMeta } from './transactio
 import type { TransactionKind } from './labels';
 import { LabelChips } from './LabelChips';
 import { CategoryChips } from './CategoryChips';
+import { RefundBadge } from './RefundBadge';
+import { buildRefundIndex } from './refundIndex';
 import { allocationCategoryIds, allocationComments } from './allocations';
 import { TransactionPagination, usePersistedPageSize } from './TransactionPagination';
 import { AccountHeader } from './AccountHeader';
@@ -43,6 +45,7 @@ import { EditTransactionDialog } from './EditTransactionDialog';
 import { CancelTransactionDialog } from './CancelTransactionDialog';
 import { CopyTransactionDialog } from './CopyTransactionDialog';
 import { ConvertTransactionDialog } from './ConvertTransactionDialog';
+import { RefundTransactionDialog } from './RefundTransactionDialog';
 import { TransactionStatusIcon } from './TransactionStatusIcon';
 
 // The two kinds a transaction can convert to (everything but its current kind;
@@ -103,6 +106,17 @@ export function TransactionsPane() {
     () => applyTransactionFilters(data ?? [], filters, categoryNameById),
     [data, filters, categoryNameById],
   );
+  const transactions = useMemo(() => data ?? [], [data]);
+  // Reverse index (originalId → refund aggregate) built once from the loaded
+  // window; used to badge refunded expense rows.
+  const refundIndex = useMemo(() => buildRefundIndex(transactions), [transactions]);
+  // Resolve refund income rows back to their original by id so the row can show
+  // "refund of <description>"; falls back to a generic badge when the original
+  // is outside the loaded window.
+  const descriptionById = useMemo(
+    () => new Map(transactions.map((t) => [t.id, t.description])),
+    [transactions],
+  );
   // Count of active filter facets, surfaced on the (collapsed) toggle so the
   // user knows filters are narrowing the list. The date window is a primary
   // range control rather than a filter, so it is excluded here.
@@ -157,6 +171,9 @@ export function TransactionsPane() {
   } | null>(null);
   const openConvert = (tx: TransactionResponse, targetKind: TransactionKind) =>
     setConverting({ tx, targetKind });
+
+  const [refundTarget, setRefundTarget] = useState<TransactionResponse | null>(null);
+  const openRefund = (t: TransactionResponse) => setRefundTarget(t);
 
   const header = account ? (
     <AccountHeader account={account} />
@@ -256,6 +273,10 @@ export function TransactionsPane() {
                         const comments = allocationComments(t).join(', ');
                         const showComments = comments !== '' && comments !== t.description;
                         const hasText = !!t.description || showComments;
+                        // Origin side: this expense has refunds pointing at it.
+                        const refundStat = refundIndex.get(t.id);
+                        // Refund side: this row's own outbound refund edge.
+                        const refundRel = t.relations.find((r) => r.relationKind === 'refund');
                         return (
                           <>
                             <span
@@ -277,6 +298,25 @@ export function TransactionsPane() {
                               nameById={labelNameById}
                               leadingGap={hasText}
                             />
+                            {refundStat && (
+                              <RefundBadge
+                                mode="origin"
+                                refundStat={refundStat}
+                                originalTotal={t.allocations.expenses.reduce(
+                                  (s, a) => s + a.amount.amount,
+                                  0,
+                                )}
+                                currency={t.sourceCurrency}
+                              />
+                            )}
+                            {refundRel && (
+                              <RefundBadge
+                                mode="refund"
+                                originalDescription={descriptionById.get(
+                                  refundRel.relatedTransactionId,
+                                )}
+                              />
+                            )}
                           </>
                         );
                       })()}
@@ -373,6 +413,12 @@ export function TransactionsPane() {
                         ))}
                       </ContextMenuSubContent>
                     </ContextMenuSub>
+                  )}
+                  {t.status === 'Completed' && t.transactionType === 'expense' && (
+                    <ContextMenuItem onSelect={() => openRefund(t)}>
+                      <Undo2 className="mr-2 h-4 w-4" aria-hidden />
+                      Refund
+                    </ContextMenuItem>
                   )}
                   {t.status !== 'Cancelled' && (
                     <ContextMenuItem className="text-destructive" onSelect={() => openCancel(t)}>
@@ -476,6 +522,15 @@ export function TransactionsPane() {
           }}
           tx={converting.tx}
           targetKind={converting.targetKind}
+        />
+      )}
+      {refundTarget && (
+        <RefundTransactionDialog
+          open
+          onOpenChange={(o) => {
+            if (!o) setRefundTarget(null);
+          }}
+          original={refundTarget}
         />
       )}
     </>
