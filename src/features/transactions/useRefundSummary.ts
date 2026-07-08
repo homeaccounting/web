@@ -10,6 +10,7 @@ import { useTransactionRelations } from './useTransactionRelations';
 export interface RefundSummary {
   isLoading: boolean;
   isError: boolean;
+  originalTotal: number;
   refundedTotal: number;
   refundedByCategory: Record<UUID, number>;
   remainingTotal: number;
@@ -124,6 +125,7 @@ export function useRefundSummary(original: TransactionResponse, enabled: boolean
   return {
     isLoading,
     isError,
+    originalTotal,
     refundedTotal,
     refundedByCategory,
     remainingTotal,

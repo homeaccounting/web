@@ -12,7 +12,16 @@ import {
   ContextMenuSubContent,
   ContextMenuSubTrigger,
 } from '@/components/ui/context-menu';
-import { ArrowLeftRight, Ban, ChevronDown, ChevronRight, Copy, Pencil, Undo2 } from 'lucide-react';
+import {
+  ArrowLeftRight,
+  Ban,
+  ChevronDown,
+  ChevronRight,
+  Copy,
+  Link2,
+  Pencil,
+  Undo2,
+} from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   useConfiguration,
@@ -35,8 +44,10 @@ import { isAdjustment, transactionKind, transactionTypeMeta } from './transactio
 import type { TransactionKind } from './labels';
 import { LabelChips } from './LabelChips';
 import { CategoryChips } from './CategoryChips';
-import { RefundBadge } from './RefundBadge';
-import { buildRefundIndex } from './refundIndex';
+import { RelationBadge } from './RelationBadge';
+import { buildRelationIndex } from './relationIndex';
+import { useUnlinkRelation } from './useUnlinkRelation';
+import { LinkTransactionDialog } from './LinkTransactionDialog';
 import { allocationCategoryIds, allocationComments } from './allocations';
 import { TransactionPagination, usePersistedPageSize } from './TransactionPagination';
 import { AccountHeader } from './AccountHeader';
@@ -55,6 +66,43 @@ const CONVERT_KINDS = ['income', 'expense', 'transfer'] as const;
 function convertTargets(type: TransactionTypeText): TransactionKind[] {
   const current = transactionKind(type);
   return CONVERT_KINDS.filter((k) => k !== current);
+}
+
+// A resolved association edge to render for a row: the id/description of the
+// counterpart and whether it is cancelled (drives the "(cancelled)" marker).
+interface AssocEdge {
+  relatedTransactionId: string;
+  description?: string;
+  counterpartCancelled?: boolean;
+}
+
+// Association badges for a single row, with an unlink affordance. `useUnlinkRelation`
+// is per-transaction, so this lives in its own component (hooks can't be called
+// inside the row map). The parent resolves the counterpart edges from the loaded
+// window; this only renders and wires unlink behind a confirm.
+function AssociationBadges({ actingId, edges }: { actingId: string; edges: AssocEdge[] }) {
+  const unlink = useUnlinkRelation(actingId);
+  if (edges.length === 0) return null;
+  return (
+    <>
+      {edges.map((e) => (
+        <RelationBadge
+          key={e.relatedTransactionId}
+          kind="associated"
+          mode="counterpart"
+          description={e.description}
+          counterpartCancelled={e.counterpartCancelled}
+          onUnlink={() => {
+            if (!window.confirm('Remove this association?')) return;
+            void unlink.mutateAsync({
+              relatedTransactionId: e.relatedTransactionId,
+              relationKind: 'associated',
+            });
+          }}
+        />
+      ))}
+    </>
+  );
 }
 
 const EMPTY_FILTERS: TransactionFilters = {
@@ -109,7 +157,14 @@ export function TransactionsPane() {
   const transactions = useMemo(() => data ?? [], [data]);
   // Reverse index (originalId → refund aggregate) built once from the loaded
   // window; used to badge refunded expense rows.
-  const refundIndex = useMemo(() => buildRefundIndex(transactions), [transactions]);
+  const refundIndex = useMemo(() => buildRelationIndex(transactions, 'refund'), [transactions]);
+  // Reverse index (counterpartId → aggregate) for outbound `associated` edges in
+  // the loaded window; used to badge the counterpart (inbound) side of an
+  // association.
+  const assocIndex = useMemo(() => buildRelationIndex(transactions, 'associated'), [transactions]);
+  // Loaded rows by id, so an association counterpart can be resolved to its
+  // status (for the "(cancelled)" marker).
+  const txById = useMemo(() => new Map(transactions.map((t) => [t.id, t])), [transactions]);
   // Resolve refund income rows back to their original by id so the row can show
   // "refund of <description>"; falls back to a generic badge when the original
   // is outside the loaded window.
@@ -174,6 +229,9 @@ export function TransactionsPane() {
 
   const [refundTarget, setRefundTarget] = useState<TransactionResponse | null>(null);
   const openRefund = (t: TransactionResponse) => setRefundTarget(t);
+
+  const [linkTarget, setLinkTarget] = useState<TransactionResponse | null>(null);
+  const openLink = (t: TransactionResponse) => setLinkTarget(t);
 
   const header = account ? (
     <AccountHeader account={account} />
@@ -277,6 +335,41 @@ export function TransactionsPane() {
                         const refundStat = refundIndex.get(t.id);
                         // Refund side: this row's own outbound refund edge.
                         const refundRel = t.relations.find((r) => r.relationKind === 'refund');
+                        // Association edges to badge: the row's own outbound
+                        // `associated` edges, plus inbound ones (a loaded row
+                        // pointing at this one). Deduped by counterpart id.
+                        const assocEdges = new Map<string, AssocEdge>();
+                        for (const r of t.relations) {
+                          if (r.relationKind !== 'associated') continue;
+                          const cp = txById.get(r.relatedTransactionId);
+                          assocEdges.set(r.relatedTransactionId, {
+                            relatedTransactionId: r.relatedTransactionId,
+                            description: descriptionById.get(r.relatedTransactionId),
+                            counterpartCancelled: cp?.status === 'Cancelled',
+                          });
+                        }
+                        // Inbound: this row is the target of another row's
+                        // association. `assocIndex` proves an edge exists; scan
+                        // the window to recover each owner (the counterpart).
+                        if (assocIndex.has(t.id)) {
+                          for (const owner of transactions) {
+                            if (
+                              owner.relations.some(
+                                (r) =>
+                                  r.relationKind === 'associated' &&
+                                  r.relatedTransactionId === t.id,
+                              )
+                            ) {
+                              if (!assocEdges.has(owner.id)) {
+                                assocEdges.set(owner.id, {
+                                  relatedTransactionId: owner.id,
+                                  description: descriptionById.get(owner.id),
+                                  counterpartCancelled: owner.status === 'Cancelled',
+                                });
+                              }
+                            }
+                          }
+                        }
                         return (
                           <>
                             <span
@@ -299,7 +392,8 @@ export function TransactionsPane() {
                               leadingGap={hasText}
                             />
                             {refundStat && (
-                              <RefundBadge
+                              <RelationBadge
+                                kind="refund"
                                 mode="origin"
                                 refundStat={refundStat}
                                 originalTotal={t.allocations.expenses.reduce(
@@ -310,13 +404,13 @@ export function TransactionsPane() {
                               />
                             )}
                             {refundRel && (
-                              <RefundBadge
-                                mode="refund"
-                                originalDescription={descriptionById.get(
-                                  refundRel.relatedTransactionId,
-                                )}
+                              <RelationBadge
+                                kind="refund"
+                                mode="counterpart"
+                                description={descriptionById.get(refundRel.relatedTransactionId)}
                               />
                             )}
+                            <AssociationBadges actingId={t.id} edges={[...assocEdges.values()]} />
                           </>
                         );
                       })()}
@@ -418,6 +512,12 @@ export function TransactionsPane() {
                     <ContextMenuItem onSelect={() => openRefund(t)}>
                       <Undo2 className="mr-2 h-4 w-4" aria-hidden />
                       Refund
+                    </ContextMenuItem>
+                  )}
+                  {t.status === 'Completed' && (
+                    <ContextMenuItem onSelect={() => openLink(t)}>
+                      <Link2 className="mr-2 h-4 w-4" aria-hidden />
+                      Link
                     </ContextMenuItem>
                   )}
                   {t.status !== 'Cancelled' && (
@@ -531,6 +631,15 @@ export function TransactionsPane() {
             if (!o) setRefundTarget(null);
           }}
           original={refundTarget}
+        />
+      )}
+      {linkTarget && (
+        <LinkTransactionDialog
+          open
+          onOpenChange={(o) => {
+            if (!o) setLinkTarget(null);
+          }}
+          acting={linkTarget}
         />
       )}
     </>

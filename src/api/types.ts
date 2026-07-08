@@ -223,6 +223,9 @@ export interface TransactionRelation {
   relationKind: RelationKind;
 }
 
+// Mirrors POST /api/transactions/:id/relations body (backend Web/Types.hs TransactionRelation).
+export type LinkRelationRequest = TransactionRelation;
+
 // Mirrors backend Web/Types.hs:661 (GET /api/transactions/:id/relations).
 export interface TransactionRelationsResponse {
   outbound: TransactionRelation[];

@@ -203,6 +203,16 @@ export const handlers = [
   http.get(`${apiBase}/api/transactions/:id/relations`, () =>
     HttpResponse.json({ outbound: [], inbound: [] }),
   ),
+  // Link a relation (happy path). Returns the fixture as the updated row so
+  // suites rendering rows don't error on this request. Tests override per-id.
+  http.post(`${apiBase}/api/transactions/:id/relations`, () =>
+    HttpResponse.json(transactionFixture),
+  ),
+  // Unlink a relation (happy path). Returns the fixture as the updated row so
+  // suites rendering rows don't error on this request. Tests override per-id.
+  http.delete(`${apiBase}/api/transactions/:id/relations`, () =>
+    HttpResponse.json(transactionFixture),
+  ),
   http.get(`${apiBase}/api/transactions/:id`, () => HttpResponse.json(transactionFixture)),
   http.put(`${apiBase}/api/transactions/:id/description`, async ({ request }) => {
     const body = (await request.json()) as { description: string };

@@ -55,3 +55,39 @@ export function useWindowedTransactions(
     },
   });
 }
+
+// Sibling of `useWindowedTransactions` that fetches the same date-bounded window
+// but across ALL of the user's accounts (no `accountId` filter). Used by the
+// link-counterpart picker, whose core use case is relating transactions on
+// DIFFERENT accounts (e.g. a purchase and a separately-recorded delivery charge,
+// possibly cross-currency). Same paging loop and ordering guarantees as above.
+//
+// The queryKey stays under the `['transactions', …]` prefix so link/unlink
+// invalidation (which invalidates the `['transactions']` prefix) refreshes it.
+export function useAllAccountsWindowedTransactions(fromDate: string, toDate: string) {
+  const { tokenRef, signOut, session } = useAuth();
+  return useQuery({
+    queryKey: ['transactions', 'all', fromDate, toDate],
+    enabled: !!session,
+    queryFn: async (): Promise<TransactionResponse[]> => {
+      const client = new ApiClient({
+        baseUrl,
+        getToken: () => tokenRef.current,
+        onUnauthorized: signOut,
+      });
+      const api = transactionsApi(client);
+      const dateFrom = dateInputToUtcStart(fromDate);
+      const dateTo = dateInputToUtcEnd(toDate);
+
+      const acc: TransactionResponse[] = [];
+      let offset = 0;
+      for (;;) {
+        const res = await api.list({ dateFrom, dateTo, limit: PAGE_SIZE, offset });
+        acc.push(...res.transactions);
+        if (res.transactions.length < PAGE_SIZE || acc.length >= res.totalCount) break;
+        offset += PAGE_SIZE;
+      }
+      return acc;
+    },
+  });
+}

@@ -1,11 +1,13 @@
 import type {
   AmendTransactionRequest,
+  LinkRelationRequest,
   ChangeTransactionDateRequest,
   ChangeTransactionDescriptionRequest,
   ExpenseRequest,
   ISO8601,
   IncomeRequest,
   InternalTransferRequest,
+  RelationKind,
   SetTransactionAllocationsRequest,
   SetTransactionLabelsRequest,
   TransactionListResponse,
@@ -20,14 +22,30 @@ export const transactionsApi = (client: ApiClient) => ({
     client.get<TransactionResponse>(`/api/transactions/${id}`),
   relations: (id: UUID): Promise<TransactionRelationsResponse> =>
     client.get<TransactionRelationsResponse>(`/api/transactions/${id}/relations`),
+  linkRelation: (id: UUID, body: LinkRelationRequest): Promise<TransactionResponse> =>
+    client.post<TransactionResponse>(`/api/transactions/${id}/relations`, body),
+  unlinkRelation: (
+    id: UUID,
+    params: { relatedTransactionId: UUID; relationKind: RelationKind },
+  ): Promise<TransactionResponse> => {
+    const qs = new URLSearchParams({
+      relatedTransactionId: params.relatedTransactionId,
+      relationKind: params.relationKind,
+    });
+    return client.delete<TransactionResponse>(`/api/transactions/${id}/relations?${qs.toString()}`);
+  },
+  // `accountId` is OPTIONAL: the backend `GET /api/transactions` treats it as an
+  // optional query param (Web/API/TransactionAPI.hs, `QueryParam "accountId"`);
+  // omitting it lists across ALL of the user's accounts.
   list: async (params: {
-    accountId: UUID;
+    accountId?: UUID;
     dateFrom?: ISO8601;
     dateTo?: ISO8601;
     limit?: number;
     offset?: number;
   }): Promise<TransactionListResponse> => {
-    const qs = new URLSearchParams({ accountId: params.accountId });
+    const qs = new URLSearchParams();
+    if (params.accountId) qs.set('accountId', params.accountId);
     if (params.dateFrom) qs.set('dateFrom', params.dateFrom);
     if (params.dateTo) qs.set('dateTo', params.dateTo);
     if (params.limit != null) qs.set('limit', String(params.limit));

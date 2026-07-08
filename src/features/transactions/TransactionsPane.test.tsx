@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -973,6 +973,251 @@ describe('TransactionsPane', () => {
     renderWithProviders(ui(), { initialPath: '/accounts/a1' });
     await screen.findByText('Some refund');
     expect(screen.getByText('refund')).toBeInTheDocument();
+  });
+
+  it('offers a "Link" item on a completed row and opens the dialog', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    const user = userEvent.setup();
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' }); // fixture is a completed expense
+    const cell = await screen.findByText(transactionFixture.description);
+    const row = cell.closest('tr')!;
+    await user.pointer({ keys: '[MouseRight]', target: row });
+    const linkItem = await screen.findByRole('menuitem', { name: /^link$/i });
+    await user.click(linkItem);
+    expect(await screen.findByRole('dialog', { name: /link transaction/i })).toBeInTheDocument();
+  });
+
+  it('does not offer a "Link" item on a non-completed row', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    const user = userEvent.setup();
+    server.use(
+      http.get(`${apiBase}/api/transactions`, () =>
+        HttpResponse.json({
+          transactions: [
+            { ...transactionFixture, id: 'pend-1', description: 'PendingTx', status: 'Pending' },
+          ],
+          totalCount: 1,
+        }),
+      ),
+    );
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    const row = (await screen.findByText('PendingTx')).closest('tr')!;
+    await user.pointer({ keys: '[MouseRight]', target: row });
+    await screen.findByRole('menuitem', { name: /edit/i });
+    expect(screen.queryByRole('menuitem', { name: /^link$/i })).not.toBeInTheDocument();
+  });
+
+  it('shows an "associated with <description>" badge on a row with an outbound association edge', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    server.use(
+      http.get(`${apiBase}/api/transactions`, () =>
+        HttpResponse.json({
+          transactions: [
+            {
+              ...transactionFixture,
+              id: 'tx-a',
+              description: 'Deposit',
+              relations: [{ relatedTransactionId: 'tx-b', relationKind: 'associated' }],
+            },
+            {
+              ...transactionFixture,
+              id: 'tx-b',
+              description: 'Invoice',
+              relations: [],
+            },
+          ],
+          totalCount: 2,
+        }),
+      ),
+    );
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    expect(await screen.findByText('associated with Invoice')).toBeInTheDocument();
+  });
+
+  it('shows an "associated with <description>" badge on the counterpart (inbound) row', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    server.use(
+      http.get(`${apiBase}/api/transactions`, () =>
+        HttpResponse.json({
+          transactions: [
+            {
+              ...transactionFixture,
+              id: 'tx-a',
+              description: 'Deposit',
+              relations: [{ relatedTransactionId: 'tx-b', relationKind: 'associated' }],
+            },
+            {
+              ...transactionFixture,
+              id: 'tx-b',
+              description: 'Invoice',
+              relations: [],
+            },
+          ],
+          totalCount: 2,
+        }),
+      ),
+    );
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    // The counterpart (tx-b) shows the association pointing back at tx-a.
+    expect(await screen.findByText('associated with Deposit')).toBeInTheDocument();
+  });
+
+  it('marks a cancelled counterpart with "(cancelled)" on the association badge', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    const user = userEvent.setup();
+    server.use(
+      http.get(`${apiBase}/api/transactions`, () =>
+        HttpResponse.json({
+          transactions: [
+            {
+              ...transactionFixture,
+              id: 'tx-a',
+              description: 'Deposit',
+              relations: [{ relatedTransactionId: 'tx-b', relationKind: 'associated' }],
+            },
+            {
+              ...transactionFixture,
+              id: 'tx-b',
+              description: 'Invoice',
+              status: 'Cancelled',
+              failureReason: null,
+              relations: [],
+            },
+          ],
+          totalCount: 2,
+        }),
+      ),
+    );
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    // Reveal cancelled rows so both are loaded in the window.
+    await screen.findByText('Deposit');
+    await openFilters(user);
+    await user.click(await screen.findByLabelText(/cancelled & failed/i));
+    expect(await screen.findByText('associated with Invoice (cancelled)')).toBeInTheDocument();
+  });
+
+  it('unlinks an association via the badge unlink control (DELETE with query params)', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    const user = userEvent.setup();
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const captured: {
+      id: string;
+      relatedTransactionId: string | null;
+      relationKind: string | null;
+    }[] = [];
+    server.use(
+      http.get(`${apiBase}/api/transactions`, () =>
+        HttpResponse.json({
+          transactions: [
+            {
+              ...transactionFixture,
+              id: 'tx-a',
+              description: 'Deposit',
+              relations: [{ relatedTransactionId: 'tx-b', relationKind: 'associated' }],
+            },
+            {
+              ...transactionFixture,
+              id: 'tx-b',
+              description: 'Invoice',
+              relations: [],
+            },
+          ],
+          totalCount: 2,
+        }),
+      ),
+      http.delete(`${apiBase}/api/transactions/:id/relations`, ({ request, params }) => {
+        const url = new URL(request.url);
+        captured.push({
+          id: String(params.id),
+          relatedTransactionId: url.searchParams.get('relatedTransactionId'),
+          relationKind: url.searchParams.get('relationKind'),
+        });
+        return HttpResponse.json(transactionFixture);
+      }),
+    );
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    await screen.findByText('associated with Invoice');
+    const unlinkButtons = screen.getAllByRole('button', { name: /unlink/i });
+    await user.click(unlinkButtons[0]!);
+    await waitFor(() => expect(captured.length).toBeGreaterThan(0));
+    expect(captured[0]!.id).toBe('tx-a');
+    expect(captured[0]!.relatedTransactionId).toBe('tx-b');
+    expect(captured[0]!.relationKind).toBe('associated');
+    confirmSpy.mockRestore();
+  });
+
+  it('does not fire the DELETE when the unlink confirmation is cancelled', async () => {
+    // Pins the `if (!window.confirm(...)) return;` guard: declining the confirm
+    // must short-circuit before any network call is made.
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    const user = userEvent.setup();
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    const captured: { id: string }[] = [];
+    server.use(
+      http.get(`${apiBase}/api/transactions`, () =>
+        HttpResponse.json({
+          transactions: [
+            {
+              ...transactionFixture,
+              id: 'tx-a',
+              description: 'Deposit',
+              relations: [{ relatedTransactionId: 'tx-b', relationKind: 'associated' }],
+            },
+            {
+              ...transactionFixture,
+              id: 'tx-b',
+              description: 'Invoice',
+              relations: [],
+            },
+          ],
+          totalCount: 2,
+        }),
+      ),
+      http.delete(`${apiBase}/api/transactions/:id/relations`, ({ params }) => {
+        captured.push({ id: String(params.id) });
+        return HttpResponse.json(transactionFixture);
+      }),
+    );
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    await screen.findByText('associated with Invoice');
+    const unlinkButtons = screen.getAllByRole('button', { name: /unlink/i });
+    await user.click(unlinkButtons[0]!);
+    // The guard aborted: confirm was consulted, but no DELETE was ever sent.
+    expect(confirmSpy).toHaveBeenCalled();
+    expect(captured.length).toBe(0);
+    confirmSpy.mockRestore();
+  });
+
+  it('does not show an inbound association badge when the owner row is off-window', async () => {
+    // Accepted window-only limitation: inbound association edges surface only
+    // when the OWNER row (the one that declares the outbound `associated` edge)
+    // is in the loaded window. Here row B is loaded but its owner A is NOT, and
+    // B declares no outbound edge of its own, so B shows no association badge.
+    //
+    // This is intentional, NOT a bug: see docs/specs/2026-07-07-transaction-
+    // relations-design.md §List indicator "Known limitation (accepted, ...)" —
+    // "inbound edges appear only when the counterpart is on the current page";
+    // full cross-window inbound is "deferred" (no per-row fetch). The positive
+    // (owner-loaded) case is covered by the inbound badge test above.
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    server.use(
+      http.get(`${apiBase}/api/transactions`, () =>
+        HttpResponse.json({
+          transactions: [
+            {
+              ...transactionFixture,
+              id: 'tx-b',
+              description: 'Invoice',
+              relations: [],
+            },
+          ],
+          totalCount: 1,
+        }),
+      ),
+    );
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    const row = (await screen.findByText('Invoice')).closest('tr')!;
+    expect(within(row).queryByText(/associated with/i)).not.toBeInTheDocument();
   });
 
   it('category filter narrows rows and "All categories" sentinel restores both', async () => {

@@ -6,7 +6,10 @@ import type { ReactNode } from 'react';
 import { server } from '@/test/server';
 import { AuthContext } from '@/auth/AuthContext';
 import { transactionFixture, foodCategoryId } from '@/test/fixtures';
-import { useWindowedTransactions } from './useWindowedTransactions';
+import {
+  useAllAccountsWindowedTransactions,
+  useWindowedTransactions,
+} from './useWindowedTransactions';
 
 const apiBase = 'http://localhost:8080';
 
@@ -122,5 +125,76 @@ describe('useWindowedTransactions', () => {
 
     expect(result.current.data).toHaveLength(200);
     expect(callCount).toBe(1);
+  });
+});
+
+describe('useAllAccountsWindowedTransactions', () => {
+  it('omits accountId and sends inclusive UTC dateFrom/dateTo', async () => {
+    let captured: { dateFrom: string | null; dateTo: string | null; accountId: string | null } = {
+      dateFrom: null,
+      dateTo: null,
+      accountId: null,
+    };
+    server.use(
+      http.get(`${apiBase}/api/transactions`, ({ request }) => {
+        const params = new URL(request.url).searchParams;
+        captured = {
+          dateFrom: params.get('dateFrom'),
+          dateTo: params.get('dateTo'),
+          accountId: params.get('accountId'),
+        };
+        return HttpResponse.json({
+          transactions: [transactionFixture],
+          totalCount: 1,
+          limit: 200,
+          offset: 0,
+        });
+      }),
+    );
+
+    const { result } = renderHook(
+      () => useAllAccountsWindowedTransactions('2026-05-10', '2026-06-10'),
+      { wrapper },
+    );
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    // Load-bearing: the all-accounts hook must NOT constrain by account.
+    expect(captured.accountId).toBeNull();
+    expect(captured.dateFrom).toBe('2026-05-10T00:00:00.000Z');
+    expect(captured.dateTo).toBe('2026-06-10T23:59:59.999Z');
+  });
+
+  it('accumulates all pages of the window across all accounts (totalCount > limit)', async () => {
+    const many = Array.from({ length: 250 }, (_, i) => ({
+      ...transactionFixture,
+      id: `t${String(i).padStart(3, '0')}`,
+    }));
+    const capturedOffsets: number[] = [];
+    server.use(
+      http.get(`${apiBase}/api/transactions`, ({ request }) => {
+        const url = new URL(request.url);
+        const limit = Number(url.searchParams.get('limit'));
+        const offset = Number(url.searchParams.get('offset'));
+        capturedOffsets.push(offset);
+        return HttpResponse.json({
+          transactions: many.slice(offset, offset + limit),
+          totalCount: many.length,
+          limit,
+          offset,
+        });
+      }),
+    );
+
+    const { result } = renderHook(
+      () => useAllAccountsWindowedTransactions('2026-05-10', '2026-06-10'),
+      { wrapper: makeWrapper(new QueryClient()) },
+    );
+
+    await waitFor(() => expect(result.current.data).toHaveLength(250));
+
+    // First full page (limit=200) then a short page (50) → exactly two requests.
+    expect(capturedOffsets).toEqual([0, 200]);
+    expect(result.current.data?.map((t) => t.id)).toEqual(many.map((t) => t.id));
   });
 });
