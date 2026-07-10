@@ -24,6 +24,7 @@ const localAccounts: AccountResponse[] = [
     overdraftLimit: null,
     subtype: null,
     status: 'Opened',
+    role: 'owner',
     version: 1,
   },
   {
@@ -34,6 +35,7 @@ const localAccounts: AccountResponse[] = [
     overdraftLimit: null,
     subtype: null,
     status: 'Opened',
+    role: 'owner',
     version: 1,
   },
 ];
@@ -111,6 +113,7 @@ describe('LinkAccountsDialog', () => {
             overdraftLimit: null,
             subtype: null,
             status: 'Opened',
+            role: 'owner',
             version: 1,
           },
         ];

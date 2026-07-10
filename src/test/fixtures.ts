@@ -39,6 +39,7 @@ export const accountFixture: AccountResponse = {
   overdraftLimit: null,
   subtype: { type: 'bankAccount', bankName: 'ACME' },
   status: 'Opened',
+  role: 'owner',
   version: 1,
 };
 
@@ -50,6 +51,7 @@ export const closedAccountFixture: AccountResponse = {
   overdraftLimit: null,
   subtype: { type: 'bankAccount', bankName: 'ACME' },
   status: 'Closed',
+  role: 'owner',
   version: 1,
 };
 

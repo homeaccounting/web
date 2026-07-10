@@ -20,6 +20,7 @@ const accounts: AccountResponse[] = [
     overdraftLimit: null,
     subtype: { type: 'cash' },
     status: 'Opened',
+    role: 'owner',
     version: 1,
   },
   {
@@ -30,6 +31,7 @@ const accounts: AccountResponse[] = [
     overdraftLimit: null,
     subtype: { type: 'cash' },
     status: 'Opened',
+    role: 'owner',
     version: 1,
   },
 ];

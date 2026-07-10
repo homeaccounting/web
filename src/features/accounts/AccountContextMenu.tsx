@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Archive, ArchiveRestore, Pencil } from 'lucide-react';
+import { Archive, ArchiveRestore, Pencil, Users } from 'lucide-react';
 import {
   ContextMenu,
   ContextMenuContent,
@@ -8,12 +8,14 @@ import {
   ContextMenuTrigger,
 } from '@/components/ui/context-menu';
 import type { AccountResponse } from '@/api/types';
+import { canManage } from './roles';
 
 export interface AccountContextMenuProps {
   account: AccountResponse;
   onRequestEdit: (account: AccountResponse) => void;
   onRequestClose: (account: AccountResponse) => void;
   onRequestReopen: (account: AccountResponse) => void;
+  onRequestManageAccess: (account: AccountResponse) => void;
   children: ReactNode;
 }
 
@@ -24,6 +26,7 @@ export function AccountContextMenu({
   onRequestEdit,
   onRequestClose,
   onRequestReopen,
+  onRequestManageAccess,
   children,
 }: AccountContextMenuProps) {
   const isClosed = account.status === 'Closed';
@@ -35,6 +38,12 @@ export function AccountContextMenu({
           <Pencil className="mr-2 h-4 w-4" />
           Edit
         </ContextMenuItem>
+        {canManage(account.role) && (
+          <ContextMenuItem onSelect={() => onRequestManageAccess(account)}>
+            <Users className="mr-2 h-4 w-4" />
+            Access
+          </ContextMenuItem>
+        )}
         <ContextMenuSeparator />
         {isClosed ? (
           <ContextMenuItem onSelect={() => onRequestReopen(account)}>

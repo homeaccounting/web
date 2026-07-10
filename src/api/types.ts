@@ -97,6 +97,7 @@ export interface AccountResponse {
   overdraftLimit: number | null;
   subtype: AccountSubtype | null;
   status: AccountStatus; // backend Web/Types.hs:260
+  role: AccountRole; // tracker#29 — current user's role on this account
   version: number;
 }
 
@@ -116,6 +117,11 @@ export interface AccountListResponse {
 // SUBTYPE_TYPE_TO_KIND below.
 export const ACCOUNT_SUBTYPE_TYPES = ['cash', 'bankAccount', 'eWallet', 'asset', 'loan'] as const;
 export type AccountSubtypeType = (typeof ACCOUNT_SUBTYPE_TYPES)[number];
+
+// Account roles — mirrors backend AccountRole (Domain/Core/Types.hs). Wire tokens
+// are lowercase (see backend roleToText).
+export const ACCOUNT_ROLES = ['owner', 'editor', 'viewer'] as const;
+export type AccountRole = (typeof ACCOUNT_ROLES)[number];
 
 // Backend enums (closed sets at the Haskell level; backend also accepts
 // freeform OtherCardNetwork/OtherAsset, but the web UI does not expose those).
@@ -157,6 +163,26 @@ export interface CreateAccountRequest {
 
 export interface RenameAccountRequest {
   name: string;
+}
+
+// POST /api/accounts/:id/share — backend AccountAPI.hs ShareAccountRequest.
+export interface ShareAccountRequest {
+  userId: UUID;
+  role: AccountRole;
+}
+
+// GET /api/accounts/:id/access — backend AccountAPI.hs AccountAccessEntry.
+// email/telegramUsername are display labels; either may be absent (backend omits
+// Nothing fields from JSON).
+export interface AccountAccessEntry {
+  userId: UUID;
+  role: AccountRole;
+  email?: string | null;
+  telegramUsername?: string | null;
+}
+
+export interface AccountAccessListResponse {
+  access: AccountAccessEntry[];
 }
 
 // `currency` is JSON-optional (mirrors the backend's SetOverdraftLimitRequest,

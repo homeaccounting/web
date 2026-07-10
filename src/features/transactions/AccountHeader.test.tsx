@@ -15,6 +15,7 @@ function fixture(overrides: Partial<AccountResponse> = {}): AccountResponse {
     overdraftLimit: null,
     subtype: { type: 'cash', storageLocation: 'wallet' },
     status: 'Opened',
+    role: 'owner',
     version: 1,
     ...overrides,
   };

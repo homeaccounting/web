@@ -96,6 +96,7 @@ describe('CreateAccountDialog', () => {
             overdraftLimit: null,
             subtype: { type: 'cash' },
             version: 1,
+            role: 'owner',
           },
           { status: 201 },
         );

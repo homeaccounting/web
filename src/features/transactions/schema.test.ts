@@ -223,6 +223,7 @@ const acc = (id: string, currency = 'USD'): AccountResponse => ({
   overdraftLimit: null,
   subtype: { type: 'cash' },
   status: 'Opened',
+  role: 'owner',
   version: 1,
 });
 
@@ -320,6 +321,7 @@ const accBal = (id: string, balance: number, overdraftLimit: number | null): Acc
   overdraftLimit,
   subtype: { type: 'cash' },
   status: 'Opened',
+  role: 'owner',
   version: 1,
 });
 

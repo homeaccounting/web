@@ -25,6 +25,7 @@ describe('isSelectableDefaultAccount', () => {
     overdraftLimit: null,
     subtype: { type: 'cash' },
     status: 'Opened',
+    role: 'owner',
     version: 1,
   };
   it('accepts opened regular accounts', () => {

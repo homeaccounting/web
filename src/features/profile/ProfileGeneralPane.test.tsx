@@ -106,6 +106,20 @@ describe('ProfileGeneralPane', () => {
     ).toBeInTheDocument();
   });
 
+  it('still shows the sharing ID when configuration fails to load', async () => {
+    server.use(
+      http.get(`${apiBase}/api/users/me/configuration`, () =>
+        HttpResponse.json({ message: 'boom' }, { status: 500 }),
+      ),
+    );
+    setup();
+    // Sharing-ID card depends only on the auth session, not configuration.
+    expect(screen.getByText('Your sharing ID')).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByText(/failed to load configuration/i)).toBeInTheDocument(),
+    );
+  });
+
   it('shows inline error from a 400 response', async () => {
     server.use(
       http.put(`${apiBase}/api/users/me/configuration/default-currency`, () =>

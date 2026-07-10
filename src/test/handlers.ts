@@ -86,6 +86,7 @@ export const handlers = [
         subtype: { type: 'cash' },
         status: 'Opened',
         version: 1,
+        role: 'owner',
       },
       { status: 201 },
     );
@@ -117,6 +118,16 @@ export const handlers = [
       labels: [],
       amendmentCount: 0,
     }),
+  ),
+  http.get(`${apiBase}/api/accounts/:id/access`, () =>
+    HttpResponse.json({
+      access: [{ userId: 'u', role: 'owner', email: 'e', telegramUsername: null }],
+    }),
+  ),
+  http.post(`${apiBase}/api/accounts/:id/share`, () => new HttpResponse(null, { status: 204 })),
+  http.delete(
+    `${apiBase}/api/accounts/:id/access/:userId`,
+    () => new HttpResponse(null, { status: 204 }),
   ),
   http.post(`${apiBase}/api/transactions/income`, async ({ request }) => {
     const body = (await request.json()) as {

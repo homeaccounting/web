@@ -15,6 +15,7 @@ describe('AccountContextMenu', () => {
         onRequestEdit={onRequestEdit}
         onRequestClose={vi.fn()}
         onRequestReopen={vi.fn()}
+        onRequestManageAccess={vi.fn()}
       >
         <div>row</div>
       </AccountContextMenu>,
@@ -33,6 +34,7 @@ describe('AccountContextMenu', () => {
         onRequestEdit={onRequestEdit}
         onRequestClose={vi.fn()}
         onRequestReopen={vi.fn()}
+        onRequestManageAccess={vi.fn()}
       >
         <div>row</div>
       </AccountContextMenu>,
@@ -51,6 +53,7 @@ describe('AccountContextMenu', () => {
         onRequestEdit={vi.fn()}
         onRequestClose={onRequestClose}
         onRequestReopen={vi.fn()}
+        onRequestManageAccess={vi.fn()}
       >
         <div>row</div>
       </AccountContextMenu>,
@@ -69,6 +72,7 @@ describe('AccountContextMenu', () => {
         onRequestEdit={vi.fn()}
         onRequestClose={vi.fn()}
         onRequestReopen={onRequestReopen}
+        onRequestManageAccess={vi.fn()}
       >
         <div>row</div>
       </AccountContextMenu>,
@@ -76,5 +80,44 @@ describe('AccountContextMenu', () => {
     await user.pointer({ keys: '[MouseRight]', target: screen.getByText('row') });
     await user.click(await screen.findByRole('menuitem', { name: /^reopen$/i }));
     expect(onRequestReopen).toHaveBeenCalledWith(closedAccountFixture);
+  });
+
+  it('offers Manage access for an owner account and emits onRequestManageAccess', async () => {
+    const user = userEvent.setup();
+    const onRequestManageAccess = vi.fn();
+    const account = { ...accountFixture, role: 'owner' as const };
+    renderWithProviders(
+      <AccountContextMenu
+        account={account}
+        onRequestEdit={vi.fn()}
+        onRequestClose={vi.fn()}
+        onRequestReopen={vi.fn()}
+        onRequestManageAccess={onRequestManageAccess}
+      >
+        <div>row</div>
+      </AccountContextMenu>,
+    );
+    await user.pointer({ keys: '[MouseRight]', target: screen.getByText('row') });
+    await user.click(await screen.findByRole('menuitem', { name: /^access$/i }));
+    expect(onRequestManageAccess).toHaveBeenCalledWith(account);
+  });
+
+  it('hides Manage access for a non-owner account', async () => {
+    const user = userEvent.setup();
+    const account = { ...accountFixture, role: 'editor' as const };
+    renderWithProviders(
+      <AccountContextMenu
+        account={account}
+        onRequestEdit={vi.fn()}
+        onRequestClose={vi.fn()}
+        onRequestReopen={vi.fn()}
+        onRequestManageAccess={vi.fn()}
+      >
+        <div>row</div>
+      </AccountContextMenu>,
+    );
+    await user.pointer({ keys: '[MouseRight]', target: screen.getByText('row') });
+    await screen.findByRole('menuitem', { name: /^edit$/i });
+    expect(screen.queryByRole('menuitem', { name: /^access$/i })).not.toBeInTheDocument();
   });
 });

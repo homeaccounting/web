@@ -237,4 +237,130 @@ describe('AccountsPane', () => {
     await user.click(btn);
     expect(await screen.findByText('Account command rejected by domain')).toBeInTheDocument();
   });
+
+  it('enables the Manage access toolbar button for a selected owned account and opens the dialog', async () => {
+    const user = userEvent.setup();
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    renderWithProviders(ui(), { initialPath: `/accounts/${accountFixture.id}` });
+    const btn = await screen.findByRole('button', { name: /manage access/i });
+    await waitFor(() => expect(btn).not.toBeDisabled());
+    server.use(
+      http.get(`${apiBase}/api/accounts/${accountFixture.id}/access`, () =>
+        HttpResponse.json({ access: [] }),
+      ),
+    );
+    await user.click(btn);
+    expect(await screen.findByRole('dialog', { name: /manage access/i })).toBeInTheDocument();
+  });
+
+  it('disables the Manage access toolbar button for a selected non-owner account', async () => {
+    const editorAccount = { ...accountFixture, id: 'a3', role: 'editor' as const };
+    server.use(
+      http.get(`${apiBase}/api/accounts`, () =>
+        HttpResponse.json({ accounts: [accountFixture, editorAccount], totalCount: 2 }),
+      ),
+    );
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    renderWithProviders(ui(), { initialPath: `/accounts/${editorAccount.id}` });
+    const btn = await screen.findByRole('button', { name: /manage access/i });
+    await waitFor(() => expect(btn).toBeDisabled());
+  });
+
+  function serveSharedMix() {
+    const editorAccount = {
+      ...accountFixture,
+      id: 'a3',
+      name: 'Shared Editor',
+      role: 'editor' as const,
+    };
+    const viewerAccount = {
+      ...accountFixture,
+      id: 'a4',
+      name: 'Shared Viewer',
+      role: 'viewer' as const,
+    };
+    server.use(
+      http.get(`${apiBase}/api/accounts`, () =>
+        HttpResponse.json({
+          accounts: [accountFixture, editorAccount, viewerAccount],
+          totalCount: 3,
+        }),
+      ),
+    );
+    return { editorAccount, viewerAccount };
+  }
+
+  it('renders a "Shared with me" group containing shared accounts but not owned ones', async () => {
+    const { editorAccount, viewerAccount } = serveSharedMix();
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    renderWithProviders(ui(), { initialPath: '/' });
+    await screen.findByText('Checking');
+    const sharedHeader = screen.getByRole('button', { name: /shared with me/i });
+    expect(sharedHeader).toBeInTheDocument();
+    expect(await screen.findByText(editorAccount.name)).toBeInTheDocument();
+    expect(await screen.findByText(viewerAccount.name)).toBeInTheDocument();
+
+    // The owned account stays under its subtype group, not under "Shared with me".
+    const bankGroupHeader = screen.getByRole('button', { name: /bank account/i });
+    const bankGroupContainer = bankGroupHeader.closest('div');
+    expect(bankGroupContainer).not.toBeNull();
+    expect(bankGroupContainer && bankGroupContainer.textContent?.includes(editorAccount.name)).toBe(
+      false,
+    );
+  });
+
+  it('shows a role badge on shared rows', async () => {
+    const { editorAccount } = serveSharedMix();
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    renderWithProviders(ui(), { initialPath: '/' });
+    await screen.findByText(editorAccount.name);
+    expect(await screen.findByText('Editor')).toBeInTheDocument();
+    expect(await screen.findByText('Viewer')).toBeInTheDocument();
+  });
+
+  it('disables Edit and Close in the toolbar when a viewer account is selected', async () => {
+    const { viewerAccount } = serveSharedMix();
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    renderWithProviders(ui(), { initialPath: `/accounts/${viewerAccount.id}` });
+    const edit = await screen.findByRole('button', { name: /edit account/i });
+    const close = await screen.findByRole('button', { name: /close account/i });
+    await waitFor(() => {
+      expect(edit).toBeDisabled();
+      expect(close).toBeDisabled();
+    });
+  });
+
+  it('disables Edit and Close when an editor account is selected (both are owner-only)', async () => {
+    const { editorAccount } = serveSharedMix();
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    renderWithProviders(ui(), { initialPath: `/accounts/${editorAccount.id}` });
+    const edit = await screen.findByRole('button', { name: /edit account/i });
+    const close = await screen.findByRole('button', { name: /close account/i });
+    await waitFor(() => {
+      expect(edit).toBeDisabled();
+      expect(close).toBeDisabled();
+    });
+  });
+
+  it('shows an "Owner only" tooltip on Edit when a non-owner account is selected', async () => {
+    const { editorAccount } = serveSharedMix();
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    renderWithProviders(ui(), { initialPath: `/accounts/${editorAccount.id}` });
+    const edit = await screen.findByRole('button', { name: /edit account/i });
+    await waitFor(() => expect(edit).toBeDisabled());
+    fireEvent.focus(edit);
+    expect(await screen.findByRole('tooltip', { name: /owner only/i })).toBeInTheDocument();
+  });
+
+  it('enables Edit and Close when an owned account is selected', async () => {
+    serveSharedMix();
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    renderWithProviders(ui(), { initialPath: `/accounts/${accountFixture.id}` });
+    const edit = await screen.findByRole('button', { name: /edit account/i });
+    const close = await screen.findByRole('button', { name: /close account/i });
+    await waitFor(() => {
+      expect(edit).not.toBeDisabled();
+      expect(close).not.toBeDisabled();
+    });
+  });
 });

@@ -1,24 +1,48 @@
 import { useState } from 'react';
 import { NavLink, useParams } from 'react-router-dom';
-import { Archive, ArchiveRestore, ChevronDown, ChevronRight, Pencil, Plus, X } from 'lucide-react';
+import {
+  Archive,
+  ArchiveRestore,
+  ChevronDown,
+  ChevronRight,
+  Pencil,
+  Plus,
+  Users,
+  X,
+} from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import type { AccountResponse } from '@/api/types';
-import { ACCOUNT_SUBTYPE_TYPES } from '@/api/types';
 import { ApiError } from '@/api/client';
-import { ACCOUNT_SUBTYPE_LABELS } from './labels';
+import { buildAccountGroups } from './accountGroups';
 import { useAccounts } from './useAccounts';
 import { useAccountById } from './useAccountById';
 import { CreateAccountDialog } from './CreateAccountDialog';
 import { EditAccountDialog } from './EditAccountDialog';
 import { CloseAccountDialog } from './CloseAccountDialog';
+import { ManageAccessDialog } from './ManageAccessDialog';
 import { AccountContextMenu } from './AccountContextMenu';
 import { useReopenAccount } from './useAccountStatus';
 import { SyncNowButton } from './SyncNowButton';
 import { formatAccountBalance } from './format';
+import type { AccountRole } from '@/api/types';
+import { canManage, canModify, ROLE_LABELS } from './roles';
+
+// Small inline badge for shared (non-owner) rows; mirrors the RoleBadge in
+// ManageAccessDialog.tsx but is scoped locally since the two components
+// don't share a role-label source of truth worth extracting yet. Typed as
+// AccountRole (not GrantableRole) because canManage() doesn't narrow at the
+// call site below — the runtime guard still ensures 'owner' never reaches it.
+function SharedRoleBadge({ role }: { role: AccountRole }) {
+  return (
+    <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+      {ROLE_LABELS[role]}
+    </span>
+  );
+}
 
 export function AccountsPane() {
   const { data, isLoading, isError, refetch } = useAccounts();
@@ -27,6 +51,7 @@ export function AccountsPane() {
   const [creating, setCreating] = useState(false);
   const [editingAccount, setEditingAccount] = useState<AccountResponse | null>(null);
   const [closingAccount, setClosingAccount] = useState<AccountResponse | null>(null);
+  const [managingAccount, setManagingAccount] = useState<AccountResponse | null>(null);
   const [showClosed, setShowClosed] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<ReadonlySet<string>>(new Set());
 
@@ -57,24 +82,13 @@ export function AccountsPane() {
   const openAccounts = data?.filter((a) => a.status !== 'Closed') ?? [];
   const closedAccounts = data?.filter((a) => a.status === 'Closed') ?? [];
   const selectedIsClosed = selectedAccount?.status === 'Closed';
+  const canManageSelected = !!selectedAccount && canManage(selectedAccount.role);
+  const canModifySelected = !!selectedAccount && canModify(selectedAccount.role);
 
-  // Group open accounts by subtype, ordered by the canonical subtype list;
-  // accounts without a (known) subtype fall into a trailing "Other" group.
-  // Empty groups are omitted.
-  const openGroups: { key: string; label: string; accounts: AccountResponse[] }[] = [
-    ...ACCOUNT_SUBTYPE_TYPES.map((kind) => ({
-      key: kind,
-      label: ACCOUNT_SUBTYPE_LABELS[kind],
-      accounts: openAccounts.filter((a) => a.subtype?.type === kind),
-    })),
-    {
-      key: 'other',
-      label: 'Other',
-      accounts: openAccounts.filter(
-        (a) => !a.subtype || !ACCOUNT_SUBTYPE_TYPES.includes(a.subtype.type as never),
-      ),
-    },
-  ].filter((g) => g.accounts.length > 0);
+  // Owned accounts (grouped by subtype) followed by a synthetic "Shared with
+  // me" group; see buildAccountGroups. Closed accounts are handled separately
+  // below and stay independent of role.
+  const openGroups = buildAccountGroups(openAccounts);
 
   const renderAccountRow = (a: AccountResponse) => {
     const isClosed = a.status === 'Closed';
@@ -84,6 +98,7 @@ export function AccountsPane() {
         onRequestEdit={setEditingAccount}
         onRequestClose={setClosingAccount}
         onRequestReopen={reopen}
+        onRequestManageAccess={setManagingAccount}
       >
         <NavLink
           to={`/accounts/${a.id}`}
@@ -98,7 +113,10 @@ export function AccountsPane() {
             isClosed && 'opacity-60',
           )}
         >
-          <span className="truncate">{a.name}</span>
+          <span className="flex min-w-0 items-baseline gap-1.5">
+            <span className="truncate">{a.name}</span>
+            {!canManage(a.role) && <SharedRoleBadge role={a.role} />}
+          </span>
           <span className="tabular-nums">{formatAccountBalance(a)}</span>
         </NavLink>
       </AccountContextMenu>
@@ -117,14 +135,16 @@ export function AccountsPane() {
                   size="icon"
                   variant="ghost"
                   aria-label="Edit account"
-                  disabled={accountActionsDisabled}
+                  disabled={accountActionsDisabled || !canManageSelected}
                   onClick={() => selectedAccount && setEditingAccount(selectedAccount)}
                   className="h-9 w-9"
                 >
                   <Pencil className="h-5 w-5" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Edit account</TooltipContent>
+              <TooltipContent>
+                {selectedAccount && !canManageSelected ? 'Owner only' : 'Edit account'}
+              </TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -132,7 +152,9 @@ export function AccountsPane() {
                   size="icon"
                   variant="ghost"
                   aria-label={selectedIsClosed ? 'Reopen account' : 'Close account'}
-                  disabled={accountActionsDisabled || reopenMutation.isPending}
+                  disabled={
+                    accountActionsDisabled || !canManageSelected || reopenMutation.isPending
+                  }
                   onClick={() =>
                     selectedAccount &&
                     (selectedIsClosed
@@ -149,10 +171,31 @@ export function AccountsPane() {
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                {selectedIsClosed ? 'Reopen account' : 'Close account'}
+                {selectedAccount && !canManageSelected
+                  ? 'Owner only'
+                  : selectedIsClosed
+                    ? 'Reopen account'
+                    : 'Close account'}
               </TooltipContent>
             </Tooltip>
-            <SyncNowButton selectedAccount={selectedAccount} />
+            {/* Sync imports transactions (a write), so it's Editor+ only;
+                the backend enforces this regardless of the UI. */}
+            {canModifySelected && <SyncNowButton selectedAccount={selectedAccount} />}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  aria-label="Manage access"
+                  disabled={!canManageSelected}
+                  onClick={() => selectedAccount && setManagingAccount(selectedAccount)}
+                  className="h-9 w-9"
+                >
+                  <Users className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Manage access</TooltipContent>
+            </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -264,6 +307,15 @@ export function AccountsPane() {
             if (!next) setClosingAccount(null);
           }}
           account={closingAccount}
+        />
+      )}
+      {managingAccount && (
+        <ManageAccessDialog
+          open
+          onOpenChange={(next) => {
+            if (!next) setManagingAccount(null);
+          }}
+          account={managingAccount}
         />
       )}
       {reopenError && (

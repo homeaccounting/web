@@ -18,6 +18,7 @@ const acct = (id: string, name: string, type: string): AccountResponse => ({
   overdraftLimit: null,
   subtype: { type },
   status: 'Opened',
+  role: 'owner',
   version: 1,
 });
 const accounts = [acct('cash-1', 'Wallet', 'cash'), acct('bank-1', 'Checking', 'bankAccount')];

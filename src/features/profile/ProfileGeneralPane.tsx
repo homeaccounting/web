@@ -28,8 +28,21 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ApiError } from '@/api/client';
+import { UserIdCard } from './UserIdCard';
 
 export function ProfileGeneralPane() {
+  // The sharing-ID card depends only on the sync auth session, so it renders
+  // regardless of configuration state (loading/error). The currency settings,
+  // which do depend on configuration, handle their own loading/error below.
+  return (
+    <div className="space-y-6">
+      <UserIdCard />
+      <CurrenciesSection />
+    </div>
+  );
+}
+
+function CurrenciesSection() {
   const config = useConfiguration();
   const setDefault = useSetDefaultCurrency();
   const setBase = useSetBaseCurrency();
@@ -53,7 +66,7 @@ export function ProfileGeneralPane() {
 
   const c = config.data;
   return (
-    <div className="space-y-6">
+    <>
       <Card>
         <CardHeader>
           <CardTitle>Currencies</CardTitle>
@@ -113,7 +126,7 @@ export function ProfileGeneralPane() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </>
   );
 }
 

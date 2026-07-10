@@ -176,6 +176,7 @@ describe('fromAccountResponse', () => {
     overdraftLimit: null,
     subtype: { type: 'cash', storageLocation: 'wallet' },
     status: 'Opened',
+    role: 'owner',
     version: 1,
   };
 
