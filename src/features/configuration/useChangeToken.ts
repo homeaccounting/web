@@ -1,12 +1,12 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ApiClient, baseUrl } from '@/api/client';
 import { configurationApi } from '@/api/configuration';
-import type { ChangeBankTokenRequest, UUID } from '@/api/types';
+import type { ChangeTokenRequest, UUID } from '@/api/types';
 import { useAuth } from '@/auth/useAuth';
 
 interface ChangeTokenVars {
   id: UUID;
-  body: ChangeBankTokenRequest;
+  body: ChangeTokenRequest;
 }
 
 export function useChangeToken() {

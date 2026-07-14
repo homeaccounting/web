@@ -27,6 +27,19 @@ const mappedConnection: BankConnectionDTO = {
   accountMap: { 'ext-acc-1': accountFixture.id },
 };
 
+// File-only (PrivatBank) connection mapping the same fixture account. Pull-only
+// UI (SyncNowButton) must stay hidden for this: the backend has no pull
+// transport for a file-only provider.
+const privatbankConnection: BankConnectionDTO = {
+  id: 'conn-privatbank',
+  provider: 'privatbank',
+  name: 'PrivatBank',
+  enabled: true,
+  tokenSet: false,
+  tokenHint: '',
+  accountMap: { 'ext-acc-2': accountFixture.id },
+};
+
 function configWith(connections: BankConnectionDTO[], enabled = true): ConfigurationResponse {
   return {
     ...bankingEnabledConfigurationFixture,
@@ -91,6 +104,27 @@ describe('sync now button', () => {
     expect(await screen.findByRole('button', { name: /sync now/i })).toBeInTheDocument();
   });
 
+  it('is shown for an enabled pull-capable (monobank) connection', async () => {
+    // Relies on the default MSW providers handler, which marks monobank
+    // supportsPull: true.
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    useConfigHandler(configWith([mappedConnection]));
+    renderWithProviders(ui(), { initialPath: '/' });
+    expect(await screen.findByRole('button', { name: /sync now/i })).toBeInTheDocument();
+  });
+
+  it('is HIDDEN when the account is only connected via a file-only (privatbank) connection', async () => {
+    // Relies on the default MSW providers handler, which marks privatbank
+    // supportsPull: false. Gating must be fail-closed even though the
+    // connection is enabled and maps the account.
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    useConfigHandler(configWith([privatbankConnection]));
+    renderWithProviders(ui(), { initialPath: '/' });
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: /sync now/i })).not.toBeInTheDocument(),
+    );
+  });
+
   it('posts a ~30 day window to the matched connection and renders the summary', async () => {
     const user = userEvent.setup();
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
@@ -99,7 +133,7 @@ describe('sync now button', () => {
     let calledPath = '';
     let body: { from: string; to: string } | undefined;
     server.use(
-      http.post(`${apiBase}/api/banking/connections/:id/resync`, async ({ request, params }) => {
+      http.post(`${apiBase}/api/banking/connections/:id/import`, async ({ request, params }) => {
         calledPath = String(params.id);
         body = (await request.json()) as { from: string; to: string };
         return HttpResponse.json({
@@ -112,6 +146,7 @@ describe('sync now button', () => {
               failureCount: 1,
             },
           ],
+          unresolved: [],
         });
       }),
     );
@@ -134,7 +169,7 @@ describe('sync now button', () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
     useConfigHandler(configWith([mappedConnection]));
     server.use(
-      http.post(`${apiBase}/api/banking/connections/:id/resync`, () =>
+      http.post(`${apiBase}/api/banking/connections/:id/import`, () =>
         HttpResponse.json({
           accounts: [
             {
@@ -145,6 +180,7 @@ describe('sync now button', () => {
               failureCount: 0,
             },
           ],
+          unresolved: [],
         }),
       ),
     );
@@ -166,7 +202,7 @@ describe('sync now button', () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
     useConfigHandler(configWith([mappedConnection]));
     server.use(
-      http.post(`${apiBase}/api/banking/connections/:id/resync`, () =>
+      http.post(`${apiBase}/api/banking/connections/:id/import`, () =>
         HttpResponse.json(
           { message: 'Connection is disabled', code: 'CONNECTION_DISABLED' },
           { status: 422 },

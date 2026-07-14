@@ -1,9 +1,14 @@
 import type { ApiClient } from './client';
-import type { ExternalAccountDTO, ResyncRequest, ResyncResponse, UUID } from './types';
+import type { ConnectionImportRequest, ExternalAccountDTO, ImportResponse, UUID } from './types';
 
 export const bankingApi = (client: ApiClient) => ({
-  resync: (connectionId: UUID, body: ResyncRequest): Promise<ResyncResponse> =>
-    client.post<ResyncResponse>(`/api/banking/connections/${connectionId}/resync`, body),
+  importConnection: (connectionId: UUID, body: ConnectionImportRequest): Promise<ImportResponse> =>
+    client.post<ImportResponse>(`/api/banking/connections/${connectionId}/import`, body),
+  importStatement: (connectionId: UUID, format: string, file: Blob): Promise<ImportResponse> =>
+    client.postBinary<ImportResponse>(
+      `/api/banking/connections/${connectionId}/import/file?format=${encodeURIComponent(format)}`,
+      file,
+    ),
   listExternalAccounts: (connectionId: UUID): Promise<ExternalAccountDTO[]> =>
     client.get<ExternalAccountDTO[]>(`/api/banking/connections/${connectionId}/external-accounts`),
 });

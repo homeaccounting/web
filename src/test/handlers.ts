@@ -1,8 +1,9 @@
 import { http, HttpResponse } from 'msw';
 import type {
-  AddBankConnectionRequest,
+  AddConnectionRequest,
   BankConnectionDTO,
   BankingConfigurationDTO,
+  BankProviderDTO,
   UpdateBankingRequest,
   UpdateDefaultsRequest,
 } from '@/api/types';
@@ -282,7 +283,7 @@ export const handlers = [
     () => new HttpResponse(null, { status: 204 }),
   ),
   http.post(`${apiBase}/api/users/me/configuration/banking/connections`, async ({ request }) => {
-    const body = (await request.json()) as AddBankConnectionRequest;
+    const body = (await request.json()) as AddConnectionRequest;
     const connection: BankConnectionDTO = {
       id: 'conn-new',
       provider: body.provider,
@@ -310,6 +311,12 @@ export const handlers = [
     `${apiBase}/api/users/me/configuration/banking/connections/:id/accounts`,
     () => new HttpResponse(null, { status: 204 }),
   ),
+  http.get(`${apiBase}/api/users/me/configuration/banking/providers`, () =>
+    HttpResponse.json([
+      { id: 'monobank', displayName: 'Monobank', supportsPull: true, supportsFile: false },
+      { id: 'privatbank', displayName: 'PrivatBank', supportsPull: false, supportsFile: true },
+    ] satisfies BankProviderDTO[]),
+  ),
   http.put(`${apiBase}/api/users/me/configuration/banking`, async ({ request }) => {
     const body = (await request.json()) as UpdateBankingRequest;
     const banking: BankingConfigurationDTO = {
@@ -334,8 +341,24 @@ export const handlers = [
   http.get(`${apiBase}/api/banking/connections/:id/external-accounts`, () =>
     HttpResponse.json(externalAccountsFixture),
   ),
-  http.post(`${apiBase}/api/banking/connections/:id/resync`, () =>
-    HttpResponse.json({ accounts: [] }),
+  http.post(`${apiBase}/api/banking/connections/:id/import`, () =>
+    HttpResponse.json({ accounts: [], unresolved: [] }),
+  ),
+  // Statement file upload. Body is raw bytes (OctetStream), not JSON — don't
+  // attempt to parse `request.json()` here.
+  http.post(`${apiBase}/api/banking/connections/:id/import/file`, () =>
+    HttpResponse.json({
+      accounts: [
+        {
+          externalAccountId: 'ext-acc-1',
+          localAccountId: accountFixture.id,
+          importedCount: 3,
+          skippedCount: 0,
+          failureCount: 0,
+        },
+      ],
+      unresolved: [],
+    }),
   ),
   http.post(
     `${apiBase}/api/users/me/change-password`,

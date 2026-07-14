@@ -6,13 +6,13 @@ import { server } from '@/test/server';
 import { saveSession } from '@/auth/storage';
 import { AuthProvider } from '@/auth/AuthContext';
 import { makeQueryClient } from '@/test/utils';
-import type { ResyncResponse } from '@/api/types';
-import { useResync } from './useResync';
+import type { ImportResponse } from '@/api/types';
+import { useImportConnection } from './useImportConnection';
 
-describe('useResync', () => {
-  it('POSTs {from,to} to /banking/connections/:id/resync and parses the response', async () => {
+describe('useImportConnection', () => {
+  it('POSTs {from,to} to /banking/connections/:id/import and parses the response', async () => {
     saveSession({ token: 't', userId: 'u', email: 'e@x', expiresAt: 9e15 });
-    const response: ResyncResponse = {
+    const response: ImportResponse = {
       accounts: [
         {
           externalAccountId: 'ext-acc-1',
@@ -22,12 +22,13 @@ describe('useResync', () => {
           failureCount: 0,
         },
       ],
+      unresolved: [],
     };
     let method = '';
     let body: unknown = null;
     server.use(
       http.post(
-        'http://localhost:8080/api/banking/connections/conn-1/resync',
+        'http://localhost:8080/api/banking/connections/conn-1/import',
         async ({ request }) => {
           method = request.method;
           body = await request.json();
@@ -41,7 +42,7 @@ describe('useResync', () => {
         <AuthProvider>{children}</AuthProvider>
       </QueryClientProvider>
     );
-    const { result } = renderHook(() => useResync('conn-1'), { wrapper });
+    const { result } = renderHook(() => useImportConnection('conn-1'), { wrapper });
     result.current.mutate({ from: '2026-01-01T00:00:00Z', to: '2026-02-01T00:00:00Z' });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(method).toBe('POST');

@@ -7,6 +7,7 @@ import { renderWithProviders } from '@/test/utils';
 import { AuthProvider } from '@/auth/AuthContext';
 import { saveSession } from '@/auth/storage';
 import { bankingEnabledConfigurationFixture } from '@/test/fixtures';
+import type { BankConnectionDTO } from '@/api/types';
 import { ProfileBankingPane } from './ProfileBankingPane';
 
 const apiBase = 'http://localhost:8080';
@@ -92,5 +93,41 @@ describe('ProfileBankingPane', () => {
     );
     render();
     expect(await screen.findByText(/no connections/i)).toBeInTheDocument();
+  });
+
+  it('shows "Link accounts" for a pull-capable (monobank) connection', async () => {
+    // bankingEnabledConfigurationFixture's connection defaults to provider 'monobank',
+    // which the default MSW providers handler marks supportsPull: true.
+    render();
+    await screen.findByText('Monobank');
+    expect(await screen.findByRole('button', { name: /link accounts/i })).toBeInTheDocument();
+  });
+
+  it('hides "Link accounts" for a file-only (privatbank) connection', async () => {
+    const privatbankConnection: BankConnectionDTO = {
+      id: 'conn-privatbank',
+      provider: 'privatbank',
+      name: 'PrivatBank',
+      enabled: true,
+      tokenSet: false,
+      tokenHint: '',
+      accountMap: {},
+    };
+    server.use(
+      http.get(configUrl, () =>
+        HttpResponse.json({
+          ...bankingEnabledConfigurationFixture,
+          banking: {
+            ...bankingEnabledConfigurationFixture.banking,
+            connections: [privatbankConnection],
+          },
+        }),
+      ),
+    );
+    render();
+    await screen.findByText('PrivatBank');
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: /link accounts/i })).not.toBeInTheDocument(),
+    );
   });
 });

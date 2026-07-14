@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { RefreshCw } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Upload } from 'lucide-react';
 import { ApiError } from '@/api/client';
 import type { AccountResponse } from '@/api/types';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -7,48 +7,39 @@ import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { useConfiguration } from '@/features/configuration/useConfiguration';
-import { useImportConnection } from '@/features/banking/useImportConnection';
+import { useImportStatement } from '@/features/banking/useImportStatement';
 import { useProviders } from '@/features/banking/useProviders';
 import { formatSummary, summarize, type Summary } from '@/features/banking/importSummary';
 import { matchAccountConnection } from '@/features/banking/matchAccountConnection';
 import { DismissButton } from '@/features/banking/DismissButton';
 
-const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 // How long the success toast stays before auto-dismissing.
 const SUCCESS_TOAST_MS = 6000;
 
-/** Pure 30-day window helper. `to` is `now`; `from` is 30 days earlier. */
-export function last30Days(now: Date): { from: string; to: string } {
-  return {
-    from: new Date(now.getTime() - THIRTY_DAYS_MS).toISOString(),
-    to: now.toISOString(),
-  };
-}
-
-interface SyncNowButtonProps {
+interface ImportStatementButtonProps {
   selectedAccount: AccountResponse | undefined;
 }
 
-export function SyncNowButton({ selectedAccount }: SyncNowButtonProps) {
+export function ImportStatementButton({ selectedAccount }: ImportStatementButtonProps) {
   const { data: config } = useConfiguration();
   const { data: providers } = useProviders();
   const [summary, setSummary] = useState<Summary | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // The connection that owns this account: enabled, the account id appears as
   // a VALUE (local accountId) in its accountMap, AND its provider supports
-  // pull sync (per /configuration/banking/providers). Fail-closed: hidden
-  // until providers resolve, same as ImportStatementButton's file-support gate.
+  // file import (per /configuration/banking/providers).
   const matched = config?.bankingFeatureEnabled
     ? matchAccountConnection(
         config.banking.connections,
         selectedAccount?.id,
-        (c) => providers?.find((p) => p.id === c.provider)?.supportsPull ?? false,
+        (c) => providers?.find((p) => p.id === c.provider)?.supportsFile ?? false,
       )
     : undefined;
 
   // Always call the hook (Rules of Hooks); guard the click on `matched`.
-  const importConnection = useImportConnection(matched?.id ?? '');
+  const importStatement = useImportStatement();
 
   // Auto-dismiss the success toast; errors stay until dismissed.
   useEffect(() => {
@@ -62,17 +53,21 @@ export function SyncNowButton({ selectedAccount }: SyncNowButtonProps) {
   const onClick = () => {
     setSummary(null);
     setErrorMessage(null);
-    const { from, to } = last30Days(new Date());
-    importConnection.mutate(
-      { from, to },
+    fileInputRef.current?.click();
+  };
+
+  const onFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    // Reset the input so the same file can be re-selected later.
+    e.target.value = '';
+    if (!file || !matched) return;
+    importStatement.mutate(
+      { connId: matched.id, format: 'csv', file },
       {
         onSuccess: (result) => setSummary(summarize(result)),
         onError: (err) => {
-          // Defensively surface 422 CONNECTION_DISABLED / 404 / FEATURE_DISABLED
-          // and any other ApiError; the gating already prevents most of these,
-          // but a mid-session toggle could race.
           const message =
-            err instanceof ApiError ? err.message : 'Could not sync this account. Try again.';
+            err instanceof ApiError ? err.message : 'Could not import this statement. Try again.';
           setErrorMessage(message);
         },
       },
@@ -87,17 +82,26 @@ export function SyncNowButton({ selectedAccount }: SyncNowButtonProps) {
             <Button
               size="icon"
               variant="ghost"
-              aria-label="Sync now"
-              disabled={importConnection.isPending}
+              aria-label="Import statement"
+              disabled={importStatement.isPending}
               onClick={onClick}
               className="h-9 w-9"
             >
-              <RefreshCw className={cn('h-5 w-5', importConnection.isPending && 'animate-spin')} />
+              <Upload className={cn('h-5 w-5', importStatement.isPending && 'animate-pulse')} />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Sync now</TooltipContent>
+          <TooltipContent>Import statement</TooltipContent>
         </Tooltip>
       </TooltipProvider>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".csv,text/csv"
+        data-testid="import-statement-file-input"
+        className="hidden"
+        onChange={onFileSelected}
+      />
 
       {/* Result feedback as a fixed toast so it never disturbs the toolbar layout. */}
       {(summary || errorMessage) && (

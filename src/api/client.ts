@@ -47,9 +47,23 @@ export class ApiClient {
     return this.request<T>(path, { method: 'DELETE' });
   }
 
+  /**
+   * POST a binary payload (e.g. a bank statement file upload) as-is, without
+   * JSON-encoding the body. Reuses the same auth header assembly and
+   * error/unauthorized handling as the JSON methods above; the only
+   * differences are the raw `Blob` body and the `Content-Type` header.
+   */
+  postBinary<T>(path: string, body: Blob, contentType = 'application/octet-stream'): Promise<T> {
+    return this.request<T>(path, {
+      method: 'POST',
+      body,
+      headers: { 'Content-Type': contentType },
+    });
+  }
+
   private async request<T>(path: string, init: RequestInit): Promise<T> {
     const headers = new Headers(init.headers ?? {});
-    if (init.body) headers.set('Content-Type', 'application/json');
+    if (init.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
     const token = this.opts.getToken();
     if (token) headers.set('Authorization', `Bearer ${token}`);
 

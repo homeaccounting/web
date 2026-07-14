@@ -1,13 +1,13 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ApiClient, baseUrl } from '@/api/client';
 import { configurationApi } from '@/api/configuration';
-import type { AddBankConnectionRequest, BankConnectionDTO } from '@/api/types';
+import type { AddConnectionRequest, BankConnectionDTO } from '@/api/types';
 import { useAuth } from '@/auth/useAuth';
 
 export function useAddConnection() {
   const { tokenRef, signOut } = useAuth();
   const queryClient = useQueryClient();
-  return useMutation<BankConnectionDTO, Error, AddBankConnectionRequest>({
+  return useMutation<BankConnectionDTO, Error, AddConnectionRequest>({
     mutationFn: (body) => {
       const client = new ApiClient({
         baseUrl,

@@ -450,17 +450,22 @@ export interface ExternalAccountDTO {
   balance: number; // minor units, display only
 }
 
-export interface AddBankConnectionRequest {
+// Mirrors backend Web/API/BankingAPI.hs AddConnectionRequest. `token` is
+// optional server-side (bank providers may not require an upfront credential,
+// e.g. file-import-only providers) — see tracker#38 pluggable bank providers.
+export interface AddConnectionRequest {
   provider: string;
   name: string;
-  token: string;
+  token?: string;
   enabled: boolean;
 }
-export interface UpdateBankConnectionRequest {
+// Mirrors backend Web/API/BankingAPI.hs UpdateConnectionRequest.
+export interface UpdateConnectionRequest {
   name?: string;
   enabled?: boolean;
 }
-export interface ChangeBankTokenRequest {
+// Mirrors backend Web/API/BankingAPI.hs ChangeTokenRequest.
+export interface ChangeTokenRequest {
   token: string;
 }
 export interface SetAccountMapRequest {
@@ -476,19 +481,38 @@ export interface UpdateDefaultsRequest {
   // Present = replaces the whole per-subtype map wholesale (omit a key to clear it).
   subtypeAccounts?: Partial<Record<AccountSubtypeKind, UUID>>;
 }
-export interface ResyncRequest {
+// Mirrors backend Web/API/BankingAPI.hs ConnectionImportRequest (renamed from
+// ResyncRequest) — the pull date-window body for
+// POST /api/banking/connections/:id/import.
+export interface ConnectionImportRequest {
   from: string;
   to: string;
 } // ISO-8601 UTC
-export interface ResyncAccountResult {
+// Mirrors backend Web/API/BankingAPI.hs AccountImportSummary (renamed from
+// ResyncAccountResult).
+export interface AccountImportSummary {
   externalAccountId: string;
   localAccountId: UUID;
   importedCount: number;
   skippedCount: number;
   failureCount: number;
 }
-export interface ResyncResponse {
-  accounts: ResyncAccountResult[];
+// Mirrors backend Web/API/BankingAPI.hs ImportResponse (renamed from
+// ResyncResponse; adds `unresolved`). Returned by BOTH the pull import
+// endpoint (POST /api/banking/connections/:id/import) and the file import
+// endpoint (POST /api/banking/connections/:id/import/file).
+export interface ImportResponse {
+  accounts: AccountImportSummary[];
+  unresolved: string[];
+}
+
+// Mirrors backend Web/API/ConfigurationAPI.hs BankProviderDTO — returned by
+// GET /api/users/me/configuration/banking/providers.
+export interface BankProviderDTO {
+  id: string;
+  displayName: string;
+  supportsPull: boolean;
+  supportsFile: boolean;
 }
 
 export interface BankingConfigurationDTO {

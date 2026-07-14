@@ -149,3 +149,40 @@ describe('ApiClient.patch', () => {
     expect(res.body).toBe('{"a":1}');
   });
 });
+
+describe('ApiClient.postBinary', () => {
+  it('POSTs the Blob as-is with an octet-stream Content-Type and the auth header', async () => {
+    let receivedContentType: string | null = null;
+    let receivedAuth: string | null = null;
+    let receivedBody: string | null = null;
+    server.use(
+      http.post(`${baseUrl}/api/banking/connections/conn-1/import/file`, async ({ request }) => {
+        receivedContentType = request.headers.get('content-type');
+        receivedAuth = request.headers.get('authorization');
+        receivedBody = await request.text();
+        return HttpResponse.json({ accounts: [], unresolved: [] });
+      }),
+    );
+    const client = new ApiClient({ baseUrl, getToken: () => 'jwt-abc', onUnauthorized: vi.fn() });
+    const file = new Blob(['statement bytes'], { type: 'text/csv' });
+    const result = await client.postBinary('/api/banking/connections/conn-1/import/file', file);
+
+    expect(receivedContentType).toBe('application/octet-stream');
+    expect(receivedAuth).toBe('Bearer jwt-abc');
+    expect(receivedBody).toBe('statement bytes');
+    expect(result).toEqual({ accounts: [], unresolved: [] });
+  });
+
+  it('accepts a custom contentType override', async () => {
+    let receivedContentType: string | null = null;
+    server.use(
+      http.post(`${baseUrl}/api/x`, ({ request }) => {
+        receivedContentType = request.headers.get('content-type');
+        return HttpResponse.json({});
+      }),
+    );
+    const client = new ApiClient({ baseUrl, getToken: () => null, onUnauthorized: vi.fn() });
+    await client.postBinary('/api/x', new Blob(['x']), 'text/csv');
+    expect(receivedContentType).toBe('text/csv');
+  });
+});

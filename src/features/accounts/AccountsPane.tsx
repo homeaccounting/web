@@ -27,6 +27,7 @@ import { ManageAccessDialog } from './ManageAccessDialog';
 import { AccountContextMenu } from './AccountContextMenu';
 import { useReopenAccount } from './useAccountStatus';
 import { SyncNowButton } from './SyncNowButton';
+import { ImportStatementButton } from './ImportStatementButton';
 import { formatAccountBalance } from './format';
 import type { AccountRole } from '@/api/types';
 import { canManage, canModify, ROLE_LABELS } from './roles';
@@ -178,9 +179,10 @@ export function AccountsPane() {
                     : 'Close account'}
               </TooltipContent>
             </Tooltip>
-            {/* Sync imports transactions (a write), so it's Editor+ only;
+            {/* Sync/import both write transactions, so they're Editor+ only;
                 the backend enforces this regardless of the UI. */}
             {canModifySelected && <SyncNowButton selectedAccount={selectedAccount} />}
+            {canModifySelected && <ImportStatementButton selectedAccount={selectedAccount} />}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -293,6 +295,7 @@ export function AccountsPane() {
       <CreateAccountDialog open={creating} onOpenChange={setCreating} />
       {editingAccount && (
         <EditAccountDialog
+          key={editingAccount.id}
           open
           onOpenChange={(next) => {
             if (!next) setEditingAccount(null);

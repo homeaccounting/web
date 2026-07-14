@@ -1,12 +1,12 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ApiClient, baseUrl } from '@/api/client';
 import { configurationApi } from '@/api/configuration';
-import type { UpdateBankConnectionRequest, UUID } from '@/api/types';
+import type { UpdateConnectionRequest, UUID } from '@/api/types';
 import { useAuth } from '@/auth/useAuth';
 
 interface UpdateConnectionVars {
   id: UUID;
-  body: UpdateBankConnectionRequest;
+  body: UpdateConnectionRequest;
 }
 
 export function useUpdateConnection() {
