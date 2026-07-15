@@ -30,7 +30,7 @@ import {
 import { useAccountById } from '@/features/accounts/useAccountById';
 import { formatDateTime, formatMoney } from '@/lib/format';
 import { cn } from '@/lib/utils';
-import type { TransactionResponse, TransactionTypeText } from '@/api/types';
+import type { Allocations, TransactionResponse, TransactionTypeText, UUID } from '@/api/types';
 import { useWindowedTransactions } from './useWindowedTransactions';
 import {
   applyTransactionFilters,
@@ -40,7 +40,14 @@ import {
 } from './transactionFilters';
 import { TransactionFilterBar } from './TransactionFilterBar';
 import { TransactionTypeIcon } from './TransactionTypeIcon';
-import { isAdjustment, transactionKind, transactionTypeMeta } from './transactionType';
+import {
+  isAdjustment,
+  isExpense,
+  isIncome,
+  isTransfer,
+  transactionKind,
+  transactionTypeMeta,
+} from './transactionType';
 import type { TransactionKind } from './labels';
 import { LabelChips } from './LabelChips';
 import { CategoryChips } from './CategoryChips';
@@ -58,6 +65,9 @@ import { CopyTransactionDialog } from './CopyTransactionDialog';
 import { ConvertTransactionDialog } from './ConvertTransactionDialog';
 import { RefundTransactionDialog } from './RefundTransactionDialog';
 import { TransactionStatusIcon } from './TransactionStatusIcon';
+import { TxCategoryQuickPicker } from './TxCategoryQuickPicker';
+import { TxLabelQuickPicker } from './TxLabelQuickPicker';
+import { useEditTransaction } from './useEditTransaction';
 
 // The two kinds a transaction can convert to (everything but its current kind;
 // Adjustment is never a source or target). Caller must ensure `type` is not
@@ -66,6 +76,26 @@ const CONVERT_KINDS = ['income', 'expense', 'transfer'] as const;
 function convertTargets(type: TransactionTypeText): TransactionKind[] {
   const current = transactionKind(type);
   return CONVERT_KINDS.filter((k) => k !== current);
+}
+
+// Accounts whose cached transaction lists hold this row — mirrors
+// EditTransactionDialog's derivation so useEditTransaction patches the right caches.
+function affectedAccountIds(t: TransactionResponse): UUID[] {
+  if (isTransfer(t.transactionType) || isAdjustment(t.transactionType)) {
+    return [t.sourceAccountId, t.targetAccountId];
+  }
+  return [isIncome(t.transactionType) ? t.targetAccountId : t.sourceAccountId];
+}
+
+// Rebuild allocations with a new categoryId on the single slice (in whichever
+// bucket it lives), preserving that slice's amount/comment. Caller guarantees
+// exactly one slice total.
+function allocationsWithCategory(allocations: Allocations, categoryId: UUID): Allocations {
+  const swap = (slices: Allocations['incomes']) => slices.map((s) => ({ ...s, categoryId }));
+  return {
+    incomes: allocations.incomes.length ? swap(allocations.incomes) : allocations.incomes,
+    expenses: allocations.expenses.length ? swap(allocations.expenses) : allocations.expenses,
+  };
 }
 
 // A resolved association edge to render for a row: the id/description of the
@@ -137,6 +167,36 @@ export function TransactionsPane() {
   const categoryNameById = labelNameById;
 
   const labelOptions = configuration?.dictionaries.labels?.entries ?? [];
+
+  const edit = useEditTransaction();
+
+  const incomeCategoryEntries = configuration?.dictionaries['income-category']?.entries ?? [];
+  const expenseCategoryEntries = configuration?.dictionaries['expense-category']?.entries ?? [];
+
+  const assignCategory = (t: TransactionResponse, categoryId: UUID) => {
+    const current = allocationCategoryIds(t)[0];
+    if (!current || categoryId === current) return; // no-op
+    void edit
+      .mutateAsync({
+        id: t.id,
+        accountIds: affectedAccountIds(t),
+        diff: { allocations: allocationsWithCategory(t.allocations, categoryId) },
+        onSubCallApplied: () => {},
+      })
+      .catch(() => {
+        // No error surface in the pane yet (matches useUnlinkRelation's fire-and-forget);
+        // a failed PATCH simply leaves the row's category unchanged. The comment keeps
+        // eslint `no-empty` happy.
+      });
+  };
+
+  const commitLabels = (t: TransactionResponse, labels: UUID[]) =>
+    edit.mutateAsync({
+      id: t.id,
+      accountIds: affectedAccountIds(t),
+      diff: { labels },
+      onSubCallApplied: () => {},
+    });
   // The filter matches by category NAME (so a name shared across the income and
   // expense dictionaries — e.g. "Other" — matches either). The dropdown is
   // therefore deduped by name, and each option's value IS the name.
@@ -507,6 +567,26 @@ export function TransactionsPane() {
                         ))}
                       </ContextMenuSubContent>
                     </ContextMenuSub>
+                  )}
+                  {t.status === 'Completed' &&
+                    (isIncome(t.transactionType) || isExpense(t.transactionType)) &&
+                    allocationCategoryIds(t).length === 1 && (
+                      <TxCategoryQuickPicker
+                        options={
+                          isIncome(t.transactionType)
+                            ? incomeCategoryEntries
+                            : expenseCategoryEntries
+                        }
+                        value={allocationCategoryIds(t)[0]}
+                        onSelect={(categoryId) => assignCategory(t, categoryId)}
+                      />
+                    )}
+                  {t.status === 'Completed' && (
+                    <TxLabelQuickPicker
+                      options={labelOptions}
+                      value={t.labels}
+                      onCommit={(labels) => commitLabels(t, labels)}
+                    />
                   )}
                   {t.status === 'Completed' && t.transactionType === 'expense' && (
                     <ContextMenuItem onSelect={() => openRefund(t)}>

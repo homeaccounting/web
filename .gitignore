@@ -16,3 +16,7 @@ vite/**/*.d.ts
 
 # Superpowers brainstorm scratch
 .superpowers/
+
+# Claude Code local/machine-specific files (not shared)
+.claude/settings.local.json
+.claude/scheduled_tasks.lock

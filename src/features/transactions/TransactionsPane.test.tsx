@@ -8,7 +8,13 @@ import { Routes, Route } from 'react-router-dom';
 import { AuthProvider } from '@/auth/AuthContext';
 import { saveSession } from '@/auth/storage';
 import { TransactionsPane } from './TransactionsPane';
-import { transactionFixture, tripLabelId, foodCategoryId, salaryCategoryId } from '@/test/fixtures';
+import {
+  configurationFixture,
+  transactionFixture,
+  tripLabelId,
+  foodCategoryId,
+  salaryCategoryId,
+} from '@/test/fixtures';
 
 const apiBase = 'http://localhost:8080';
 
@@ -1280,5 +1286,311 @@ describe('TransactionsPane', () => {
 
     await waitFor(() => expect(screen.getByText('Paycheck')).toBeInTheDocument());
     expect(screen.getByText('Groceries')).toBeInTheDocument();
+  });
+
+  describe('quick-assign category', () => {
+    const GROCERIES_ID = '00000000-0000-0000-0000-000000000970';
+
+    // Config with a second expense category so a "reassign to different" is possible.
+    const twoExpenseCategoriesConfig = () => ({
+      ...configurationFixture,
+      dictionaries: {
+        ...configurationFixture.dictionaries,
+        'expense-category': {
+          ...configurationFixture.dictionaries['expense-category'],
+          entries: [
+            ...(configurationFixture.dictionaries['expense-category']?.entries ?? []), // Food
+            { id: GROCERIES_ID, name: 'Groceries' },
+          ],
+        },
+      },
+    });
+
+    it('reassigns a single-slice expense category via PATCH, preserving amount', async () => {
+      saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+      const user = userEvent.setup();
+      let patchBody: unknown;
+      server.use(
+        http.get(`${apiBase}/api/users/me/configuration`, () =>
+          HttpResponse.json(twoExpenseCategoriesConfig()),
+        ),
+        http.patch(`${apiBase}/api/transactions/:id/allocations`, async ({ request }) => {
+          patchBody = await request.json();
+          return HttpResponse.json({ ...transactionFixture });
+        }),
+      );
+      renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+      const row = (await screen.findByText(transactionFixture.description)).closest('tr')!;
+      await user.pointer({ keys: '[MouseRight]', target: row });
+      await user.hover(await screen.findByRole('menuitem', { name: /^category$/i }));
+      await user.pointer({
+        keys: '[MouseLeft]',
+        target: await screen.findByRole('option', { name: /groceries/i }),
+      });
+      await waitFor(() => expect(patchBody).toBeTruthy());
+      // Body preserves the original slice amount/currency/comment and swaps only categoryId.
+      const original = transactionFixture.allocations.expenses[0];
+      expect(patchBody).toEqual({
+        newAllocations: {
+          incomes: [],
+          expenses: [{ ...original, categoryId: GROCERIES_ID }],
+        },
+      });
+    });
+
+    it('does not fire a PATCH when the chosen category equals the current one', async () => {
+      saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+      const user = userEvent.setup();
+      const patch = vi.fn(() => HttpResponse.json({ ...transactionFixture }));
+      server.use(
+        http.get(`${apiBase}/api/users/me/configuration`, () =>
+          HttpResponse.json(twoExpenseCategoriesConfig()),
+        ),
+        http.patch(`${apiBase}/api/transactions/:id/allocations`, patch),
+      );
+      renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+      const row = (await screen.findByText(transactionFixture.description)).closest('tr')!;
+      await user.pointer({ keys: '[MouseRight]', target: row });
+      await user.hover(await screen.findByRole('menuitem', { name: /^category$/i }));
+      // The current category (Food) is marked selected; clicking it is a no-op.
+      const current = await screen.findByRole('option', { selected: true });
+      expect(current).toHaveAccessibleName(/food/i);
+      await user.pointer({ keys: '[MouseLeft]', target: current });
+      await new Promise((r) => setTimeout(r, 20));
+      expect(patch).not.toHaveBeenCalled();
+    });
+
+    it('hides Category for a split (multi-category) row', async () => {
+      saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+      const user = userEvent.setup();
+      server.use(
+        http.get(`${apiBase}/api/transactions`, () =>
+          HttpResponse.json({
+            transactions: [
+              {
+                ...transactionFixture,
+                id: 'split-1',
+                description: 'SplitTx',
+                allocations: {
+                  incomes: [],
+                  expenses: [
+                    { categoryId: 'cat-x', amount: { amount: 5, currency: 'USD' } },
+                    { categoryId: 'cat-y', amount: { amount: 5, currency: 'USD' } },
+                  ],
+                },
+              },
+            ],
+            totalCount: 1,
+          }),
+        ),
+      );
+      renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+      const row = (await screen.findByText('SplitTx')).closest('tr')!;
+      await user.pointer({ keys: '[MouseRight]', target: row });
+      await screen.findByRole('menuitem', { name: /edit/i });
+      expect(screen.queryByRole('menuitem', { name: /^category$/i })).not.toBeInTheDocument();
+    });
+
+    it('hides Category for an adjustment row', async () => {
+      saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+      const user = userEvent.setup();
+      server.use(
+        http.get(`${apiBase}/api/transactions`, () =>
+          HttpResponse.json({
+            transactions: [
+              {
+                ...transactionFixture,
+                id: 'adj-1',
+                description: 'AdjustmentTx',
+                transactionType: 'adjustment',
+                allocations: { incomes: [], expenses: [] },
+              },
+            ],
+            totalCount: 1,
+          }),
+        ),
+      );
+      renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+      const row = (await screen.findByText('AdjustmentTx')).closest('tr')!;
+      await user.pointer({ keys: '[MouseRight]', target: row });
+      await screen.findByRole('menuitem', { name: /edit/i });
+      expect(screen.queryByRole('menuitem', { name: /^category$/i })).not.toBeInTheDocument();
+    });
+
+    it('hides Category (and Labels) for a non-completed row', async () => {
+      saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+      const user = userEvent.setup();
+      server.use(
+        http.get(`${apiBase}/api/transactions`, () =>
+          HttpResponse.json({
+            transactions: [
+              { ...transactionFixture, id: 'pend-1', description: 'PendingTx', status: 'Pending' },
+            ],
+            totalCount: 1,
+          }),
+        ),
+      );
+      renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+      const row = (await screen.findByText('PendingTx')).closest('tr')!;
+      await user.pointer({ keys: '[MouseRight]', target: row });
+      await screen.findByRole('menuitem', { name: /edit/i });
+      expect(screen.queryByRole('menuitem', { name: /^category$/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('menuitem', { name: /^labels$/i })).not.toBeInTheDocument();
+    });
+
+    it('keeps typing/arrow keys inside the search input (no Radix typeahead hijack)', async () => {
+      saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+      const user = userEvent.setup();
+      server.use(
+        http.get(`${apiBase}/api/users/me/configuration`, () =>
+          HttpResponse.json(twoExpenseCategoriesConfig()),
+        ),
+      );
+      renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+      const row = (await screen.findByText(transactionFixture.description)).closest('tr')!;
+      await user.pointer({ keys: '[MouseRight]', target: row });
+      await user.hover(await screen.findByRole('menuitem', { name: /^category$/i }));
+      const search = await screen.findByRole('combobox', { name: /search categories/i });
+      // skipClick: MenuSearchList auto-focuses the input on open, so no click is
+      // needed. userEvent's default initial click would move the pointer off the
+      // hovered "Category" sub-trigger, firing Radix's onItemLeave → it refocuses
+      // the menu content div and steals focus from the input (a happy-dom/userEvent
+      // pointer artifact, not a real-key-isolation failure). Typing straight into
+      // the already-focused input exercises the actual isolation path.
+      await user.type(search, 'gro', { skipClick: true });
+      // Characters landed in the input; the search actually filtered the list
+      // (only Groceries matches "gro", Food is filtered out).
+      expect(search).toHaveValue('gro');
+      expect(screen.getByRole('option', { name: /groceries/i })).toBeInTheDocument();
+      expect(screen.queryByRole('option', { name: /food/i })).not.toBeInTheDocument();
+    });
+  });
+
+  describe('quick-assign labels', () => {
+    // The single label in configurationFixture is "Trip" (tripLabelId); the
+    // default transactionFixture has `labels: []`, so toggling Trip on is a clean
+    // add. Do NOT use editedTransactionFixture (module-local, unexported) — return
+    // `{ ...transactionFixture, labels }` from the override.
+    it('toggles a label via full-array PUT and keeps the submenu open', async () => {
+      saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+      const user = userEvent.setup();
+      const bodies: string[][] = [];
+      server.use(
+        http.put(`${apiBase}/api/transactions/:id/labels`, async ({ request }) => {
+          const body = (await request.json()) as { labels: string[] };
+          bodies.push(body.labels);
+          return HttpResponse.json({ ...transactionFixture, labels: body.labels });
+        }),
+      );
+      renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+      const row = (await screen.findByText(transactionFixture.description)).closest('tr')!;
+      await user.pointer({ keys: '[MouseRight]', target: row });
+      await user.hover(await screen.findByRole('menuitem', { name: /^labels$/i }));
+      await user.pointer({
+        keys: '[MouseLeft]',
+        target: await screen.findByRole('option', { name: /trip/i }),
+      });
+      // The PUT carries the full desired array (just the toggled-on label).
+      await waitFor(() => expect(bodies).toEqual([[tripLabelId]]));
+      // Submenu still open — the option list is still in the document.
+      expect(screen.getByRole('option', { name: /trip/i })).toBeInTheDocument();
+    });
+
+    it('composes rapid toggles into cumulative, ordered PUTs', async () => {
+      const WORK_ID = '00000000-0000-0000-0000-0000000000b2';
+      saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+      const user = userEvent.setup();
+      const bodies: string[][] = [];
+      server.use(
+        // Two labels so we can add both in quick succession.
+        http.get(`${apiBase}/api/users/me/configuration`, () =>
+          HttpResponse.json({
+            ...configurationFixture,
+            dictionaries: {
+              ...configurationFixture.dictionaries,
+              labels: {
+                ...configurationFixture.dictionaries.labels,
+                entries: [
+                  ...(configurationFixture.dictionaries.labels?.entries ?? []), // Trip
+                  { id: WORK_ID, name: 'Work' },
+                ],
+              },
+            },
+          }),
+        ),
+        http.put(`${apiBase}/api/transactions/:id/labels`, async ({ request }) => {
+          const body = (await request.json()) as { labels: string[] };
+          bodies.push(body.labels);
+          return HttpResponse.json({ ...transactionFixture, labels: body.labels });
+        }),
+      );
+      renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+      const row = (await screen.findByText(transactionFixture.description)).closest('tr')!;
+      await user.pointer({ keys: '[MouseRight]', target: row });
+      await user.hover(await screen.findByRole('menuitem', { name: /^labels$/i }));
+      await user.pointer({
+        keys: '[MouseLeft]',
+        target: await screen.findByRole('option', { name: /trip/i }),
+      });
+      await user.pointer({
+        keys: '[MouseLeft]',
+        target: await screen.findByRole('option', { name: /work/i }),
+      });
+      // Each PUT carries the full cumulative set, and they arrive in toggle order
+      // (serialized) — not [Work] clobbering [Trip].
+      await waitFor(() => expect(bodies).toEqual([[tripLabelId], [tripLabelId, WORK_ID]]));
+    });
+
+    it('reverts the local toggle when the PUT fails', async () => {
+      saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+      const user = userEvent.setup();
+      server.use(
+        http.put(
+          `${apiBase}/api/transactions/:id/labels`,
+          () => new HttpResponse(null, { status: 500 }),
+        ),
+      );
+      renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+      const row = (await screen.findByText(transactionFixture.description)).closest('tr')!;
+      await user.pointer({ keys: '[MouseRight]', target: row });
+      await user.hover(await screen.findByRole('menuitem', { name: /^labels$/i }));
+      const opt = await screen.findByRole('option', { name: /trip/i });
+      expect(opt).toHaveAttribute('aria-selected', 'false');
+      await user.pointer({ keys: '[MouseLeft]', target: opt });
+      // Optimistically selected, then reverted after the 500.
+      await waitFor(() =>
+        expect(screen.getByRole('option', { name: /trip/i })).toHaveAttribute(
+          'aria-selected',
+          'false',
+        ),
+      );
+    });
+
+    it('offers Labels on a transfer row but not on a non-completed row', async () => {
+      saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+      const user = userEvent.setup();
+      server.use(
+        http.get(`${apiBase}/api/transactions`, () =>
+          HttpResponse.json({
+            transactions: [
+              {
+                ...transactionFixture,
+                id: 'xfer-1',
+                description: 'XferTx',
+                transactionType: 'transfer',
+                allocations: { incomes: [], expenses: [] },
+              },
+            ],
+            totalCount: 1,
+          }),
+        ),
+      );
+      renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+      const row = (await screen.findByText('XferTx')).closest('tr')!;
+      await user.pointer({ keys: '[MouseRight]', target: row });
+      expect(await screen.findByRole('menuitem', { name: /^labels$/i })).toBeInTheDocument();
+      // Category must be absent for a transfer.
+      expect(screen.queryByRole('menuitem', { name: /^category$/i })).not.toBeInTheDocument();
+    });
   });
 });
