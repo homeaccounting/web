@@ -353,7 +353,7 @@ export const handlers = [
           externalAccountId: 'ext-acc-1',
           localAccountId: accountFixture.id,
           importedCount: 3,
-          skippedCount: 0,
+          skipped: [],
           failureCount: 0,
         },
       ],

@@ -18,7 +18,7 @@ describe('useImportConnection', () => {
           externalAccountId: 'ext-acc-1',
           localAccountId: 'acc-1',
           importedCount: 3,
-          skippedCount: 1,
+          skipped: ['already imported'],
           failureCount: 0,
         },
       ],

@@ -18,7 +18,7 @@ describe('useImportStatement', () => {
           externalAccountId: 'ext-acc-1',
           localAccountId: 'acc-1',
           importedCount: 4,
-          skippedCount: 0,
+          skipped: [],
           failureCount: 0,
         },
       ],

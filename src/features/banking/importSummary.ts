@@ -15,7 +15,7 @@ export function summarize(result: ImportResponse): Summary {
   const totals = result.accounts.reduce(
     (acc, r) => ({
       imported: acc.imported + r.importedCount,
-      skipped: acc.skipped + r.skippedCount,
+      skipped: acc.skipped + r.skipped.length,
       failed: acc.failed + r.failureCount,
     }),
     { imported: 0, skipped: 0, failed: 0 },

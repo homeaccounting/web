@@ -494,7 +494,9 @@ export interface AccountImportSummary {
   externalAccountId: string;
   localAccountId: UUID;
   importedCount: number;
-  skippedCount: number;
+  // Human-readable reason per skipped transaction (dedup, currency mismatch, …);
+  // backend changed this from a bare `skippedCount: number`.
+  skipped: string[];
   failureCount: number;
 }
 // Mirrors backend Web/API/BankingAPI.hs ImportResponse (renamed from
