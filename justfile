@@ -27,7 +27,7 @@ run:
     pnpm dev
 
 # Build the production bundle
-build:
+build: install
     @echo "Building production bundle..."
     pnpm build
     @echo "✓ Build complete"
@@ -90,14 +90,10 @@ clean:
     rm -rf dist node_modules .vite playwright-report test-results
     @echo "✓ Clean complete"
 
-# Setup development environment
-dev-setup: install
-    @echo "Development environment ready!"
-    @echo ""
-    @echo "Next steps:"
-    @echo "  1. Copy .env.example to .env and adjust VITE_API_BASE_URL"
-    @echo "  2. Run 'just run' to start the dev server"
-    @echo "  3. Visit http://localhost:5173/app/"
+# Prepare everything needed before `just run` (env, deps, build)
+dev-setup: install build
+    @[ -f .env ] || (cp .env.example .env && echo "✓ Created .env from .env.example — adjust VITE_API_BASE_URL if needed")
+    @echo "✓ Development environment ready — run 'just run' to start the dev server (http://localhost:5173/app/)"
 
 # Clean and reinstall + build
 rebuild: clean install build
@@ -114,7 +110,7 @@ ci:
 
 # Build and push image to ghcr.io. Tag defaults to dev-<short-sha>.
 # Requires `gh auth login` and docker.
-publish tag="":
+publish tag="": install
     #!/usr/bin/env bash
     set -euo pipefail
     SHA="$(git rev-parse --short HEAD)"
