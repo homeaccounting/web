@@ -83,6 +83,7 @@ export const transactionFixture: TransactionResponse = {
   labels: [],
   amendmentCount: 0,
   relations: [],
+  mcc: null,
 };
 
 export const salaryCategoryId = '00000000-0000-0000-0000-00000005a1a0';

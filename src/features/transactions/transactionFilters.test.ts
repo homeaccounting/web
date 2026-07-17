@@ -27,6 +27,7 @@ const base: TransactionResponse = {
   date: '2026-05-01T00:00:00Z',
   labels: ['lbl-trip'],
   amendmentCount: 0,
+  mcc: null,
   relations: [],
 };
 // A single expense (or income) slice carrying `categoryId` (or no slice for

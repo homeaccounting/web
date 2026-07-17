@@ -47,6 +47,7 @@ const txResponse = (overrides: Partial<TransactionResponse> = {}): TransactionRe
   date: '2026-03-04T00:00:00.000Z',
   labels: [],
   amendmentCount: 0,
+  mcc: null,
   relations: [],
   ...overrides,
 });

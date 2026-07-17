@@ -44,6 +44,7 @@ function makeOriginal(overrides: Partial<TransactionResponse> = {}): Transaction
     date: '2026-04-27T08:00:00Z',
     labels: [],
     amendmentCount: 0,
+    mcc: null,
     relations: [],
     ...overrides,
   };
@@ -138,6 +139,7 @@ describe('RefundTransactionDialog', () => {
           date: '2026-06-01T00:00:00.000Z',
           labels: [],
           amendmentCount: 0,
+          mcc: null,
           relations: [],
         });
       }),
@@ -266,6 +268,7 @@ describe('RefundTransactionDialog', () => {
           date: '2026-06-01T00:00:00.000Z',
           labels: [],
           amendmentCount: 0,
+          mcc: null,
           relations: [],
         });
       }),

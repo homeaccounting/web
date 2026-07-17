@@ -406,6 +406,11 @@ export interface TransactionResponse {
   // (TransactionResponse.relations :: [TransactionRelation]). Always present in
   // responses; empty array when the transaction has no relations.
   relations: TransactionRelation[];
+  // Original provider merchant category code for imported transactions; `null`
+  // for manual entries and providers that supply no MCC. Mirrors backend
+  // Web/Types.hs `TransactionResponse.mcc :: Maybe Text`. Lets the user read the
+  // MCC of a miscategorised import and adjust their MCC→category mapping.
+  mcc: string | null;
 }
 
 export interface TransactionListResponse {

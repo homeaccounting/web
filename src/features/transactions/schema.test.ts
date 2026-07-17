@@ -249,6 +249,7 @@ const baseTx = (overrides: Partial<TransactionResponse>): TransactionResponse =>
   date: '2026-03-04T15:00:00.000Z',
   labels: ['l1'],
   amendmentCount: 0,
+  mcc: null,
   relations: [],
   ...overrides,
 });

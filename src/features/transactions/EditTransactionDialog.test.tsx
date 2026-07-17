@@ -36,6 +36,7 @@ const baseTx: TransactionResponse = {
   labels: [],
   amendmentCount: 0,
   relations: [],
+  mcc: null,
 };
 
 beforeEach(() => {
@@ -98,6 +99,19 @@ function renderDialog(props: {
 }
 
 describe('EditTransactionDialog', () => {
+  it('shows the original MCC for an imported transaction', async () => {
+    renderDialog({ tx: { ...baseTx, mcc: '5411' } });
+    expect(await screen.findByText(/MCC/i)).toBeInTheDocument();
+    expect(screen.getByText('5411')).toBeInTheDocument();
+  });
+
+  it('does not show an MCC line for a manual transaction', async () => {
+    renderDialog({ tx: { ...baseTx, mcc: null } });
+    // Let the dialog settle (form renders once accounts/config resolve).
+    await screen.findByRole('dialog');
+    expect(screen.queryByText(/MCC/i)).toBeNull();
+  });
+
   it('renders read-only with a status notice when the transaction is not Completed', async () => {
     renderDialog({ tx: { ...baseTx, status: 'Failed' } });
     expect(

@@ -86,6 +86,7 @@ const expenseSource: TransactionResponse = {
   date: '2026-01-15T08:00:00.000Z',
   labels: [tripLabelId],
   amendmentCount: 0,
+  mcc: null,
   relations: [],
 };
 

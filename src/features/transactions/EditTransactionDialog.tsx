@@ -115,6 +115,14 @@ export function EditTransactionDialog({ open, onOpenChange, tx }: EditTransactio
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>Update transaction details.</DialogDescription>
+          {currentTx.mcc && (
+            <p className="text-xs text-muted-foreground">
+              Imported · MCC{' '}
+              <span className="select-all font-mono" title="Merchant category code from the bank">
+                {currentTx.mcc}
+              </span>
+            </p>
+          )}
         </DialogHeader>
         {body}
       </DialogContent>

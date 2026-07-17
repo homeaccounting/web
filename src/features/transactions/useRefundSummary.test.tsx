@@ -51,6 +51,7 @@ const original: TransactionResponse = {
   date: '2026-06-01T00:00:00Z',
   labels: [],
   amendmentCount: 0,
+  mcc: null,
   relations: [],
 };
 
@@ -75,6 +76,7 @@ const refundR1 = (id = 'R1'): TransactionResponse => ({
   date: '2026-06-02T00:00:00Z',
   labels: [],
   amendmentCount: 0,
+  mcc: null,
   relations: [{ relatedTransactionId: 'O', relationKind: 'refund' }],
 });
 
