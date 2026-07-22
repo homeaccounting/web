@@ -49,8 +49,8 @@ test.describe('create reimbursement (contra-expense) income @local', () => {
     // renders after the income bucket). "Food" is a seeded expense category.
     const reimbCategory = incomeDialog.getByRole('combobox', { name: /category/i }).nth(1);
     await reimbCategory.click();
-    await reimbCategory.fill('Fo');
-    await incomeDialog.getByRole('option', { name: 'Food' }).click();
+    await reimbCategory.fill('Groc');
+    await incomeDialog.getByRole('option', { name: 'Groceries' }).click();
     await incomeDialog.getByLabel('Amount').nth(1).fill('500');
 
     await incomeDialog.getByLabel(/description/i).fill('Salary + rent reimbursement');

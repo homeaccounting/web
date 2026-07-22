@@ -27,4 +27,11 @@ describe('LabelChips', () => {
     );
     expect(container.firstElementChild?.className).not.toContain('ml-2');
   });
+  it('shows the leaf name in a nested-label chip with the full path in the tooltip', () => {
+    const nested = new Map([['n', 'Travel / Flights']]);
+    render(<LabelChips labelIds={['n']} nameById={nested} />);
+    expect(screen.getByText('Flights')).toBeInTheDocument();
+    expect(screen.queryByText('Travel / Flights')).not.toBeInTheDocument();
+    expect(screen.getByTitle('Travel / Flights')).toBeInTheDocument();
+  });
 });

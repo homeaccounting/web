@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import { entryLeafName } from '@/api/dictionary';
 import { labelChipClasses } from './labelColors';
 
 // Renders a transaction's allocation categories as colored chips — the same
@@ -37,7 +38,7 @@ export function CategoryChips({
           key={`${id}-${i}`}
           className={cn('shrink-0 rounded px-1.5 py-0.5 text-xs font-medium', labelChipClasses(id))}
         >
-          {nameById.get(id)}
+          {entryLeafName(nameById.get(id)!)}
         </span>
       ))}
     </span>

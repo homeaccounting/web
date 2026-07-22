@@ -14,7 +14,7 @@ describe('useRemoveDictionaryEntry', () => {
     let called = false;
     server.use(
       http.delete(
-        'http://localhost:8080/api/users/me/configuration/dictionaries/labels/entries/e-1',
+        'http://localhost:8080/api/users/me/configuration/dictionaries/label/entries/e-1',
         () => {
           called = true;
           return new HttpResponse(null, { status: 204 });
@@ -28,7 +28,7 @@ describe('useRemoveDictionaryEntry', () => {
       </QueryClientProvider>
     );
     const { result } = renderHook(() => useRemoveDictionaryEntry(), { wrapper });
-    result.current.mutate({ dictId: 'labels', entryId: 'e-1' });
+    result.current.mutate({ dictId: 'label', entryId: 'e-1' });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(called).toBe(true);
   });

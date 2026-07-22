@@ -30,15 +30,15 @@ export function ProfileDictionariesPane() {
         </CardHeader>
         <CardContent className="space-y-6">
           <DictionaryList
-            dictId="income-category"
+            dictId="income"
             title="Income"
-            entries={c.dictionaries['income-category']?.entries ?? []}
+            dict={c.dictionaries['income']}
             addLabel="Add income category"
           />
           <DictionaryList
-            dictId="expense-category"
+            dictId="expense"
             title="Expense"
-            entries={c.dictionaries['expense-category']?.entries ?? []}
+            dict={c.dictionaries['expense']}
             addLabel="Add expense category"
           />
         </CardContent>
@@ -49,9 +49,9 @@ export function ProfileDictionariesPane() {
         </CardHeader>
         <CardContent>
           <DictionaryList
-            dictId="labels"
+            dictId="label"
             title="Labels"
-            entries={c.dictionaries.labels?.entries ?? []}
+            dict={c.dictionaries.label}
             addLabel="Add label"
           />
         </CardContent>

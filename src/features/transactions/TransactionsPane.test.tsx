@@ -1296,11 +1296,10 @@ describe('TransactionsPane', () => {
       ...configurationFixture,
       dictionaries: {
         ...configurationFixture.dictionaries,
-        'expense-category': {
-          ...configurationFixture.dictionaries['expense-category'],
-          entries: [
-            ...(configurationFixture.dictionaries['expense-category']?.entries ?? []), // Food
-            { id: GROCERIES_ID, name: 'Groceries' },
+        expense: {
+          roots: [
+            ...(configurationFixture.dictionaries['expense']?.roots ?? []), // Food
+            { id: GROCERIES_ID, name: 'Groceries', type: 'item' as const, children: [] },
           ],
         },
       },
@@ -1508,11 +1507,10 @@ describe('TransactionsPane', () => {
             ...configurationFixture,
             dictionaries: {
               ...configurationFixture.dictionaries,
-              labels: {
-                ...configurationFixture.dictionaries.labels,
-                entries: [
-                  ...(configurationFixture.dictionaries.labels?.entries ?? []), // Trip
-                  { id: WORK_ID, name: 'Work' },
+              label: {
+                roots: [
+                  ...(configurationFixture.dictionaries.label?.roots ?? []), // Trip
+                  { id: WORK_ID, name: 'Work', type: 'item' as const, children: [] },
                 ],
               },
             },

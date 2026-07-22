@@ -22,8 +22,12 @@ describe('User Profile DTOs', () => {
     expectTypeOf<ChangeCurrencyRequest>().toEqualTypeOf<{ currency: string }>();
   });
 
-  it('AddEntryRequest has name', () => {
-    expectTypeOf<AddEntryRequest>().toEqualTypeOf<{ name: string }>();
+  it('AddEntryRequest has name, role and optional parentId', () => {
+    expectTypeOf<AddEntryRequest>().toEqualTypeOf<{
+      name: string;
+      type: 'group' | 'item';
+      parentId?: string | null;
+    }>();
   });
 
   it('AddEntryResponse has id and name', () => {

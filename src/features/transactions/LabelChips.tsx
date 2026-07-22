@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import { entryLeafName } from '@/api/dictionary';
 import { labelChipClasses } from './labelColors';
 
 export function LabelChips({
@@ -14,14 +15,18 @@ export function LabelChips({
 }) {
   const known = labelIds.filter((id) => nameById.has(id));
   if (known.length === 0) return null;
+  const names = known.map((id) => nameById.get(id)!);
   return (
-    <span className={cn('inline-flex flex-wrap gap-1 align-middle', leadingGap && 'ml-2')}>
+    <span
+      title={names.join(', ')}
+      className={cn('inline-flex flex-wrap gap-1 align-middle', leadingGap && 'ml-2')}
+    >
       {known.map((id) => (
         <span
           key={id}
           className={cn('rounded px-1.5 py-0.5 text-xs font-medium', labelChipClasses(id))}
         >
-          {nameById.get(id)}
+          {entryLeafName(nameById.get(id)!)}
         </span>
       ))}
     </span>

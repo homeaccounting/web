@@ -12,6 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ApiError } from '@/api/client';
 import type { AccountResponse, TransactionResponse } from '@/api/types';
 import { useAccounts } from '@/features/accounts/useAccounts';
+import { flattenDictionary } from '@/api/dictionary';
 import { useConfiguration } from '@/features/configuration/useConfiguration';
 import { nowDateTimeInput } from '@/lib/dates';
 import { IncomeExpenseForm, type IncomeExpenseFormApi } from './IncomeExpenseForm';
@@ -104,10 +105,10 @@ function CopyIncomeExpenseBody({
   const createExpense = useCreateExpense();
   const create = kind === 'income' ? createIncome : createExpense;
 
-  const categoryDictId = kind === 'income' ? 'income-category' : 'expense-category';
-  const categories = config?.dictionaries[categoryDictId]?.entries ?? [];
-  const reimbursementCategories = config?.dictionaries['expense-category']?.entries ?? [];
-  const labels = config?.dictionaries.labels?.entries ?? [];
+  const categoryDictId = kind === 'income' ? 'income' : 'expense';
+  const categories = flattenDictionary(config?.dictionaries[categoryDictId]);
+  const reimbursementCategories = flattenDictionary(config?.dictionaries['expense']);
+  const labels = flattenDictionary(config?.dictionaries.label);
 
   // Seed from the source, then default the date to now: a copy is a new
   // transaction recorded now, not a clone of the original's timestamp. The
@@ -185,7 +186,7 @@ function CopyTransferBody({
   onClose: () => void;
 }) {
   const create = useCreateTransfer();
-  const labels = config?.dictionaries.labels?.entries ?? [];
+  const labels = flattenDictionary(config?.dictionaries.label);
 
   const defaultValues = useMemo(
     () => ({ ...toTransferFormValues(tx, accounts), date: nowDateTimeInput() }),

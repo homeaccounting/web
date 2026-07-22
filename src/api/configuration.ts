@@ -10,6 +10,7 @@ import type {
   ChangeTokenRequest,
   ConfigurationResponse,
   DictionaryResponse,
+  MoveEntryRequest,
   RenameEntryRequest,
   SetAccountMapRequest,
   UpdateBankingRequest,
@@ -36,6 +37,11 @@ export const configurationApi = (client: ApiClient) => ({
     client.put<void>(`/api/users/me/configuration/dictionaries/${dictId}/entries/${entryId}`, body),
   removeEntry: (dictId: string, entryId: UUID) =>
     client.delete<void>(`/api/users/me/configuration/dictionaries/${dictId}/entries/${entryId}`),
+  moveEntry: (dictId: string, entryId: UUID, body: MoveEntryRequest) =>
+    client.patch<void>(
+      `/api/users/me/configuration/dictionaries/${dictId}/entries/${entryId}/parent`,
+      body,
+    ),
   updateBanking: (body: UpdateBankingRequest) =>
     client.put<BankingConfigurationDTO>('/api/users/me/configuration/banking', body),
   updateDefaults: (body: UpdateDefaultsRequest) =>

@@ -14,7 +14,7 @@ describe('useAddDictionaryEntry', () => {
     let body: unknown = null;
     server.use(
       http.post(
-        'http://localhost:8080/api/users/me/configuration/dictionaries/labels/entries',
+        'http://localhost:8080/api/users/me/configuration/dictionaries/label/entries',
         async ({ request }) => {
           body = await request.json();
           return HttpResponse.json({ id: 'new-1', name: 'trip' }, { status: 201 });
@@ -28,9 +28,38 @@ describe('useAddDictionaryEntry', () => {
       </QueryClientProvider>
     );
     const { result } = renderHook(() => useAddDictionaryEntry(), { wrapper });
-    result.current.mutate({ dictId: 'labels', name: 'trip' });
+    result.current.mutate({ dictId: 'label', name: 'trip', type: 'item' });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(body).toEqual({ name: 'trip' });
+    expect(body).toEqual({ name: 'trip', type: 'item', parentId: null });
     expect(result.current.data).toEqual({ id: 'new-1', name: 'trip' });
+  });
+
+  it('forwards group role and parentId when nesting', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e@x', expiresAt: 9e15 });
+    let body: unknown = null;
+    server.use(
+      http.post(
+        'http://localhost:8080/api/users/me/configuration/dictionaries/expense/entries',
+        async ({ request }) => {
+          body = await request.json();
+          return HttpResponse.json({ id: 'new-2', name: 'Dining' }, { status: 201 });
+        },
+      ),
+    );
+    const client = makeQueryClient();
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <QueryClientProvider client={client}>
+        <AuthProvider>{children}</AuthProvider>
+      </QueryClientProvider>
+    );
+    const { result } = renderHook(() => useAddDictionaryEntry(), { wrapper });
+    result.current.mutate({
+      dictId: 'expense',
+      name: 'Dining',
+      type: 'item',
+      parentId: 'food',
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(body).toEqual({ name: 'Dining', type: 'item', parentId: 'food' });
   });
 });

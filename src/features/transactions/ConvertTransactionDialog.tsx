@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ApiError } from '@/api/client';
 import type { AccountResponse, TransactionResponse, UUID } from '@/api/types';
 import { useAccounts } from '@/features/accounts/useAccounts';
+import { flattenDictionary } from '@/api/dictionary';
 import { useConfiguration } from '@/features/configuration/useConfiguration';
 import { useUserProfile } from '@/features/profile/useUserProfile';
 import { dateInputToWire } from '@/lib/dates';
@@ -123,10 +124,10 @@ function ConvertIncomeExpenseBody({
   onClose: () => void;
 }) {
   const edit = useEditTransaction();
-  const categoryDictId = targetKind === 'income' ? 'income-category' : 'expense-category';
-  const categories = config?.dictionaries[categoryDictId]?.entries ?? [];
-  const reimbursementCategories = config?.dictionaries['expense-category']?.entries ?? [];
-  const labels = config?.dictionaries.labels?.entries ?? [];
+  const categoryDictId = targetKind === 'income' ? 'income' : 'expense';
+  const categories = flattenDictionary(config?.dictionaries[categoryDictId]);
+  const reimbursementCategories = flattenDictionary(config?.dictionaries['expense']);
+  const labels = flattenDictionary(config?.dictionaries.label);
   const defaultCategory =
     (targetKind === 'income'
       ? config?.defaults.incomeCategory
@@ -201,7 +202,7 @@ function ConvertTransferBody({
   onClose: () => void;
 }) {
   const edit = useEditTransaction();
-  const labels = config?.dictionaries.labels?.entries ?? [];
+  const labels = flattenDictionary(config?.dictionaries.label);
 
   // Transfer-source conversion (Transfer→Transfer) is unreachable: the UI's convertTargets filter
   // only lists kinds other than the current one, so a transfer source never reaches this branch.

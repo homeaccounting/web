@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Plus } from 'lucide-react';
 import type { BankConnectionDTO } from '@/api/types';
+import { flattenDictionary } from '@/api/dictionary';
 import { useConfiguration } from '@/features/configuration/useConfiguration';
 import { useUpdateConnection } from '@/features/configuration/useUpdateConnection';
 import { useRemoveConnection } from '@/features/configuration/useRemoveConnection';
@@ -123,7 +124,7 @@ export function ProfileBankingPane() {
   }
 
   const c = config.data;
-  const expenseCategories = c.dictionaries['expense-category']?.entries ?? [];
+  const expenseCategories = flattenDictionary(c.dictionaries['expense']);
 
   return (
     <div className="space-y-6">

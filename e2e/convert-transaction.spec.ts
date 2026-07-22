@@ -27,8 +27,8 @@ test.describe('convert transaction @local', () => {
     await expenseDialog.getByLabel(/amount/i).fill('9.99');
     const categoryInput = expenseDialog.getByRole('combobox', { name: /category/i });
     await categoryInput.click();
-    await categoryInput.fill('Fo');
-    await expenseDialog.getByRole('option', { name: 'Food' }).click();
+    await categoryInput.fill('Groc');
+    await expenseDialog.getByRole('option', { name: 'Groceries' }).click();
     await expenseDialog.getByLabel(/description/i).fill('Coffee');
     await expenseDialog.getByRole('button', { name: /^ok$/i }).click();
     await expect(expenseDialog).toBeHidden();

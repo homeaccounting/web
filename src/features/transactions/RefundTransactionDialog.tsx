@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ApiError } from '@/api/client';
 import type { TransactionResponse } from '@/api/types';
 import { useAccounts } from '@/features/accounts/useAccounts';
+import { flattenDictionary } from '@/api/dictionary';
 import { useConfiguration } from '@/features/configuration/useConfiguration';
 import { nowDateTimeInput } from '@/lib/dates';
 import { formatMoney } from '@/lib/format';
@@ -84,7 +85,7 @@ function RefundForm({
   // the transaction is still posted as an income. The row editor's dictionary is
   // therefore the expense-category one. Archived slices (ids absent here) render
   // read-only via CategoryCombobox's fallback.
-  const categories = config?.dictionaries['expense-category']?.entries ?? [];
+  const categories = flattenDictionary(config?.dictionaries['expense']);
 
   const { remainingByCategory, remainingTotal, refundedTotal } = summary;
 
@@ -170,7 +171,7 @@ function RefundForm({
           mode="create"
           accounts={accounts}
           categories={categories}
-          labels={config?.dictionaries.labels?.entries ?? []}
+          labels={flattenDictionary(config?.dictionaries.label)}
           defaultValues={defaults}
           isSubmitting={refund.isPending}
           enforceBalance={false}

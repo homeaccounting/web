@@ -54,10 +54,10 @@ const configWithRefundCategories: ConfigurationResponse = {
   ...configurationFixture,
   dictionaries: {
     ...configurationFixture.dictionaries,
-    'expense-category': {
-      entries: [
-        { id: groceriesId, name: 'Groceries' },
-        { id: fuelId, name: 'Fuel' },
+    expense: {
+      roots: [
+        { id: groceriesId, name: 'Groceries', type: 'item', children: [] },
+        { id: fuelId, name: 'Fuel', type: 'item', children: [] },
       ],
     },
   },

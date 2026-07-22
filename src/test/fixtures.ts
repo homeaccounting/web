@@ -98,13 +98,13 @@ export const configurationFixture: ConfigurationResponse = {
   baseCurrencyEditable: true,
   bankingFeatureEnabled: false,
   dictionaries: {
-    'expense-category': {
-      entries: [{ id: foodCategoryId, name: 'Food' }],
+    expense: {
+      roots: [{ id: foodCategoryId, name: 'Food', type: 'item', children: [] }],
     },
-    'income-category': {
-      entries: [{ id: salaryCategoryId, name: 'Salary' }],
+    income: {
+      roots: [{ id: salaryCategoryId, name: 'Salary', type: 'item', children: [] }],
     },
-    labels: { entries: [{ id: tripLabelId, name: 'Trip' }] },
+    label: { roots: [{ id: tripLabelId, name: 'Trip', type: 'item', children: [] }] },
   },
   defaults: {
     incomeCategory: null,

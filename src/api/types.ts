@@ -428,13 +428,35 @@ export interface TransactionListResponse {
 // Defaults are nested under `defaults` (incomeCategory/expenseCategory/account/
 // subtypeAccounts); set via PUT /api/users/me/configuration/defaults.
 
+// A committed/selectable entry, flattened out of the tree for the pickers.
+// `id` is a DictionaryEntryId UUID; `name` is typically the full path
+// ("Food / Groceries") as produced by flattenDictionary in api/dictionary.ts.
 export interface DictionaryEntryResponse {
   id: UUID;
   name: string;
 }
 
+// Structural role of a dictionary entry (ADR 002, server-infra
+// Domain/Core/Types.hs EntryRole): a "group" is a pure, non-assignable
+// container; an "item" is an always-assignable leaf. The role is declared at
+// creation and immutable.
+export type EntryRole = 'group' | 'item';
+
+// A node in the server-materialised dictionary tree. Mirrors backend
+// Web/API/ConfigurationAPI.hs DictionaryEntryNode: role is carried explicitly
+// (an empty group still has type "group"), and only groups may have children.
+export interface DictionaryEntryNode {
+  id: UUID;
+  name: string;
+  type: EntryRole;
+  children: DictionaryEntryNode[];
+}
+
+// Server-materialised tree per dictionary. Mirrors backend
+// Web/API/ConfigurationAPI.hs DictionaryResponse — `roots` carries the nested
+// tree directly; there is no per-dictionary `groupsAssignable` flag (ADR 002).
 export interface DictionaryResponse {
-  entries: DictionaryEntryResponse[];
+  roots: DictionaryEntryNode[];
 }
 
 export interface BankConnectionDTO {
@@ -572,20 +594,31 @@ export interface ChangeCurrencyRequest {
   currency: string;
 }
 
-// Mirrors backend Web/API/ConfigurationAPI.hs:236-243.
+// Mirrors backend Web/API/ConfigurationAPI.hs AddEntryRequest. `type` declares
+// the immutable role (group container vs. item leaf); `parentId` nests under a
+// group, or is absent/null for a root-level node.
 export interface AddEntryRequest {
   name: string;
+  type: EntryRole;
+  parentId?: UUID | null;
 }
 
-// Mirrors backend Web/API/ConfigurationAPI.hs:246-254.
+// Mirrors backend Web/API/ConfigurationAPI.hs AddEntryResponse.
 export interface AddEntryResponse {
   id: UUID;
   name: string;
 }
 
-// Mirrors backend Web/API/ConfigurationAPI.hs:257-264.
+// Mirrors backend Web/API/ConfigurationAPI.hs RenameEntryRequest.
 export interface RenameEntryRequest {
   name: string;
+}
+
+// Mirrors backend Web/API/ConfigurationAPI.hs MoveEntryRequest — moves an entry
+// under a new parent group, or to the root level when null/absent. Consumed by
+// PATCH /api/users/me/configuration/dictionaries/:dictId/entries/:entryId/parent.
+export interface MoveEntryRequest {
+  parentId: UUID | null;
 }
 
 // --- API errors ---

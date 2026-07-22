@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ApiError } from '@/api/client';
 import type { UUID } from '@/api/types';
 import { useAccounts } from '@/features/accounts/useAccounts';
+import { flattenDictionary } from '@/api/dictionary';
 import { useConfiguration } from '@/features/configuration/useConfiguration';
 import { nowDateTimeInput } from '@/lib/dates';
 import { IncomeExpenseForm, type IncomeExpenseFormApi } from './IncomeExpenseForm';
@@ -34,8 +35,8 @@ export function CreateExpenseDialog({
 
   // Backend uses a separate `expense-category` dictionary for expense
   // transactions — see server-infra/src/Domain/Configuration/Defaults.hs.
-  const categories = config?.dictionaries['expense-category']?.entries ?? [];
-  const labels = config?.dictionaries.labels?.entries ?? [];
+  const categories = flattenDictionary(config?.dictionaries['expense']);
+  const labels = flattenDictionary(config?.dictionaries.label);
 
   const defaultAccount = accounts?.find((a) => a.id === selectedAccountId) ?? accounts?.[0];
   const defaultCategory = config?.defaults.expenseCategory ?? '';

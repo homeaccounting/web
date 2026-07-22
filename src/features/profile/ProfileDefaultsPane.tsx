@@ -1,3 +1,4 @@
+import { flattenDictionary } from '@/api/dictionary';
 import { useConfiguration } from '@/features/configuration/useConfiguration';
 import { useAccounts } from '@/features/accounts/useAccounts';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -30,8 +31,8 @@ export function ProfileDefaultsPane() {
       <DefaultCategoriesCard
         incomeCurrent={c.defaults.incomeCategory}
         expenseCurrent={c.defaults.expenseCategory}
-        incomeCategories={c.dictionaries['income-category']?.entries ?? []}
-        expenseCategories={c.dictionaries['expense-category']?.entries ?? []}
+        incomeCategories={flattenDictionary(c.dictionaries['income'])}
+        expenseCategories={flattenDictionary(c.dictionaries['expense'])}
       />
       <DefaultAccountsCard
         accounts={accounts.data ?? []}

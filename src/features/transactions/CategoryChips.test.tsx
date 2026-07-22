@@ -26,4 +26,18 @@ describe('CategoryChips', () => {
     render(<CategoryChips categoryIds={['c2', 'c2']} nameById={names} />);
     expect(screen.getAllByText('Food')).toHaveLength(2);
   });
+
+  it('shows the leaf name in the chip but the full path in the tooltip', () => {
+    const nested = new Map([
+      ['g', 'Food / Groceries'],
+      ['t', 'Transport'],
+    ]);
+    render(<CategoryChips categoryIds={['g', 't']} nameById={nested} />);
+    // Chip text is the leaf, so a fixed-width column stays compact.
+    expect(screen.getByText('Groceries')).toBeInTheDocument();
+    expect(screen.queryByText('Food / Groceries')).not.toBeInTheDocument();
+    expect(screen.getByText('Transport')).toBeInTheDocument();
+    // The full paths remain available on hover.
+    expect(screen.getByTitle('Food / Groceries, Transport')).toBeInTheDocument();
+  });
 });

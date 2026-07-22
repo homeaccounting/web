@@ -22,7 +22,7 @@ export interface IncomeExpenseFormProps {
   kind: Extract<TransactionKind, 'income' | 'expense'>;
   mode: 'create' | 'edit';
   accounts: AccountResponse[];
-  /** The kind's primary dictionary (income-category for income, expense-category for expense). */
+  /** The kind's primary dictionary ('income' for income, 'expense' for expense). */
   categories: DictionaryEntryResponse[];
   /** Expense-category dictionary, used only by the income form's reimbursement section. */
   reimbursementCategories?: DictionaryEntryResponse[];

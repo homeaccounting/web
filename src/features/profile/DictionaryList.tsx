@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Pencil, Trash2, Plus } from 'lucide-react';
-import type { DictionaryEntryResponse } from '@/api/types';
+import type { DictionaryResponse, EntryRole } from '@/api/types';
+import { flattenDictionaryTree, type FlatDictionaryNode } from '@/api/dictionary';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -17,45 +18,87 @@ import {
 import { useAddDictionaryEntry } from './useAddDictionaryEntry';
 import { useRenameDictionaryEntry } from './useRenameDictionaryEntry';
 import { useRemoveDictionaryEntry } from './useRemoveDictionaryEntry';
+import { useMoveDictionaryEntry } from './useMoveDictionaryEntry';
 import { entryNameSchema } from './entryNameSchema';
 
 interface Props {
   dictId: string;
   title: string;
-  entries: DictionaryEntryResponse[];
+  dict: DictionaryResponse | undefined;
   addLabel: string;
 }
 
-export function DictionaryList({ dictId, title, entries, addLabel }: Props) {
+// The parent <select> uses this sentinel for "root level" since an HTML option
+// value cannot be null.
+const ROOT = 'root';
+
+// The display label of a node: items read as their full path ("Food /
+// Groceries") so a leaf is unambiguous; groups show their own name (they are
+// containers, not selectable, and always sit at the root under depth 2).
+const displayOf = (node: FlatDictionaryNode) => (node.type === 'item' ? node.path : node.name);
+
+// In-flight edit of a single row: the working name/parent plus the originals,
+// so commit only fires the rename/move that actually changed.
+interface EditState {
+  id: string;
+  name: string;
+  parentId: string;
+  isItem: boolean;
+  origName: string;
+  origParent: string;
+}
+
+export function DictionaryList({ dictId, title, dict, addLabel }: Props) {
   const add = useAddDictionaryEntry();
   const rename = useRenameDictionaryEntry();
   const remove = useRemoveDictionaryEntry();
-  const [editing, setEditing] = useState<{ id: string; value: string } | null>(null);
-  const [adding, setAdding] = useState<{ value: string } | null>(null);
-  const [deleting, setDeleting] = useState<DictionaryEntryResponse | null>(null);
-  const opError = add.error ?? rename.error ?? remove.error;
+  const move = useMoveDictionaryEntry();
+  const [editing, setEditing] = useState<EditState | null>(null);
+  const [adding, setAdding] = useState<{ name: string; type: EntryRole; parentId: string } | null>(
+    null,
+  );
+  const [deleting, setDeleting] = useState<FlatDictionaryNode | null>(null);
+  const opError = add.error ?? rename.error ?? remove.error ?? move.error;
+
+  const nodes = flattenDictionaryTree(dict);
+  const groups = nodes.filter((n) => n.type === 'group');
 
   const submitAdd = () => {
     if (!adding) return;
-    const parsed = entryNameSchema.safeParse({ name: adding.value });
+    const parsed = entryNameSchema.safeParse({ name: adding.name });
     if (!parsed.success) {
       setAdding(null);
       return;
     }
-    add.mutate({ dictId, name: parsed.data.name }, { onSuccess: () => setAdding(null) });
+    // Groups always live at the root under depth 2; items may nest under a group.
+    const parentId = adding.type === 'group' || adding.parentId === ROOT ? null : adding.parentId;
+    add.mutate(
+      { dictId, name: parsed.data.name, type: adding.type, parentId },
+      { onSuccess: () => setAdding(null) },
+    );
   };
 
-  const submitRename = () => {
-    if (!editing) return;
-    const parsed = entryNameSchema.safeParse({ name: editing.value });
+  // Commit an edit and close the row. Takes the target state explicitly so a
+  // control that both mutates state and commits (the parent <select>) works off
+  // the new value rather than the not-yet-applied React state.
+  const commitEdit = (state: EditState) => {
+    const parsed = entryNameSchema.safeParse({ name: state.name });
     if (!parsed.success) {
       setEditing(null);
       return;
     }
-    rename.mutate(
-      { dictId, entryId: editing.id, name: parsed.data.name },
-      { onSuccess: () => setEditing(null) },
-    );
+    if (parsed.data.name !== state.origName) {
+      rename.mutate({ dictId, entryId: state.id, name: parsed.data.name });
+    }
+    // Only items are movable (groups are pinned to the root under depth 2).
+    if (state.isItem && state.parentId !== state.origParent) {
+      move.mutate({
+        dictId,
+        entryId: state.id,
+        parentId: state.parentId === ROOT ? null : state.parentId,
+      });
+    }
+    setEditing(null);
   };
 
   return (
@@ -63,63 +106,131 @@ export function DictionaryList({ dictId, title, entries, addLabel }: Props) {
       <h3 id={`${dictId}-heading`} className="text-sm font-semibold">
         {title}
       </h3>
-      {entries.length === 0 && <p className="text-sm text-muted-foreground">No entries yet</p>}
+      {nodes.length === 0 && <p className="text-sm text-muted-foreground">No entries yet</p>}
       <ul className="divide-y">
-        {entries.map((e) =>
-          editing?.id === e.id ? (
-            <li key={e.id} className="flex items-center gap-2 py-2">
+        {nodes.map((node) => {
+          const display = displayOf(node);
+          const indent = { paddingLeft: `${node.depth * 1}rem` };
+          return editing?.id === node.id ? (
+            <li key={node.id} className="flex items-center gap-2 py-2" style={indent}>
               <Input
                 // eslint-disable-next-line jsx-a11y/no-autofocus -- inline edit replaces the row in place; focus must follow the click
                 autoFocus
-                value={editing.value}
-                onChange={(ev) => setEditing({ id: e.id, value: ev.target.value })}
+                value={editing.name}
+                onChange={(ev) => setEditing({ ...editing, name: ev.target.value })}
                 onKeyDown={(ev) => {
-                  if (ev.key === 'Enter') submitRename();
+                  if (ev.key === 'Enter') commitEdit(editing);
                   if (ev.key === 'Escape') setEditing(null);
                 }}
-                aria-label={`Rename ${e.name}`}
+                aria-label={`Rename ${display}`}
+                className="h-9 text-sm"
               />
+              {editing.isItem && (
+                <select
+                  className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+                  value={editing.parentId}
+                  // Picking a group applies the move (and any pending rename) and
+                  // closes the row immediately — commit off the new value since
+                  // setEditing has not applied yet.
+                  onChange={(ev) => commitEdit({ ...editing, parentId: ev.target.value })}
+                  onKeyDown={(ev) => {
+                    if (ev.key === 'Escape') setEditing(null);
+                  }}
+                  aria-label={`Move ${display}`}
+                >
+                  <option value={ROOT}>Top level</option>
+                  {groups.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.name}
+                    </option>
+                  ))}
+                </select>
+              )}
             </li>
           ) : (
-            <li key={e.id} className="flex items-center justify-between py-2">
-              <span>{e.name}</span>
+            <li key={node.id} className="flex items-center justify-between py-2" style={indent}>
+              <span className="flex items-center gap-2">
+                <span>{display}</span>
+                {node.type === 'group' && (
+                  <span className="text-xs text-muted-foreground">group</span>
+                )}
+              </span>
               <div className="flex gap-1">
                 <Button
                   variant="ghost"
                   size="icon"
-                  aria-label={`Rename ${e.name}`}
-                  onClick={() => setEditing({ id: e.id, value: e.name })}
+                  aria-label={`Rename ${display}`}
+                  onClick={() =>
+                    setEditing({
+                      id: node.id,
+                      name: node.name,
+                      parentId: node.parentId ?? ROOT,
+                      isItem: node.type === 'item',
+                      origName: node.name,
+                      origParent: node.parentId ?? ROOT,
+                    })
+                  }
                 >
                   <Pencil className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="ghost"
                   size="icon"
-                  aria-label={`Delete ${e.name}`}
-                  onClick={() => setDeleting(e)}
+                  aria-label={`Delete ${display}`}
+                  onClick={() => setDeleting(node)}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
             </li>
-          ),
-        )}
+          );
+        })}
       </ul>
       {adding ? (
-        <Input
-          // eslint-disable-next-line jsx-a11y/no-autofocus -- inline add replaces the trigger button; focus must follow the click
-          autoFocus
-          value={adding.value}
-          onChange={(ev) => setAdding({ value: ev.target.value })}
-          onKeyDown={(ev) => {
-            if (ev.key === 'Enter') submitAdd();
-            if (ev.key === 'Escape') setAdding(null);
-          }}
-          placeholder={addLabel}
-          aria-label={addLabel}
-        />
+        <div className="flex flex-wrap items-center gap-2">
+          <Input
+            // eslint-disable-next-line jsx-a11y/no-autofocus -- inline add replaces the trigger button; focus must follow the click
+            autoFocus
+            value={adding.name}
+            onChange={(ev) => setAdding({ ...adding, name: ev.target.value })}
+            onKeyDown={(ev) => {
+              if (ev.key === 'Enter') submitAdd();
+              if (ev.key === 'Escape') setAdding(null);
+            }}
+            placeholder={addLabel}
+            aria-label={addLabel}
+            className="h-9 max-w-xs text-sm"
+          />
+          <select
+            className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+            value={adding.type}
+            onChange={(ev) => setAdding({ ...adding, type: ev.target.value as EntryRole })}
+            aria-label="Entry type"
+          >
+            <option value="item">Item</option>
+            <option value="group">Group</option>
+          </select>
+          <select
+            className="h-9 rounded-md border border-input bg-background px-2 text-sm disabled:opacity-50"
+            value={adding.type === 'group' ? ROOT : adding.parentId}
+            disabled={adding.type === 'group'}
+            onChange={(ev) => setAdding({ ...adding, parentId: ev.target.value })}
+            aria-label="Parent group"
+          >
+            <option value={ROOT}>Top level</option>
+            {groups.map((g) => (
+              <option key={g.id} value={g.id}>
+                {g.name}
+              </option>
+            ))}
+          </select>
+        </div>
       ) : (
-        <Button variant="outline" size="sm" onClick={() => setAdding({ value: '' })}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setAdding({ name: '', type: 'item', parentId: ROOT })}
+        >
           <Plus className="mr-1 h-4 w-4" />
           {addLabel}
         </Button>
@@ -132,7 +243,7 @@ export function DictionaryList({ dictId, title, entries, addLabel }: Props) {
       <AlertDialog open={deleting !== null} onOpenChange={(open) => !open && setDeleting(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete {deleting?.name}?</AlertDialogTitle>
+            <AlertDialogTitle>Delete {deleting ? displayOf(deleting) : ''}?</AlertDialogTitle>
             <AlertDialogDescription>
               Transactions tagged with it will not be deleted.
             </AlertDialogDescription>

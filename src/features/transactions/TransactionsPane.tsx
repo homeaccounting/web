@@ -30,6 +30,7 @@ import {
 import { useAccountById } from '@/features/accounts/useAccountById';
 import { formatDateTime, formatMoney } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import { flattenDictionary } from '@/api/dictionary';
 import type { Allocations, TransactionResponse, TransactionTypeText, UUID } from '@/api/types';
 import { useWindowedTransactions } from './useWindowedTransactions';
 import {
@@ -166,12 +167,12 @@ export function TransactionsPane() {
   // The same id->name map resolves category names for the Category column.
   const categoryNameById = labelNameById;
 
-  const labelOptions = configuration?.dictionaries.labels?.entries ?? [];
+  const labelOptions = flattenDictionary(configuration?.dictionaries.label);
 
   const edit = useEditTransaction();
 
-  const incomeCategoryEntries = configuration?.dictionaries['income-category']?.entries ?? [];
-  const expenseCategoryEntries = configuration?.dictionaries['expense-category']?.entries ?? [];
+  const incomeCategoryEntries = flattenDictionary(configuration?.dictionaries['income']);
+  const expenseCategoryEntries = flattenDictionary(configuration?.dictionaries['expense']);
 
   const assignCategory = (t: TransactionResponse, categoryId: UUID) => {
     const current = allocationCategoryIds(t)[0];
@@ -202,8 +203,8 @@ export function TransactionsPane() {
   // therefore deduped by name, and each option's value IS the name.
   const categoryOptions = useMemo(() => {
     const entries = [
-      ...(configuration?.dictionaries['income-category']?.entries ?? []),
-      ...(configuration?.dictionaries['expense-category']?.entries ?? []),
+      ...flattenDictionary(configuration?.dictionaries['income']),
+      ...flattenDictionary(configuration?.dictionaries['expense']),
     ];
     const byName = new Map<string, string>();
     for (const e of entries) if (!byName.has(e.name)) byName.set(e.name, e.name);
@@ -433,7 +434,14 @@ export function TransactionsPane() {
                         return (
                           <>
                             <span
-                              className={cn(deEmphasized && 'line-through')}
+                              className={cn(
+                                // Trim long descriptions to keep the column
+                                // narrow and the row single-line; the full text
+                                // stays in the title tooltip. inline-block so
+                                // labels/badges still flow after it.
+                                'inline-block max-w-[34rem] truncate align-bottom',
+                                deEmphasized && 'line-through',
+                              )}
                               title={[t.description, showComments ? comments : '']
                                 .filter(Boolean)
                                 .join(' · ')}

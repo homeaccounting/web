@@ -63,13 +63,13 @@ beforeEach(() => {
         baseCurrency: 'USD',
         defaultCurrency: 'USD',
         dictionaries: {
-          'income-category': {
-            entries: [{ id: categoryId, name: 'Salary' }],
+          income: {
+            roots: [{ id: categoryId, name: 'Salary', type: 'item', children: [] }],
           },
-          'expense-category': {
-            entries: [{ id: categoryId, name: 'Food' }],
+          expense: {
+            roots: [{ id: categoryId, name: 'Food', type: 'item', children: [] }],
           },
-          labels: { entries: [] },
+          label: { roots: [] },
         },
         defaults: {
           incomeCategory: null,

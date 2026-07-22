@@ -35,8 +35,8 @@ test.describe('create transaction balance validation @local', () => {
     await expenseDialog.getByLabel(/amount/i).fill('150');
     const categoryInput = expenseDialog.getByRole('combobox', { name: /category/i });
     await categoryInput.click();
-    await categoryInput.fill('Fo');
-    await expenseDialog.getByRole('option', { name: 'Food' }).click();
+    await categoryInput.fill('Groc');
+    await expenseDialog.getByRole('option', { name: 'Groceries' }).click();
     await expenseDialog.getByLabel(/description/i).fill('Too much');
 
     // 5. Submit → blocked inline, dialog stays open, nothing posted.

@@ -1,28 +1,27 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ApiClient, baseUrl } from '@/api/client';
 import { configurationApi } from '@/api/configuration';
-import type { AddEntryResponse, EntryRole, UUID } from '@/api/types';
+import type { UUID } from '@/api/types';
 import { useAuth } from '@/auth/useAuth';
 
-interface AddVars {
+interface MoveVars {
   dictId: string;
-  name: string;
-  type: EntryRole;
-  // Absent/null adds at the root level; a group id nests the entry under it.
-  parentId?: UUID | null;
+  entryId: UUID;
+  // Target parent group id, or null to move the entry back to the root level.
+  parentId: UUID | null;
 }
 
-export function useAddDictionaryEntry() {
+export function useMoveDictionaryEntry() {
   const { tokenRef, signOut } = useAuth();
   const queryClient = useQueryClient();
-  return useMutation<AddEntryResponse, Error, AddVars>({
-    mutationFn: ({ dictId, name, type, parentId = null }) => {
+  return useMutation<void, Error, MoveVars>({
+    mutationFn: ({ dictId, entryId, parentId }) => {
       const client = new ApiClient({
         baseUrl,
         getToken: () => tokenRef.current,
         onUnauthorized: signOut,
       });
-      return configurationApi(client).addEntry(dictId, { name, type, parentId });
+      return configurationApi(client).moveEntry(dictId, entryId, { parentId });
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['configuration'] });

@@ -13,6 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ApiError } from '@/api/client';
 import type { AccountResponse, TransactionResponse, UUID } from '@/api/types';
 import { useAccounts } from '@/features/accounts/useAccounts';
+import { flattenDictionary } from '@/api/dictionary';
 import { useConfiguration } from '@/features/configuration/useConfiguration';
 import { IncomeExpenseForm, type IncomeExpenseFormApi } from './IncomeExpenseForm';
 import { TransferForm, type TransferFormApi } from './TransferForm';
@@ -200,10 +201,10 @@ function EditIncomeExpenseBody({
     [accounts, seedCurrency],
   );
 
-  const categoryDictId = kind === 'income' ? 'income-category' : 'expense-category';
-  const categories = config?.dictionaries[categoryDictId]?.entries ?? [];
-  const reimbursementCategories = config?.dictionaries['expense-category']?.entries ?? [];
-  const labels = config?.dictionaries.labels?.entries ?? [];
+  const categoryDictId = kind === 'income' ? 'income' : 'expense';
+  const categories = flattenDictionary(config?.dictionaries[categoryDictId]);
+  const reimbursementCategories = flattenDictionary(config?.dictionaries['expense']);
+  const labels = flattenDictionary(config?.dictionaries.label);
 
   const defaultValues = useMemo(() => toIncomeExpenseFormValues(tx, accounts), [tx, accounts]);
   const baselineRef = useRef(defaultValues);
@@ -288,7 +289,7 @@ function EditTransferBody({
   onSubCallApplied: () => void;
   onClose: () => void;
 }) {
-  const labels = config?.dictionaries.labels?.entries ?? [];
+  const labels = flattenDictionary(config?.dictionaries.label);
 
   const defaultValues = useMemo(() => toTransferFormValues(tx, accounts), [tx, accounts]);
   const baselineRef = useRef(defaultValues);

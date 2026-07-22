@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ApiError } from '@/api/client';
 import type { UUID } from '@/api/types';
 import { useAccounts } from '@/features/accounts/useAccounts';
+import { flattenDictionary } from '@/api/dictionary';
 import { useConfiguration } from '@/features/configuration/useConfiguration';
 import { nowDateTimeInput } from '@/lib/dates';
 import { TransferForm, type TransferFormApi } from './TransferForm';
@@ -32,7 +33,7 @@ export function CreateTransferDialog({
   const { data: config } = useConfiguration();
   const create = useCreateTransfer();
 
-  const labels = config?.dictionaries.labels?.entries ?? [];
+  const labels = flattenDictionary(config?.dictionaries.label);
 
   const sourceAccount = accounts?.find((a) => a.id === selectedAccountId) ?? accounts?.[0];
   const sourceAccountId = sourceAccount?.id ?? '';

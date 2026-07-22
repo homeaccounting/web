@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ApiError } from '@/api/client';
 import type { UUID } from '@/api/types';
 import { useAccounts } from '@/features/accounts/useAccounts';
+import { flattenDictionary } from '@/api/dictionary';
 import { useConfiguration } from '@/features/configuration/useConfiguration';
 import { nowDateTimeInput } from '@/lib/dates';
 import { IncomeExpenseForm, type IncomeExpenseFormApi } from './IncomeExpenseForm';
@@ -36,9 +37,9 @@ export function CreateIncomeDialog({
   // (incomeCategoryDictId / expenseCategoryDictId) and ConfigurationService.hs
   // (labelsDictId). Income/expense have separate category dictionaries that the
   // backend enforces per transaction type.
-  const categories = config?.dictionaries['income-category']?.entries ?? [];
-  const reimbursementCategories = config?.dictionaries['expense-category']?.entries ?? [];
-  const labels = config?.dictionaries.labels?.entries ?? [];
+  const categories = flattenDictionary(config?.dictionaries['income']);
+  const reimbursementCategories = flattenDictionary(config?.dictionaries['expense']);
+  const labels = flattenDictionary(config?.dictionaries.label);
 
   const defaultAccount = accounts?.find((a) => a.id === selectedAccountId) ?? accounts?.[0];
   const defaultCategory = config?.defaults.incomeCategory ?? '';

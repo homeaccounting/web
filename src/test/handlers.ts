@@ -282,6 +282,10 @@ export const handlers = [
     `${apiBase}/api/users/me/configuration/dictionaries/:dictId/entries/:entryId`,
     () => new HttpResponse(null, { status: 204 }),
   ),
+  http.patch(
+    `${apiBase}/api/users/me/configuration/dictionaries/:dictId/entries/:entryId/parent`,
+    () => new HttpResponse(null, { status: 204 }),
+  ),
   http.post(`${apiBase}/api/users/me/configuration/banking/connections`, async ({ request }) => {
     const body = (await request.json()) as AddConnectionRequest;
     const connection: BankConnectionDTO = {

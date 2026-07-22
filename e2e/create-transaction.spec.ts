@@ -34,8 +34,8 @@ test.describe('create transaction @local', () => {
     // Category is a searchable combobox: type a prefix, then click the option.
     const categoryInput = expenseDialog.getByRole('combobox', { name: /category/i });
     await categoryInput.click();
-    await categoryInput.fill('Fo');
-    await expenseDialog.getByRole('option', { name: 'Food' }).click();
+    await categoryInput.fill('Groc');
+    await expenseDialog.getByRole('option', { name: 'Groceries' }).click();
     await expenseDialog.getByLabel(/description/i).fill('Coffee');
     // Date intentionally left empty — server defaults to today.
 

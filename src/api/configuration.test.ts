@@ -34,20 +34,20 @@ describe('configurationApi', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue(
-        new Response(JSON.stringify({ entries: [] }), {
+        new Response(JSON.stringify({ roots: [] }), {
           status: 200,
           headers: { 'content-type': 'application/json' },
         }),
       ),
     );
-    await configurationApi(mkClient()).listDictionary('labels');
+    await configurationApi(mkClient()).listDictionary('label');
     expect(fetch).toHaveBeenCalledWith(
-      'http://test/api/users/me/configuration/dictionaries/labels',
+      'http://test/api/users/me/configuration/dictionaries/label',
       expect.objectContaining({ method: 'GET' }),
     );
   });
 
-  it('POSTs an entry', async () => {
+  it('POSTs an entry with role and parent', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue(
@@ -57,25 +57,42 @@ describe('configurationApi', () => {
         }),
       ),
     );
-    await configurationApi(mkClient()).addEntry('labels', { name: 'trip' });
+    await configurationApi(mkClient()).addEntry('expense', {
+      name: 'Dining',
+      type: 'item',
+      parentId: 'food',
+    });
     expect(fetch).toHaveBeenCalledWith(
-      'http://test/api/users/me/configuration/dictionaries/labels/entries',
-      expect.objectContaining({ method: 'POST', body: '{"name":"trip"}' }),
+      'http://test/api/users/me/configuration/dictionaries/expense/entries',
+      expect.objectContaining({
+        method: 'POST',
+        body: '{"name":"Dining","type":"item","parentId":"food"}',
+      }),
+    );
+  });
+
+  it('PATCHes a move to a new parent', async () => {
+    await configurationApi(mkClient()).moveEntry('expense', 'dining', {
+      parentId: 'food',
+    });
+    expect(fetch).toHaveBeenCalledWith(
+      'http://test/api/users/me/configuration/dictionaries/expense/entries/dining/parent',
+      expect.objectContaining({ method: 'PATCH', body: '{"parentId":"food"}' }),
     );
   });
 
   it('PUTs a rename', async () => {
-    await configurationApi(mkClient()).renameEntry('labels', 'e-1', { name: 'travel' });
+    await configurationApi(mkClient()).renameEntry('label', 'e-1', { name: 'travel' });
     expect(fetch).toHaveBeenCalledWith(
-      'http://test/api/users/me/configuration/dictionaries/labels/entries/e-1',
+      'http://test/api/users/me/configuration/dictionaries/label/entries/e-1',
       expect.objectContaining({ method: 'PUT', body: '{"name":"travel"}' }),
     );
   });
 
   it('DELETEs an entry', async () => {
-    await configurationApi(mkClient()).removeEntry('labels', 'e-1');
+    await configurationApi(mkClient()).removeEntry('label', 'e-1');
     expect(fetch).toHaveBeenCalledWith(
-      'http://test/api/users/me/configuration/dictionaries/labels/entries/e-1',
+      'http://test/api/users/me/configuration/dictionaries/label/entries/e-1',
       expect.objectContaining({ method: 'DELETE' }),
     );
   });

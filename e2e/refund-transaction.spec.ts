@@ -35,8 +35,8 @@ async function seedExpense(
   await dialog.getByLabel(/amount/i).fill(amount);
   const category = dialog.getByRole('combobox', { name: /category/i });
   await category.click();
-  await category.fill('Fo');
-  await dialog.getByRole('option', { name: 'Food' }).click();
+  await category.fill('Groc');
+  await dialog.getByRole('option', { name: 'Groceries' }).click();
   await dialog.getByLabel(/description/i).fill(description);
   await dialog.getByRole('button', { name: /^ok$/i }).click();
   await expect(dialog).toBeHidden();

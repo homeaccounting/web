@@ -43,8 +43,8 @@ test.describe('create multi-allocation transaction @local', () => {
     // Category is a searchable combobox: click, type a prefix, then click the option.
     const firstCategory = expenseDialog.getByRole('combobox', { name: /category/i }).nth(0);
     await firstCategory.click();
-    await firstCategory.fill('Fo');
-    await expenseDialog.getByRole('option', { name: 'Food' }).click();
+    await firstCategory.fill('Groc');
+    await expenseDialog.getByRole('option', { name: 'Groceries' }).click();
 
     // 6. Add a SECOND allocation row, then fill it (Transport, 3.99).
     await expenseDialog.getByRole('button', { name: /add category/i }).click();
