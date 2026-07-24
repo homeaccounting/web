@@ -252,6 +252,15 @@ export interface TransactionRelation {
 // Mirrors POST /api/transactions/:id/relations body (backend Web/Types.hs TransactionRelation).
 export type LinkRelationRequest = TransactionRelation;
 
+// Mirrors POST /api/transactions/:id/merge body (backend Web/Types.hs
+// `MergeTransactionsRequest`). `:id` is the merge TARGET (the survivor); each
+// listed source is folded into it (allocations + amount combined) and then
+// cancelled, with a `merge` lineage edge recorded source→target. Must be
+// non-empty.
+export interface MergeTransactionsRequest {
+  sourceTransactionIds: UUID[];
+}
+
 // Mirrors backend Web/Types.hs:661 (GET /api/transactions/:id/relations).
 export interface TransactionRelationsResponse {
   outbound: TransactionRelation[];

@@ -19,6 +19,7 @@ import {
   ChevronRight,
   Copy,
   Link2,
+  Merge,
   Pencil,
   Undo2,
 } from 'lucide-react';
@@ -65,6 +66,7 @@ import { CancelTransactionDialog } from './CancelTransactionDialog';
 import { CopyTransactionDialog } from './CopyTransactionDialog';
 import { ConvertTransactionDialog } from './ConvertTransactionDialog';
 import { RefundTransactionDialog } from './RefundTransactionDialog';
+import { MergeTransactionsDialog } from './MergeTransactionsDialog';
 import { TransactionStatusIcon } from './TransactionStatusIcon';
 import { useCreateDictionaryEntry } from '@/features/configuration/useCreateDictionaryEntry';
 import { TxCategoryQuickPicker } from './TxCategoryQuickPicker';
@@ -330,6 +332,11 @@ export function TransactionsPane() {
 
   const [linkTarget, setLinkTarget] = useState<TransactionResponse | null>(null);
   const openLink = (t: TransactionResponse) => setLinkTarget(t);
+
+  // The survivor of a merge, picked from a row's context menu ("Merge into
+  // this…"). The dialog folds other compatible rows of the loaded window into it.
+  const [mergeTarget, setMergeTarget] = useState<TransactionResponse | null>(null);
+  const openMerge = (t: TransactionResponse) => setMergeTarget(t);
 
   const header = account ? (
     <AccountHeader account={account} />
@@ -661,6 +668,13 @@ export function TransactionsPane() {
                       Link
                     </ContextMenuItem>
                   )}
+                  {t.status === 'Completed' &&
+                    (isIncome(t.transactionType) || isExpense(t.transactionType)) && (
+                      <ContextMenuItem onSelect={() => openMerge(t)}>
+                        <Merge className="mr-2 h-4 w-4" aria-hidden />
+                        Merge into this…
+                      </ContextMenuItem>
+                    )}
                   {t.status !== 'Cancelled' && (
                     <ContextMenuItem className="text-destructive" onSelect={() => openCancel(t)}>
                       <Ban className="mr-2 h-4 w-4" aria-hidden />
@@ -782,6 +796,16 @@ export function TransactionsPane() {
             if (!o) setLinkTarget(null);
           }}
           acting={linkTarget}
+        />
+      )}
+      {mergeTarget && (
+        <MergeTransactionsDialog
+          open
+          onOpenChange={(o) => {
+            if (!o) setMergeTarget(null);
+          }}
+          acting={mergeTarget}
+          candidates={data ?? []}
         />
       )}
     </>

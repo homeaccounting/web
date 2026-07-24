@@ -7,6 +7,7 @@ import type {
   ISO8601,
   IncomeRequest,
   InternalTransferRequest,
+  MergeTransactionsRequest,
   RelationKind,
   SetTransactionAllocationsRequest,
   SetTransactionContactRequest,
@@ -25,6 +26,14 @@ export const transactionsApi = (client: ApiClient) => ({
     client.get<TransactionRelationsResponse>(`/api/transactions/${id}/relations`),
   linkRelation: (id: UUID, body: LinkRelationRequest): Promise<TransactionResponse> =>
     client.post<TransactionResponse>(`/api/transactions/${id}/relations`, body),
+  // Merge the listed source transactions into `id` (the target/survivor).
+  // Backend POST /api/transactions/:id/merge composes the combined amount +
+  // allocations onto the target, cancels each source, and records a `merge`
+  // lineage edge per source→target — atomically as a single domain operation
+  // (Web/API/TransactionAPI.hs `mergeTransactionsHandler`). Returns the
+  // refreshed target.
+  merge: (id: UUID, body: MergeTransactionsRequest): Promise<TransactionResponse> =>
+    client.post<TransactionResponse>(`/api/transactions/${id}/merge`, body),
   unlinkRelation: (
     id: UUID,
     params: { relatedTransactionId: UUID; relationKind: RelationKind },
