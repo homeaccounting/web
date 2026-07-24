@@ -40,6 +40,19 @@ export type MergeIneligibility =
 
 export type MergeEligibility = { eligible: true } | { eligible: false; reason: MergeIneligibility };
 
+// User-facing explanation per ineligibility reason. Shared by the merge dialog
+// (inline alert) and the selection action bar (disabled-Merge tooltip).
+export const MERGE_INELIGIBILITY_MESSAGE: Record<MergeIneligibility, string> = {
+  'too-few': 'Select at least two transactions to merge.',
+  'not-completed': 'Only completed transactions can be merged.',
+  'unsupported-kind': 'Only income or expense transactions can be merged.',
+  'mixed-kinds': 'All transactions must be the same kind — all income or all expense.',
+  'different-accounts': 'All transactions must be on the same account.',
+  'different-currencies': 'All transactions must use the same currency.',
+  'conflicting-contacts':
+    'The selection has two different contacts. They must share one contact, or leave it unset.',
+};
+
 const nonEmptyContacts = (txs: TransactionResponse[]): UUID[] => [
   ...new Set(txs.map((t) => t.contactId).filter((c): c is UUID => c != null)),
 ];

@@ -981,36 +981,40 @@ describe('TransactionsPane', () => {
     expect(screen.getByText('refund')).toBeInTheDocument();
   });
 
-  it('offers a "Link" item on a completed row and opens the dialog', async () => {
+  it('no longer offers a "Link" item in the row context menu', async () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
     const user = userEvent.setup();
     renderWithProviders(ui(), { initialPath: '/accounts/a1' }); // fixture is a completed expense
-    const cell = await screen.findByText(transactionFixture.description);
-    const row = cell.closest('tr')!;
+    const row = (await screen.findByText(transactionFixture.description)).closest('tr')!;
     await user.pointer({ keys: '[MouseRight]', target: row });
-    const linkItem = await screen.findByRole('menuitem', { name: /^link$/i });
-    await user.click(linkItem);
-    expect(await screen.findByRole('dialog', { name: /link transaction/i })).toBeInTheDocument();
+    await screen.findByRole('menuitem', { name: /edit/i });
+    expect(screen.queryByRole('menuitem', { name: /^link$/i })).not.toBeInTheDocument();
   });
 
-  it('does not offer a "Link" item on a non-completed row', async () => {
+  it('opens the link dialog from the action bar when exactly two completed rows are selected', async () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
     const user = userEvent.setup();
     server.use(
       http.get(`${apiBase}/api/transactions`, () =>
         HttpResponse.json({
           transactions: [
-            { ...transactionFixture, id: 'pend-1', description: 'PendingTx', status: 'Pending' },
+            { ...transactionFixture, id: 'row-1', description: 'RowOne' },
+            { ...transactionFixture, id: 'row-2', description: 'RowTwo' },
           ],
-          totalCount: 1,
+          totalCount: 2,
+          limit: 50,
+          offset: 0,
         }),
       ),
     );
     renderWithProviders(ui(), { initialPath: '/accounts/a1' });
-    const row = (await screen.findByText('PendingTx')).closest('tr')!;
-    await user.pointer({ keys: '[MouseRight]', target: row });
-    await screen.findByRole('menuitem', { name: /edit/i });
-    expect(screen.queryByRole('menuitem', { name: /^link$/i })).not.toBeInTheDocument();
+    await screen.findByText('RowOne');
+
+    await user.click(screen.getByRole('checkbox', { name: /select rowone/i }));
+    await user.click(screen.getByRole('checkbox', { name: /select rowtwo/i }));
+
+    await user.click(await screen.findByRole('button', { name: /link selected/i }));
+    expect(await screen.findByRole('dialog', { name: /link 2 transactions/i })).toBeInTheDocument();
   });
 
   it('shows an "associated with <description>" badge on a row with an outbound association edge', async () => {

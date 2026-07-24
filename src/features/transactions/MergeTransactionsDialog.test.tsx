@@ -57,25 +57,11 @@ const expenseOf = (
     ...over,
   });
 
-// Survivor (target).
-const acting = expenseOf('A', 'Coffee', 4);
-
-function Wrapper({
-  acting: act,
-  candidates,
-}: {
-  acting: TransactionResponse;
-  candidates: TransactionResponse[];
-}) {
+function Wrapper({ selected }: { selected: TransactionResponse[] }) {
   const [open, setOpen] = useState(true);
   return (
     <AuthProvider>
-      <MergeTransactionsDialog
-        open={open}
-        onOpenChange={setOpen}
-        acting={act}
-        candidates={candidates}
-      />
+      <MergeTransactionsDialog open={open} onOpenChange={setOpen} selected={selected} />
     </AuthProvider>
   );
 }
@@ -85,56 +71,29 @@ beforeEach(() => {
 });
 
 describe('MergeTransactionsDialog', () => {
-  it('lists only compatible candidates (same account/kind/currency, Completed, not the acting row)', () => {
-    const candidates = [
-      acting, // self — excluded
-      expenseOf('B', 'Pastry', 6), // compatible
-      expenseOf('C', 'Fuel', 3, { sourceCurrency: 'USD' }), // different currency — excluded
-      expenseOf('D', 'Void', 5, { status: 'Cancelled' }), // cancelled — excluded
-      expenseTx({
-        id: 'E',
-        description: 'Salary',
-        transactionType: 'income',
-        targetAccountId: accountId,
-        allocations: {
-          incomes: [{ categoryId: 'c', amount: { amount: 8, currency: 'EUR' } }],
-          expenses: [],
-        },
-      }), // different kind — excluded
+  it('lists every selected row and defaults the survivor to the most recent by date', () => {
+    const selected = [
+      expenseOf('A', 'Coffee', 4, { date: '2026-04-20T08:00:00Z' }),
+      expenseOf('B', 'Pastry', 6, { date: '2026-04-27T08:00:00Z' }), // most recent → survivor
+      expenseOf('C', 'Bagel', 3, { date: '2026-04-25T08:00:00Z' }),
     ];
-    renderWithProviders(<Wrapper acting={acting} candidates={candidates} />, { initialPath: '/' });
+    renderWithProviders(<Wrapper selected={selected} />, { initialPath: '/' });
 
-    expect(screen.getByRole('checkbox', { name: /Pastry/ })).toBeInTheDocument();
-    expect(screen.queryByRole('checkbox', { name: /Coffee/ })).not.toBeInTheDocument();
-    expect(screen.queryByRole('checkbox', { name: /Fuel/ })).not.toBeInTheDocument();
-    expect(screen.queryByRole('checkbox', { name: /Void/ })).not.toBeInTheDocument();
-    expect(screen.queryByRole('checkbox', { name: /Salary/ })).not.toBeInTheDocument();
+    // All three rows are present as survivor radios.
+    expect(screen.getByRole('radio', { name: /Coffee/ })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /Bagel/ })).toBeInTheDocument();
+    // The most recent (Pastry) is the default survivor.
+    expect(screen.getByRole('radio', { name: /Pastry/ })).toBeChecked();
   });
 
-  it('updates the combined total as candidates are selected', async () => {
-    const user = userEvent.setup();
-    const candidates = [expenseOf('B', 'Pastry', 6), expenseOf('C', 'Bagel', 3)];
-    renderWithProviders(<Wrapper acting={acting} candidates={candidates} />, { initialPath: '/' });
-
-    // Acting alone = 4.
-    expect(screen.getByTestId('merge-total')).toHaveTextContent('€4.00');
-    await user.click(screen.getByRole('checkbox', { name: /Pastry/ }));
+  it('shows the combined total of all selected rows and the cancel count', () => {
+    const selected = [expenseOf('A', 'Coffee', 4), expenseOf('B', 'Pastry', 6)];
+    renderWithProviders(<Wrapper selected={selected} />, { initialPath: '/' });
     expect(screen.getByTestId('merge-total')).toHaveTextContent('€10.00');
-    await user.click(screen.getByRole('checkbox', { name: /Bagel/ }));
-    expect(screen.getByTestId('merge-total')).toHaveTextContent('€13.00');
+    expect(screen.getByText(/1 transaction will be cancelled/i)).toBeInTheDocument();
   });
 
-  it('merge is disabled until at least one candidate is selected', async () => {
-    const user = userEvent.setup();
-    const candidates = [expenseOf('B', 'Pastry', 6)];
-    renderWithProviders(<Wrapper acting={acting} candidates={candidates} />, { initialPath: '/' });
-
-    expect(screen.getByRole('button', { name: /^merge$/i })).toBeDisabled();
-    await user.click(screen.getByRole('checkbox', { name: /Pastry/ }));
-    expect(screen.getByRole('button', { name: /^merge$/i })).toBeEnabled();
-  });
-
-  it('merges the selected candidates into the acting row and closes', async () => {
+  it('merges the non-survivor rows into the chosen survivor and closes', async () => {
     const user = userEvent.setup();
     let captured: unknown;
     let calledId = '';
@@ -142,34 +101,66 @@ describe('MergeTransactionsDialog', () => {
       http.post(`${apiBase}/api/transactions/:id/merge`, async ({ request, params }) => {
         calledId = params.id as string;
         captured = await request.json();
-        return HttpResponse.json({ ...acting, amendmentCount: 1 });
+        return HttpResponse.json({ ...expenseOf('B', 'Pastry', 6), amendmentCount: 1 });
       }),
     );
-    const candidates = [expenseOf('B', 'Pastry', 6), expenseOf('C', 'Bagel', 3)];
-    renderWithProviders(<Wrapper acting={acting} candidates={candidates} />, { initialPath: '/' });
+    const selected = [
+      expenseOf('A', 'Coffee', 4, { date: '2026-04-20T08:00:00Z' }),
+      expenseOf('B', 'Pastry', 6, { date: '2026-04-27T08:00:00Z' }), // survivor
+      expenseOf('C', 'Bagel', 3, { date: '2026-04-25T08:00:00Z' }),
+    ];
+    renderWithProviders(<Wrapper selected={selected} />, { initialPath: '/' });
 
-    await user.click(screen.getByRole('checkbox', { name: /Pastry/ }));
-    await user.click(screen.getByRole('checkbox', { name: /Bagel/ }));
+    await user.click(screen.getByRole('button', { name: /^merge$/i }));
+
+    await waitFor(() => expect(calledId).toBe('B'));
+    expect(captured).toEqual({ sourceTransactionIds: ['A', 'C'] });
+  });
+
+  it('changing the survivor recomputes the merge target and sources', async () => {
+    const user = userEvent.setup();
+    let captured: unknown;
+    let calledId = '';
+    server.use(
+      http.post(`${apiBase}/api/transactions/:id/merge`, async ({ request, params }) => {
+        calledId = params.id as string;
+        captured = await request.json();
+        return HttpResponse.json({ ...expenseOf('A', 'Coffee', 4), amendmentCount: 1 });
+      }),
+    );
+    const selected = [
+      expenseOf('A', 'Coffee', 4, { date: '2026-04-20T08:00:00Z' }),
+      expenseOf('B', 'Pastry', 6, { date: '2026-04-27T08:00:00Z' }), // default survivor
+    ];
+    renderWithProviders(<Wrapper selected={selected} />, { initialPath: '/' });
+
+    // Pick Coffee as the survivor instead of the default (Pastry).
+    await user.click(screen.getByRole('radio', { name: /Coffee/ }));
     await user.click(screen.getByRole('button', { name: /^merge$/i }));
 
     await waitFor(() => expect(calledId).toBe('A'));
-    expect(captured).toEqual({ sourceTransactionIds: ['B', 'C'] });
+    expect(captured).toEqual({ sourceTransactionIds: ['B'] });
   });
 
-  it('blocks and explains when a selection introduces conflicting contacts', async () => {
-    const user = userEvent.setup();
-    // acting has no contact; two candidates carry DIFFERENT contacts.
-    const candidates = [
-      expenseOf('B', 'Pastry', 6, { contactId: 'k1' }),
-      expenseOf('C', 'Bagel', 3, { contactId: 'k2' }),
+  it('blocks and explains when the selection introduces conflicting contacts', () => {
+    const selected = [
+      expenseOf('A', 'Coffee', 4, { contactId: 'k1' }),
+      expenseOf('B', 'Pastry', 6, { contactId: 'k2' }),
     ];
-    renderWithProviders(<Wrapper acting={acting} candidates={candidates} />, { initialPath: '/' });
-
-    await user.click(screen.getByRole('checkbox', { name: /Pastry/ }));
-    await user.click(screen.getByRole('checkbox', { name: /Bagel/ }));
+    renderWithProviders(<Wrapper selected={selected} />, { initialPath: '/' });
 
     expect(screen.getByRole('button', { name: /^merge$/i })).toBeDisabled();
     expect(screen.getByRole('alert')).toHaveTextContent(/contact/i);
+  });
+
+  it('blocks and explains a different-currency selection', () => {
+    const selected = [
+      expenseOf('A', 'Coffee', 4),
+      expenseOf('B', 'Fuel', 3, { sourceCurrency: 'USD', targetCurrency: 'USD' }),
+    ];
+    renderWithProviders(<Wrapper selected={selected} />, { initialPath: '/' });
+    expect(screen.getByRole('button', { name: /^merge$/i })).toBeDisabled();
+    expect(screen.getByRole('alert')).toHaveTextContent(/currency/i);
   });
 
   it('surfaces a server error without closing', async () => {
@@ -182,19 +173,12 @@ describe('MergeTransactionsDialog', () => {
         ),
       ),
     );
-    const candidates = [expenseOf('B', 'Pastry', 6)];
-    renderWithProviders(<Wrapper acting={acting} candidates={candidates} />, { initialPath: '/' });
+    const selected = [expenseOf('A', 'Coffee', 4), expenseOf('B', 'Pastry', 6)];
+    renderWithProviders(<Wrapper selected={selected} />, { initialPath: '/' });
 
-    await user.click(screen.getByRole('checkbox', { name: /Pastry/ }));
     await user.click(screen.getByRole('button', { name: /^merge$/i }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/cannot merge/i);
     expect(screen.getByRole('button', { name: /^merge$/i })).toBeInTheDocument();
-  });
-
-  it('shows an empty-state when there are no compatible candidates', () => {
-    renderWithProviders(<Wrapper acting={acting} candidates={[acting]} />, { initialPath: '/' });
-    expect(screen.getByText(/no compatible transactions/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^merge$/i })).toBeDisabled();
   });
 });

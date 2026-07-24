@@ -8,8 +8,10 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ApiError } from '@/api/client';
+import { cn } from '@/lib/utils';
 import type { TransactionResponse, UUID } from '@/api/types';
 import { formatDate, formatMoney } from '@/lib/format';
 import { useMergeTransactions } from './useMergeTransactions';
@@ -18,86 +20,65 @@ import {
   checkMergeEligibility,
   combinedTotal,
   mergeCurrency,
-  type MergeIneligibility,
+  MERGE_INELIGIBILITY_MESSAGE,
 } from './mergeEligibility';
 
 export interface MergeTransactionsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  // The survivor (target): the right-clicked row that absorbs the chosen sources.
-  acting: TransactionResponse;
-  // Pool to pick sources from (the account's loaded window). Filtered down to the
-  // rows compatible with `acting`.
-  candidates: TransactionResponse[];
-  // Called after a successful merge (e.g. to close the menu / clear state).
+  // The rows the user selected in the list. The survivor is chosen here (default:
+  // most recent); the rest are folded into it and cancelled.
+  selected: TransactionResponse[];
+  // Called after a successful merge (e.g. to clear the selection).
   onMerged?: () => void;
 }
 
-const INELIGIBILITY_MESSAGE: Record<MergeIneligibility, string> = {
-  'too-few': 'Select at least one transaction to merge in.',
-  'not-completed': 'Only completed transactions can be merged.',
-  'unsupported-kind': 'Only income or expense transactions can be merged.',
-  'mixed-kinds': 'All transactions must be the same kind — all income or all expense.',
-  'different-accounts': 'All transactions must be on the same account.',
-  'different-currencies': 'All transactions must use the same currency.',
-  'conflicting-contacts':
-    'The selection has two different contacts. They must share one contact, or leave it unset.',
-};
+// The id of the most recent row (max date); ties fall back to the first such row
+// in `rows` order, keeping the default deterministic.
+function mostRecentId(rows: TransactionResponse[]): UUID | undefined {
+  let best: TransactionResponse | undefined;
+  for (const r of rows) {
+    if (!best || r.date > best.date) best = r;
+  }
+  return best?.id;
+}
 
 export function MergeTransactionsDialog({
   open,
   onOpenChange,
-  acting,
-  candidates,
+  selected,
   onMerged,
 }: MergeTransactionsDialogProps) {
-  // Rows that can fold into `acting`: same account/kind/currency, Completed, and
-  // not conflicting on contact — evaluated pairwise against the survivor.
-  const compatible = useMemo(
-    () =>
-      candidates.filter((c) => c.id !== acting.id && checkMergeEligibility([acting, c]).eligible),
-    [candidates, acting],
-  );
-
-  const [selectedIds, setSelectedIds] = useState<Set<UUID>>(new Set());
+  const [survivorId, setSurvivorId] = useState<UUID | undefined>(() => mostRecentId(selected));
   const [fieldError, setFieldError] = useState<string | null>(null);
 
-  const merge = useMergeTransactions(acting.id);
+  // Keep the survivor valid if the selection changes underneath the dialog
+  // (defensive — the pane opens the dialog with a frozen selection, but a stale
+  // survivorId would otherwise break the request).
+  const effectiveSurvivorId =
+    survivorId && selected.some((s) => s.id === survivorId) ? survivorId : mostRecentId(selected);
 
-  // Preserve the candidate-list order (not click order) so the request is stable.
-  const selectedSources = useMemo(
-    () => compatible.filter((c) => selectedIds.has(c.id)),
-    [compatible, selectedIds],
+  const survivor = selected.find((s) => s.id === effectiveSurvivorId) ?? selected[0];
+  const merge = useMergeTransactions(effectiveSurvivorId ?? '');
+
+  const eligibility = useMemo(() => checkMergeEligibility(selected), [selected]);
+  const total = useMemo(() => combinedTotal(selected), [selected]);
+  const currency = survivor ? mergeCurrency(survivor) : '';
+  const sources = useMemo(
+    () => selected.filter((s) => s.id !== effectiveSurvivorId),
+    [selected, effectiveSurvivorId],
   );
-  const fullSet = useMemo(() => [acting, ...selectedSources], [acting, selectedSources]);
-  const eligibility = useMemo(() => checkMergeEligibility(fullSet), [fullSet]);
-  const total = useMemo(() => combinedTotal(fullSet), [fullSet]);
-  const currency = mergeCurrency(acting);
 
-  // Only surface a reason once the user has selected something — an empty
-  // selection is "too-few", which is the default, not an error to shout about.
-  const conflict = selectedSources.length > 0 && !eligibility.eligible ? eligibility : null;
+  const conflict = !eligibility.eligible ? eligibility : null;
+  const canMerge = eligibility.eligible && sources.length > 0 && !merge.isPending;
 
-  const toggle = (id: UUID) =>
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-
-  const reset = () => {
-    setSelectedIds(new Set());
-    setFieldError(null);
-  };
-
-  const canMerge = selectedSources.length > 0 && eligibility.eligible && !merge.isPending;
+  const reset = () => setFieldError(null);
 
   const handleSubmit = async () => {
     if (!canMerge) return;
     setFieldError(null);
     try {
-      await merge.mutateAsync({ sourceTransactionIds: selectedSources.map((c) => c.id) });
+      await merge.mutateAsync({ sourceTransactionIds: sources.map((s) => s.id) });
       reset();
       onMerged?.();
       onOpenChange(false);
@@ -121,17 +102,16 @@ export function MergeTransactionsDialog({
     >
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Merge transactions</DialogTitle>
+          <DialogTitle>Merge {selected.length} transactions</DialogTitle>
           <DialogDescription>
-            Fold other transactions into “{acting.description || '(no description)'}”. The chosen
-            ones are cancelled; this one keeps its date and description and absorbs their
-            allocations.
+            Pick the one to keep. It holds its date &amp; description and absorbs the others&rsquo;
+            allocations; the rest are cancelled.
           </DialogDescription>
         </DialogHeader>
 
         {conflict && (
           <Alert variant="destructive" role="alert">
-            <AlertDescription>{INELIGIBILITY_MESSAGE[conflict.reason]}</AlertDescription>
+            <AlertDescription>{MERGE_INELIGIBILITY_MESSAGE[conflict.reason]}</AlertDescription>
           </Alert>
         )}
 
@@ -143,25 +123,42 @@ export function MergeTransactionsDialog({
 
         <div className="space-y-4">
           <fieldset className="space-y-2">
-            <legend className="text-sm font-medium">Merge in</legend>
-            {compatible.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No compatible transactions to merge.</p>
-            ) : (
-              compatible.map((c) => (
-                <label key={c.id} className="flex cursor-pointer items-center gap-2 text-sm">
+            <legend className="mb-1 text-sm font-medium">Keep</legend>
+            {selected.map((c) => {
+              const isSurvivor = c.id === effectiveSurvivorId;
+              return (
+                <label
+                  key={c.id}
+                  className={cn(
+                    'flex cursor-pointer items-center gap-3 rounded-md border p-2.5 text-sm',
+                    isSurvivor ? 'border-primary bg-primary/5' : 'border-border',
+                  )}
+                >
                   <input
-                    type="checkbox"
-                    aria-label={`Include ${c.description || 'transaction'}`}
-                    checked={selectedIds.has(c.id)}
-                    onChange={() => toggle(c.id)}
+                    type="radio"
+                    name="merge-survivor"
+                    aria-label={`Keep ${c.description || 'transaction'}`}
+                    checked={isSurvivor}
+                    onChange={() => setSurvivorId(c.id)}
                   />
-                  <span>
-                    {c.description || '(no description)'} · {formatDate(c.date)} ·{' '}
-                    {formatMoney(categorisedTotal(c), mergeCurrency(c))}
+                  <span className="flex min-w-0 flex-col">
+                    <span className="truncate font-medium">
+                      {c.description || '(no description)'}
+                    </span>
+                    <span className="text-xs text-muted-foreground">{formatDate(c.date)}</span>
                   </span>
+                  {isSurvivor ? (
+                    <Badge variant="default" className="ml-auto">
+                      Survivor
+                    </Badge>
+                  ) : (
+                    <span className="ml-auto tabular-nums text-muted-foreground">
+                      {formatMoney(categorisedTotal(c), mergeCurrency(c))}
+                    </span>
+                  )}
                 </label>
-              ))
-            )}
+              );
+            })}
           </fieldset>
 
           <div className="text-sm text-muted-foreground">
@@ -171,10 +168,10 @@ export function MergeTransactionsDialog({
                 {formatMoney(total, currency)}
               </span>
             </p>
-            {selectedSources.length > 0 && (
+            {sources.length > 0 && (
               <p>
-                {selectedSources.length}{' '}
-                {selectedSources.length === 1 ? 'transaction' : 'transactions'} will be cancelled.
+                {sources.length} {sources.length === 1 ? 'transaction' : 'transactions'} will be
+                cancelled.
               </p>
             )}
           </div>

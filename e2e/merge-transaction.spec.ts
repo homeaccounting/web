@@ -1,12 +1,12 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 
-// End-to-end coverage for tracker#30: merging two completed expenses on the
-// same account into one survivor. The target absorbs the combined amount +
-// allocations and the other source is cancelled (atomic single-transaction
-// merge saga on the backend). Runs against a live backend (@local).
+// End-to-end coverage for the selection-driven Link/Merge UX (tracker#30 + the
+// selection redesign): a checkbox column drives a floating action bar. Merging
+// two completed expenses folds the sources into a chosen survivor and cancels
+// the rest; linking associates two rows. Runs against a live backend (@local).
 
 /** Register a fresh user, create a USD "Wallet" (balance 100) and open it. */
-async function setupWallet(page: import('@playwright/test').Page) {
+async function setupWallet(page: Page) {
   const email = `e2e-merge-${Date.now()}-${Math.floor(performance.now())}@example.com`;
   const password = 'longenough';
 
@@ -27,10 +27,7 @@ async function setupWallet(page: import('@playwright/test').Page) {
 }
 
 /** Seed a completed expense in the "Food"/"Groceries" category and wait for its row. */
-async function seedExpense(
-  page: import('@playwright/test').Page,
-  { amount, description }: { amount: string; description: string },
-) {
+async function seedExpense(page: Page, { amount, description }: { amount: string; description: string }) {
   await page.getByRole('button', { name: /^add expense$/i }).click();
   const dialog = page.getByRole('dialog');
   await dialog.getByLabel(/amount/i).fill(amount);
@@ -48,38 +45,61 @@ async function seedExpense(
   });
 }
 
-test.describe('merge transactions @local', () => {
-  test('merge two expenses → one combined transaction, the other cancelled', async ({ page }) => {
+test.describe('selection-driven transaction actions @local', () => {
+  test('merge two expenses via selection → one survivor, the other cancelled', async ({ page }) => {
     await setupWallet(page);
     await seedExpense(page, { amount: '4', description: 'Coffee' });
     await seedExpense(page, { amount: '6', description: 'Pastry' });
 
-    // Right-click the survivor (Coffee) → "Merge into this…".
-    await page.getByRole('cell', { name: 'Coffee', exact: true }).click({ button: 'right' });
-    await page.getByRole('menuitem', { name: /merge into this/i }).click();
+    // Select both rows via their checkboxes; the floating action bar appears.
+    await page.getByRole('checkbox', { name: 'Select Coffee' }).check();
+    await page.getByRole('checkbox', { name: 'Select Pastry' }).check();
+    const bar = page.getByRole('region', { name: /selection actions/i });
+    await expect(bar).toContainText(/2 selected/i);
 
-    // The dialog keeps Coffee as the survivor and offers the other compatible
-    // rows to fold in. Pick Pastry; the combined total (4 + 6 = 10) previews.
-    const dialog = page.getByRole('dialog', { name: /merge transactions/i });
+    await bar.getByRole('button', { name: /merge selected/i }).click();
+
+    // Keep Coffee as the survivor; the combined total (4 + 6 = 10) previews.
+    const dialog = page.getByRole('dialog', { name: /merge 2 transactions/i });
     await expect(dialog).toBeVisible();
-    await dialog.getByRole('checkbox', { name: /Pastry/i }).check();
+    await dialog.getByRole('radio', { name: /Coffee/i }).check();
     await expect(dialog.getByTestId('merge-total')).toHaveText(/\$10\.00/);
     await dialog.getByRole('button', { name: /^merge$/i }).click();
     await expect(dialog).toBeHidden();
 
-    // Default view hides cancelled rows: the survivor (Coffee) now carries the
-    // combined $10.00 amount and the merged-away Pastry is gone from the list.
+    // Coffee now carries the combined $10.00; Pastry is gone from the default view.
     await expect(page.getByRole('cell', { name: 'Coffee', exact: true })).toBeVisible({
       timeout: 10000,
     });
     await expect(page.getByText(/\$10\.00/).first()).toBeVisible();
     await expect(page.getByRole('cell', { name: 'Pastry', exact: true })).toHaveCount(0);
 
-    // Reveal cancelled rows → Pastry reappears, now Cancelled — proof the merge
-    // cancelled the source (rather than deleting it) as part of the operation.
+    // Reveal cancelled rows → Pastry reappears, now Cancelled.
     await page.getByRole('button', { name: /^filters/i }).click();
     await page.getByRole('checkbox', { name: /cancelled & failed/i }).check();
     await expect(page.getByRole('cell', { name: 'Pastry', exact: true })).toBeVisible();
     await expect(page.getByRole('img', { name: 'Cancelled' })).toBeVisible();
+  });
+
+  test('link two expenses via selection → an association badge', async ({ page }) => {
+    await setupWallet(page);
+    await seedExpense(page, { amount: '5', description: 'Online order' });
+    await seedExpense(page, { amount: '3', description: 'Delivery charge' });
+
+    await page.getByRole('checkbox', { name: 'Select Online order' }).check();
+    await page.getByRole('checkbox', { name: 'Select Delivery charge' }).check();
+    const bar = page.getByRole('region', { name: /selection actions/i });
+    await expect(bar).toContainText(/2 selected/i);
+
+    await bar.getByRole('button', { name: /link selected/i }).click();
+
+    // Two plain expenses → Association (no kind toggle). Confirm the link.
+    const dialog = page.getByRole('dialog', { name: /link 2 transactions/i });
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole('button', { name: /^link$/i }).click();
+    await expect(dialog).toBeHidden();
+
+    // An association badge now surfaces on the linked rows.
+    await expect(page.getByText(/associated with/i).first()).toBeVisible({ timeout: 10000 });
   });
 });

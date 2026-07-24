@@ -34,12 +34,6 @@ const pastry: TransactionResponse = {
   description: 'Pastry',
 };
 
-async function rightClickRow(user: ReturnType<typeof userEvent.setup>, description: string) {
-  const cell = await screen.findByText(description);
-  const row = cell.closest('tr')!;
-  await user.pointer({ keys: '[MouseRight]', target: row });
-}
-
 beforeEach(() => {
   saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
   server.use(
@@ -49,35 +43,74 @@ beforeEach(() => {
   );
 });
 
-describe('TransactionsPane — merge via context menu', () => {
-  it('has no always-on selection checkboxes in the list', async () => {
+async function select(user: ReturnType<typeof userEvent.setup>, description: string) {
+  await user.click(
+    screen.getByRole('checkbox', { name: new RegExp(`select ${description}`, 'i') }),
+  );
+}
+
+describe('TransactionsPane — selection-driven merge', () => {
+  it('renders a selection checkbox per row', async () => {
     renderWithProviders(ui(), { initialPath: '/accounts/a1' });
     await screen.findByText('Coffee');
-    expect(screen.queryByRole('checkbox', { name: /select/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: /select coffee/i })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: /select pastry/i })).toBeInTheDocument();
   });
 
-  it('offers "Merge into this…" in a completed row\'s context menu', async () => {
+  it('selecting a row via its checkbox does not open the edit dialog', async () => {
     const user = userEvent.setup();
     renderWithProviders(ui(), { initialPath: '/accounts/a1' });
     await screen.findByText('Coffee');
-    await rightClickRow(user, 'Coffee');
-    expect(await screen.findByRole('menuitem', { name: /merge into this/i })).toBeInTheDocument();
+    await select(user, 'coffee');
+    expect(screen.getByRole('checkbox', { name: /select coffee/i })).toBeChecked();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  it('opens the merge dialog with the acting row as survivor and the rest as candidates', async () => {
+  it('header checkbox selects and clears every row on the page', async () => {
     const user = userEvent.setup();
     renderWithProviders(ui(), { initialPath: '/accounts/a1' });
     await screen.findByText('Coffee');
-    await rightClickRow(user, 'Coffee');
-    await user.click(await screen.findByRole('menuitem', { name: /merge into this/i }));
 
-    expect(await screen.findByRole('dialog')).toHaveTextContent(/merge transactions/i);
-    // Pastry is a candidate to fold into Coffee; Coffee itself is not listed.
-    expect(screen.getByRole('checkbox', { name: /Pastry/ })).toBeInTheDocument();
-    expect(screen.queryByRole('checkbox', { name: /Coffee/ })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('checkbox', { name: /select all/i }));
+    expect(screen.getByRole('checkbox', { name: /select coffee/i })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: /select pastry/i })).toBeChecked();
+    expect(await screen.findByRole('region', { name: /selection actions/i })).toHaveTextContent(
+      /2 selected/i,
+    );
+
+    await user.click(screen.getByRole('checkbox', { name: /select all/i }));
+    expect(screen.getByRole('checkbox', { name: /select coffee/i })).not.toBeChecked();
   });
 
-  it('merges the picked candidate into the acting row', async () => {
+  it('no longer offers "Merge into this…" in a row context menu', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    const row = (await screen.findByText('Coffee')).closest('tr')!;
+    await user.pointer({ keys: '[MouseRight]', target: row });
+    await screen.findByRole('menuitem', { name: /edit/i });
+    expect(screen.queryByRole('menuitem', { name: /merge into this/i })).not.toBeInTheDocument();
+  });
+
+  it('selecting two rows reveals the action bar and opens the merge dialog', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    await screen.findByText('Coffee');
+
+    await select(user, 'coffee');
+    await select(user, 'pastry');
+
+    const bar = await screen.findByRole('region', { name: /selection actions/i });
+    expect(bar).toHaveTextContent(/2 selected/i);
+    await user.click(screen.getByRole('button', { name: /merge selected/i }));
+
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveTextContent(/merge 2 transactions/i);
+    // Both rows appear as survivor radios.
+    expect(screen.getByRole('radio', { name: /Coffee/ })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /Pastry/ })).toBeInTheDocument();
+  });
+
+  it('merges the selected rows into the chosen survivor and clears the selection', async () => {
     const user = userEvent.setup();
     let captured: unknown;
     let calledId = '';
@@ -90,13 +123,19 @@ describe('TransactionsPane — merge via context menu', () => {
     );
     renderWithProviders(ui(), { initialPath: '/accounts/a1' });
     await screen.findByText('Coffee');
-    await rightClickRow(user, 'Coffee');
-    await user.click(await screen.findByRole('menuitem', { name: /merge into this/i }));
 
-    await user.click(await screen.findByRole('checkbox', { name: /Pastry/ }));
-    await user.click(screen.getByRole('button', { name: /^merge$/i }));
+    await select(user, 'coffee');
+    await select(user, 'pastry');
+    await user.click(await screen.findByRole('button', { name: /merge selected/i }));
+
+    // Same date → survivor defaults to the first row in window order (Coffee).
+    await user.click(await screen.findByRole('button', { name: /^merge$/i }));
 
     await waitFor(() => expect(calledId).toBe('t-coffee'));
     expect(captured).toEqual({ sourceTransactionIds: ['t-pastry'] });
+    // Selection cleared → the action bar is gone.
+    await waitFor(() =>
+      expect(screen.queryByRole('region', { name: /selection actions/i })).not.toBeInTheDocument(),
+    );
   });
 });

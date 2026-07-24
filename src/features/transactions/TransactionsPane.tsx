@@ -24,17 +24,7 @@ import {
   ContextMenuSubContent,
   ContextMenuSubTrigger,
 } from '@/components/ui/context-menu';
-import {
-  ArrowLeftRight,
-  Ban,
-  ChevronDown,
-  ChevronRight,
-  Copy,
-  Link2,
-  Merge,
-  Pencil,
-  Undo2,
-} from 'lucide-react';
+import { ArrowLeftRight, Ban, ChevronDown, ChevronRight, Copy, Pencil, Undo2 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   useConfiguration,
@@ -79,6 +69,9 @@ import { CopyTransactionDialog } from './CopyTransactionDialog';
 import { ConvertTransactionDialog } from './ConvertTransactionDialog';
 import { RefundTransactionDialog } from './RefundTransactionDialog';
 import { MergeTransactionsDialog } from './MergeTransactionsDialog';
+import { checkMergeEligibility, MERGE_INELIGIBILITY_MESSAGE } from './mergeEligibility';
+import { useTransactionSelection } from './useTransactionSelection';
+import { SelectionActionBar } from './SelectionActionBar';
 import { TransactionStatusIcon } from './TransactionStatusIcon';
 import { useCreateDictionaryEntry } from '@/features/configuration/useCreateDictionaryEntry';
 import { TxCategoryQuickPicker } from './TxCategoryQuickPicker';
@@ -289,6 +282,33 @@ export function TransactionsPane() {
     return [...byName.keys()].map((name) => ({ id: name, name }));
   }, [configuration]);
 
+  // Multi-selection drives the bulk Link/Merge actions. The reset key clears the
+  // selection whenever the scope (account / date window / filters) changes, but
+  // NOT on page changes — so a selection can span pages for a merge.
+  const selection = useTransactionSelection(
+    `${id ?? ''}|${appliedWindow.from}|${appliedWindow.to}|${JSON.stringify(filters)}`,
+  );
+  // Selected rows resolved from the whole loaded window (not just the visible
+  // page), so a cross-page selection still merges/links correctly.
+  const selectedRows = useMemo(
+    () => (data ?? []).filter((t) => selection.selectedIds.has(t.id)),
+    [data, selection.selectedIds],
+  );
+  // Link acts on exactly two Completed rows. Cross-account linking returns with
+  // the future all-accounts list; today both rows are on the viewed account.
+  const canLink = selectedRows.length === 2 && selectedRows.every((t) => t.status === 'Completed');
+  const mergeEligibility = selectedRows.length >= 2 ? checkMergeEligibility(selectedRows) : null;
+  const canMerge = mergeEligibility?.eligible ?? false;
+  const mergeDisabledReason =
+    mergeEligibility && !mergeEligibility.eligible
+      ? MERGE_INELIGIBILITY_MESSAGE[mergeEligibility.reason]
+      : undefined;
+
+  // Frozen snapshots of the selection at the moment a dialog opens, so mutating
+  // the selection underneath cannot shift the dialog's target set.
+  const [mergeSelection, setMergeSelection] = useState<TransactionResponse[] | null>(null);
+  const [linkPair, setLinkPair] = useState<[TransactionResponse, TransactionResponse] | null>(null);
+
   const filtered = useMemo(
     () => applyTransactionFilters(data ?? [], filters, categoryNameById),
     [data, filters, categoryNameById],
@@ -323,6 +343,10 @@ export function TransactionsPane() {
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const clampedPage = Math.min(pageIndex, pageCount - 1);
   const pageRows = filtered.slice(clampedPage * pageSize, clampedPage * pageSize + pageSize);
+  // Header select-all reflects the current page only.
+  const pageIds = pageRows.map((r) => r.id);
+  const allPageSelected = pageIds.length > 0 && pageIds.every((pid) => selection.isSelected(pid));
+  const somePageSelected = pageIds.some((pid) => selection.isSelected(pid));
 
   const updateFilters = (next: TransactionFilters) => {
     setFilters(next);
@@ -370,14 +394,6 @@ export function TransactionsPane() {
   const [refundTarget, setRefundTarget] = useState<TransactionResponse | null>(null);
   const openRefund = (t: TransactionResponse) => setRefundTarget(t);
 
-  const [linkTarget, setLinkTarget] = useState<TransactionResponse | null>(null);
-  const openLink = (t: TransactionResponse) => setLinkTarget(t);
-
-  // The survivor of a merge, picked from a row's context menu ("Merge into
-  // this…"). The dialog folds other compatible rows of the loaded window into it.
-  const [mergeTarget, setMergeTarget] = useState<TransactionResponse | null>(null);
-  const openMerge = (t: TransactionResponse) => setMergeTarget(t);
-
   const header = account ? (
     <AccountHeader account={account} />
   ) : accountLoading ? (
@@ -420,6 +436,17 @@ export function TransactionsPane() {
       <table className="w-full text-sm">
         <thead className="text-muted-foreground">
           <tr>
+            <th className="w-8 px-2 py-2">
+              <input
+                type="checkbox"
+                aria-label="Select all"
+                checked={allPageSelected}
+                ref={(el) => {
+                  if (el) el.indeterminate = somePageSelected && !allPageSelected;
+                }}
+                onChange={() => selection.setMany(pageIds, !allPageSelected)}
+              />
+            </th>
             <th className="w-8 px-4 py-2" />
             <th className="px-4 py-2 text-left font-medium">Date</th>
             <th className="px-4 py-2 text-left font-medium">Description</th>
@@ -446,6 +473,7 @@ export function TransactionsPane() {
                   <tr
                     className={cn(
                       'group cursor-pointer border-t hover:bg-muted/50',
+                      selection.isSelected(t.id) && 'bg-muted',
                       deEmphasized && 'text-muted-foreground',
                     )}
                     role="button"
@@ -458,6 +486,16 @@ export function TransactionsPane() {
                       }
                     }}
                   >
+                    <td className="px-2 py-2">
+                      <input
+                        type="checkbox"
+                        aria-label={`Select ${t.description || 'transaction'}`}
+                        checked={selection.isSelected(t.id)}
+                        onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => e.stopPropagation()}
+                        onChange={() => selection.toggle(t.id)}
+                      />
+                    </td>
                     <td className="px-4 py-2">
                       <span className="flex items-center gap-1">
                         <TransactionTypeIcon type={t.transactionType} />
@@ -703,19 +741,6 @@ export function TransactionsPane() {
                       Refund
                     </ContextMenuItem>
                   )}
-                  {t.status === 'Completed' && (
-                    <ContextMenuItem onSelect={() => openLink(t)}>
-                      <Link2 className="mr-2 h-4 w-4" aria-hidden />
-                      Link
-                    </ContextMenuItem>
-                  )}
-                  {t.status === 'Completed' &&
-                    (isIncome(t.transactionType) || isExpense(t.transactionType)) && (
-                      <ContextMenuItem onSelect={() => openMerge(t)}>
-                        <Merge className="mr-2 h-4 w-4" aria-hidden />
-                        Merge into this…
-                      </ContextMenuItem>
-                    )}
                   {t.status !== 'Cancelled' && (
                     <ContextMenuItem className="text-destructive" onSelect={() => openCancel(t)}>
                       <Ban className="mr-2 h-4 w-4" aria-hidden />
@@ -830,25 +855,39 @@ export function TransactionsPane() {
           original={refundTarget}
         />
       )}
-      {linkTarget && (
+      {linkPair && (
         <LinkTransactionDialog
           open
           onOpenChange={(o) => {
-            if (!o) setLinkTarget(null);
+            if (!o) setLinkPair(null);
           }}
-          acting={linkTarget}
+          pair={linkPair}
+          onLinked={() => selection.clear()}
         />
       )}
-      {mergeTarget && (
+      {mergeSelection && (
         <MergeTransactionsDialog
           open
           onOpenChange={(o) => {
-            if (!o) setMergeTarget(null);
+            if (!o) setMergeSelection(null);
           }}
-          acting={mergeTarget}
-          candidates={data ?? []}
+          selected={mergeSelection}
+          onMerged={() => selection.clear()}
         />
       )}
+      <SelectionActionBar
+        count={selection.count}
+        canLink={canLink}
+        canMerge={canMerge}
+        mergeDisabledReason={mergeDisabledReason}
+        onLink={() => {
+          if (canLink) setLinkPair([selectedRows[0]!, selectedRows[1]!]);
+        }}
+        onMerge={() => {
+          if (selectedRows.length >= 2) setMergeSelection(selectedRows);
+        }}
+        onClear={() => selection.clear()}
+      />
     </>
   );
 }
