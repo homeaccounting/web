@@ -4,6 +4,7 @@ import { useAuth } from '@/auth/useAuth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { toast } from '@/lib/toast';
 
 export function UserIdCard() {
   const { session } = useAuth();
@@ -19,6 +20,7 @@ export function UserIdCard() {
   const onCopy = () => {
     void navigator.clipboard.writeText(userId);
     setCopied(true);
+    toast.success('Copied');
     clearTimeout(timer.current);
     timer.current = setTimeout(() => setCopied(false), 1500);
   };
@@ -30,7 +32,9 @@ export function UserIdCard() {
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="flex items-center gap-3">
-          <code className="select-all rounded bg-muted px-2 py-1 font-mono text-sm">{userId}</code>
+          <code className="select-all rounded-md bg-muted px-2 py-1 font-mono text-sm">
+            {userId}
+          </code>
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -47,11 +51,6 @@ export function UserIdCard() {
               <TooltipContent>Copy user ID</TooltipContent>
             </Tooltip>
           </TooltipProvider>
-          {copied && (
-            <span role="status" className="text-sm text-green-600">
-              Copied
-            </span>
-          )}
         </div>
         <p className="text-sm text-muted-foreground">
           Share this ID with someone to let them add you to an account.

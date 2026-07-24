@@ -12,10 +12,10 @@ export function BreakdownBar({ label, amount, fraction }: BreakdownBarProps) {
         <span className="truncate">{label}</span>
         <span className="ml-2 shrink-0 tabular-nums">{amount}</span>
       </div>
-      <div className="h-2 w-full rounded bg-muted" aria-hidden>
+      <div className="h-2 w-full rounded-md bg-muted" aria-hidden>
         <div
           data-testid="breakdown-bar-fill"
-          className="h-2 rounded bg-primary"
+          className="h-2 rounded-md bg-chart-1"
           style={{ width: `${pct}%` }}
         />
       </div>

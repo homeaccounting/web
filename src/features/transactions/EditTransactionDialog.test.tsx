@@ -231,12 +231,14 @@ describe('EditTransactionDialog', () => {
   it('seeds the account picker with the transaction account after accounts load', async () => {
     // Regression: react-hook-form seeds defaultValues only on mount, so the
     // body must not render until useAccounts has resolved — otherwise the
-    // picker is empty and the seeded accountId has no matching <option>.
+    // picker is empty and the seeded accountId has no matching option.
+    const user = userEvent.setup();
     renderDialog({});
-    const select = await screen.findByLabelText<HTMLSelectElement>(/^Account\b/i);
-    const options = Array.from(select.options).map((o) => ({ value: o.value, text: o.text }));
-    expect(options).toEqual([{ value: accountId, text: 'Checking (USD)' }]);
-    expect(select.value).toBe(accountId);
+    const select = await screen.findByLabelText(/^Account\b/i);
+    expect(select).toHaveTextContent('Checking (USD)');
+    await user.click(select);
+    const options = await screen.findAllByRole('option');
+    expect(options.map((o) => o.textContent)).toEqual(['Checking (USD)']);
   });
 
   it('fieldErrors.targetAccountId on income amendment maps to the accountId field', async () => {

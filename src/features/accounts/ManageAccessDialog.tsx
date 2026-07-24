@@ -17,6 +17,7 @@ import {
   AlertDialogFooter,
 } from '@/components/ui/alert-dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -56,11 +57,7 @@ function displayLabel(entry: AccountAccessEntry): string {
 }
 
 function RoleBadge({ role }: { role: AccountRole }) {
-  return (
-    <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-      {ROLE_LABELS[role]}
-    </span>
-  );
+  return <Badge variant="status">{ROLE_LABELS[role]}</Badge>;
 }
 
 // Maps a share-request ApiError onto the friendly copy called for by the
@@ -219,7 +216,7 @@ export function ManageAccessDialog({ open, onOpenChange, account }: ManageAccess
             {access.isError && (
               <div className="space-y-2">
                 <Alert variant="destructive" role="alert">
-                  <AlertDescription>Could not load access.</AlertDescription>
+                  <AlertDescription>Couldn&rsquo;t load access.</AlertDescription>
                 </Alert>
                 <Button variant="outline" size="sm" onClick={() => void access.refetch()}>
                   Retry

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -6,7 +6,10 @@ import { server } from '@/test/server';
 import { saveSession } from '@/auth/storage';
 import { AuthProvider } from '@/auth/AuthContext';
 import { renderWithProviders } from '@/test/utils';
+import { toast } from '@/lib/toast';
 import { DefaultCategoriesCard } from './DefaultCategoriesCard';
+
+vi.mock('@/lib/toast', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 const apiBase = 'http://localhost:8080';
 const income = [{ id: 'inc-1', name: 'Salary' }];
@@ -54,6 +57,7 @@ describe('DefaultCategoriesCard', () => {
     await user.click(await screen.findByRole('option', { name: 'Salary' }));
     await user.click(screen.getByRole('button', { name: /save/i }));
     await waitFor(() => expect(body).toEqual({ incomeCategory: 'inc-1' }));
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith('Updated.'));
   });
 
   it('disables Save when there are no changes', () => {

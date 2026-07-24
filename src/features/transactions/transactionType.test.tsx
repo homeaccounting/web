@@ -16,9 +16,10 @@ describe('transactionTypeMeta', () => {
     expect(transactionTypeMeta('adjustment')).toMatchObject({ Icon: Scale, label: 'Adjustment' });
   });
 
-  it('income is green, expense is destructive (red)', () => {
-    expect(transactionTypeMeta('income').colorClass).toContain('green');
-    expect(transactionTypeMeta('expense').colorClass).toContain('destructive');
+  it('income is positive-toned, expense is negative-toned (red), transfer is info-toned', () => {
+    expect(transactionTypeMeta('income').colorClass).toContain('positive');
+    expect(transactionTypeMeta('expense').colorClass).toContain('negative');
+    expect(transactionTypeMeta('transfer').colorClass).toContain('info');
   });
 
   it('falls back for an unknown type', () => {

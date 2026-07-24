@@ -4,6 +4,7 @@ import type { DictionaryEntryResponse, UUID } from '@/api/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { EmptyState } from '@/components/EmptyState';
 import {
   Select,
   SelectContent,
@@ -11,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { toast } from '@/lib/toast';
 import { useUpdateBanking } from '@/features/configuration/useUpdateBanking';
 import { mccRowSchema } from './bankConnectionSchema';
 
@@ -51,7 +53,7 @@ export function MccMappingEditor({ value, expenseCategories }: MccMappingEditorP
       }
       map[parsed.data.mcc] = parsed.data.categoryId;
     }
-    update.mutate({ mccExpenseCategoryMap: map });
+    update.mutate({ mccExpenseCategoryMap: map }, { onSuccess: () => toast.success('Updated.') });
   };
 
   const opError = validationError ?? update.error?.message ?? null;
@@ -61,7 +63,7 @@ export function MccMappingEditor({ value, expenseCategories }: MccMappingEditorP
       <h3 id="mcc-mapping-heading" className="sr-only">
         MCC to category mapping
       </h3>
-      {rows.length === 0 && <p className="text-sm text-muted-foreground">No mappings yet</p>}
+      {rows.length === 0 && <EmptyState message="No mappings yet." className="p-0" />}
       <ul className="space-y-2">
         {rows.map((row, index) => {
           const mccLabel = `MCC code, row ${index + 1}`;
@@ -118,7 +120,6 @@ export function MccMappingEditor({ value, expenseCategories }: MccMappingEditorP
           <AlertDescription>{opError}</AlertDescription>
         </Alert>
       )}
-      {update.isSuccess && !validationError && <p className="text-sm text-green-600">Updated.</p>}
     </section>
   );
 }

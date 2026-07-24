@@ -4,7 +4,10 @@ import userEvent from '@testing-library/user-event';
 import { saveSession } from '@/auth/storage';
 import { AuthProvider } from '@/auth/AuthContext';
 import { renderWithProviders } from '@/test/utils';
+import { toast } from '@/lib/toast';
 import { UserIdCard } from './UserIdCard';
+
+vi.mock('@/lib/toast', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 function renderCard() {
   renderWithProviders(
@@ -38,7 +41,7 @@ describe('UserIdCard', () => {
     await user.click(screen.getByRole('button', { name: 'Copy' }));
 
     expect(writeText).toHaveBeenCalledWith('abc-123');
-    expect(screen.getByText('Copied')).toBeInTheDocument();
+    expect(toast.success).toHaveBeenCalledWith('Copied');
   });
 
   it('renders nothing when there is no session', () => {

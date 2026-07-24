@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -6,8 +6,11 @@ import { server } from '@/test/server';
 import { saveSession } from '@/auth/storage';
 import { AuthProvider } from '@/auth/AuthContext';
 import { renderWithProviders } from '@/test/utils';
+import { toast } from '@/lib/toast';
 import type { DictionaryEntryResponse } from '@/api/types';
 import { MccMappingEditor } from './MccMappingEditor';
+
+vi.mock('@/lib/toast', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 const apiBase = 'http://localhost:8080';
 
@@ -55,6 +58,7 @@ describe('MccMappingEditor', () => {
     await user.click(screen.getByRole('button', { name: /^save mapping$/i }));
 
     await waitFor(() => expect(body).toEqual({ mccExpenseCategoryMap: { '5411': GROCERIES } }));
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith('Updated.'));
   });
 
   it('non-4-digit MCC blocks save with a message and no request', async () => {

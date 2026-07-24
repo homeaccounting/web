@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { toast } from '@/lib/toast';
 import { useUpdateDefaults } from '@/features/configuration/useUpdateDefaults';
 
 interface Props {
@@ -68,7 +69,7 @@ export function DefaultCategoriesCard({
     const body: UpdateDefaultsRequest = {};
     if (income && income !== incomeCurrent) body.incomeCategory = income;
     if (expense && expense !== expenseCurrent) body.expenseCategory = expense;
-    update.mutate(body);
+    update.mutate(body, { onSuccess: () => toast.success('Updated.') });
   };
 
   return (
@@ -99,7 +100,6 @@ export function DefaultCategoriesCard({
             <AlertDescription>{update.error.message}</AlertDescription>
           </Alert>
         )}
-        {update.isSuccess && <p className="text-sm text-green-600">Updated.</p>}
       </CardContent>
     </Card>
   );

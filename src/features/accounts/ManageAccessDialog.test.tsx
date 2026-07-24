@@ -55,6 +55,28 @@ describe('ManageAccessDialog', () => {
     expect(await screen.findByText('editor@example.com')).toBeInTheDocument();
   });
 
+  it('shows an error state with a Retry button when the access list fails to load, and Retry refetches', async () => {
+    const user = userEvent.setup();
+    let calls = 0;
+    server.use(
+      http.get(`${apiBase}/api/accounts/acc-1/access`, () => {
+        calls += 1;
+        return calls === 1
+          ? new HttpResponse(null, { status: 500 })
+          : HttpResponse.json({
+              access: [{ userId: 'me', role: 'owner', email: 'me@example.com' }],
+            });
+      }),
+    );
+    renderWithProviders(<Wrapper />, { initialPath: '/' });
+    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument());
+    expect(screen.getByText(/couldn.?t load access/i)).toBeInTheDocument();
+    const retryButton = screen.getByRole('button', { name: /^retry$/i });
+    await user.click(retryButton);
+    await waitFor(() => expect(calls).toBeGreaterThan(1));
+    expect(await screen.findByText('me@example.com')).toBeInTheDocument();
+  });
+
   it("disables the owner row's Revoke control", async () => {
     mockAccessList([
       { userId: 'me', role: 'owner', email: 'me@example.com' },

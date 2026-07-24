@@ -12,6 +12,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
 import { DatePicker } from '@/components/DatePicker';
 import { RequiredMarker } from '@/components/RequiredMarker';
 import { nowDateTimeInput } from '@/lib/dates';
@@ -148,16 +155,18 @@ function AdjustBalanceForm({ accounts, selectedAccountId, onClose }: AdjustBalan
                   <RequiredMarker />
                 </FormLabel>
                 <FormControl>
-                  <select
-                    className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                    {...field}
-                  >
-                    {accounts.map((a) => (
-                      <option key={a.id} value={a.id}>
-                        {a.name} ({a.currency})
-                      </option>
-                    ))}
-                  </select>
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger aria-label="Account">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {accounts.map((a) => (
+                        <SelectItem key={a.id} value={a.id}>
+                          {a.name} ({a.currency})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -165,7 +174,8 @@ function AdjustBalanceForm({ accounts, selectedAccountId, onClose }: AdjustBalan
           />
 
           <div className="text-sm text-muted-foreground">
-            Current balance: {formatAccountBalance(selected)} ({selected.currency})
+            Current balance: <span className="tabular-nums">{formatAccountBalance(selected)}</span>{' '}
+            ({selected.currency})
           </div>
 
           <FormField

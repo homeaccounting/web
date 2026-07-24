@@ -8,9 +8,11 @@ import { useRemoveConnection } from '@/features/configuration/useRemoveConnectio
 import { useProviders } from '@/features/banking/useProviders';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
+import { EmptyState } from '@/components/EmptyState';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -44,9 +46,7 @@ function ConnectionRow({ connection }: { connection: BankConnectionDTO }) {
     <li className="space-y-2 py-3">
       <div className="flex flex-wrap items-center gap-3">
         <span className="font-medium">{connection.name}</span>
-        <span className="rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-          {connection.provider}
-        </span>
+        <Badge variant="muted">{connection.provider}</Badge>
         <span className="text-sm text-muted-foreground">•••• {connection.tokenHint}</span>
         <span className="text-sm text-muted-foreground">{mappedCount} mapped</span>
         <div className="ml-auto flex items-center gap-2">
@@ -109,7 +109,7 @@ export function ProfileBankingPane() {
 
   if (config.isPending) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-6">
         <Skeleton className="h-32" />
         <Skeleton className="h-32" />
       </div>
@@ -117,9 +117,14 @@ export function ProfileBankingPane() {
   }
   if (config.isError || !config.data) {
     return (
-      <Alert variant="destructive" role="alert">
-        <AlertDescription>Failed to load configuration.</AlertDescription>
-      </Alert>
+      <div className="space-y-2">
+        <Alert variant="destructive" role="alert">
+          <AlertDescription>Couldn&rsquo;t load bank connections.</AlertDescription>
+        </Alert>
+        <Button variant="outline" size="sm" onClick={() => void config.refetch()}>
+          Retry
+        </Button>
+      </div>
     );
   }
 
@@ -134,7 +139,7 @@ export function ProfileBankingPane() {
         </CardHeader>
         <CardContent className="space-y-3">
           {c.banking.connections.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No connections yet</p>
+            <EmptyState message="No connections yet." className="p-0" />
           ) : (
             <ul className="divide-y">
               {c.banking.connections.map((conn) => (

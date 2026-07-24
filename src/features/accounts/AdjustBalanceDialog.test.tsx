@@ -224,14 +224,14 @@ describe('AdjustBalanceDialog', () => {
     seedAccounts(accounts);
     renderWithProviders(ui('a2'), { queryClient: makeQueryClient() });
     const select = await screen.findByLabelText(/account/i);
-    expect(select).toHaveValue('a2');
+    expect(select).toHaveTextContent('Euro Wallet');
     expect(screen.getByText(/current balance/i)).toHaveTextContent('EUR');
   });
 
   it('defaults to the first account when no account is highlighted', async () => {
     seedAccounts(accounts);
     renderWithProviders(ui(undefined), { queryClient: makeQueryClient() });
-    expect(await screen.findByLabelText(/account/i)).toHaveValue('a1');
+    expect(await screen.findByLabelText(/account/i)).toHaveTextContent('Savings');
   });
 
   it('switching the account updates the current balance, currency, and PUT target', async () => {
@@ -246,8 +246,8 @@ describe('AdjustBalanceDialog', () => {
       }),
     );
     renderWithProviders(ui('a1'), { queryClient: makeQueryClient() });
-    const select = await screen.findByLabelText(/account/i);
-    await userEvent.selectOptions(select, 'a2');
+    await userEvent.click(await screen.findByLabelText(/account/i));
+    await userEvent.click(await screen.findByRole('option', { name: /euro wallet/i }));
     expect(screen.getByText(/current balance/i)).toHaveTextContent('EUR');
     const target = screen.getByLabelText(/target balance/i);
     await userEvent.clear(target);
@@ -260,9 +260,10 @@ describe('AdjustBalanceDialog', () => {
   it('re-prefills target balance to the newly selected account balance on switch', async () => {
     seedAccounts(accounts);
     renderWithProviders(ui('a1'), { queryClient: makeQueryClient() });
-    const select = await screen.findByLabelText(/account/i);
+    await screen.findByLabelText(/account/i);
     expect(screen.getByLabelText(/target balance/i)).toHaveValue(100);
-    await userEvent.selectOptions(select, 'a2');
+    await userEvent.click(screen.getByLabelText(/account/i));
+    await userEvent.click(await screen.findByRole('option', { name: /euro wallet/i }));
     expect(screen.getByLabelText(/target balance/i)).toHaveValue(42.5);
   });
 

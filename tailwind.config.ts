@@ -1,4 +1,5 @@
 import type { Config } from 'tailwindcss';
+import defaultTheme from 'tailwindcss/defaultTheme';
 import tailwindcssAnimate from 'tailwindcss-animate';
 
 const config: Config = {
@@ -10,6 +11,9 @@ const config: Config = {
       padding: '1rem',
     },
     extend: {
+      fontFamily: {
+        sans: ['"Inter Variable"', 'Inter', ...defaultTheme.fontFamily.sans],
+      },
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
@@ -56,6 +60,10 @@ const config: Config = {
           '4': 'hsl(var(--chart-4))',
           '5': 'hsl(var(--chart-5))',
         },
+        positive: 'hsl(var(--positive))',
+        negative: 'hsl(var(--negative))',
+        warning: 'hsl(var(--warning))',
+        info: 'hsl(var(--info))',
       },
     },
   },

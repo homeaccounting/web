@@ -8,13 +8,15 @@ import {
   Pencil,
   Plus,
   Users,
-  X,
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { EmptyState } from '@/components/EmptyState';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import { toast } from '@/lib/toast';
 import type { AccountResponse } from '@/api/types';
 import { ApiError } from '@/api/client';
 import { buildAccountGroups } from './accountGroups';
@@ -38,11 +40,7 @@ import { canManage, canModify, ROLE_LABELS } from './roles';
 // AccountRole (not GrantableRole) because canManage() doesn't narrow at the
 // call site below — the runtime guard still ensures 'owner' never reaches it.
 function SharedRoleBadge({ role }: { role: AccountRole }) {
-  return (
-    <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-      {ROLE_LABELS[role]}
-    </span>
-  );
+  return <Badge variant="status">{ROLE_LABELS[role]}</Badge>;
 }
 
 export function AccountsPane() {
@@ -63,18 +61,16 @@ export function AccountsPane() {
       else next.add(key);
       return next;
     });
-  const [reopenError, setReopenError] = useState<string | null>(null);
   const reopenMutation = useReopenAccount();
   const accountActionsDisabled = !selectedAccount;
 
   const reopen = (account: AccountResponse) => {
-    setReopenError(null);
     reopenMutation.mutate(
       { id: account.id },
       {
         onError: (err) =>
-          setReopenError(
-            err instanceof ApiError ? err.message : 'Could not reopen this account. Try again.',
+          toast.error(
+            err instanceof ApiError ? err.message : 'Couldn’t reopen this account. Try again.',
           ),
       },
     );
@@ -126,7 +122,7 @@ export function AccountsPane() {
 
   return (
     <>
-      <div className="flex items-center justify-between border-b px-3 py-2">
+      <div className="flex items-center justify-between border-b px-4 py-2.5">
         <span className="text-sm font-medium">Accounts</span>
         <TooltipProvider>
           <div className="flex items-center gap-1">
@@ -140,7 +136,7 @@ export function AccountsPane() {
                   onClick={() => selectedAccount && setEditingAccount(selectedAccount)}
                   className="h-9 w-9"
                 >
-                  <Pencil className="h-5 w-5" />
+                  <Pencil />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
@@ -164,11 +160,7 @@ export function AccountsPane() {
                   }
                   className="h-9 w-9"
                 >
-                  {selectedIsClosed ? (
-                    <ArchiveRestore className="h-5 w-5" />
-                  ) : (
-                    <Archive className="h-5 w-5" />
-                  )}
+                  {selectedIsClosed ? <ArchiveRestore /> : <Archive />}
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
@@ -193,7 +185,7 @@ export function AccountsPane() {
                   onClick={() => selectedAccount && setManagingAccount(selectedAccount)}
                   className="h-9 w-9"
                 >
-                  <Users className="h-5 w-5" />
+                  <Users />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Manage access</TooltipContent>
@@ -207,7 +199,7 @@ export function AccountsPane() {
                   onClick={() => setCreating(true)}
                   className="h-9 w-9"
                 >
-                  <Plus className="h-5 w-5" />
+                  <Plus />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Add account</TooltipContent>
@@ -226,8 +218,8 @@ export function AccountsPane() {
 
       {isError && (
         <div className="space-y-2 p-3">
-          <Alert role="alert" variant="destructive">
-            <AlertDescription>Could not load accounts.</AlertDescription>
+          <Alert variant="destructive" role="alert">
+            <AlertDescription>Couldn&rsquo;t load accounts.</AlertDescription>
           </Alert>
           <Button variant="outline" size="sm" onClick={() => void refetch()}>
             Retry
@@ -236,9 +228,7 @@ export function AccountsPane() {
       )}
 
       {!isLoading && !isError && (!data || data.length === 0) && (
-        <div className="p-3">
-          <span className="text-sm text-muted-foreground">No accounts yet.</span>
-        </div>
+        <EmptyState message="No accounts yet." className="p-3" />
       )}
 
       {!isLoading && !isError && data && data.length > 0 && (
@@ -320,21 +310,6 @@ export function AccountsPane() {
           }}
           account={managingAccount}
         />
-      )}
-      {reopenError && (
-        <div className="fixed bottom-4 right-4 z-50 w-80 max-w-[calc(100vw-2rem)]">
-          <Alert role="alert" variant="destructive" className="relative pr-9 shadow-lg">
-            <AlertDescription>{reopenError}</AlertDescription>
-            <button
-              type="button"
-              aria-label="Dismiss"
-              onClick={() => setReopenError(null)}
-              className="absolute right-2 top-2 rounded-sm opacity-70 transition-opacity hover:opacity-100"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </Alert>
-        </div>
       )}
     </>
   );

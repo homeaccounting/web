@@ -82,7 +82,8 @@ describe('DictionaryList', () => {
     setup();
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: /add category/i }));
-    await user.selectOptions(screen.getByRole('combobox', { name: /entry type/i }), 'group');
+    await user.click(screen.getByRole('combobox', { name: /entry type/i }));
+    await user.click(await screen.findByRole('option', { name: 'Group' }));
     await user.type(screen.getByRole('textbox', { name: /add category/i }), 'Leisure');
     await user.keyboard('{Enter}');
     await waitFor(() => expect(body).toEqual({ name: 'Leisure', type: 'group', parentId: null }));
@@ -102,7 +103,8 @@ describe('DictionaryList', () => {
     setup();
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: /add category/i }));
-    await user.selectOptions(screen.getByRole('combobox', { name: /parent group/i }), 'food');
+    await user.click(screen.getByRole('combobox', { name: /parent group/i }));
+    await user.click(await screen.findByRole('option', { name: /^food$/i }));
     await user.type(screen.getByRole('textbox', { name: /add category/i }), 'Dining');
     await user.keyboard('{Enter}');
     await waitFor(() => expect(body).toEqual({ name: 'Dining', type: 'item', parentId: 'food' }));
@@ -161,7 +163,8 @@ describe('DictionaryList', () => {
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: /rename salary/i }));
     // Picking a group applies the move immediately — no Enter.
-    await user.selectOptions(screen.getByRole('combobox', { name: /move salary/i }), 'food');
+    await user.click(screen.getByRole('combobox', { name: /move salary/i }));
+    await user.click(await screen.findByRole('option', { name: /^food$/i }));
     await waitFor(() => expect(moveBody).toEqual({ parentId: 'food' }));
     // The edit row is gone: the move select no longer exists.
     expect(screen.queryByRole('combobox', { name: /move salary/i })).not.toBeInTheDocument();

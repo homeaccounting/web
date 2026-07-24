@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -7,7 +7,10 @@ import { configurationFixture } from '@/test/fixtures';
 import { saveSession } from '@/auth/storage';
 import { AuthProvider } from '@/auth/AuthContext';
 import { renderWithProviders } from '@/test/utils';
+import { toast } from '@/lib/toast';
 import { ProfileGeneralPane } from './ProfileGeneralPane';
+
+vi.mock('@/lib/toast', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 const apiBase = 'http://localhost:8080';
 
@@ -46,7 +49,7 @@ describe('ProfileGeneralPane', () => {
     await user.click(await screen.findByRole('option', { name: 'EUR' }));
     await user.click(screen.getAllByRole('button', { name: /save/i })[0]!);
 
-    await waitFor(() => expect(screen.getByTestId('defaultCurrency-status')).toBeInTheDocument());
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith('Updated.'));
     expect(body).toEqual({ currency: 'EUR' });
   });
 
@@ -106,7 +109,7 @@ describe('ProfileGeneralPane', () => {
     ).toBeInTheDocument();
   });
 
-  it('still shows the sharing ID when configuration fails to load', async () => {
+  it('still shows the sharing ID when configuration fails to load, with a Retry button', async () => {
     server.use(
       http.get(`${apiBase}/api/users/me/configuration`, () =>
         HttpResponse.json({ message: 'boom' }, { status: 500 }),
@@ -116,8 +119,9 @@ describe('ProfileGeneralPane', () => {
     // Sharing-ID card depends only on the auth session, not configuration.
     expect(screen.getByText('Your sharing ID')).toBeInTheDocument();
     await waitFor(() =>
-      expect(screen.getByText(/failed to load configuration/i)).toBeInTheDocument(),
+      expect(screen.getByText(/couldn.t load configuration/i)).toBeInTheDocument(),
     );
+    expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
   });
 
   it('shows inline error from a 400 response', async () => {

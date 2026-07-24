@@ -9,7 +9,7 @@ const STATUS_ICON: Record<
   string,
   { Icon: LucideIcon; className: string; label: string } | undefined
 > = {
-  Pending: { Icon: Clock, className: 'text-amber-600 dark:text-amber-400', label: 'Pending' },
+  Pending: { Icon: Clock, className: 'text-warning', label: 'Pending' },
   Failed: { Icon: TriangleAlert, className: 'text-destructive', label: 'Failed' },
   Cancelled: { Icon: Ban, className: 'text-muted-foreground', label: 'Cancelled' },
 };

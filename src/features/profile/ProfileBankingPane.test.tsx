@@ -103,6 +103,23 @@ describe('ProfileBankingPane', () => {
     expect(await screen.findByRole('button', { name: /link accounts/i })).toBeInTheDocument();
   });
 
+  it('shows an error alert with a Retry button when configuration fails to load', async () => {
+    server.use(http.get(configUrl, () => HttpResponse.json({}, { status: 500 })));
+    render();
+    expect(await screen.findByRole('alert')).toHaveTextContent(/couldn.t load bank connections/i);
+    expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
+  });
+
+  it('Retry re-fetches configuration and renders once it succeeds', async () => {
+    server.use(http.get(configUrl, () => HttpResponse.json({}, { status: 500 })));
+    render();
+    await screen.findByRole('alert');
+    // Restore the beforeEach handler (banking-enabled configuration), then retry.
+    server.use(http.get(configUrl, () => HttpResponse.json(bankingEnabledConfigurationFixture)));
+    await userEvent.setup().click(screen.getByRole('button', { name: /retry/i }));
+    await waitFor(() => expect(screen.getByText('Monobank')).toBeInTheDocument());
+  });
+
   it('hides "Link accounts" for a file-only (privatbank) connection', async () => {
     const privatbankConnection: BankConnectionDTO = {
       id: 'conn-privatbank',

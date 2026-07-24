@@ -86,7 +86,8 @@ describe('TransferForm', () => {
         onCancel={vi.fn()}
       />,
     );
-    await user.selectOptions(screen.getByLabelText(/target account/i), A2);
+    await user.click(screen.getByLabelText(/target account/i));
+    await user.click(await screen.findByRole('option', { name: /eur acct/i }));
     await waitFor(() => expect(screen.getByLabelText(/exchange rate/i)).toBeInTheDocument());
   });
 
@@ -161,7 +162,8 @@ describe('TransferForm', () => {
         onCancel={vi.fn()}
       />,
     );
-    await user.selectOptions(screen.getByLabelText(/target account/i), A1);
+    await user.click(screen.getByLabelText(/target account/i));
+    await user.click(await screen.findByRole('option', { name: /usd acct/i }));
     await user.click(screen.getByRole('button', { name: 'OK' }));
     expect(await screen.findByText(/must differ/i)).toBeInTheDocument();
   });

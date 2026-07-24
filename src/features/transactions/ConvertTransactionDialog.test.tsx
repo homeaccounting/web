@@ -264,7 +264,8 @@ describe('ConvertTransactionDialog', () => {
     expect(await screen.findByRole('dialog', { name: /convert to transfer/i })).toBeInTheDocument();
     await screen.findByLabelText(/source account/i);
     // Source is empty by default (user must pick); select accountA.
-    await user.selectOptions(screen.getByLabelText(/source account/i), accountA);
+    await user.click(screen.getByLabelText(/source account/i));
+    await user.click(await screen.findByRole('option', { name: /checking/i }));
     await user.click(screen.getByRole('button', { name: 'OK' }));
     await waitFor(() => expect(Object.keys(body).length).toBeGreaterThan(0));
     expect(body.sourceAccountId).toBe(accountA); // user-picked source
@@ -286,7 +287,8 @@ describe('ConvertTransactionDialog', () => {
     expect(await screen.findByRole('dialog', { name: /convert to transfer/i })).toBeInTheDocument();
     await screen.findByLabelText(/source account/i);
     // Target is empty by default (user must pick); select accountB.
-    await user.selectOptions(screen.getByLabelText(/target account/i), accountB);
+    await user.click(screen.getByLabelText(/target account/i));
+    await user.click(await screen.findByRole('option', { name: /savings/i }));
     await user.click(screen.getByRole('button', { name: 'OK' }));
     await waitFor(() => expect(Object.keys(body).length).toBeGreaterThan(0));
     expect(body.sourceAccountId).toBe(accountA); // kept expense source

@@ -115,7 +115,7 @@ export function LinkAccountsDialog({ open, onOpenChange, connection }: LinkAccou
               <p>
                 {isRateLimited(external.error)
                   ? 'monobank is rate-limited. Try again in a moment.'
-                  : 'Could not load external accounts. Please try again.'}
+                  : 'Couldn’t load external accounts. Please try again.'}
               </p>
               <Button
                 type="button"

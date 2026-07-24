@@ -1,4 +1,6 @@
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatMoney } from '@/lib/format';
 import type { ReportRange } from '@/api/reports';
@@ -25,27 +27,36 @@ function Figure({
 }
 
 export function IncomeVsExpenseCard({ range }: { range: ReportRange }) {
-  const { data, isLoading, isError } = useIncomeVsExpense(range);
+  const { data, isLoading, isError, refetch } = useIncomeVsExpense(range);
   return (
-    <section className="rounded-lg border p-4">
-      <h2 className="mb-3 font-semibold">Income vs. expense</h2>
-      {isLoading && <Skeleton className="h-12 w-full" />}
-      {isError && (
-        <Alert variant="destructive" role="alert">
-          <AlertDescription>Could not load income vs. expense.</AlertDescription>
-        </Alert>
-      )}
-      {data && (
-        <div className="flex flex-wrap gap-8">
-          <Figure label="Income" money={data.income} className="text-green-600" />
-          <Figure label="Expense" money={data.expense} className="text-red-600" />
-          <Figure
-            label="Net"
-            money={data.net}
-            className={data.net.amount < 0 ? 'text-red-600' : 'text-green-600'}
-          />
-        </div>
-      )}
-    </section>
+    <Card>
+      <CardHeader>
+        <CardTitle>Income vs. expense</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {isLoading && <Skeleton className="h-12 w-full" />}
+        {isError && (
+          <div className="space-y-2">
+            <Alert variant="destructive" role="alert">
+              <AlertDescription>Couldn&rsquo;t load income vs. expense.</AlertDescription>
+            </Alert>
+            <Button variant="outline" size="sm" onClick={() => void refetch()}>
+              Retry
+            </Button>
+          </div>
+        )}
+        {data && (
+          <div className="flex flex-wrap gap-8">
+            <Figure label="Income" money={data.income} className="text-positive" />
+            <Figure label="Expense" money={data.expense} className="text-negative" />
+            <Figure
+              label="Net"
+              money={data.net}
+              className={data.net.amount < 0 ? 'text-negative' : 'text-positive'}
+            />
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

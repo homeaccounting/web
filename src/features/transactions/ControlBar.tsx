@@ -56,31 +56,31 @@ export function ControlBar({ selectedAccountId, selectedAccount }: ControlBarPro
   const [adjusting, setAdjusting] = useState(false);
   return (
     <>
-      <div className="flex items-center justify-between border-b px-3 py-2">
+      <div className="flex items-center justify-between border-b px-4 py-2.5">
         <span className="text-sm font-medium">Transactions</span>
         <TooltipProvider>
           <div className="flex items-center gap-1">
             <IconAction
               label="Add expense"
-              icon={<ArrowUpFromLine className="h-5 w-5" />}
+              icon={<ArrowUpFromLine />}
               disabled={!hasAccounts}
               onClick={() => setOpenExpense(true)}
             />
             <IconAction
               label="Add income"
-              icon={<ArrowDownToLine className="h-5 w-5" />}
+              icon={<ArrowDownToLine />}
               disabled={!hasAccounts}
               onClick={() => setOpenIncome(true)}
             />
             <IconAction
               label="Add transfer"
-              icon={<ArrowLeftRight className="h-5 w-5" />}
+              icon={<ArrowLeftRight />}
               disabled={!hasAccounts}
               onClick={() => setOpenTransfer(true)}
             />
             <IconAction
               label="Adjust balance"
-              icon={<Scale className="h-5 w-5" />}
+              icon={<Scale />}
               disabled={!hasAccounts}
               onClick={() => setAdjusting(true)}
             />

@@ -87,7 +87,7 @@ export function CreateExpenseDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle>{TRANSACTION_KIND_LABELS.expense.title}</DialogTitle>
           <DialogDescription>

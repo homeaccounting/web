@@ -24,7 +24,10 @@ const CardTitle = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivE
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn('text-2xl font-semibold leading-none tracking-tight', className)}
+      // Intentional deviation from stock shadcn (text-2xl): our type scale caps
+      // card/section titles at text-lg so they sit below the page h1 (text-2xl).
+      // See docs/specs/2026-07-24-design-system-foundations-design.md WS1.
+      className={cn('text-lg font-semibold leading-none tracking-tight', className)}
       {...props}
     />
   ),

@@ -2,10 +2,18 @@ import { useEffect, useMemo } from 'react';
 import { useForm, FormProvider, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { z } from 'zod';
-import { DialogFooter } from '@/components/ui/dialog';
+import { DialogBody, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import type { AccountResponse, DictionaryEntryResponse, UUID } from '@/api/types';
 import { makeIncomeExpenseFormSchema, type IncomeExpenseFormValues } from './schema';
 import { LabelMultiSelect } from './LabelMultiSelect';
@@ -149,126 +157,140 @@ export function IncomeExpenseForm({
         onSubmit={(e) => {
           void submit(e);
         }}
-        className="space-y-4"
+        className="flex min-h-0 flex-1 flex-col"
       >
-        <FormField
-          control={form.control}
-          name="accountId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>
-                Account
-                <RequiredMarker />
-              </FormLabel>
-              <FormControl>
-                <select
-                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                  {...field}
-                >
-                  {accounts.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.name} ({a.currency})
-                    </option>
-                  ))}
-                </select>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">Currency</span>
+        <DialogBody>
           <div
-            data-testid="currency-badge"
-            className="inline-flex h-10 items-center rounded-md border bg-muted px-3 text-sm tabular-nums text-muted-foreground"
-            aria-label="Currency"
+            data-testid="form-grid-account-currency"
+            className="grid grid-cols-1 gap-4 sm:grid-cols-2"
           >
-            {form.watch('currency') || '—'}
+            <FormField
+              control={form.control}
+              name="accountId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Account
+                    <RequiredMarker />
+                  </FormLabel>
+                  <FormControl>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger aria-label="Account">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {accounts.map((a) => (
+                          <SelectItem key={a.id} value={a.id}>
+                            {a.name} ({a.currency})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="space-y-2">
+              <Label>Currency</Label>
+              <div
+                data-testid="currency-badge"
+                className="flex h-10 items-center rounded-md border bg-muted px-3 text-sm tabular-nums text-muted-foreground"
+                aria-label="Currency"
+              >
+                {form.watch('currency') || '—'}
+              </div>
+            </div>
           </div>
-        </div>
 
-        <AllocationsEditor
-          sections={sections}
-          currency={form.watch('currency') || ''}
-          lockTarget={lockTarget}
-        />
+          <AllocationsEditor
+            sections={sections}
+            currency={form.watch('currency') || ''}
+            lockTarget={lockTarget}
+          />
 
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          <div
+            data-testid="form-grid-date-contact"
+            className="grid grid-cols-1 gap-4 sm:grid-cols-2"
+          >
+            <FormField
+              control={form.control}
+              name="date"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Date <RequiredMarker />
+                  </FormLabel>
+                  <FormControl>
+                    <DatePicker
+                      withTime
+                      value={field.value ?? ''}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-        <FormField
-          control={form.control}
-          name="date"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>
-                Date <RequiredMarker />
-              </FormLabel>
-              <FormControl>
-                <DatePicker
-                  withTime
-                  value={field.value ?? ''}
-                  onChange={field.onChange}
-                  onBlur={field.onBlur}
-                  name={field.name}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+            <FormField
+              control={form.control}
+              name="contactId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Contact</FormLabel>
+                  <FormControl>
+                    <ContactCombobox
+                      options={contacts}
+                      value={field.value ?? null}
+                      onChange={field.onChange}
+                      onCreate={async (name) => {
+                        const id = await onCreateContact?.(name);
+                        if (id) field.onChange(id);
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
 
-        <FormField
-          control={form.control}
-          name="labels"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Labels</FormLabel>
-              <FormControl>
-                <LabelMultiSelect
-                  options={labels}
-                  value={field.value ?? []}
-                  onChange={field.onChange}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          <FormField
+            control={form.control}
+            name="description"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Description</FormLabel>
+                <FormControl>
+                  <Input {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="contactId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Contact</FormLabel>
-              <FormControl>
-                <ContactCombobox
-                  options={contacts}
-                  value={field.value ?? null}
-                  onChange={field.onChange}
-                  onCreate={async (name) => {
-                    const id = await onCreateContact?.(name);
-                    if (id) field.onChange(id);
-                  }}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          <FormField
+            control={form.control}
+            name="labels"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Labels</FormLabel>
+                <FormControl>
+                  <LabelMultiSelect
+                    options={labels}
+                    value={field.value ?? []}
+                    onChange={field.onChange}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </DialogBody>
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={onCancel}>

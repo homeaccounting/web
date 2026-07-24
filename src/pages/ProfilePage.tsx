@@ -1,5 +1,7 @@
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { Header } from '@/components/Header';
+import { PageContainer } from '@/components/PageContainer';
+import { PageHeader } from '@/components/PageHeader';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useConfiguration } from '@/features/configuration/useConfiguration';
@@ -40,8 +42,10 @@ export default function ProfilePage() {
         return (
           <div className="flex h-screen flex-col">
             <Header />
-            <main className="mx-auto w-full max-w-3xl flex-1 overflow-y-auto p-6">
-              <Skeleton className="h-64" />
+            <main className="flex-1 overflow-y-auto">
+              <PageContainer>
+                <Skeleton className="h-64" />
+              </PageContainer>
             </main>
           </div>
         );
@@ -60,34 +64,36 @@ export default function ProfilePage() {
   return (
     <div className="flex h-screen flex-col">
       <Header />
-      <main className="mx-auto w-full max-w-3xl flex-1 overflow-y-auto p-6">
-        <h1 className="mb-6 text-xl font-semibold">Profile</h1>
-        <Tabs value={active} onValueChange={(next) => navigate(`/profile/${next}`)}>
-          <TabsList>
-            <TabsTrigger value="general">General</TabsTrigger>
-            <TabsTrigger value="dictionaries">Dictionaries</TabsTrigger>
-            <TabsTrigger value="defaults">Defaults</TabsTrigger>
-            <TabsTrigger value="auth">Auth</TabsTrigger>
-            {bankingEnabled && <TabsTrigger value="banking">Banking</TabsTrigger>}
-          </TabsList>
-          <TabsContent value="general">
-            <ProfileGeneralPane />
-          </TabsContent>
-          <TabsContent value="dictionaries">
-            <ProfileDictionariesPane />
-          </TabsContent>
-          <TabsContent value="defaults">
-            <ProfileDefaultsPane />
-          </TabsContent>
-          <TabsContent value="auth">
-            <ProfileAuthPane />
-          </TabsContent>
-          {bankingEnabled && (
-            <TabsContent value="banking">
-              <ProfileBankingPane />
+      <main className="flex-1 overflow-y-auto">
+        <PageContainer>
+          <PageHeader title="Profile" />
+          <Tabs value={active} onValueChange={(next) => navigate(`/profile/${next}`)}>
+            <TabsList>
+              <TabsTrigger value="general">General</TabsTrigger>
+              <TabsTrigger value="dictionaries">Dictionaries</TabsTrigger>
+              <TabsTrigger value="defaults">Defaults</TabsTrigger>
+              <TabsTrigger value="auth">Auth</TabsTrigger>
+              {bankingEnabled && <TabsTrigger value="banking">Banking</TabsTrigger>}
+            </TabsList>
+            <TabsContent value="general">
+              <ProfileGeneralPane />
             </TabsContent>
-          )}
-        </Tabs>
+            <TabsContent value="dictionaries">
+              <ProfileDictionariesPane />
+            </TabsContent>
+            <TabsContent value="defaults">
+              <ProfileDefaultsPane />
+            </TabsContent>
+            <TabsContent value="auth">
+              <ProfileAuthPane />
+            </TabsContent>
+            {bankingEnabled && (
+              <TabsContent value="banking">
+                <ProfileBankingPane />
+              </TabsContent>
+            )}
+          </Tabs>
+        </PageContainer>
       </main>
     </div>
   );

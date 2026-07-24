@@ -7,7 +7,10 @@ import { profileFixture } from '@/test/fixtures';
 import { saveSession } from '@/auth/storage';
 import { AuthProvider } from '@/auth/AuthContext';
 import { renderWithProviders } from '@/test/utils';
+import { toast } from '@/lib/toast';
 import { ProfileAuthPane } from './ProfileAuthPane';
+
+vi.mock('@/lib/toast', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 const apiBase = 'http://localhost:8080';
 
@@ -55,6 +58,7 @@ describe('ProfileAuthPane', () => {
     );
     await user.click(screen.getByRole('button', { name: /change password/i }));
     await waitFor(() => expect(body).toEqual({ currentPassword: 'old', newPassword: 'new-12345' }));
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith('Password changed.'));
   });
 
   it('shows mismatch error when passwords differ', async () => {
@@ -141,6 +145,22 @@ describe('ProfileAuthPane', () => {
     const unlinkBtn = screen.getByRole('button', { name: /unlink/i });
     expect(unlinkBtn).toBeDisabled();
     expect(unlinkBtn).toHaveAttribute('title', 'You need at least one way to sign in.');
+  });
+
+  it('shows an error alert with a Retry button when the profile fails to load', async () => {
+    server.use(http.get(`${apiBase}/api/users/me`, () => HttpResponse.json({}, { status: 500 })));
+    setup();
+    expect(await screen.findByRole('alert')).toHaveTextContent(/couldn.t load profile/i);
+    expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
+  });
+
+  it('Retry re-fetches the profile and renders once it succeeds', async () => {
+    server.use(http.get(`${apiBase}/api/users/me`, () => HttpResponse.json({}, { status: 500 })));
+    setup();
+    await screen.findByRole('alert');
+    server.use(http.get(`${apiBase}/api/users/me`, () => HttpResponse.json(profileFixture)));
+    await userEvent.setup().click(screen.getByRole('button', { name: /retry/i }));
+    await waitFor(() => expect(screen.getByLabelText('Current password')).toBeInTheDocument());
   });
 
   it('Link Telegram opens the dialog', async () => {

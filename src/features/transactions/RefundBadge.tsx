@@ -1,10 +1,7 @@
+import { Badge } from '@/components/ui/badge';
 import { formatMoney } from '@/lib/format';
-import { cn } from '@/lib/utils';
 import { roundMoney } from '@/lib/money';
 import type { RefundStat } from './refundIndex';
-
-// Shared muted-chip styling, matching the row's other inline chips.
-const CHIP = 'ml-2 inline-flex items-center rounded bg-muted px-1.5 py-0.5 text-xs font-medium';
 
 type RefundBadgeProps =
   | {
@@ -29,7 +26,11 @@ type RefundBadgeProps =
 export function RefundBadge(props: RefundBadgeProps) {
   if (props.mode === 'refund') {
     const text = props.originalDescription ? `refund of ${props.originalDescription}` : 'refund';
-    return <span className={cn(CHIP, 'text-muted-foreground')}>{text}</span>;
+    return (
+      <Badge variant="muted" className="ml-2">
+        {text}
+      </Badge>
+    );
   }
 
   // Full when the refunded total meets or exceeds the original at cent precision
@@ -41,5 +42,9 @@ export function RefundBadge(props: RefundBadgeProps) {
         props.originalTotal,
         props.currency,
       )})`;
-  return <span className={cn(CHIP, 'text-muted-foreground')}>{text}</span>;
+  return (
+    <Badge variant="muted" className="ml-2">
+      {text}
+    </Badge>
+  );
 }

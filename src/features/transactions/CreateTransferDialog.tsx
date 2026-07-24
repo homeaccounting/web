@@ -85,7 +85,7 @@ export function CreateTransferDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle>{TRANSACTION_KIND_LABELS.transfer.title}</DialogTitle>
           <DialogDescription>Transfer funds between two of your accounts.</DialogDescription>

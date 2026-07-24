@@ -1,8 +1,20 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { useParams } from 'react-router-dom';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { EmptyState } from '@/components/EmptyState';
 import {
   ContextMenu,
   ContextMenuContent,
@@ -118,6 +130,10 @@ interface AssocEdge {
 // window; this only renders and wires unlink behind a confirm.
 function AssociationBadges({ actingId, edges }: { actingId: string; edges: AssocEdge[] }) {
   const unlink = useUnlinkRelation(actingId);
+  // Holds the edge awaiting confirmation in the AlertDialog below; null means
+  // no dialog is open. Set by the badge's unlink affordance, cleared by both
+  // the confirm and cancel actions.
+  const [pendingUnlink, setPendingUnlink] = useState<AssocEdge | null>(null);
   if (edges.length === 0) return null;
   return (
     <>
@@ -128,15 +144,39 @@ function AssociationBadges({ actingId, edges }: { actingId: string; edges: Assoc
           mode="counterpart"
           description={e.description}
           counterpartCancelled={e.counterpartCancelled}
-          onUnlink={() => {
-            if (!window.confirm('Remove this association?')) return;
-            void unlink.mutateAsync({
-              relatedTransactionId: e.relatedTransactionId,
-              relationKind: 'associated',
-            });
-          }}
+          onUnlink={() => setPendingUnlink(e)}
         />
       ))}
+      <AlertDialog
+        open={pendingUnlink !== null}
+        onOpenChange={(open) => !open && setPendingUnlink(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove association?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This detaches the link between the two transactions. Neither transaction is otherwise
+              changed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (pendingUnlink) {
+                  void unlink.mutateAsync({
+                    relatedTransactionId: pendingUnlink.relatedTransactionId,
+                    relationKind: 'associated',
+                  });
+                }
+                setPendingUnlink(null);
+              }}
+            >
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
@@ -351,7 +391,7 @@ export function TransactionsPane() {
 
   let body: ReactNode;
   if (!id) {
-    body = <div className="p-6 text-muted-foreground">Select an account.</div>;
+    body = <EmptyState message="Select an account." />;
   } else if (isLoading) {
     body = (
       <div className="space-y-2 p-4">
@@ -363,8 +403,8 @@ export function TransactionsPane() {
   } else if (isError) {
     body = (
       <div className="space-y-2 p-4">
-        <Alert role="alert" variant="destructive">
-          <AlertDescription>Could not load transactions.</AlertDescription>
+        <Alert variant="destructive" role="alert">
+          <AlertDescription>Couldn&rsquo;t load transactions.</AlertDescription>
         </Alert>
         <Button variant="outline" size="sm" onClick={() => void refetch()}>
           Retry
@@ -372,9 +412,9 @@ export function TransactionsPane() {
       </div>
     );
   } else if (!data || data.length === 0) {
-    body = <div className="p-6 text-muted-foreground">No transactions in this date range.</div>;
+    body = <EmptyState message="No transactions in this date range." />;
   } else if (filtered.length === 0) {
-    body = <div className="p-6 text-muted-foreground">No transactions match your filters.</div>;
+    body = <EmptyState message="No transactions match your filters." />;
   } else {
     body = (
       <table className="w-full text-sm">
@@ -546,7 +586,7 @@ export function TransactionsPane() {
                     <td
                       className={cn(
                         'px-4 py-2 text-right tabular-nums',
-                        negative && !deEmphasized && 'text-destructive',
+                        negative && !deEmphasized && 'text-negative',
                       )}
                     >
                       {formatMoney(amount, currency)}
@@ -567,7 +607,7 @@ export function TransactionsPane() {
                                     openCopy(t);
                                   }}
                                 >
-                                  <Copy className="h-4 w-4" />
+                                  <Copy className="h-3.5 w-3.5" />
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>Duplicate</TooltipContent>
@@ -588,7 +628,7 @@ export function TransactionsPane() {
                                     openCancel(t);
                                   }}
                                 >
-                                  <Ban className="h-4 w-4" />
+                                  <Ban className="h-3.5 w-3.5" />
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>Cancel</TooltipContent>
@@ -709,9 +749,9 @@ export function TransactionsPane() {
             )}
             Filters
             {activeFilterCount > 0 && (
-              <span className="ml-1 rounded-full bg-primary px-1.5 text-xs font-medium text-primary-foreground">
+              <Badge variant="count" className="ml-1">
                 {activeFilterCount}
-              </span>
+              </Badge>
             )}
           </button>
         </div>

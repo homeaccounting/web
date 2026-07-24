@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { server } from '@/test/server';
 import { AuthProvider } from '@/auth/AuthContext';
 import { saveSession } from '@/auth/storage';
@@ -23,13 +24,15 @@ describe('IncomeVsExpenseCard', () => {
     expect(screen.getByText('$350.00')).toBeInTheDocument();
   });
 
-  it('shows an error state on failure', async () => {
+  it('shows an error state with a Retry button on failure, and Retry refetches', async () => {
+    const user = userEvent.setup();
     signIn();
+    let calls = 0;
     server.use(
-      http.get(
-        `${apiBase}/api/reports/income-vs-expense`,
-        () => new HttpResponse(null, { status: 500 }),
-      ),
+      http.get(`${apiBase}/api/reports/income-vs-expense`, () => {
+        calls += 1;
+        return new HttpResponse(null, { status: 500 });
+      }),
     );
     renderWithProviders(
       <AuthProvider>
@@ -37,5 +40,9 @@ describe('IncomeVsExpenseCard', () => {
       </AuthProvider>,
     );
     await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument());
+    expect(screen.getByText(/couldn.?t load income vs\. expense/i)).toBeInTheDocument();
+    const retryButton = screen.getByRole('button', { name: /retry/i });
+    await user.click(retryButton);
+    await waitFor(() => expect(calls).toBeGreaterThan(1));
   });
 });

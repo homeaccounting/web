@@ -1,10 +1,17 @@
 import { useEffect, useMemo } from 'react';
 import { useForm, FormProvider, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { DialogFooter } from '@/components/ui/dialog';
+import { DialogBody, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
 import type { AccountResponse, DictionaryEntryResponse } from '@/api/types';
 import { transferFormSchema, makeTransferFormSchema, type TransferFormValues } from './schema';
 import { LabelMultiSelect } from './LabelMultiSelect';
@@ -85,195 +92,211 @@ export function TransferForm({
         onSubmit={(e) => {
           void submit(e);
         }}
-        className="space-y-4"
+        className="flex min-h-0 flex-1 flex-col"
       >
-        <FormField
-          control={form.control}
-          name="sourceAccountId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>
-                Source account
-                <RequiredMarker />
-              </FormLabel>
-              <FormControl>
-                <select
-                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                  {...field}
-                >
-                  {accounts.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.name} ({a.currency})
-                    </option>
-                  ))}
-                </select>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="targetAccountId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>
-                Target account
-                <RequiredMarker />
-              </FormLabel>
-              <FormControl>
-                <select
-                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                  {...field}
-                >
-                  {accounts.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.name} ({a.currency})
-                    </option>
-                  ))}
-                </select>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="flex items-end gap-2">
-          <FormField
-            control={form.control}
-            name="amount"
-            render={({ field }) => (
-              <FormItem className="flex-1">
-                <FormLabel>
-                  Amount
-                  <RequiredMarker />
-                </FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    step="any"
-                    name={field.name}
-                    ref={field.ref}
-                    onBlur={field.onBlur}
-                    value={
-                      field.value === undefined ||
-                      field.value === null ||
-                      (typeof field.value === 'number' && Number.isNaN(field.value))
-                        ? ''
-                        : field.value
-                    }
-                    onChange={(e) => {
-                      const raw = e.target.value;
-                      if (raw === '' || raw === '-') {
-                        field.onChange(raw);
-                        return;
-                      }
-                      const n = e.target.valueAsNumber;
-                      field.onChange(Number.isNaN(n) ? raw : n);
-                    }}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+        <DialogBody>
           <div
-            data-testid="currency-badge"
-            className="inline-flex h-10 items-center rounded-md border bg-muted px-3 text-sm tabular-nums text-muted-foreground"
-            aria-label="Currency"
+            data-testid="form-grid-source-target"
+            className="grid grid-cols-1 gap-4 sm:grid-cols-2"
           >
-            {source?.currency ?? '—'}
+            <FormField
+              control={form.control}
+              name="sourceAccountId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Source account
+                    <RequiredMarker />
+                  </FormLabel>
+                  <FormControl>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger aria-label="Source account">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {accounts.map((a) => (
+                          <SelectItem key={a.id} value={a.id}>
+                            {a.name} ({a.currency})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="targetAccountId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Target account
+                    <RequiredMarker />
+                  </FormLabel>
+                  <FormControl>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger aria-label="Target account">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {accounts.map((a) => (
+                          <SelectItem key={a.id} value={a.id}>
+                            {a.name} ({a.currency})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </div>
-        </div>
 
-        {showExchangeRate && (
+          <div
+            data-testid="form-grid-amount-date"
+            className="grid grid-cols-1 gap-4 sm:grid-cols-2"
+          >
+            <FormField
+              control={form.control}
+              name="amount"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Amount
+                    <RequiredMarker />
+                  </FormLabel>
+                  <div className="flex items-end gap-2">
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="any"
+                        name={field.name}
+                        ref={field.ref}
+                        onBlur={field.onBlur}
+                        value={
+                          field.value === undefined ||
+                          field.value === null ||
+                          (typeof field.value === 'number' && Number.isNaN(field.value))
+                            ? ''
+                            : field.value
+                        }
+                        onChange={(e) => {
+                          const raw = e.target.value;
+                          if (raw === '' || raw === '-') {
+                            field.onChange(raw);
+                            return;
+                          }
+                          const n = e.target.valueAsNumber;
+                          field.onChange(Number.isNaN(n) ? raw : n);
+                        }}
+                      />
+                    </FormControl>
+                    <div
+                      data-testid="currency-badge"
+                      className="inline-flex h-10 shrink-0 items-center rounded-md border bg-muted px-3 text-sm tabular-nums text-muted-foreground"
+                      aria-label="Currency"
+                    >
+                      {source?.currency ?? '—'}
+                    </div>
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="date"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Date <RequiredMarker />
+                  </FormLabel>
+                  <FormControl>
+                    <DatePicker
+                      withTime
+                      value={field.value ?? ''}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          {showExchangeRate && (
+            <FormField
+              control={form.control}
+              name="exchangeRate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Exchange rate</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="any"
+                      name={field.name}
+                      ref={field.ref}
+                      onBlur={field.onBlur}
+                      value={field.value ?? ''}
+                      onChange={(e) => {
+                        const raw = e.target.value;
+                        if (raw === '') {
+                          field.onChange(undefined);
+                          return;
+                        }
+                        const n = e.target.valueAsNumber;
+                        field.onChange(Number.isNaN(n) ? raw : n);
+                      }}
+                    />
+                  </FormControl>
+                  <p className="text-xs text-muted-foreground">
+                    Optional. Backend uses its default if omitted.
+                  </p>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
+
           <FormField
             control={form.control}
-            name="exchangeRate"
+            name="description"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Exchange rate</FormLabel>
+                <FormLabel>Description</FormLabel>
                 <FormControl>
-                  <Input
-                    type="number"
-                    step="any"
-                    name={field.name}
-                    ref={field.ref}
-                    onBlur={field.onBlur}
-                    value={field.value ?? ''}
-                    onChange={(e) => {
-                      const raw = e.target.value;
-                      if (raw === '') {
-                        field.onChange(undefined);
-                        return;
-                      }
-                      const n = e.target.valueAsNumber;
-                      field.onChange(Number.isNaN(n) ? raw : n);
-                    }}
-                  />
+                  <Input {...field} />
                 </FormControl>
-                <p className="text-xs text-muted-foreground">
-                  Optional. Backend uses its default if omitted.
-                </p>
                 <FormMessage />
               </FormItem>
             )}
           />
-        )}
 
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="date"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>
-                Date <RequiredMarker />
-              </FormLabel>
-              <FormControl>
-                <DatePicker
-                  withTime
-                  value={field.value ?? ''}
-                  onChange={field.onChange}
-                  onBlur={field.onBlur}
-                  name={field.name}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="labels"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Labels</FormLabel>
-              <FormControl>
-                <LabelMultiSelect
-                  options={labels}
-                  value={field.value ?? []}
-                  onChange={field.onChange}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          <FormField
+            control={form.control}
+            name="labels"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Labels</FormLabel>
+                <FormControl>
+                  <LabelMultiSelect
+                    options={labels}
+                    value={field.value ?? []}
+                    onChange={field.onChange}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </DialogBody>
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={onCancel}>

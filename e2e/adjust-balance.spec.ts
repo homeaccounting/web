@@ -61,9 +61,10 @@ test.describe('adjust balance consistency @local', () => {
 
     // Account is pre-selected to the first account; switching updates the
     // displayed current balance.
-    const accountSelect = adjust.getByLabel(/account/i);
+    const accountSelect = adjust.getByRole('combobox', { name: 'Account' });
     await expect(adjust.getByText(/current balance/i)).toBeVisible();
-    await accountSelect.selectOption({ label: 'Savings (USD)' });
+    await accountSelect.click();
+    await page.getByRole('option', { name: 'Savings (USD)' }).click();
     await expect(adjust.getByText(/current balance/i)).toContainText('500');
 
     // 6. Adjust the Savings balance to 650 and submit.

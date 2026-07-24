@@ -46,7 +46,8 @@ test.describe('create reimbursement (contra-expense) income @local', () => {
     await incomeDialog.getByRole('button', { name: /add reimbursement/i }).click();
 
     // The reimbursement row is the second category/amount pair (expense bucket
-    // renders after the income bucket). "Food" is a seeded expense category.
+    // renders after the income bucket). "Groceries" (under the "Food" group)
+    // is a seeded expense category.
     const reimbCategory = incomeDialog.getByRole('combobox', { name: /category/i }).nth(1);
     await reimbCategory.click();
     await reimbCategory.fill('Groc');
@@ -56,13 +57,16 @@ test.describe('create reimbursement (contra-expense) income @local', () => {
     await incomeDialog.getByLabel(/description/i).fill('Salary + rent reimbursement');
 
     // 7. Submit; the split income row appears with one category chip per slice
-    //    (like labels) — both "Salary" and the "Food" reimbursement.
+    //    (like labels) — both "Salary" and the "Groceries" reimbursement (chips
+    //    render each entry's leaf name, not its parent group).
     await incomeDialog.getByRole('button', { name: /^ok$/i }).click();
     await expect(incomeDialog).toBeHidden();
     await expect(page.getByRole('cell', { name: 'Salary + rent reimbursement' })).toBeVisible({
       timeout: 10000,
     });
-    const categoryCell = page.getByRole('cell', { name: /salary/i }).filter({ hasText: /food/i });
+    const categoryCell = page
+      .getByRole('cell', { name: /salary/i })
+      .filter({ hasText: /groceries/i });
     await expect(categoryCell).toBeVisible();
 
     // 8. The account balance reflects the FULL credited total (100 + 5500 = 5600);

@@ -212,7 +212,7 @@ describe('target total mode', () => {
     expect(diff.className).toContain('text-destructive');
   });
 
-  it('shows an emerald "Balanced" caption when exact', () => {
+  it('shows a positive-token "Balanced" caption when exact', () => {
     render(
       <Host
         sections={[expenseSection]}
@@ -223,7 +223,7 @@ describe('target total mode', () => {
     );
     const diff = screen.getByTestId('allocations-diff');
     expect(diff).toHaveTextContent(/balanced/i);
-    expect(diff.className).toContain('text-emerald-600');
+    expect(diff.className).toContain('text-positive');
   });
 
   it('fills an empty row to the outstanding diff', () => {

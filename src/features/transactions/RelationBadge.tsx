@@ -1,12 +1,9 @@
 import { Link2Off } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatMoney } from '@/lib/format';
-import { cn } from '@/lib/utils';
 import { roundMoney } from '@/lib/money';
 import type { RelationStat } from './relationIndex';
-
-// Shared muted-chip styling, matching the row's other inline chips.
-const CHIP = 'ml-2 inline-flex items-center rounded bg-muted px-1.5 py-0.5 text-xs font-medium';
 
 // Only the 'refund' and 'associated' kinds are representable here; merge/split
 // relations are structural and are never surfaced with an unlink affordance
@@ -75,7 +72,7 @@ function badgeText(props: RelationBadgeProps): string {
 export function RelationBadge(props: RelationBadgeProps) {
   const text = badgeText(props);
   return (
-    <span className={cn(CHIP, 'text-muted-foreground')}>
+    <Badge variant="muted" className="ml-2">
       {text}
       {props.onUnlink && (
         <Button
@@ -92,6 +89,6 @@ export function RelationBadge(props: RelationBadgeProps) {
           <Link2Off className="h-3 w-3" />
         </Button>
       )}
-    </span>
+    </Badge>
   );
 }

@@ -118,6 +118,24 @@ describe('IncomeExpenseForm', () => {
     expect(screen.getByRole('button', { name: /add reimbursement/i })).toBeInTheDocument();
   });
 
+  it('lays out the account and currency fields in a 2-column grid on wide screens', () => {
+    renderWithProviders(
+      <IncomeExpenseForm
+        kind="expense"
+        mode="create"
+        accounts={accounts}
+        categories={categories}
+        contacts={contacts}
+        labels={labels}
+        defaultValues={expenseDefaults}
+        isSubmitting={false}
+        onSubmit={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    expect(screen.getByTestId('form-grid-account-currency').className).toContain('sm:grid-cols-2');
+  });
+
   it('keeps a visible currency display', () => {
     renderWithProviders(
       <IncomeExpenseForm
@@ -153,7 +171,8 @@ describe('IncomeExpenseForm', () => {
       />,
     );
     expect(screen.getByTestId('currency-badge')).toHaveTextContent('USD');
-    await user.selectOptions(screen.getByLabelText(/account/i), A2);
+    await user.click(screen.getByLabelText(/account/i));
+    await user.click(await screen.findByRole('option', { name: /savings/i }));
     await waitFor(() => expect(screen.getByTestId('currency-badge')).toHaveTextContent('EUR'));
   });
 

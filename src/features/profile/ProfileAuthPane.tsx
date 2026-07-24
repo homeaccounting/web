@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { LinkTelegramDialog } from '@/components/LinkTelegramDialog';
+import { toast } from '@/lib/toast';
 import { useUserProfile } from './useUserProfile';
 import { useChangePassword } from './useChangePassword';
 import { useUnlinkOAuth } from './useUnlinkOAuth';
@@ -47,9 +48,14 @@ export function ProfileAuthPane() {
   }
   if (profile.isError || !profile.data) {
     return (
-      <Alert variant="destructive" role="alert">
-        <AlertDescription>Failed to load profile.</AlertDescription>
-      </Alert>
+      <div className="space-y-2">
+        <Alert variant="destructive" role="alert">
+          <AlertDescription>Couldn&rsquo;t load profile.</AlertDescription>
+        </Alert>
+        <Button variant="outline" size="sm" onClick={() => void profile.refetch()}>
+          Retry
+        </Button>
+      </div>
     );
   }
   const p = profile.data;
@@ -71,7 +77,10 @@ export function ProfileAuthPane() {
     changePassword.mutate(
       { currentPassword: values.currentPassword, newPassword: values.newPassword },
       {
-        onSuccess: () => form.reset(),
+        onSuccess: () => {
+          form.reset();
+          toast.success('Password changed.');
+        },
         onError: (err) => {
           if (err instanceof ApiError && err.fieldErrors) {
             for (const [field, message] of Object.entries(err.fieldErrors)) {
@@ -131,11 +140,6 @@ export function ProfileAuthPane() {
                 <Alert variant="destructive" role="alert">
                   <AlertDescription>{changePassword.error.message}</AlertDescription>
                 </Alert>
-              )}
-              {changePassword.isSuccess && (
-                <p data-testid="password-status" className="text-sm text-green-600">
-                  Password changed.
-                </p>
               )}
               <Button type="submit" disabled={!form.formState.isDirty || changePassword.isPending}>
                 Change password

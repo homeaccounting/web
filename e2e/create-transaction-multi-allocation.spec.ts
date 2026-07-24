@@ -61,12 +61,13 @@ test.describe('create multi-allocation transaction @local', () => {
     // Date intentionally left empty — server defaults to today.
 
     // 7. Submit, expect the new split row. The Category column renders one
-    //    colored chip per slice (like labels) — both "Food" and "Transport".
+    //    colored chip per slice (like labels), using each entry's leaf name —
+    //    both "Groceries" and "Transport".
     await expenseDialog.getByRole('button', { name: /^ok$/i }).click();
     await expect(expenseDialog).toBeHidden();
     await expect(page.getByRole('cell', { name: 'Split coffee' })).toBeVisible({ timeout: 10000 });
     const categoryCell = page
-      .getByRole('cell', { name: /food/i })
+      .getByRole('cell', { name: /groceries/i })
       .filter({ hasText: /transport/i });
     await expect(categoryCell).toBeVisible();
   });

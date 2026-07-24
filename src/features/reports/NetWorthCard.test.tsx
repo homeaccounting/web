@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { http, HttpResponse } from 'msw';
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { server } from '@/test/server';
 import { AuthProvider } from '@/auth/AuthContext';
 import { saveSession } from '@/auth/storage';
@@ -48,5 +49,27 @@ describe('NetWorthCard', () => {
     // $1,100.00 appears twice (per-account base equivalent + Total row, since
     // the single account's base balance equals the total). Assert it renders.
     expect(screen.getAllByText(/\$1,100\.00/).length).toBeGreaterThan(0);
+  });
+
+  it('shows an error state with a Retry button on failure, and Retry refetches', async () => {
+    const user = userEvent.setup();
+    signIn();
+    let calls = 0;
+    server.use(
+      http.get(`${apiBase}/api/reports/net-worth`, () => {
+        calls += 1;
+        return new HttpResponse(null, { status: 500 });
+      }),
+    );
+    renderWithProviders(
+      <AuthProvider>
+        <NetWorthCard />
+      </AuthProvider>,
+    );
+    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument());
+    expect(screen.getByText(/couldn.?t load net worth/i)).toBeInTheDocument();
+    const retryButton = screen.getByRole('button', { name: /retry/i });
+    await user.click(retryButton);
+    await waitFor(() => expect(calls).toBeGreaterThan(1));
   });
 });

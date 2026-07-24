@@ -113,7 +113,7 @@ export function EditTransactionDialog({ open, onOpenChange, tx }: EditTransactio
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>Update transaction details.</DialogDescription>

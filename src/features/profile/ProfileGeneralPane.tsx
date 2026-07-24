@@ -28,6 +28,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ApiError } from '@/api/client';
+import { toast } from '@/lib/toast';
 import { UserIdCard } from './UserIdCard';
 
 export function ProfileGeneralPane() {
@@ -58,9 +59,14 @@ function CurrenciesSection() {
   }
   if (config.isError || !config.data) {
     return (
-      <Alert variant="destructive" role="alert">
-        <AlertDescription>Failed to load configuration.</AlertDescription>
-      </Alert>
+      <div className="space-y-2">
+        <Alert variant="destructive" role="alert">
+          <AlertDescription>Couldn&rsquo;t load configuration.</AlertDescription>
+        </Alert>
+        <Button variant="outline" size="sm" onClick={() => void config.refetch()}>
+          Retry
+        </Button>
+      </div>
     );
   }
 
@@ -77,10 +83,11 @@ function CurrenciesSection() {
             label="Default currency"
             description="Used when creating new accounts and transactions."
             current={c.defaultCurrency}
-            onSubmit={(values) => setDefault.mutate(values)}
+            onSubmit={(values) =>
+              setDefault.mutate(values, { onSuccess: () => toast.success('Updated.') })
+            }
             isPending={setDefault.isPending}
             error={setDefault.error}
-            isSuccess={setDefault.isSuccess}
           />
           <CurrencyRow
             id="baseCurrency"
@@ -95,7 +102,6 @@ function CurrenciesSection() {
             onSubmit={(values) => setConfirmingBase(values.currency)}
             isPending={setBase.isPending}
             error={setBase.error}
-            isSuccess={setBase.isSuccess}
           />
         </CardContent>
       </Card>
@@ -116,7 +122,10 @@ function CurrenciesSection() {
             <AlertDialogAction
               onClick={() => {
                 if (confirmingBase) {
-                  setBase.mutate({ currency: confirmingBase });
+                  setBase.mutate(
+                    { currency: confirmingBase },
+                    { onSuccess: () => toast.success('Updated.') },
+                  );
                 }
                 setConfirmingBase(null);
               }}
@@ -139,7 +148,6 @@ interface CurrencyRowProps {
   onSubmit: (values: CurrencyFormValues) => void;
   isPending: boolean;
   error: Error | null;
-  isSuccess: boolean;
 }
 
 function CurrencyRow({
@@ -151,7 +159,6 @@ function CurrencyRow({
   onSubmit,
   isPending,
   error,
-  isSuccess,
 }: CurrencyRowProps) {
   const form = useForm<CurrencyFormValues>({
     resolver: zodResolver(currencySchema),
@@ -199,11 +206,6 @@ function CurrencyRow({
         <Alert variant="destructive" role="alert">
           <AlertDescription>{message}</AlertDescription>
         </Alert>
-      )}
-      {isSuccess && (
-        <p data-testid={`${id}-status`} className="text-sm text-green-600">
-          Updated.
-        </p>
       )}
     </form>
   );

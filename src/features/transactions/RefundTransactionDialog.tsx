@@ -7,6 +7,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Skeleton } from '@/components/ui/skeleton';
 import { ApiError } from '@/api/client';
 import type { TransactionResponse } from '@/api/types';
 import { useAccounts } from '@/features/accounts/useAccounts';
@@ -52,7 +53,11 @@ export function RefundTransactionDialog({
           </Alert>
         )}
         {summary.isLoading && (
-          <div className="p-2 text-sm text-muted-foreground">Loading refund details…</div>
+          <div className="space-y-3" aria-busy>
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
         )}
         {!summary.isLoading && !summary.isError && (
           <RefundForm original={original} summary={summary} onOpenChange={onOpenChange} />

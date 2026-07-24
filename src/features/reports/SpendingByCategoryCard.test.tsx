@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { http, HttpResponse } from 'msw';
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { server } from '@/test/server';
 import { AuthProvider } from '@/auth/AuthContext';
 import { saveSession } from '@/auth/storage';
@@ -37,5 +38,27 @@ describe('SpendingByCategoryCard', () => {
       </AuthProvider>,
     );
     expect(await screen.findByText(/no spending/i)).toBeInTheDocument();
+  });
+
+  it('shows an error state with a Retry button on failure, and Retry refetches', async () => {
+    const user = userEvent.setup();
+    signIn();
+    let calls = 0;
+    server.use(
+      http.get(`${apiBase}/api/reports/spending-by-category`, () => {
+        calls += 1;
+        return new HttpResponse(null, { status: 500 });
+      }),
+    );
+    renderWithProviders(
+      <AuthProvider>
+        <SpendingByCategoryCard range={{}} />
+      </AuthProvider>,
+    );
+    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument());
+    expect(screen.getByText(/couldn.?t load spending by category/i)).toBeInTheDocument();
+    const retryButton = screen.getByRole('button', { name: /retry/i });
+    await user.click(retryButton);
+    await waitFor(() => expect(calls).toBeGreaterThan(1));
   });
 });

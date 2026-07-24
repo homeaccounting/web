@@ -1,5 +1,12 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
 
 export const PAGE_SIZE_KEY = 'ha.transactions.pageSize';
 export const PAGE_SIZES = [25, 50, 100] as const;
@@ -43,21 +50,27 @@ export function TransactionPagination({
         Showing {start}–{end} of {total}
       </span>
       <div className="flex items-center gap-3">
-        <label className="flex items-center gap-1">
+        {/* A plain <span>, not a <label>: the Select's own aria-label (not
+        htmlFor/id, which Radix's Select.Root doesn't forward to the trigger)
+        supplies the accessible name — see SelectTrigger below. */}
+        <span className="flex items-center gap-1">
           Rows
-          <select
-            aria-label="Rows per page"
-            className="rounded border bg-background px-1 py-0.5"
-            value={pageSize}
-            onChange={(e) => onPageSizeChange(Number(e.target.value))}
+          <Select
+            value={String(pageSize)}
+            onValueChange={(value) => onPageSizeChange(Number(value))}
           >
-            {PAGE_SIZES.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-        </label>
+            <SelectTrigger aria-label="Rows per page" className="h-auto w-auto py-0.5">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PAGE_SIZES.map((s) => (
+                <SelectItem key={s} value={String(s)}>
+                  {s}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </span>
         <Button
           variant="outline"
           size="sm"

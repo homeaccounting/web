@@ -39,15 +39,15 @@ export function transactionTypeMeta(type: TransactionTypeText): TransactionTypeM
     case TRANSACTION_TYPE.income:
       return {
         Icon: ArrowDownToLine,
-        colorClass: 'text-green-600 dark:text-green-400',
+        colorClass: 'text-positive',
         label: 'Income',
       };
     case TRANSACTION_TYPE.expense:
-      return { Icon: ArrowUpFromLine, colorClass: 'text-destructive', label: 'Expense' };
+      return { Icon: ArrowUpFromLine, colorClass: 'text-negative', label: 'Expense' };
     case TRANSACTION_TYPE.transfer:
       return {
         Icon: ArrowLeftRight,
-        colorClass: 'text-blue-600 dark:text-blue-400',
+        colorClass: 'text-info',
         label: 'Transfer',
       };
     case TRANSACTION_TYPE.adjustment:

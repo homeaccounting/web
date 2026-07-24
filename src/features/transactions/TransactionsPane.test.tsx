@@ -588,7 +588,7 @@ describe('TransactionsPane', () => {
 
     // The pane must NOT show the error state and GuardRow must still render.
     await waitFor(() => {
-      expect(screen.queryByText(/could not load transactions/i)).toBeNull();
+      expect(screen.queryByText(/couldn.t load transactions/i)).toBeNull();
     });
     expect(screen.getByText('GuardRow')).toBeInTheDocument();
     expect(screen.getByLabelText('From')).toBeInTheDocument();
@@ -1105,7 +1105,6 @@ describe('TransactionsPane', () => {
   it('unlinks an association via the badge unlink control (DELETE with query params)', async () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
     const user = userEvent.setup();
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
     const captured: {
       id: string;
       relatedTransactionId: string | null;
@@ -1145,19 +1144,21 @@ describe('TransactionsPane', () => {
     await screen.findByText('associated with Invoice');
     const unlinkButtons = screen.getAllByRole('button', { name: /unlink/i });
     await user.click(unlinkButtons[0]!);
+    // The AlertDialog opens instead of firing the DELETE immediately.
+    await screen.findByRole('alertdialog');
+    expect(captured.length).toBe(0);
+    await user.click(await screen.findByRole('button', { name: 'Remove' }));
     await waitFor(() => expect(captured.length).toBeGreaterThan(0));
     expect(captured[0]!.id).toBe('tx-a');
     expect(captured[0]!.relatedTransactionId).toBe('tx-b');
     expect(captured[0]!.relationKind).toBe('associated');
-    confirmSpy.mockRestore();
   });
 
   it('does not fire the DELETE when the unlink confirmation is cancelled', async () => {
-    // Pins the `if (!window.confirm(...)) return;` guard: declining the confirm
-    // must short-circuit before any network call is made.
+    // Pins the AlertDialog confirm guard: declining the confirmation must
+    // short-circuit before any network call is made.
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
     const user = userEvent.setup();
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
     const captured: { id: string }[] = [];
     server.use(
       http.get(`${apiBase}/api/transactions`, () =>
@@ -1188,10 +1189,11 @@ describe('TransactionsPane', () => {
     await screen.findByText('associated with Invoice');
     const unlinkButtons = screen.getAllByRole('button', { name: /unlink/i });
     await user.click(unlinkButtons[0]!);
-    // The guard aborted: confirm was consulted, but no DELETE was ever sent.
-    expect(confirmSpy).toHaveBeenCalled();
+    await screen.findByRole('alertdialog');
+    await user.click(await screen.findByRole('button', { name: 'Cancel' }));
+    // The dialog was dismissed via Cancel: no DELETE was ever sent.
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
     expect(captured.length).toBe(0);
-    confirmSpy.mockRestore();
   });
 
   it('does not show an inbound association badge when the owner row is off-window', async () => {

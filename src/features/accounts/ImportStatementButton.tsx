@@ -1,20 +1,16 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef } from 'react';
 import { Upload } from 'lucide-react';
 import { ApiError } from '@/api/client';
 import type { AccountResponse } from '@/api/types';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import { toast } from '@/lib/toast';
 import { useConfiguration } from '@/features/configuration/useConfiguration';
 import { useImportStatement } from '@/features/banking/useImportStatement';
 import { useProviders } from '@/features/banking/useProviders';
-import { formatSummary, summarize, type Summary } from '@/features/banking/importSummary';
+import { formatSummary, summarize } from '@/features/banking/importSummary';
 import { matchAccountConnection } from '@/features/banking/matchAccountConnection';
-import { DismissButton } from '@/features/banking/DismissButton';
-
-// How long the success toast stays before auto-dismissing.
-const SUCCESS_TOAST_MS = 6000;
 
 interface ImportStatementButtonProps {
   selectedAccount: AccountResponse | undefined;
@@ -23,8 +19,6 @@ interface ImportStatementButtonProps {
 export function ImportStatementButton({ selectedAccount }: ImportStatementButtonProps) {
   const { data: config } = useConfiguration();
   const { data: providers } = useProviders();
-  const [summary, setSummary] = useState<Summary | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // The connection that owns this account: enabled, the account id appears as
@@ -41,18 +35,9 @@ export function ImportStatementButton({ selectedAccount }: ImportStatementButton
   // Always call the hook (Rules of Hooks); guard the click on `matched`.
   const importStatement = useImportStatement();
 
-  // Auto-dismiss the success toast; errors stay until dismissed.
-  useEffect(() => {
-    if (!summary) return;
-    const t = setTimeout(() => setSummary(null), SUCCESS_TOAST_MS);
-    return () => clearTimeout(t);
-  }, [summary]);
-
   if (!selectedAccount || !matched) return null;
 
   const onClick = () => {
-    setSummary(null);
-    setErrorMessage(null);
     fileInputRef.current?.click();
   };
 
@@ -64,11 +49,11 @@ export function ImportStatementButton({ selectedAccount }: ImportStatementButton
     importStatement.mutate(
       { connId: matched.id, format: 'csv', file },
       {
-        onSuccess: (result) => setSummary(summarize(result)),
+        onSuccess: (result) => toast.success(formatSummary(summarize(result))),
         onError: (err) => {
           const message =
-            err instanceof ApiError ? err.message : 'Could not import this statement. Try again.';
-          setErrorMessage(message);
+            err instanceof ApiError ? err.message : 'Couldn’t import this statement. Try again.';
+          toast.error(message);
         },
       },
     );
@@ -102,24 +87,6 @@ export function ImportStatementButton({ selectedAccount }: ImportStatementButton
         className="hidden"
         onChange={onFileSelected}
       />
-
-      {/* Result feedback as a fixed toast so it never disturbs the toolbar layout. */}
-      {(summary || errorMessage) && (
-        <div className="fixed bottom-4 right-4 z-50 w-80 max-w-[calc(100vw-2rem)]">
-          {summary && (
-            <Alert role="status" className="relative pr-9 shadow-lg">
-              <AlertDescription>{formatSummary(summary)}</AlertDescription>
-              <DismissButton label="Dismiss" onClick={() => setSummary(null)} />
-            </Alert>
-          )}
-          {errorMessage && (
-            <Alert role="alert" variant="destructive" className="relative pr-9 shadow-lg">
-              <AlertDescription>{errorMessage}</AlertDescription>
-              <DismissButton label="Dismiss" onClick={() => setErrorMessage(null)} />
-            </Alert>
-          )}
-        </div>
-      )}
     </>
   );
 }

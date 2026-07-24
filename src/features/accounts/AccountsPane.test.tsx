@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -7,8 +7,11 @@ import { renderWithProviders } from '@/test/utils';
 import { Routes, Route } from 'react-router-dom';
 import { AuthProvider } from '@/auth/AuthContext';
 import { saveSession } from '@/auth/storage';
+import { toast } from '@/lib/toast';
 import { AccountsPane } from './AccountsPane';
 import { accountFixture, closedAccountFixture } from '@/test/fixtures';
+
+vi.mock('@/lib/toast', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 const apiBase = 'http://localhost:8080';
 
@@ -219,7 +222,7 @@ describe('AccountsPane', () => {
     expect(await screen.findByText('Close this account?')).toBeInTheDocument();
   });
 
-  it('surfaces a dismissible error toast when reopen fails', async () => {
+  it('surfaces an error toast when reopen fails', async () => {
     const user = userEvent.setup();
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
     serveMixedAccounts();
@@ -235,7 +238,9 @@ describe('AccountsPane', () => {
     const btn = await screen.findByRole('button', { name: /reopen account/i });
     await waitFor(() => expect(btn).not.toBeDisabled());
     await user.click(btn);
-    expect(await screen.findByText('Account command rejected by domain')).toBeInTheDocument();
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith('Account command rejected by domain'),
+    );
   });
 
   it('enables the Manage access toolbar button for a selected owned account and opens the dialog', async () => {

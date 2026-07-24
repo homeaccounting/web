@@ -30,7 +30,7 @@ export function Header() {
                 className={cn(
                   'border-b-2 pb-0.5 transition-colors',
                   active
-                    ? 'border-foreground text-foreground'
+                    ? 'border-primary text-foreground'
                     : 'border-transparent text-muted-foreground hover:text-foreground',
                 )}
               >

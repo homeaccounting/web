@@ -281,9 +281,9 @@ export function AllocationsEditor({ sections, currency, lockTarget }: Allocation
   const target = hasTarget ? Number(targetTotalRaw) : 0;
   const fillPct =
     balanced || remaining < 0 ? 100 : target > 0 ? Math.min(100, (sum / target) * 100) : 0;
-  const barColor = balanced ? 'bg-emerald-600' : remaining < 0 ? 'bg-destructive' : 'bg-primary';
+  const barColor = balanced ? 'bg-positive' : remaining < 0 ? 'bg-destructive' : 'bg-primary';
   const captionColor = balanced
-    ? 'text-emerald-600'
+    ? 'text-positive'
     : remaining < 0
       ? 'text-destructive'
       : 'text-muted-foreground';

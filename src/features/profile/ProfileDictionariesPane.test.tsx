@@ -70,9 +70,10 @@ describe('ProfileDictionariesPane', () => {
     expect(screen.queryByRole('tab')).not.toBeInTheDocument();
   });
 
-  it('shows an error alert when configuration fails to load', async () => {
+  it('shows an error alert with a Retry button when configuration fails to load', async () => {
     server.use(http.get(configUrl, () => HttpResponse.json({}, { status: 500 })));
     setup();
-    expect(await screen.findByRole('alert')).toHaveTextContent(/failed to load configuration/i);
+    expect(await screen.findByRole('alert')).toHaveTextContent(/couldn.t load configuration/i);
+    expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
   });
 });

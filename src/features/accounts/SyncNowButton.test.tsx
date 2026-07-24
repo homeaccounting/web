@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -6,6 +6,7 @@ import { server } from '@/test/server';
 import { renderWithProviders } from '@/test/utils';
 import { AuthProvider } from '@/auth/AuthContext';
 import { saveSession } from '@/auth/storage';
+import { toast } from '@/lib/toast';
 import {
   accountFixture,
   bankingEnabledConfigurationFixture,
@@ -13,6 +14,8 @@ import {
 } from '@/test/fixtures';
 import type { BankConnectionDTO, ConfigurationResponse } from '@/api/types';
 import { SyncNowButton, last30Days } from './SyncNowButton';
+
+vi.mock('@/lib/toast', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 const apiBase = 'http://localhost:8080';
 
@@ -158,9 +161,9 @@ describe('sync now button', () => {
     const btn = await screen.findByRole('button', { name: /sync now/i });
     await user.click(btn);
 
-    await screen.findByText(/imported 5 transactions/i);
-    expect(screen.getByText(/2 skipped/i)).toBeInTheDocument();
-    expect(screen.getByText(/1 failed/i)).toBeInTheDocument();
+    await waitFor(() =>
+      expect(toast.success).toHaveBeenCalledWith('Imported 5 transactions · 2 skipped · 1 failed'),
+    );
     expect(calledPath).toBe('conn-mapped');
     expect(body).toBeDefined();
     const span = new Date(body!.to).getTime() - new Date(body!.from).getTime();
@@ -191,13 +194,7 @@ describe('sync now button', () => {
     renderWithProviders(ui(), { initialPath: '/' });
     await user.click(await screen.findByRole('button', { name: /sync now/i }));
 
-    const toast = await screen.findByText(/imported 90 transactions/i);
-    expect(toast).toBeInTheDocument();
-    expect(toast).not.toHaveTextContent(/skipped/i);
-    expect(toast).not.toHaveTextContent(/failed/i);
-    // Dismissable.
-    await user.click(screen.getByRole('button', { name: /dismiss/i }));
-    expect(screen.queryByText(/imported 90 transactions/i)).not.toBeInTheDocument();
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith('Imported 90 transactions'));
   });
 
   it('renders a destructive alert on a 422 response', async () => {
@@ -217,8 +214,7 @@ describe('sync now button', () => {
     const btn = await screen.findByRole('button', { name: /sync now/i });
     await user.click(btn);
 
-    const alert = await screen.findByRole('alert');
-    expect(alert).toHaveTextContent(/connection is disabled/i);
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Connection is disabled'));
   });
 
   // Keep `configurationFixture` referenced for documentation of the disabled default.

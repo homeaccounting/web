@@ -1,6 +1,9 @@
 import { useMemo } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { EmptyState } from '@/components/EmptyState';
 import { formatMoney } from '@/lib/format';
 import type { ReportRange } from '@/api/reports';
 import {
@@ -11,7 +14,7 @@ import { BreakdownBar } from './BreakdownBar';
 import { useSpendingByCategory } from './useReports';
 
 export function SpendingByCategoryCard({ range }: { range: ReportRange }) {
-  const { data, isLoading, isError } = useSpendingByCategory(range);
+  const { data, isLoading, isError, refetch } = useSpendingByCategory(range);
   const { data: config } = useConfiguration();
   const nameById = useDictionaryEntryNames(config);
 
@@ -27,24 +30,33 @@ export function SpendingByCategoryCard({ range }: { range: ReportRange }) {
   }, [data, nameById]);
 
   return (
-    <section className="rounded-lg border p-4">
-      <h2 className="mb-3 font-semibold">Spending by category</h2>
-      {isLoading && <Skeleton className="h-24 w-full" />}
-      {isError && (
-        <Alert variant="destructive" role="alert">
-          <AlertDescription>Could not load spending by category.</AlertDescription>
-        </Alert>
-      )}
-      {data && rows.length === 0 && (
-        <p className="text-sm text-muted-foreground">No spending in this period.</p>
-      )}
-      {rows.length > 0 && (
-        <div className="flex flex-col">
-          {rows.map((r) => (
-            <BreakdownBar key={r.key} label={r.label} amount={r.amount} fraction={r.fraction} />
-          ))}
-        </div>
-      )}
-    </section>
+    <Card>
+      <CardHeader>
+        <CardTitle>Spending by category</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {isLoading && <Skeleton className="h-24 w-full" />}
+        {isError && (
+          <div className="space-y-2">
+            <Alert variant="destructive" role="alert">
+              <AlertDescription>Couldn&rsquo;t load spending by category.</AlertDescription>
+            </Alert>
+            <Button variant="outline" size="sm" onClick={() => void refetch()}>
+              Retry
+            </Button>
+          </div>
+        )}
+        {data && rows.length === 0 && (
+          <EmptyState message="No spending in this period." className="p-0" />
+        )}
+        {rows.length > 0 && (
+          <div className="flex flex-col">
+            {rows.map((r) => (
+              <BreakdownBar key={r.key} label={r.label} amount={r.amount} fraction={r.fraction} />
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

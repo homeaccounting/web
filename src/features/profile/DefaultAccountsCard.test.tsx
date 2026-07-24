@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -6,8 +6,11 @@ import { server } from '@/test/server';
 import { saveSession } from '@/auth/storage';
 import { AuthProvider } from '@/auth/AuthContext';
 import { renderWithProviders } from '@/test/utils';
+import { toast } from '@/lib/toast';
 import type { AccountResponse } from '@/api/types';
 import { DefaultAccountsCard } from './DefaultAccountsCard';
+
+vi.mock('@/lib/toast', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 const apiBase = 'http://localhost:8080';
 const acct = (id: string, name: string, type: string): AccountResponse => ({
@@ -59,6 +62,7 @@ describe('DefaultAccountsCard', () => {
 
     await user.click(screen.getByRole('button', { name: /save/i }));
     await waitFor(() => expect(body).toEqual({ subtypeAccounts: { CashKind: 'cash-1' } }));
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith('Updated.'));
   });
 
   it('changing only the global account preserves the existing per-type map', async () => {

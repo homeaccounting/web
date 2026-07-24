@@ -3,6 +3,7 @@ import { useConfiguration } from '@/features/configuration/useConfiguration';
 import { useAccounts } from '@/features/accounts/useAccounts';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 import { DefaultCategoriesCard } from './DefaultCategoriesCard';
 import { DefaultAccountsCard } from './DefaultAccountsCard';
 
@@ -12,7 +13,7 @@ export function ProfileDefaultsPane() {
 
   if (config.isPending) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-6">
         <Skeleton className="h-40" />
         <Skeleton className="h-64" />
       </div>
@@ -20,9 +21,14 @@ export function ProfileDefaultsPane() {
   }
   if (config.isError || !config.data) {
     return (
-      <Alert variant="destructive" role="alert">
-        <AlertDescription>Failed to load configuration.</AlertDescription>
-      </Alert>
+      <div className="space-y-2">
+        <Alert variant="destructive" role="alert">
+          <AlertDescription>Couldn&rsquo;t load configuration.</AlertDescription>
+        </Alert>
+        <Button variant="outline" size="sm" onClick={() => void config.refetch()}>
+          Retry
+        </Button>
+      </div>
     );
   }
   const c = config.data;

@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react';
+import { PageContainer } from '@/components/PageContainer';
+import { PageHeader } from '@/components/PageHeader';
 import { presetRange, toQueryRange, type DayRange } from './period';
 import { PeriodSelector, type PeriodValue } from './PeriodSelector';
 import { IncomeVsExpenseCard } from './IncomeVsExpenseCard';
@@ -17,19 +19,21 @@ export function ReportsPane() {
   const query = useMemo(() => toQueryRange(dayRange), [dayRange]);
 
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 p-4 md:p-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Reports</h1>
-        <PeriodSelector
-          value={periodValue}
-          range={dayRange}
-          onPresetChange={onPresetChange}
-          onRangeChange={setDayRange}
-        />
-      </div>
+    <PageContainer className="flex flex-col gap-4">
+      <PageHeader
+        title="Reports"
+        actions={
+          <PeriodSelector
+            value={periodValue}
+            range={dayRange}
+            onPresetChange={onPresetChange}
+            onRangeChange={setDayRange}
+          />
+        }
+      />
       <IncomeVsExpenseCard range={query} />
       <SpendingByCategoryCard range={query} />
       <NetWorthCard />
-    </div>
+    </PageContainer>
   );
 }

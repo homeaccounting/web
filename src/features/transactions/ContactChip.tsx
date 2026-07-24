@@ -1,4 +1,5 @@
 import { Store } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { entryLeafName } from '@/api/dictionary';
 
@@ -19,15 +20,9 @@ export function ContactChip({
   if (contactId === null || !nameById.has(contactId)) return null;
   const full = nameById.get(contactId)!;
   return (
-    <span
-      title={full}
-      className={cn(
-        'inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 align-middle text-xs font-medium',
-        leadingGap && 'ml-2',
-      )}
-    >
+    <Badge variant="muted" title={full} className={cn('gap-1 align-middle', leadingGap && 'ml-2')}>
       <Store aria-hidden className="h-3 w-3" />
       {entryLeafName(full)}
-    </span>
+    </Badge>
   );
 }

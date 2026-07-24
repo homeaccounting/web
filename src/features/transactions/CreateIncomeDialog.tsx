@@ -90,7 +90,7 @@ export function CreateIncomeDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle>{TRANSACTION_KIND_LABELS.income.title}</DialogTitle>
           <DialogDescription>

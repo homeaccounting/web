@@ -1,6 +1,7 @@
 import { useConfiguration } from '@/features/configuration/useConfiguration';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DictionaryList } from './DictionaryList';
 
@@ -16,9 +17,14 @@ export function ProfileDictionariesPane() {
   }
   if (config.isError || !config.data) {
     return (
-      <Alert variant="destructive" role="alert">
-        <AlertDescription>Failed to load configuration.</AlertDescription>
-      </Alert>
+      <div className="space-y-2">
+        <Alert variant="destructive" role="alert">
+          <AlertDescription>Couldn&rsquo;t load configuration.</AlertDescription>
+        </Alert>
+        <Button variant="outline" size="sm" onClick={() => void config.refetch()}>
+          Retry
+        </Button>
+      </div>
     );
   }
   const c = config.data;

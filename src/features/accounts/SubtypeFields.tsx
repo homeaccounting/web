@@ -9,6 +9,7 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select';
+import { DatePicker } from '@/components/DatePicker';
 import { ASSET_TYPES, CARD_NETWORKS } from '@/api/types';
 import { useProviders } from '@/features/banking/useProviders';
 import type { CreateAccountFormValues } from './schema';
@@ -286,7 +287,12 @@ export function SubtypeFields() {
             <FormItem>
               <FormLabel>Due date (YYYY-MM-DD)</FormLabel>
               <FormControl>
-                <Input type="date" {...field} value={field.value ?? ''} />
+                <DatePicker
+                  value={field.value ?? ''}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  name={field.name}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

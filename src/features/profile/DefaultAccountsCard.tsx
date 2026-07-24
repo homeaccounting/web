@@ -12,6 +12,7 @@ import { ACCOUNT_SUBTYPE_LABELS } from '@/features/accounts/labels';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { toast } from '@/lib/toast';
 import { useUpdateDefaults } from '@/features/configuration/useUpdateDefaults';
 import { AccountSelect, NONE_VALUE } from './AccountSelect';
 
@@ -44,7 +45,7 @@ export function DefaultAccountsCard({ accounts, accountCurrent, subtypeCurrent }
     }
     const body: UpdateDefaultsRequest = { subtypeAccounts };
     if (account && account !== accountCurrent) body.account = account;
-    update.mutate(body);
+    update.mutate(body, { onSuccess: () => toast.success('Updated.') });
   };
 
   return (
@@ -91,7 +92,6 @@ export function DefaultAccountsCard({ accounts, accountCurrent, subtypeCurrent }
             <AlertDescription>{update.error.message}</AlertDescription>
           </Alert>
         )}
-        {update.isSuccess && <p className="text-sm text-green-600">Updated.</p>}
       </CardContent>
     </Card>
   );

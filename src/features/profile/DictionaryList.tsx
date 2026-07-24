@@ -4,6 +4,14 @@ import type { DictionaryResponse, EntryRole } from '@/api/types';
 import { flattenDictionaryTree, type FlatDictionaryNode } from '@/api/dictionary';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/EmptyState';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   AlertDialog,
@@ -28,8 +36,8 @@ interface Props {
   addLabel: string;
 }
 
-// The parent <select> uses this sentinel for "root level" since an HTML option
-// value cannot be null.
+// The parent Select uses this sentinel for "root level" since a Radix
+// SelectItem value cannot be an empty string (and the model uses null).
 const ROOT = 'root';
 
 // The display label of a node: items read as their full path ("Food /
@@ -79,7 +87,7 @@ export function DictionaryList({ dictId, title, dict, addLabel }: Props) {
   };
 
   // Commit an edit and close the row. Takes the target state explicitly so a
-  // control that both mutates state and commits (the parent <select>) works off
+  // control that both mutates state and commits (the parent Select) works off
   // the new value rather than the not-yet-applied React state.
   const commitEdit = (state: EditState) => {
     const parsed = entryNameSchema.safeParse({ name: state.name });
@@ -106,7 +114,7 @@ export function DictionaryList({ dictId, title, dict, addLabel }: Props) {
       <h3 id={`${dictId}-heading`} className="text-sm font-semibold">
         {title}
       </h3>
-      {nodes.length === 0 && <p className="text-sm text-muted-foreground">No entries yet</p>}
+      {nodes.length === 0 && <EmptyState message="No entries yet." className="p-0" />}
       <ul className="divide-y">
         {nodes.map((node) => {
           const display = displayOf(node);
@@ -126,25 +134,31 @@ export function DictionaryList({ dictId, title, dict, addLabel }: Props) {
                 className="h-9 text-sm"
               />
               {editing.isItem && (
-                <select
-                  className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+                <Select
                   value={editing.parentId}
                   // Picking a group applies the move (and any pending rename) and
                   // closes the row immediately — commit off the new value since
                   // setEditing has not applied yet.
-                  onChange={(ev) => commitEdit({ ...editing, parentId: ev.target.value })}
-                  onKeyDown={(ev) => {
-                    if (ev.key === 'Escape') setEditing(null);
-                  }}
-                  aria-label={`Move ${display}`}
+                  onValueChange={(value) => commitEdit({ ...editing, parentId: value })}
                 >
-                  <option value={ROOT}>Top level</option>
-                  {groups.map((g) => (
-                    <option key={g.id} value={g.id}>
-                      {g.name}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger
+                    className="h-9 w-auto"
+                    aria-label={`Move ${display}`}
+                    onKeyDown={(ev) => {
+                      if (ev.key === 'Escape') setEditing(null);
+                    }}
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={ROOT}>Top level</SelectItem>
+                    {groups.map((g) => (
+                      <SelectItem key={g.id} value={g.id}>
+                        {g.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               )}
             </li>
           ) : (
@@ -201,29 +215,35 @@ export function DictionaryList({ dictId, title, dict, addLabel }: Props) {
             aria-label={addLabel}
             className="h-9 max-w-xs text-sm"
           />
-          <select
-            className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+          <Select
             value={adding.type}
-            onChange={(ev) => setAdding({ ...adding, type: ev.target.value as EntryRole })}
-            aria-label="Entry type"
+            onValueChange={(value) => setAdding({ ...adding, type: value as EntryRole })}
           >
-            <option value="item">Item</option>
-            <option value="group">Group</option>
-          </select>
-          <select
-            className="h-9 rounded-md border border-input bg-background px-2 text-sm disabled:opacity-50"
+            <SelectTrigger className="h-9 w-auto" aria-label="Entry type">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="item">Item</SelectItem>
+              <SelectItem value="group">Group</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select
             value={adding.type === 'group' ? ROOT : adding.parentId}
             disabled={adding.type === 'group'}
-            onChange={(ev) => setAdding({ ...adding, parentId: ev.target.value })}
-            aria-label="Parent group"
+            onValueChange={(value) => setAdding({ ...adding, parentId: value })}
           >
-            <option value={ROOT}>Top level</option>
-            {groups.map((g) => (
-              <option key={g.id} value={g.id}>
-                {g.name}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="h-9 w-auto" aria-label="Parent group">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ROOT}>Top level</SelectItem>
+              {groups.map((g) => (
+                <SelectItem key={g.id} value={g.id}>
+                  {g.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       ) : (
         <Button
