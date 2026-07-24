@@ -19,7 +19,7 @@ export function Header() {
         <Link to="/" className="flex items-center">
           <BrandLogo className="h-10" />
         </Link>
-        <nav className="flex items-center gap-4 text-sm">
+        <nav className="flex items-center gap-4 text-base font-medium">
           {NAV_TABS.map((tab) => {
             const active = tab.isActive(pathname);
             return (

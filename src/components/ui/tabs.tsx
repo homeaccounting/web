@@ -20,10 +20,10 @@ const TabsList = React.forwardRef<
     <TabsPrimitive.List
       ref={ref}
       className={cn(
-        'inline-flex h-10 items-center text-muted-foreground',
+        'inline-flex items-center text-muted-foreground',
         variant === 'underline'
-          ? 'w-full justify-start gap-4 border-b'
-          : 'justify-center rounded-md bg-muted p-1',
+          ? 'h-10 w-full justify-start gap-4 border-b'
+          : 'h-11 justify-center rounded-md bg-muted p-1',
         className,
       )}
       {...props}
@@ -41,10 +41,13 @@ const TabsTrigger = React.forwardRef<
     <TabsPrimitive.Trigger
       ref={ref}
       className={cn(
-        'inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
+        'inline-flex items-center justify-center whitespace-nowrap font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
+        // Top-level (segmented) tabs read one step larger than nested (underline)
+        // sub-tabs so the two tiers are visually distinct. See item #2 of the
+        // design-consistency pass.
         variant === 'underline'
-          ? '-mb-px border-b-2 border-transparent px-1 py-2 hover:text-foreground data-[state=active]:border-primary data-[state=active]:text-foreground'
-          : 'rounded-sm px-3 py-1.5 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm',
+          ? 'text-sm -mb-px border-b-2 border-transparent px-1 py-2 hover:text-foreground data-[state=active]:border-primary data-[state=active]:text-foreground'
+          : 'text-base rounded-sm px-3 py-1.5 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm',
         className,
       )}
       {...props}

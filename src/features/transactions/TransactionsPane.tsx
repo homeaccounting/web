@@ -586,7 +586,8 @@ export function TransactionsPane() {
                     <td
                       className={cn(
                         'px-4 py-2 text-right tabular-nums',
-                        negative && !deEmphasized && 'text-negative',
+                        !deEmphasized && negative && 'text-negative',
+                        !deEmphasized && isIncome(t.transactionType) && 'text-positive',
                       )}
                     >
                       {formatMoney(amount, currency)}
