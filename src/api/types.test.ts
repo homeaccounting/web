@@ -7,8 +7,12 @@ import type {
   AddEntryRequest,
   AddEntryResponse,
   RenameEntryRequest,
+  AmendTransactionRequest,
+  ExpenseRequest,
+  SetTransactionContactRequest,
+  TransactionResponse,
 } from './types';
-import { accountFixture, closedAccountFixture } from '@/test/fixtures';
+import { accountFixture, closedAccountFixture, transactionFixture } from '@/test/fixtures';
 
 describe('User Profile DTOs', () => {
   it('ChangePasswordRequest has currentPassword + newPassword', () => {
@@ -44,5 +48,39 @@ describe('AccountResponse status', () => {
     expectTypeOf<AccountResponse['status']>().toEqualTypeOf<AccountStatus>();
     expect(accountFixture.status).toBe('Opened');
     expect(closedAccountFixture.status).toBe('Closed');
+  });
+});
+
+describe('Transaction contact DTOs', () => {
+  it('TransactionResponse carries a required contactId (id-only, nullable)', () => {
+    expectTypeOf<TransactionResponse['contactId']>().toEqualTypeOf<string | null>();
+    expect(transactionFixture.contactId).toBeNull();
+  });
+
+  it('ExpenseRequest accepts an optional nullable contactId', () => {
+    const withContact: ExpenseRequest = {
+      accountId: 'a1',
+      currency: 'USD',
+      allocations: { incomes: [], expenses: [] },
+      description: '',
+      contactId: 'contact-1',
+    };
+    const cleared: ExpenseRequest = {
+      accountId: 'a1',
+      currency: 'USD',
+      allocations: { incomes: [], expenses: [] },
+      description: '',
+      contactId: null,
+    };
+    expect(withContact.contactId).toBe('contact-1');
+    expect(cleared.contactId).toBeNull();
+  });
+
+  it('AmendTransactionRequest accepts an optional nullable contactId', () => {
+    expectTypeOf<AmendTransactionRequest['contactId']>().toEqualTypeOf<string | null | undefined>();
+  });
+
+  it('SetTransactionContactRequest carries a required nullable contactId', () => {
+    expectTypeOf<SetTransactionContactRequest>().toEqualTypeOf<{ contactId: string | null }>();
   });
 });

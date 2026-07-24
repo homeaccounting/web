@@ -238,6 +238,10 @@ export const handlers = [
     const body = (await request.json()) as { labels: string[] };
     return HttpResponse.json(editedTransactionFixture({ labels: body.labels }));
   }),
+  http.put(`${apiBase}/api/transactions/:id/contact`, async ({ request }) => {
+    const body = (await request.json()) as { contactId: string | null };
+    return HttpResponse.json(editedTransactionFixture({ contactId: body.contactId }));
+  }),
   http.patch(`${apiBase}/api/transactions/:id/allocations`, () =>
     HttpResponse.json(editedTransactionFixture()),
   ),

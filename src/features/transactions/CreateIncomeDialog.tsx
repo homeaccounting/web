@@ -12,6 +12,7 @@ import type { UUID } from '@/api/types';
 import { useAccounts } from '@/features/accounts/useAccounts';
 import { flattenDictionary } from '@/api/dictionary';
 import { useConfiguration } from '@/features/configuration/useConfiguration';
+import { useCreateDictionaryEntry } from '@/features/configuration/useCreateDictionaryEntry';
 import { nowDateTimeInput } from '@/lib/dates';
 import { IncomeExpenseForm, type IncomeExpenseFormApi } from './IncomeExpenseForm';
 import { useCreateIncome } from './useCreateIncome';
@@ -32,6 +33,7 @@ export function CreateIncomeDialog({
   const { data: accounts } = useAccounts();
   const { data: config } = useConfiguration();
   const create = useCreateIncome();
+  const createContact = useCreateDictionaryEntry();
 
   // Backend dictionary ids — see server-infra/src/Domain/Configuration/Defaults.hs
   // (incomeCategoryDictId / expenseCategoryDictId) and ConfigurationService.hs
@@ -40,6 +42,7 @@ export function CreateIncomeDialog({
   const categories = flattenDictionary(config?.dictionaries['income']);
   const reimbursementCategories = flattenDictionary(config?.dictionaries['expense']);
   const labels = flattenDictionary(config?.dictionaries.label);
+  const contacts = flattenDictionary(config?.dictionaries.contact);
 
   const defaultAccount = accounts?.find((a) => a.id === selectedAccountId) ?? accounts?.[0];
   const defaultCategory = config?.defaults.incomeCategory ?? '';
@@ -53,6 +56,7 @@ export function CreateIncomeDialog({
       description: '',
       date: nowDateTimeInput(),
       labels: [],
+      contactId: null,
       targetMode: false,
       targetTotal: '',
     }),
@@ -106,8 +110,14 @@ export function CreateIncomeDialog({
             categories={categories}
             reimbursementCategories={reimbursementCategories}
             labels={labels}
+            contacts={contacts}
             defaultValues={defaults}
             isSubmitting={create.isPending}
+            onCreateContact={(name) =>
+              createContact
+                .mutateAsync({ dictId: 'contact', name, dict: config?.dictionaries.contact })
+                .then((r) => r.id)
+            }
             onSubmit={handleSubmit}
             onCancel={() => onOpenChange(false)}
             onReady={handleReady}

@@ -12,6 +12,7 @@ import {
   toTransferFormValues,
   type IncomeExpenseFormValues,
 } from './schema';
+import { dateInputToWire } from '@/lib/dates';
 import type { AccountResponse, TransactionResponse } from '@/api/types';
 
 const ACC_A = '11111111-1111-1111-1111-111111111111';
@@ -54,9 +55,12 @@ describe('incomeExpenseFormSchema', () => {
     expect(incomeExpenseFormSchema.safeParse({ ...valid, description: '' }).success).toBe(true);
   });
 
-  it('accepts empty date (omitted) and empty labels', () => {
-    const parsed = incomeExpenseFormSchema.parse({ ...valid, date: '', labels: [] });
-    expect(parsed.date).toBeUndefined();
+  it('rejects an empty date (date is required) and accepts empty labels', () => {
+    expect(incomeExpenseFormSchema.safeParse({ ...valid, date: '', labels: [] }).success).toBe(
+      false,
+    );
+    const parsed = incomeExpenseFormSchema.parse({ ...valid, labels: [] });
+    expect(parsed.date).toBe(valid.date);
     expect(parsed.labels).toEqual([]);
   });
 
@@ -65,6 +69,11 @@ describe('incomeExpenseFormSchema', () => {
     delete without.labels;
     const parsed = incomeExpenseFormSchema.parse(without);
     expect(parsed.labels).toEqual([]);
+  });
+
+  it('defaults contactId to null when omitted', () => {
+    const parsed = incomeExpenseFormSchema.parse(valid);
+    expect(parsed.contactId).toBeNull();
   });
 });
 
@@ -77,6 +86,7 @@ describe('toIncomeRequest / toExpenseRequest', () => {
     description: 'Lunch',
     date: '2026-06-01',
     labels: [LBL],
+    contactId: null,
   };
 
   it('produces the full DTO with ISO timestamp and one income slice', () => {
@@ -90,6 +100,7 @@ describe('toIncomeRequest / toExpenseRequest', () => {
       description: 'Lunch',
       date: '2026-06-01T00:00:00.000Z',
       labels: [LBL],
+      contactId: null,
     });
   });
 
@@ -127,14 +138,24 @@ describe('toIncomeRequest / toExpenseRequest', () => {
     expect(dto.allocations.expenses[0]!.comment).toBeUndefined();
   });
 
-  it('omits date when undefined', () => {
-    const dto = toIncomeRequest({ ...values, date: undefined });
-    expect(dto.date).toBeUndefined();
+  it('wires the (required) date to the request', () => {
+    const dto = toIncomeRequest({ ...values, date: '2026-06-01' });
+    expect(dto.date).toBe(dateInputToWire('2026-06-01'));
   });
 
   it('omits labels when empty', () => {
     const dto = toIncomeRequest({ ...values, labels: [] });
     expect(dto.labels).toBeUndefined();
+  });
+
+  it('carries contactId when set', () => {
+    const dto = toIncomeRequest({ ...values, contactId: 'c1' });
+    expect(dto.contactId).toBe('c1');
+  });
+
+  it('carries contactId as null when unset', () => {
+    const dto = toIncomeRequest({ ...values, contactId: null });
+    expect(dto.contactId).toBeNull();
   });
 
   it('toExpenseRequest maps two expense rows into the expenses bucket', () => {
@@ -206,8 +227,8 @@ describe('toTransferRequest', () => {
     expect(toTransferRequest({ ...values }, 'USD', 'EUR').exchangeRate).toBe(1.25);
   });
 
-  it('omits date when empty', () => {
-    expect(toTransferRequest({ ...values, date: undefined }, 'USD', 'USD').date).toBeUndefined();
+  it('wires the (required) date to the request', () => {
+    expect(toTransferRequest({ ...values }, 'USD', 'USD').date).toBe(dateInputToWire(values.date));
   });
 
   it('omits labels when empty', () => {
@@ -249,6 +270,7 @@ const baseTx = (overrides: Partial<TransactionResponse>): TransactionResponse =>
   date: '2026-03-04T15:00:00.000Z',
   labels: ['l1'],
   amendmentCount: 0,
+  contactId: null,
   mcc: null,
   relations: [],
   ...overrides,
@@ -265,6 +287,7 @@ describe('toIncomeExpenseFormValues', () => {
       description: 'd',
       date: '2026-03-04T15:00',
       labels: ['l1'],
+      contactId: null,
       targetMode: false,
       targetTotal: '',
     });
@@ -300,6 +323,16 @@ describe('toIncomeExpenseFormValues', () => {
     expect(v.incomes).toEqual([]);
   });
 
+  it('seeds contactId from the transaction', () => {
+    const v = toIncomeExpenseFormValues(baseTx({ contactId: 'c1' }), [acc('a1')]);
+    expect(v.contactId).toBe('c1');
+  });
+
+  it('seeds contactId as null when the transaction has none', () => {
+    const v = toIncomeExpenseFormValues(baseTx({ contactId: null }), [acc('a1')]);
+    expect(v.contactId).toBeNull();
+  });
+
   it('seeds both buckets for a reimbursement income', () => {
     const tx = baseTx({
       transactionType: 'income',
@@ -331,7 +364,7 @@ describe('makeIncomeExpenseFormSchema (allocation refinement)', () => {
     accountId: ACC_A,
     currency: 'USD',
     description: '',
-    date: '',
+    date: '2026-06-01',
     labels: [] as string[],
   };
 
@@ -535,7 +568,7 @@ describe('makeIncomeExpenseFormSchema (allocation refinement)', () => {
         incomes: [{ category: CAT, amount: 12.5 }],
         expenses: [],
         description: '',
-        date: '',
+        date: '2026-06-01',
         labels: [],
       });
       expect(parsed.targetMode).toBe(false);
@@ -610,7 +643,7 @@ describe('makeTransferFormSchema (source balance check)', () => {
     targetAccountId: ACC_B,
     currency: 'USD',
     description: '',
-    date: '',
+    date: '2026-06-01',
     labels: [] as string[],
   };
 
@@ -666,7 +699,7 @@ describe('refundAllocationCaps', () => {
     currency: 'USD',
     incomes: [] as { category: string; amount: number }[],
     description: '',
-    date: '',
+    date: '2026-06-01',
     labels: [] as string[],
   };
 

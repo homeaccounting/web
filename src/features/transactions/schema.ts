@@ -19,12 +19,11 @@ const positiveAmount = z.coerce.number().positive('Amount must be positive');
 // consistent with the adjust-balance field.
 const description = z.string().max(500);
 
-// Accepts a bare date ('YYYY-MM-DD') or a date+time ('YYYY-MM-DDTHH:MM', from
-// the time-enabled DatePicker); '' means "omitted" (server defaults to now).
-const optionalIsoDate = z
-  .union([z.string().regex(/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/, 'Invalid date'), z.literal('')])
-  .optional()
-  .transform((v) => (v === '' || v === undefined ? undefined : v));
+// Required transaction date. Accepts a bare date ('YYYY-MM-DD') or a date+time
+// ('YYYY-MM-DDTHH:MM', from the time-enabled DatePicker). Empty/malformed is
+// rejected — the create dialogs pre-fill the current datetime, so the field is
+// never blank unless the user clears it. Mirrors adjustBalanceSchema's date.
+const requiredIsoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/, 'Date is required');
 
 // One allocation row in the form. The total of a transaction is the sum of all
 // slice amounts across both buckets; there is no separate top-level amount.
@@ -40,8 +39,11 @@ export const incomeExpenseFormSchema = z.object({
   incomes: z.array(sliceSchema),
   expenses: z.array(sliceSchema),
   description,
-  date: optionalIsoDate,
+  date: requiredIsoDate,
   labels: z.array(uuid).default([]),
+  // Optional contact link (tracker#41). Nullable scalar: `null` means "no
+  // contact". Mirrors `ExpenseRequest.contactId` in src/api/types.ts.
+  contactId: z.string().nullable().default(null),
   // Client-side authoring aid for multi-allocation entry (tracker#32). Never
   // sent to the backend — request mappers read only their known fields.
   targetMode: z.boolean().default(false),
@@ -59,8 +61,9 @@ export type IncomeExpenseFormValues = {
   incomes: { category: string; amount: number; comment?: string }[];
   expenses: { category: string; amount: number; comment?: string }[];
   description: string;
-  date?: string;
+  date: string;
   labels: string[];
+  contactId: string | null;
   targetMode?: boolean;
   targetTotal?: number | '';
 };
@@ -73,7 +76,7 @@ export const transferFormSchema = z
     currency: z.string().min(1),
     description,
     exchangeRate: z.coerce.number().positive().optional(),
-    date: optionalIsoDate,
+    date: requiredIsoDate,
     labels: z.array(uuid).default([]),
   })
   .refine((v) => v.sourceAccountId !== v.targetAccountId, {
@@ -257,8 +260,9 @@ export function toIncomeRequest(v: IncomeExpenseInput): IncomeRequest {
     currency: v.currency,
     allocations: { incomes: toReqSlices(v.incomes), expenses: toReqSlices(v.expenses) },
     description: v.description,
-    date: v.date ? dateInputToWire(v.date) : undefined,
+    date: dateInputToWire(v.date),
     labels: labelsOrUndefined(v.labels),
+    contactId: v.contactId ?? null,
   };
 }
 
@@ -282,7 +286,7 @@ export function toTransferRequest(
     currency: v.currency,
     description: v.description,
     exchangeRate: sourceCurrency === targetCurrency ? undefined : v.exchangeRate,
-    date: v.date ? dateInputToWire(v.date) : undefined,
+    date: dateInputToWire(v.date),
     labels: labelsOrUndefined(v.labels),
   };
 }
@@ -312,6 +316,7 @@ export function toIncomeExpenseFormValues(
     description: tx.description,
     date: dateToInput(tx.date),
     labels: tx.labels,
+    contactId: tx.contactId ?? null,
     targetMode: false,
     targetTotal: '',
   };

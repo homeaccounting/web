@@ -66,8 +66,11 @@ import { CopyTransactionDialog } from './CopyTransactionDialog';
 import { ConvertTransactionDialog } from './ConvertTransactionDialog';
 import { RefundTransactionDialog } from './RefundTransactionDialog';
 import { TransactionStatusIcon } from './TransactionStatusIcon';
+import { useCreateDictionaryEntry } from '@/features/configuration/useCreateDictionaryEntry';
 import { TxCategoryQuickPicker } from './TxCategoryQuickPicker';
 import { TxLabelQuickPicker } from './TxLabelQuickPicker';
+import { TxContactQuickPicker } from './TxContactQuickPicker';
+import { ContactChip } from './ContactChip';
 import { useEditTransaction } from './useEditTransaction';
 
 // The two kinds a transaction can convert to (everything but its current kind;
@@ -140,6 +143,7 @@ const EMPTY_FILTERS: TransactionFilters = {
   description: '',
   labelIds: [],
   category: '',
+  contactId: '',
   showCancelledFailed: false,
 };
 
@@ -168,6 +172,10 @@ export function TransactionsPane() {
   const categoryNameById = labelNameById;
 
   const labelOptions = flattenDictionary(configuration?.dictionaries.label);
+  const contactOptions = useMemo(
+    () => flattenDictionary(configuration?.dictionaries.contact),
+    [configuration],
+  );
 
   const edit = useEditTransaction();
 
@@ -198,6 +206,34 @@ export function TransactionsPane() {
       diff: { labels },
       onSubCallApplied: () => {},
     });
+
+  // Replace (or, with null, clear) the transaction's contact. Mirrors
+  // commitLabels; presence of `contactId` in the diff drives the PUT.
+  const commitContact = (t: TransactionResponse, contactId: UUID | null) =>
+    edit.mutateAsync({
+      id: t.id,
+      accountIds: affectedAccountIds(t),
+      diff: { contactId },
+      onSubCallApplied: () => {},
+    });
+
+  // Create a new root-level item in any dictionary from a quick-picker's create
+  // row and hand back its id so the picker can assign it through its own commit
+  // path. The dictionary slug matches configuration.dictionaries[dictId]
+  // ('label', 'contact', …).
+  const create = useCreateDictionaryEntry();
+  const createEntry = async (dictId: string, name: string): Promise<UUID | null> => {
+    try {
+      const r = await create.mutateAsync({
+        dictId,
+        name,
+        dict: configuration?.dictionaries[dictId],
+      });
+      return r.id;
+    } catch {
+      return null;
+    }
+  };
   // The filter matches by category NAME (so a name shared across the income and
   // expense dictionaries — e.g. "Other" — matches either). The dropdown is
   // therefore deduped by name, and each option's value IS the name.
@@ -240,6 +276,7 @@ export function TransactionsPane() {
     (filters.description.trim() ? 1 : 0) +
     (filters.labelIds.length > 0 ? 1 : 0) +
     (filters.category ? 1 : 0) +
+    (filters.contactId ? 1 : 0) +
     (filters.showCancelledFailed ? 1 : 0);
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const clampedPage = Math.min(pageIndex, pageCount - 1);
@@ -459,6 +496,11 @@ export function TransactionsPane() {
                               nameById={labelNameById}
                               leadingGap={hasText}
                             />
+                            <ContactChip
+                              contactId={t.contactId}
+                              nameById={labelNameById}
+                              leadingGap={hasText || t.labels.length > 0}
+                            />
                             {refundStat && (
                               <RelationBadge
                                 kind="refund"
@@ -594,8 +636,19 @@ export function TransactionsPane() {
                       options={labelOptions}
                       value={t.labels}
                       onCommit={(labels) => commitLabels(t, labels)}
+                      onCreate={(name) => createEntry('label', name)}
                     />
                   )}
+                  {t.status === 'Completed' &&
+                    (isIncome(t.transactionType) || isExpense(t.transactionType)) && (
+                      <TxContactQuickPicker
+                        options={contactOptions}
+                        value={t.contactId}
+                        onSelect={(id) => void commitContact(t, id)}
+                        onCreate={(name) => createEntry('contact', name)}
+                        createHint={t.description}
+                      />
+                    )}
                   {t.status === 'Completed' && t.transactionType === 'expense' && (
                     <ContextMenuItem onSelect={() => openRefund(t)}>
                       <Undo2 className="mr-2 h-4 w-4" aria-hidden />
@@ -656,6 +709,7 @@ export function TransactionsPane() {
           filters={filters}
           labelOptions={labelOptions}
           categoryOptions={categoryOptions}
+          contactOptions={contactOptions}
           onFromChange={onFromChange}
           onToChange={onToChange}
           onFiltersChange={updateFilters}

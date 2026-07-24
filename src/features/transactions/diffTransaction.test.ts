@@ -23,6 +23,7 @@ const baseTx: TransactionResponse = {
   date: '2026-03-04T00:00:00.000Z',
   labels: ['l1'],
   amendmentCount: 0,
+  contactId: null,
   mcc: null,
   relations: [],
 };
@@ -35,6 +36,7 @@ const ieInitial: IncomeExpenseFormValues = {
   description: 'old',
   date: '2026-03-04',
   labels: ['l1'],
+  contactId: null,
 };
 
 // An expense transaction + matching initial form values.
@@ -188,6 +190,45 @@ describe('diffIncomeExpense', () => {
       expenses: [{ categoryId: 'cat-2', amount: { amount: 600, currency: 'USD' } }],
     });
     expect(d.allocations).toBeUndefined();
+  });
+
+  describe('contact', () => {
+    const withContact = (contactId: string | null): IncomeExpenseFormValues => ({
+      ...expenseInitial,
+      contactId,
+    });
+
+    it('contact-only change → diff.contactId, no amendment', () => {
+      const d = diffIncomeExpense(withContact('c1'), withContact('c2'), expenseTx);
+      expect(d.contactId).toBe('c2');
+      expect(d.amendment).toBeUndefined();
+    });
+
+    it('amount change + unchanged contact → amendment carries contactId, no diff.contactId', () => {
+      const d = diffIncomeExpense(
+        withContact('c1'),
+        { ...withContact('c1'), expenses: [{ category: 'cat-1', amount: 120 }] },
+        expenseTx,
+      );
+      expect(d.amendment?.contactId).toBe('c1');
+      expect(d.contactId).toBeUndefined();
+    });
+
+    it('amount change + contact change → amendment carries new contactId, no diff.contactId', () => {
+      const d = diffIncomeExpense(
+        withContact('c1'),
+        { ...withContact('c2'), expenses: [{ category: 'cat-1', amount: 120 }] },
+        expenseTx,
+      );
+      expect(d.amendment?.contactId).toBe('c2');
+      expect(d.contactId).toBeUndefined();
+    });
+
+    it('clear contact only → diff.contactId null, no amendment', () => {
+      const d = diffIncomeExpense(withContact('c1'), withContact(null), expenseTx);
+      expect(d.contactId).toBeNull();
+      expect(d.amendment).toBeUndefined();
+    });
   });
 
   it('NO categorised change (only description edited): neither amendment nor allocations', () => {

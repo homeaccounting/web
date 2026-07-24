@@ -268,6 +268,8 @@ export interface ExpenseRequest {
   description: string;
   date?: ISO8601; // omit → backend defaults to server time
   labels?: UUID[];
+  // backend Web/Types.hs ExpenseRequest.contactId :: Maybe UUID
+  contactId?: UUID | null;
 }
 
 // Mirrors backend Web/Types.hs:389 (IncomeRequest.relation :: Maybe TransactionRelation).
@@ -347,6 +349,14 @@ export interface AmendTransactionRequest {
   // amendments (uncategorised) carry none. Allocation-only edits that leave the
   // total unchanged use the dedicated PATCH /allocations endpoint instead.
   newAllocations?: Allocations;
+  // FULL desired state — absent/null CLEARS the contact; resend current to preserve (Web/Types.hs AmendTransactionRequest).
+  contactId?: UUID | null;
+}
+
+// Body for PUT /api/transactions/:id/contact — replaces or (via null) clears
+// the contact on a Completed transaction. Mirrors SetTransactionLabelsRequest.
+export interface SetTransactionContactRequest {
+  contactId: UUID | null;
 }
 
 // --- Transactions ---
@@ -406,6 +416,10 @@ export interface TransactionResponse {
   // (TransactionResponse.relations :: [TransactionRelation]). Always present in
   // responses; empty array when the transaction has no relations.
   relations: TransactionRelation[];
+  // Counterparty dictionary-entry id (id-only, no resolved name); `null` when
+  // the transaction has no contact. Mirrors backend
+  // Web/Types.hs TransactionResponse.contactId :: Maybe UUID.
+  contactId: UUID | null;
   // Original provider merchant category code for imported transactions; `null`
   // for manual entries and providers that supply no MCC. Mirrors backend
   // Web/Types.hs `TransactionResponse.mcc :: Maybe Text`. Lets the user read the

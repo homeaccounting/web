@@ -37,9 +37,11 @@ const accounts: AccountResponse[] = [
     version: 1,
   },
 ];
+const CT1 = '00000000-0000-0000-0000-0000000000c1';
 const categories: DictionaryEntryResponse[] = [{ id: C1, name: 'Food' }];
 const reimbursementCategories: DictionaryEntryResponse[] = [{ id: RC1, name: 'Refund' }];
 const labels: DictionaryEntryResponse[] = [{ id: L1, name: 'Trip' }];
+const contacts: DictionaryEntryResponse[] = [{ id: CT1, name: 'Acme' }];
 
 const emptyRow = { category: '', amount: NaN };
 
@@ -49,8 +51,9 @@ const expenseDefaults: IncomeExpenseFormValues = {
   incomes: [],
   expenses: [{ ...emptyRow }],
   description: '',
-  date: '',
+  date: '2026-06-01',
   labels: [],
+  contactId: null,
 };
 
 const incomeDefaults: IncomeExpenseFormValues = {
@@ -59,8 +62,9 @@ const incomeDefaults: IncomeExpenseFormValues = {
   incomes: [{ ...emptyRow }],
   expenses: [],
   description: '',
-  date: '',
+  date: '2026-06-01',
   labels: [],
+  contactId: null,
 };
 
 describe('IncomeExpenseForm', () => {
@@ -71,6 +75,7 @@ describe('IncomeExpenseForm', () => {
         mode="create"
         accounts={accounts}
         categories={categories}
+        contacts={contacts}
         labels={labels}
         defaultValues={expenseDefaults}
         isSubmitting={false}
@@ -94,6 +99,7 @@ describe('IncomeExpenseForm', () => {
         mode="create"
         accounts={accounts}
         categories={categories}
+        contacts={contacts}
         reimbursementCategories={reimbursementCategories}
         labels={labels}
         defaultValues={incomeDefaults}
@@ -119,6 +125,7 @@ describe('IncomeExpenseForm', () => {
         mode="create"
         accounts={accounts}
         categories={categories}
+        contacts={contacts}
         labels={labels}
         defaultValues={expenseDefaults}
         isSubmitting={false}
@@ -137,6 +144,7 @@ describe('IncomeExpenseForm', () => {
         mode="create"
         accounts={accounts}
         categories={categories}
+        contacts={contacts}
         labels={labels}
         defaultValues={expenseDefaults}
         isSubmitting={false}
@@ -158,6 +166,7 @@ describe('IncomeExpenseForm', () => {
         mode="create"
         accounts={accounts}
         categories={categories}
+        contacts={contacts}
         labels={labels}
         defaultValues={expenseDefaults}
         isSubmitting={false}
@@ -197,6 +206,7 @@ describe('IncomeExpenseForm', () => {
         mode="create"
         accounts={accounts}
         categories={categories}
+        contacts={contacts}
         labels={labels}
         defaultValues={expenseDefaults}
         isSubmitting={false}
@@ -239,6 +249,7 @@ describe('IncomeExpenseForm', () => {
         mode="create"
         accounts={accounts}
         categories={categories}
+        contacts={contacts}
         labels={labels}
         defaultValues={partialDefaults}
         isSubmitting={false}
@@ -271,6 +282,7 @@ describe('IncomeExpenseForm', () => {
         mode="create"
         accounts={accounts}
         categories={categories}
+        contacts={contacts}
         labels={labels}
         defaultValues={expenseDefaults}
         isSubmitting={false}
@@ -296,6 +308,7 @@ describe('IncomeExpenseForm', () => {
         mode="create"
         accounts={accounts}
         categories={categories}
+        contacts={contacts}
         labels={manyLabels}
         defaultValues={expenseDefaults}
         isSubmitting={false}
@@ -314,6 +327,100 @@ describe('IncomeExpenseForm', () => {
     expect(cb).toHaveValue('');
   });
 
+  it('renders a Contact field', () => {
+    renderWithProviders(
+      <IncomeExpenseForm
+        kind="expense"
+        mode="create"
+        accounts={accounts}
+        categories={categories}
+        contacts={contacts}
+        labels={labels}
+        defaultValues={expenseDefaults}
+        isSubmitting={false}
+        onSubmit={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole('combobox', { name: /contact/i })).toBeInTheDocument();
+  });
+
+  it('submits the picked contact as contactId', async () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    renderWithProviders(
+      <IncomeExpenseForm
+        kind="expense"
+        mode="create"
+        accounts={accounts}
+        categories={categories}
+        contacts={contacts}
+        labels={labels}
+        defaultValues={expenseDefaults}
+        isSubmitting={false}
+        onSubmit={onSubmit}
+        onCancel={vi.fn()}
+      />,
+    );
+    // Fill a valid expense row.
+    const categoryCb = screen.getByPlaceholderText(/select a category/i);
+    await user.click(categoryCb);
+    await user.type(categoryCb, 'fo');
+    await user.click(await screen.findByRole('option', { name: /food/i }));
+    const amount = screen.getByRole('spinbutton');
+    await user.clear(amount);
+    await user.type(amount, '5');
+    // Pick a contact.
+    const contactCb = screen.getByRole('combobox', { name: /contact/i });
+    await user.click(contactCb);
+    await user.click(await screen.findByRole('option', { name: /acme/i }));
+    fireEvent.submit(screen.getByRole('form'));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+    const arg = onSubmit.mock.calls[0]![0] as IncomeExpenseFormValues;
+    expect(arg.contactId).toBe(CT1);
+  });
+
+  it('creating a contact calls onCreateContact and selects the returned id', async () => {
+    const NEW_ID = '00000000-0000-0000-0000-0000000000c9';
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    const onCreateContact = vi.fn().mockResolvedValue(NEW_ID);
+    const user = userEvent.setup();
+    renderWithProviders(
+      <IncomeExpenseForm
+        kind="expense"
+        mode="create"
+        accounts={accounts}
+        categories={categories}
+        contacts={contacts}
+        labels={labels}
+        defaultValues={expenseDefaults}
+        isSubmitting={false}
+        onSubmit={onSubmit}
+        onCreateContact={onCreateContact}
+        onCancel={vi.fn()}
+      />,
+    );
+    // Fill a valid expense row so submit is otherwise allowed.
+    const categoryCb = screen.getByPlaceholderText(/select a category/i);
+    await user.click(categoryCb);
+    await user.type(categoryCb, 'fo');
+    await user.click(await screen.findByRole('option', { name: /food/i }));
+    const amount = screen.getByRole('spinbutton');
+    await user.clear(amount);
+    await user.type(amount, '5');
+    // Type a novel name and activate the "Create" row.
+    const contactCb = screen.getByRole('combobox', { name: /contact/i });
+    await user.click(contactCb);
+    await user.type(contactCb, 'Carol');
+    await user.click(screen.getByText(/create.*carol/i));
+    await waitFor(() => expect(onCreateContact).toHaveBeenCalledWith('Carol'));
+    // The resolved id is committed to the field, so it rides along on submit.
+    fireEvent.submit(screen.getByRole('form'));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+    const arg = onSubmit.mock.calls[0]![0] as IncomeExpenseFormValues;
+    expect(arg.contactId).toBe(NEW_ID);
+  });
+
   describe('edit mode', () => {
     const editDefaults: IncomeExpenseFormValues = {
       accountId: A1,
@@ -323,6 +430,7 @@ describe('IncomeExpenseForm', () => {
       description: 'old',
       date: '2026-03-04',
       labels: [],
+      contactId: null,
     };
 
     it('hides "Defaults to today" helper text', () => {
@@ -332,6 +440,7 @@ describe('IncomeExpenseForm', () => {
           mode="edit"
           accounts={accounts}
           categories={categories}
+          contacts={contacts}
           labels={labels}
           defaultValues={editDefaults}
           isSubmitting={false}
@@ -349,6 +458,7 @@ describe('IncomeExpenseForm', () => {
           mode="edit"
           accounts={accounts}
           categories={categories}
+          contacts={contacts}
           labels={labels}
           defaultValues={editDefaults}
           isSubmitting={false}
@@ -366,6 +476,7 @@ describe('IncomeExpenseForm', () => {
           mode="edit"
           accounts={accounts}
           categories={categories}
+          contacts={contacts}
           labels={labels}
           defaultValues={editDefaults}
           isSubmitting={false}
@@ -386,6 +497,7 @@ describe('IncomeExpenseForm', () => {
       description: 'Refund',
       date: '2026-03-04',
       labels: [],
+      contactId: null,
       targetMode: true,
       targetTotal: 100,
     };
@@ -399,6 +511,7 @@ describe('IncomeExpenseForm', () => {
           mode="create"
           accounts={accounts}
           categories={categories}
+          contacts={contacts}
           labels={labels}
           defaultValues={lockDefaults}
           isSubmitting={false}
@@ -426,6 +539,7 @@ describe('IncomeExpenseForm', () => {
           mode="create"
           accounts={accounts}
           categories={categories}
+          contacts={contacts}
           labels={labels}
           defaultValues={lockDefaults}
           isSubmitting={false}
@@ -452,6 +566,7 @@ describe('IncomeExpenseForm', () => {
         mode="create"
         accounts={accounts}
         categories={categories}
+        contacts={contacts}
         labels={labels}
         defaultValues={expenseDefaults}
         isSubmitting={false}
@@ -487,6 +602,7 @@ describe('IncomeExpenseForm', () => {
         mode="create"
         accounts={accounts}
         categories={categories}
+        contacts={contacts}
         labels={labels}
         defaultValues={expenseDefaults}
         isSubmitting={false}

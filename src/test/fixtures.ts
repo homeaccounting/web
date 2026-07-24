@@ -14,6 +14,7 @@ import type {
 
 export const foodCategoryId = '00000000-0000-0000-0000-00000000f00d';
 export const tripLabelId = '00000000-0000-0000-0000-0000000017a1';
+export const acmeContactId = '00000000-0000-0000-0000-0000000c0a17';
 
 export const authResponseFixture: AuthResponse = {
   token: 'jwt-test',
@@ -83,6 +84,7 @@ export const transactionFixture: TransactionResponse = {
   labels: [],
   amendmentCount: 0,
   relations: [],
+  contactId: null,
   mcc: null,
 };
 
@@ -104,6 +106,7 @@ export const configurationFixture: ConfigurationResponse = {
     income: {
       roots: [{ id: salaryCategoryId, name: 'Salary', type: 'item', children: [] }],
     },
+    contact: { roots: [{ id: acmeContactId, name: 'Acme', type: 'item', children: [] }] },
     label: { roots: [{ id: tripLabelId, name: 'Trip', type: 'item', children: [] }] },
   },
   defaults: {

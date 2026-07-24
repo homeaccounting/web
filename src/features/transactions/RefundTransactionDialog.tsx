@@ -12,6 +12,7 @@ import type { TransactionResponse } from '@/api/types';
 import { useAccounts } from '@/features/accounts/useAccounts';
 import { flattenDictionary } from '@/api/dictionary';
 import { useConfiguration } from '@/features/configuration/useConfiguration';
+import { useCreateDictionaryEntry } from '@/features/configuration/useCreateDictionaryEntry';
 import { nowDateTimeInput } from '@/lib/dates';
 import { formatMoney } from '@/lib/format';
 import { IncomeExpenseForm, type IncomeExpenseFormApi } from './IncomeExpenseForm';
@@ -76,6 +77,7 @@ function RefundForm({
   const { data: accounts } = useAccounts();
   const { data: config } = useConfiguration();
   const refund = useRefundTransaction(original.id);
+  const createContact = useCreateDictionaryEntry();
 
   // A refund's contra allocations genuinely live in the `expenses` bucket, so the
   // form is built with `kind="expense"`: that renders a SINGLE, expanded section
@@ -86,6 +88,7 @@ function RefundForm({
   // therefore the expense-category one. Archived slices (ids absent here) render
   // read-only via CategoryCombobox's fallback.
   const categories = flattenDictionary(config?.dictionaries['expense']);
+  const contacts = flattenDictionary(config?.dictionaries.contact);
 
   const { remainingByCategory, remainingTotal, refundedTotal } = summary;
 
@@ -109,6 +112,7 @@ function RefundForm({
       description: `Refund: ${original.description}`,
       date: nowDateTimeInput(),
       labels: [],
+      contactId: null,
       targetMode: true,
       targetTotal: remainingTotal,
     }),
@@ -172,11 +176,17 @@ function RefundForm({
           accounts={accounts}
           categories={categories}
           labels={flattenDictionary(config?.dictionaries.label)}
+          contacts={contacts}
           defaultValues={defaults}
           isSubmitting={refund.isPending}
           enforceBalance={false}
           extraRefine={extraRefine}
           lockTarget
+          onCreateContact={(name) =>
+            createContact
+              .mutateAsync({ dictId: 'contact', name, dict: config?.dictionaries.contact })
+              .then((r) => r.id)
+          }
           onSubmit={handleSubmit}
           onCancel={() => onOpenChange(false)}
           onReady={handleReady}

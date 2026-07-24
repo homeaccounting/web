@@ -42,6 +42,9 @@ export function useEditTransaction() {
       // labels presence — not truthiness — gates the request; empty array is
       // the user's explicit "clear labels" and must be sent.
       if (diff.labels !== undefined) apply(await api.setLabels(id, { labels: diff.labels }));
+      // Presence, not truthiness — null is the explicit "clear contact".
+      if (diff.contactId !== undefined)
+        apply(await api.setContact(id, { contactId: diff.contactId }));
 
       return last;
     },

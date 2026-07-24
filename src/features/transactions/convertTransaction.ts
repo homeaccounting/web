@@ -39,6 +39,7 @@ export function toConvertIncomeExpenseDefaults(
     description: tx.description,
     date: wireToDateInput(tx.date),
     labels: tx.labels,
+    contactId: tx.contactId ?? null,
   };
 }
 
@@ -93,6 +94,7 @@ export function toIncomeExpenseAmendment(
     sourceCurrency: v.currency,
     targetAmount: total,
     targetCurrency: v.currency,
+    contactId: v.contactId ?? null,
     newAllocations: buildAllocations(v, v.currency),
   };
 }

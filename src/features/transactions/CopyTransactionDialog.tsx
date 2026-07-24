@@ -14,6 +14,7 @@ import type { AccountResponse, TransactionResponse } from '@/api/types';
 import { useAccounts } from '@/features/accounts/useAccounts';
 import { flattenDictionary } from '@/api/dictionary';
 import { useConfiguration } from '@/features/configuration/useConfiguration';
+import { useCreateDictionaryEntry } from '@/features/configuration/useCreateDictionaryEntry';
 import { nowDateTimeInput } from '@/lib/dates';
 import { IncomeExpenseForm, type IncomeExpenseFormApi } from './IncomeExpenseForm';
 import { TransferForm, type TransferFormApi } from './TransferForm';
@@ -104,11 +105,13 @@ function CopyIncomeExpenseBody({
   const createIncome = useCreateIncome();
   const createExpense = useCreateExpense();
   const create = kind === 'income' ? createIncome : createExpense;
+  const createContact = useCreateDictionaryEntry();
 
   const categoryDictId = kind === 'income' ? 'income' : 'expense';
   const categories = flattenDictionary(config?.dictionaries[categoryDictId]);
   const reimbursementCategories = flattenDictionary(config?.dictionaries['expense']);
   const labels = flattenDictionary(config?.dictionaries.label);
+  const contacts = flattenDictionary(config?.dictionaries.contact);
 
   // Seed from the source, then default the date to now: a copy is a new
   // transaction recorded now, not a clone of the original's timestamp. The
@@ -164,8 +167,14 @@ function CopyIncomeExpenseBody({
         categories={categories}
         reimbursementCategories={reimbursementCategories}
         labels={labels}
+        contacts={contacts}
         defaultValues={defaultValues}
         isSubmitting={create.isPending}
+        onCreateContact={(name) =>
+          createContact
+            .mutateAsync({ dictId: 'contact', name, dict: config?.dictionaries.contact })
+            .then((r) => r.id)
+        }
         onSubmit={handleSubmit}
         onCancel={onClose}
         onReady={handleReady}

@@ -56,6 +56,7 @@ const base: TransactionResponse = {
   date: '2026-01-15T08:00:00.000Z',
   labels: ['lbl-1'],
   amendmentCount: 0,
+  contactId: null,
   mcc: null,
   relations: [],
 };
@@ -111,6 +112,17 @@ describe('toConvertIncomeExpenseDefaults', () => {
       { category: '', amount: 42, comment: '' },
     ]);
   });
+
+  it('carries the contact from the source transaction', () => {
+    const withContact: TransactionResponse = { ...base, contactId: 'c1' };
+    expect(toConvertIncomeExpenseDefaults(withContact, 'income', accounts, null).contactId).toBe(
+      'c1',
+    );
+  });
+
+  it('seeds a null contact when the source has none', () => {
+    expect(toConvertIncomeExpenseDefaults(base, 'income', accounts, null).contactId).toBeNull();
+  });
 });
 
 describe('toConvertTransferDefaults', () => {
@@ -138,6 +150,12 @@ describe('toConvertTransferDefaults', () => {
     expect(d.targetAccountId).toBe(B);
     expect(d.amount).toBe(100);
   });
+
+  it('does not carry a contact (transfers have none)', () => {
+    const withContact: TransactionResponse = { ...base, contactId: 'c1' };
+    const d = toConvertTransferDefaults(withContact, accounts);
+    expect(Object.prototype.hasOwnProperty.call(d, 'contactId')).toBe(false);
+  });
 });
 
 describe('toIncomeExpenseAmendment', () => {
@@ -153,8 +171,9 @@ describe('toIncomeExpenseAmendment', () => {
         ],
         expenses: [],
         description: '',
-        date: undefined,
+        date: '2026-06-01',
         labels: [],
+        contactId: null,
       },
       EXT,
     );
@@ -181,8 +200,9 @@ describe('toIncomeExpenseAmendment', () => {
         incomes: [],
         expenses: [{ category: 'c', amount: 42 }],
         description: '',
-        date: undefined,
+        date: '2026-06-01',
         labels: [],
+        contactId: null,
       },
       EXT,
     );
@@ -194,6 +214,42 @@ describe('toIncomeExpenseAmendment', () => {
       incomes: [],
       expenses: [{ categoryId: 'c', amount: { amount: 42, currency: 'USD' } }],
     });
+  });
+
+  it('carries the form contact', () => {
+    const a = toIncomeExpenseAmendment(
+      'expense',
+      {
+        accountId: A,
+        currency: 'USD',
+        incomes: [],
+        expenses: [{ category: 'c', amount: 42 }],
+        description: '',
+        date: '2026-06-01',
+        labels: [],
+        contactId: 'c1',
+      },
+      EXT,
+    );
+    expect(a.contactId).toBe('c1');
+  });
+
+  it('sends a null contact when the form has none', () => {
+    const a = toIncomeExpenseAmendment(
+      'expense',
+      {
+        accountId: A,
+        currency: 'USD',
+        incomes: [],
+        expenses: [{ category: 'c', amount: 42 }],
+        description: '',
+        date: '2026-06-01',
+        labels: [],
+        contactId: null,
+      },
+      EXT,
+    );
+    expect(a.contactId).toBeNull();
   });
 });
 
@@ -207,7 +263,7 @@ describe('toTransferAmendment', () => {
         currency: 'USD',
         exchangeRate: undefined,
         description: '',
-        date: undefined,
+        date: '2026-06-01',
         labels: [],
       },
       'USD',
@@ -232,7 +288,7 @@ describe('toTransferAmendment', () => {
         currency: 'USD',
         exchangeRate: 2,
         description: '',
-        date: undefined,
+        date: '2026-06-01',
         labels: [],
       },
       'USD',

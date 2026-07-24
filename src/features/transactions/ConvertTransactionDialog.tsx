@@ -13,6 +13,7 @@ import type { AccountResponse, TransactionResponse, UUID } from '@/api/types';
 import { useAccounts } from '@/features/accounts/useAccounts';
 import { flattenDictionary } from '@/api/dictionary';
 import { useConfiguration } from '@/features/configuration/useConfiguration';
+import { useCreateDictionaryEntry } from '@/features/configuration/useCreateDictionaryEntry';
 import { useUserProfile } from '@/features/profile/useUserProfile';
 import { dateInputToWire } from '@/lib/dates';
 import { IncomeExpenseForm, type IncomeExpenseFormApi } from './IncomeExpenseForm';
@@ -124,10 +125,12 @@ function ConvertIncomeExpenseBody({
   onClose: () => void;
 }) {
   const edit = useEditTransaction();
+  const createContact = useCreateDictionaryEntry();
   const categoryDictId = targetKind === 'income' ? 'income' : 'expense';
   const categories = flattenDictionary(config?.dictionaries[categoryDictId]);
   const reimbursementCategories = flattenDictionary(config?.dictionaries['expense']);
   const labels = flattenDictionary(config?.dictionaries.label);
+  const contacts = flattenDictionary(config?.dictionaries.contact);
   const defaultCategory =
     (targetKind === 'income'
       ? config?.defaults.incomeCategory
@@ -180,8 +183,14 @@ function ConvertIncomeExpenseBody({
         categories={categories}
         reimbursementCategories={reimbursementCategories}
         labels={labels}
+        contacts={contacts}
         defaultValues={defaultValues}
         isSubmitting={edit.isPending}
+        onCreateContact={(name) =>
+          createContact
+            .mutateAsync({ dictId: 'contact', name, dict: config?.dictionaries.contact })
+            .then((r) => r.id)
+        }
         onSubmit={handleSubmit}
         onCancel={onClose}
         onReady={handleReady}

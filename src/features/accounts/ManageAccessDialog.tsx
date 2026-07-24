@@ -31,6 +31,7 @@ import {
 import { ApiError } from '@/api/client';
 import type { AccountResponse, AccountAccessEntry, AccountRole } from '@/api/types';
 import { useAuth } from '@/auth/useAuth';
+import { RequiredMarker } from '@/components/RequiredMarker';
 import { shareAccountSchema, type ShareAccountFormValues } from './shareAccountSchema';
 import { useAccountAccess } from './useAccountAccess';
 import { useShareAccount } from './useShareAccount';
@@ -159,7 +160,10 @@ export function ManageAccessDialog({ open, onOpenChange, account }: ManageAccess
                 name="userId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>User ID</FormLabel>
+                    <FormLabel>
+                      User ID
+                      <RequiredMarker />
+                    </FormLabel>
                     <FormControl>
                       <Input placeholder="00000000-0000-0000-0000-000000000000" {...field} />
                     </FormControl>
@@ -172,7 +176,10 @@ export function ManageAccessDialog({ open, onOpenChange, account }: ManageAccess
                 name="role"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Role</FormLabel>
+                    <FormLabel>
+                      Role
+                      <RequiredMarker />
+                    </FormLabel>
                     <FormControl>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <SelectTrigger aria-label="Role">

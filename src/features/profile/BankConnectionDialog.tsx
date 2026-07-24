@@ -29,6 +29,7 @@ import { useChangeToken } from '@/features/configuration/useChangeToken';
 import { useSetAccountMap } from '@/features/configuration/useSetAccountMap';
 import { useProviders } from '@/features/banking/useProviders';
 import { useAccounts } from '@/features/accounts/useAccounts';
+import { RequiredMarker } from '@/components/RequiredMarker';
 import { AccountSelect } from './AccountSelect';
 import {
   makeBankConnectionFormSchema,
@@ -224,7 +225,10 @@ export function BankConnectionDialog({
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Name</FormLabel>
+                  <FormLabel>
+                    Name
+                    <RequiredMarker />
+                  </FormLabel>
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
@@ -238,7 +242,10 @@ export function BankConnectionDialog({
               name="provider"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Provider</FormLabel>
+                  <FormLabel>
+                    Provider
+                    <RequiredMarker />
+                  </FormLabel>
                   <FormControl>
                     {/* Provider is immutable once a connection exists, so the
                         Select stays disabled in edit mode — it's still

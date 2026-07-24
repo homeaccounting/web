@@ -27,6 +27,7 @@ const base: TransactionResponse = {
   date: '2026-05-01T00:00:00Z',
   labels: ['lbl-trip'],
   amendmentCount: 0,
+  contactId: null,
   mcc: null,
   relations: [],
 };
@@ -45,6 +46,7 @@ const noFilter: TransactionFilters = {
   description: '',
   labelIds: [],
   category: '',
+  contactId: '',
   showCancelledFailed: true,
 };
 
@@ -104,11 +106,53 @@ describe('applyTransactionFilters', () => {
           description: 'o',
           labelIds: ['lbl-trip'],
           category: 'Food',
+          contactId: '',
           showCancelledFailed: true,
         },
         names,
       ).map((r) => r.id),
     ).toEqual(['1']);
+  });
+});
+
+describe('contactId filter', () => {
+  // Contact is matched by dictionary-entry id (exact), unlike the category
+  // filter (by name). Transfer/adjustment rows never carry a contact
+  // (contactId === null), so they are excluded whenever a contact is selected.
+  const contactRows = [
+    row({ id: 'match', contactId: 'c1' }),
+    row({ id: 'other', contactId: 'c2' }),
+    row({ id: 'none', contactId: null }),
+    row({ id: 'transfer', transactionType: 'transfer', contactId: null }),
+  ];
+
+  it('keeps only rows whose contactId matches exactly', () => {
+    expect(
+      applyTransactionFilters(contactRows, { ...noFilter, contactId: 'c1' }, names).map(
+        (r) => r.id,
+      ),
+    ).toEqual(['match']);
+  });
+
+  it('imposes no constraint when contactId is empty', () => {
+    expect(
+      applyTransactionFilters(contactRows, { ...noFilter, contactId: '' }, names).map((r) => r.id),
+    ).toEqual(['match', 'other', 'none', 'transfer']);
+  });
+
+  it('composes with other filters using AND', () => {
+    const rows = [
+      row({ id: 'a', description: 'Coffee', contactId: 'c1' }),
+      row({ id: 'b', description: 'Coffee', contactId: 'c2' }),
+      row({ id: 'c', description: 'Lunch', contactId: 'c1' }),
+    ];
+    expect(
+      applyTransactionFilters(
+        rows,
+        { ...noFilter, description: 'coffee', contactId: 'c1' },
+        names,
+      ).map((r) => r.id),
+    ).toEqual(['a']);
   });
 });
 

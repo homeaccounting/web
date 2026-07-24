@@ -7,7 +7,12 @@ import { server } from '@/test/server';
 import { renderWithProviders } from '@/test/utils';
 import { AuthProvider } from '@/auth/AuthContext';
 import { saveSession } from '@/auth/storage';
-import { foodCategoryId, tripLabelId, transactionFixture } from '@/test/fixtures';
+import {
+  foodCategoryId,
+  tripLabelId,
+  transactionFixture,
+  configurationFixture,
+} from '@/test/fixtures';
 import type { TransactionResponse } from '@/api/types';
 import { CopyTransactionDialog } from './CopyTransactionDialog';
 
@@ -120,6 +125,29 @@ describe('CopyTransactionDialog', () => {
     expect(expenses[0]).toMatchObject({ category: foodCategoryId, amount: 42 });
     expect(expenses[1]).toMatchObject({ category: rentCategoryId, amount: 8 });
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  });
+
+  it('seeds the contact field from the source transaction', async () => {
+    const contactAcme = '00000000-0000-0000-0000-0000000000c1';
+    server.use(
+      http.get(`${apiBase}/api/users/me/configuration`, () =>
+        HttpResponse.json({
+          ...configurationFixture,
+          dictionaries: {
+            ...configurationFixture.dictionaries,
+            contact: { roots: [{ id: contactAcme, name: 'Acme', type: 'item', children: [] }] },
+          },
+        }),
+      ),
+    );
+
+    renderWithProviders(<Wrapper tx={{ ...expenseSource, contactId: contactAcme }} />, {
+      initialPath: '/',
+    });
+    await screen.findByLabelText(/account/i);
+
+    const contactCb = screen.getByRole('combobox', { name: /contact/i });
+    expect(contactCb).toHaveValue('Acme');
   });
 
   it('copies a transfer using both legs', async () => {

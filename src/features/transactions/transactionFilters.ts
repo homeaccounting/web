@@ -9,6 +9,11 @@ export interface TransactionFilters {
   // "Other", which is seeded into both with distinct ids) matches slices from
   // either dictionary. See spec §5.
   category: string;
+  // Contact dictionary-entry id to match ('' = no constraint). Matched by id
+  // (exact), unlike `category` (by name), because contacts live in a single
+  // shared dictionary. Transfer/adjustment rows carry `contactId === null` and
+  // so are excluded whenever a contact is selected.
+  contactId: string;
   showCancelledFailed: boolean; // false (default) hides Failed & Cancelled rows
 }
 
@@ -16,7 +21,8 @@ export interface TransactionFilters {
 // field imposes no constraint. Label match is ANY-of (backend overlap
 // semantics). Category matches by NAME against any of a row's allocation slices
 // (`categoryNameById` resolves slice ids to names); null-category rows
-// (transfer/adjustment) are excluded when a category is selected. See spec §5.
+// (transfer/adjustment) are excluded when a category is selected. Contact
+// matches by id (exact); there is no server-side contact query param. See spec §5.
 export function applyTransactionFilters(
   rows: TransactionResponse[],
   filters: TransactionFilters,
@@ -32,6 +38,7 @@ export function applyTransactionFilters(
       !allocationCategoryIds(row).some((id) => categoryNameById.get(id) === filters.category)
     )
       return false;
+    if (filters.contactId && row.contactId !== filters.contactId) return false;
     if (!filters.showCancelledFailed && (row.status === 'Failed' || row.status === 'Cancelled'))
       return false;
     return true;

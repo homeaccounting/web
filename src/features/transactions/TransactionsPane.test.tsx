@@ -1591,4 +1591,194 @@ describe('TransactionsPane', () => {
       expect(screen.queryByRole('menuitem', { name: /^category$/i })).not.toBeInTheDocument();
     });
   });
+
+  describe('quick-assign contact', () => {
+    const AMAZON_ID = '00000000-0000-0000-0000-0000000c0d70';
+
+    // Config with a `contact` dictionary (configurationFixture has none by default).
+    const withContactsConfig = () => ({
+      ...configurationFixture,
+      dictionaries: {
+        ...configurationFixture.dictionaries,
+        contact: {
+          roots: [{ id: AMAZON_ID, name: 'Amazon', type: 'item' as const, children: [] }],
+        },
+      },
+    });
+
+    it('shows a contact chip on an income row that has a contactId', async () => {
+      saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+      server.use(
+        http.get(`${apiBase}/api/users/me/configuration`, () =>
+          HttpResponse.json(withContactsConfig()),
+        ),
+        http.get(`${apiBase}/api/transactions`, () =>
+          HttpResponse.json({
+            transactions: [
+              {
+                ...transactionFixture,
+                id: 'tx-income',
+                description: 'Paycheck',
+                transactionType: 'income',
+                allocations: {
+                  incomes: [
+                    { categoryId: salaryCategoryId, amount: { amount: 100, currency: 'USD' } },
+                  ],
+                  expenses: [],
+                },
+                contactId: AMAZON_ID,
+              },
+            ],
+            totalCount: 1,
+          }),
+        ),
+      );
+      renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+      const row = (await screen.findByText('Paycheck')).closest('tr')!;
+      // The chip renders the resolved contact name in the description cell.
+      expect(within(row).getByText('Amazon')).toBeInTheDocument();
+    });
+
+    it('does not render a contact chip when the id is not in the dictionary', async () => {
+      saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+      server.use(
+        http.get(`${apiBase}/api/users/me/configuration`, () =>
+          HttpResponse.json(withContactsConfig()),
+        ),
+        http.get(`${apiBase}/api/transactions`, () =>
+          HttpResponse.json({
+            transactions: [
+              { ...transactionFixture, id: 'tx-orphan', description: 'Orphan', contactId: 'gone' },
+            ],
+            totalCount: 1,
+          }),
+        ),
+      );
+      renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+      const row = (await screen.findByText('Orphan')).closest('tr')!;
+      expect(within(row).queryByText('gone')).not.toBeInTheDocument();
+      expect(within(row).queryByText('Amazon')).not.toBeInTheDocument();
+    });
+
+    it('offers a "Contact" submenu on a completed expense row and assigns via PUT', async () => {
+      saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+      const user = userEvent.setup();
+      let contactBody: unknown;
+      server.use(
+        http.get(`${apiBase}/api/users/me/configuration`, () =>
+          HttpResponse.json(withContactsConfig()),
+        ),
+        http.put(`${apiBase}/api/transactions/:id/contact`, async ({ request }) => {
+          contactBody = await request.json();
+          return HttpResponse.json({ ...transactionFixture, contactId: AMAZON_ID });
+        }),
+      );
+      renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+      const row = (await screen.findByText(transactionFixture.description)).closest('tr')!;
+      await user.pointer({ keys: '[MouseRight]', target: row });
+      await user.hover(await screen.findByRole('menuitem', { name: /^contact$/i }));
+      await user.pointer({
+        keys: '[MouseLeft]',
+        target: await screen.findByRole('option', { name: /amazon/i }),
+      });
+      await waitFor(() => expect(contactBody).toEqual({ contactId: AMAZON_ID }));
+    });
+
+    it('creates a new contact and assigns it in one gesture', async () => {
+      const NEW_ID = '00000000-0000-0000-0000-0000000c0d71';
+      saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+      const user = userEvent.setup();
+      let addBody: unknown;
+      let contactBody: unknown;
+      server.use(
+        http.get(`${apiBase}/api/users/me/configuration`, () =>
+          HttpResponse.json(withContactsConfig()),
+        ),
+        http.post(
+          `${apiBase}/api/users/me/configuration/dictionaries/contact/entries`,
+          async ({ request }) => {
+            addBody = await request.json();
+            return HttpResponse.json({ id: NEW_ID, name: 'Costco' });
+          },
+        ),
+        http.put(`${apiBase}/api/transactions/:id/contact`, async ({ request }) => {
+          contactBody = await request.json();
+          return HttpResponse.json({ ...transactionFixture, contactId: NEW_ID });
+        }),
+      );
+      renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+      const row = (await screen.findByText(transactionFixture.description)).closest('tr')!;
+      await user.pointer({ keys: '[MouseRight]', target: row });
+      await user.hover(await screen.findByRole('menuitem', { name: /^contact$/i }));
+      const search = await screen.findByRole('combobox', { name: /search contacts/i });
+      await user.type(search, 'Costco', { skipClick: true });
+      await user.pointer({
+        keys: '[MouseLeft]',
+        target: await screen.findByRole('option', { name: /create ‘costco’/i }),
+      });
+      // The entry is created in the `contact` dictionary, then assigned to the row.
+      await waitFor(() =>
+        expect(addBody).toEqual({ name: 'Costco', type: 'item', parentId: null }),
+      );
+      await waitFor(() => expect(contactBody).toEqual({ contactId: NEW_ID }));
+    });
+
+    it('does not offer a "Contact" submenu on a transfer row', async () => {
+      saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+      const user = userEvent.setup();
+      server.use(
+        http.get(`${apiBase}/api/users/me/configuration`, () =>
+          HttpResponse.json(withContactsConfig()),
+        ),
+        http.get(`${apiBase}/api/transactions`, () =>
+          HttpResponse.json({
+            transactions: [
+              {
+                ...transactionFixture,
+                id: 'xfer-1',
+                description: 'XferTx',
+                transactionType: 'transfer',
+                allocations: { incomes: [], expenses: [] },
+              },
+            ],
+            totalCount: 1,
+          }),
+        ),
+      );
+      renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+      const row = (await screen.findByText('XferTx')).closest('tr')!;
+      await user.pointer({ keys: '[MouseRight]', target: row });
+      await screen.findByRole('menuitem', { name: /edit/i });
+      expect(screen.queryByRole('menuitem', { name: /^contact$/i })).not.toBeInTheDocument();
+    });
+
+    it('does not offer a "Contact" submenu on an adjustment row', async () => {
+      saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+      const user = userEvent.setup();
+      server.use(
+        http.get(`${apiBase}/api/users/me/configuration`, () =>
+          HttpResponse.json(withContactsConfig()),
+        ),
+        http.get(`${apiBase}/api/transactions`, () =>
+          HttpResponse.json({
+            transactions: [
+              {
+                ...transactionFixture,
+                id: 'adj-1',
+                description: 'AdjustmentTx',
+                transactionType: 'adjustment',
+                allocations: { incomes: [], expenses: [] },
+              },
+            ],
+            totalCount: 1,
+          }),
+        ),
+      );
+      renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+      const row = (await screen.findByText('AdjustmentTx')).closest('tr')!;
+      await user.pointer({ keys: '[MouseRight]', target: row });
+      await screen.findByRole('menuitem', { name: /edit/i });
+      expect(screen.queryByRole('menuitem', { name: /^contact$/i })).not.toBeInTheDocument();
+    });
+  });
 });

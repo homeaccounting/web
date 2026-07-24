@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { DatePicker } from '@/components/DatePicker';
+import { RequiredMarker } from '@/components/RequiredMarker';
 import { nowDateTimeInput } from '@/lib/dates';
 import { ApiError } from '@/api/client';
 import type { AccountResponse, UUID } from '@/api/types';
@@ -142,7 +143,10 @@ function AdjustBalanceForm({ accounts, selectedAccountId, onClose }: AdjustBalan
             name="accountId"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Account</FormLabel>
+                <FormLabel>
+                  Account
+                  <RequiredMarker />
+                </FormLabel>
                 <FormControl>
                   <select
                     className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
@@ -169,7 +173,10 @@ function AdjustBalanceForm({ accounts, selectedAccountId, onClose }: AdjustBalan
             name="targetBalance"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Target balance</FormLabel>
+                <FormLabel>
+                  Target balance
+                  <RequiredMarker />
+                </FormLabel>
                 <FormControl>
                   <Input
                     type="number"
@@ -205,7 +212,7 @@ function AdjustBalanceForm({ accounts, selectedAccountId, onClose }: AdjustBalan
             name="description"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Description (optional)</FormLabel>
+                <FormLabel>Description</FormLabel>
                 <FormControl>
                   <Input {...field} />
                 </FormControl>
@@ -219,7 +226,10 @@ function AdjustBalanceForm({ accounts, selectedAccountId, onClose }: AdjustBalan
             name="date"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Date</FormLabel>
+                <FormLabel>
+                  Date
+                  <RequiredMarker />
+                </FormLabel>
                 <FormControl>
                   <DatePicker
                     withTime

@@ -17,6 +17,7 @@ export interface TransactionEditDiff {
   labels?: UUID[];
   amendment?: AmendTransactionRequest;
   allocations?: Allocations;
+  contactId?: UUID | null;
 }
 
 // Each form row maps 1:1 to an allocation slice (money tagged with the form
@@ -78,6 +79,7 @@ export function diffIncomeExpense(
   const totalChanged = newTotal !== oldTotal;
   const splitChanged =
     !sameSlices(initial.incomes, next.incomes) || !sameSlices(initial.expenses, next.expenses);
+  const contactChanged = (next.contactId ?? null) !== (initial.contactId ?? null);
 
   // The backend requires `newAllocations` on EVERY categorised amend (omitting
   // them is rejected with AllocationsRequiredForCategorisedKind). So when the
@@ -93,10 +95,17 @@ export function diffIncomeExpense(
       targetAmount: newTotal,
       targetCurrency: income ? next.currency : externalCurrency,
       newAllocations: buildAllocations(next, next.currency),
+      contactId: next.contactId ?? null,
     };
   } else if (splitChanged) {
     diff.allocations = buildAllocations(next, next.currency);
   }
+
+  // Contact edits go through the dedicated setContact endpoint (like labels), but
+  // only when no amendment is emitted — an amendment already carries contactId
+  // (absent would CLEAR it), so re-sending via setContact would be a redundant,
+  // audit-visible event. See spec §2.
+  if (contactChanged && !diff.amendment) diff.contactId = next.contactId ?? null;
 
   return diff;
 }

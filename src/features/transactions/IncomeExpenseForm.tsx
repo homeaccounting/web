@@ -6,12 +6,14 @@ import { DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
-import type { AccountResponse, DictionaryEntryResponse } from '@/api/types';
+import type { AccountResponse, DictionaryEntryResponse, UUID } from '@/api/types';
 import { makeIncomeExpenseFormSchema, type IncomeExpenseFormValues } from './schema';
 import { LabelMultiSelect } from './LabelMultiSelect';
+import { ContactCombobox } from './ContactCombobox';
 import { AllocationsEditor, type AllocationSection } from './AllocationsEditor';
 import { dropEmptySlices } from './allocations';
 import { DatePicker } from '@/components/DatePicker';
+import { RequiredMarker } from '@/components/RequiredMarker';
 import { TRANSACTION_KIND_LABELS, type TransactionKind } from './labels';
 
 export interface IncomeExpenseFormApi {
@@ -27,6 +29,14 @@ export interface IncomeExpenseFormProps {
   /** Expense-category dictionary, used only by the income form's reimbursement section. */
   reimbursementCategories?: DictionaryEntryResponse[];
   labels: DictionaryEntryResponse[];
+  /** Assignable contact options for the optional contact picker. */
+  contacts: DictionaryEntryResponse[];
+  /**
+   * Create a new contact from a typed name and resolve its id (or null on
+   * failure). The create mutation itself lives in the caller (a dialog) so this
+   * presentational form never calls a hook in a render callback.
+   */
+  onCreateContact?: (name: string) => Promise<UUID | null>;
   defaultValues: IncomeExpenseFormValues;
   isSubmitting: boolean;
   /** When set, validate the debit against the source account balance (create only). */
@@ -51,6 +61,8 @@ export function IncomeExpenseForm({
   categories,
   reimbursementCategories = [],
   labels,
+  contacts,
+  onCreateContact,
   defaultValues,
   isSubmitting,
   enforceBalance = false,
@@ -144,7 +156,10 @@ export function IncomeExpenseForm({
           name="accountId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Account</FormLabel>
+              <FormLabel>
+                Account
+                <RequiredMarker />
+              </FormLabel>
               <FormControl>
                 <select
                   className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
@@ -184,7 +199,7 @@ export function IncomeExpenseForm({
           name="description"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Description (optional)</FormLabel>
+              <FormLabel>Description</FormLabel>
               <FormControl>
                 <Input {...field} />
               </FormControl>
@@ -198,7 +213,9 @@ export function IncomeExpenseForm({
           name="date"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Date</FormLabel>
+              <FormLabel>
+                Date <RequiredMarker />
+              </FormLabel>
               <FormControl>
                 <DatePicker
                   withTime
@@ -208,9 +225,6 @@ export function IncomeExpenseForm({
                   name={field.name}
                 />
               </FormControl>
-              {!isEdit && (
-                <p className="text-xs text-muted-foreground">Defaults to today on the server.</p>
-              )}
               <FormMessage />
             </FormItem>
           )}
@@ -227,6 +241,28 @@ export function IncomeExpenseForm({
                   options={labels}
                   value={field.value ?? []}
                   onChange={field.onChange}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="contactId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Contact</FormLabel>
+              <FormControl>
+                <ContactCombobox
+                  options={contacts}
+                  value={field.value ?? null}
+                  onChange={field.onChange}
+                  onCreate={async (name) => {
+                    const id = await onCreateContact?.(name);
+                    if (id) field.onChange(id);
+                  }}
                 />
               </FormControl>
               <FormMessage />

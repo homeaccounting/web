@@ -40,6 +40,7 @@ function makeTx(overrides: Partial<TransactionResponse> = {}): TransactionRespon
     date: '2026-04-27T08:00:00Z',
     labels: [],
     amendmentCount: 0,
+    contactId: null,
     mcc: null,
     relations: [],
     ...overrides,

@@ -9,6 +9,7 @@ import type { AccountResponse, DictionaryEntryResponse } from '@/api/types';
 import { transferFormSchema, makeTransferFormSchema, type TransferFormValues } from './schema';
 import { LabelMultiSelect } from './LabelMultiSelect';
 import { DatePicker } from '@/components/DatePicker';
+import { RequiredMarker } from '@/components/RequiredMarker';
 import { TRANSACTION_KIND_LABELS } from './labels';
 
 export interface TransferFormApi {
@@ -91,7 +92,10 @@ export function TransferForm({
           name="sourceAccountId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Source account</FormLabel>
+              <FormLabel>
+                Source account
+                <RequiredMarker />
+              </FormLabel>
               <FormControl>
                 <select
                   className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
@@ -113,7 +117,10 @@ export function TransferForm({
           name="targetAccountId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Target account</FormLabel>
+              <FormLabel>
+                Target account
+                <RequiredMarker />
+              </FormLabel>
               <FormControl>
                 <select
                   className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
@@ -137,7 +144,10 @@ export function TransferForm({
             name="amount"
             render={({ field }) => (
               <FormItem className="flex-1">
-                <FormLabel>Amount</FormLabel>
+                <FormLabel>
+                  Amount
+                  <RequiredMarker />
+                </FormLabel>
                 <FormControl>
                   <Input
                     type="number"
@@ -216,7 +226,7 @@ export function TransferForm({
           name="description"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Description (optional)</FormLabel>
+              <FormLabel>Description</FormLabel>
               <FormControl>
                 <Input {...field} />
               </FormControl>
@@ -230,7 +240,9 @@ export function TransferForm({
           name="date"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Date</FormLabel>
+              <FormLabel>
+                Date <RequiredMarker />
+              </FormLabel>
               <FormControl>
                 <DatePicker
                   withTime
@@ -240,9 +252,6 @@ export function TransferForm({
                   name={field.name}
                 />
               </FormControl>
-              {!isEdit && (
-                <p className="text-xs text-muted-foreground">Defaults to today on the server.</p>
-              )}
               <FormMessage />
             </FormItem>
           )}

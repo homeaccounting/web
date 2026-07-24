@@ -21,16 +21,7 @@ import {
 } from './schema';
 import { SubtypeFields } from './SubtypeFields';
 import { ACCOUNT_SUBTYPE_LABELS } from './labels';
-
-// Visual indicator on labels of required form fields. Hidden from screen
-// readers — `aria-required` on the input is the canonical signal there.
-function RequiredMarker() {
-  return (
-    <span aria-hidden="true" className="ml-0.5 text-destructive">
-      *
-    </span>
-  );
-}
+import { RequiredMarker } from '@/components/RequiredMarker';
 
 type Values = CreateAccountFormValues | EditAccountFormValues;
 

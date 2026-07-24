@@ -12,6 +12,12 @@ export interface TxLabelQuickPickerProps {
   options: DictionaryEntryResponse[];
   value: UUID[]; // the transaction's current labels
   onCommit: (labels: UUID[]) => Promise<unknown>;
+  // Creates the dictionary entry and returns its new id (null on failure). The
+  // ASSIGNMENT is owned here: the returned id is appended through the SAME
+  // serialized commit path as a toggle, so a create followed by a rapid toggle
+  // can't race two unserialized full-array PUTs and drop a label.
+  onCreate: (name: string) => Promise<UUID | null>;
+  createHint?: string;
 }
 
 // Multi-select labels submenu. Each toggle optimistically updates local state
@@ -26,7 +32,13 @@ export interface TxLabelQuickPickerProps {
 // since. (A refetch can't reconcile this: the cache never held the optimistic
 // value, so server truth is reference-equal to it and TanStack's structural
 // sharing skips the re-render that would re-seed us.)
-export function TxLabelQuickPicker({ options, value, onCommit }: TxLabelQuickPickerProps) {
+export function TxLabelQuickPicker({
+  options,
+  value,
+  onCommit,
+  onCreate,
+  createHint,
+}: TxLabelQuickPickerProps) {
   const [selected, setSelected] = useState<UUID[]>(value);
   const selectedRef = useRef<UUID[]>(value);
   selectedRef.current = selected;
@@ -47,23 +59,52 @@ export function TxLabelQuickPicker({ options, value, onCommit }: TxLabelQuickPic
     }
   }, [value]);
 
-  const toggle = (id: UUID) => {
+  // Add `id` to the selection and commit it. Shared by a toggle-on and a create
+  // so both flow through the SAME serialized chain (no separate PUT for creates).
+  // Chain the PUT so it runs after any in-flight one (ordered application). On
+  // failure, undo just this add relative to the latest state; the leading catch
+  // keeps a prior failure from breaking the chain so later toggles still fire.
+  const append = (id: UUID) => {
     const cur = selectedRef.current;
-    const next = cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id];
+    if (cur.includes(id)) return;
+    const next = [...cur, id];
     selectedRef.current = next;
     setSelected(next);
-    // Chain the PUT so it runs after any in-flight one (ordered application). On
-    // failure, undo this toggle relative to the latest state; the leading catch
-    // keeps a prior failure from breaking the chain so later toggles still fire.
     commitChain.current = commitChain.current
       .catch(() => {})
       .then(() => onCommit(next))
       .catch(() => {
-        const cur = selectedRef.current;
-        const reverted = cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id];
+        const reverted = selectedRef.current.filter((x) => x !== id);
         selectedRef.current = reverted;
         setSelected(reverted);
       });
+  };
+
+  const toggle = (id: UUID) => {
+    const cur = selectedRef.current;
+    if (!cur.includes(id)) {
+      append(id);
+      return;
+    }
+    const next = cur.filter((x) => x !== id);
+    selectedRef.current = next;
+    setSelected(next);
+    commitChain.current = commitChain.current
+      .catch(() => {})
+      .then(() => onCommit(next))
+      .catch(() => {
+        const latest = selectedRef.current;
+        const reverted = latest.includes(id) ? latest : [...latest, id];
+        selectedRef.current = reverted;
+        setSelected(reverted);
+      });
+  };
+
+  // Create-then-assign in one gesture: the returned id is appended through the
+  // same serialized commit path as a toggle.
+  const handleCreate = async (name: string) => {
+    const id = await onCreate(name);
+    if (id) append(id);
   };
 
   return (
@@ -81,6 +122,8 @@ export function TxLabelQuickPicker({ options, value, onCommit }: TxLabelQuickPic
           onPick={toggle}
           searchAriaLabel="Search labels"
           placeholder="Search labels…"
+          createHint={createHint}
+          onCreate={handleCreate}
         />
       </ContextMenuSubContent>
     </ContextMenuSub>

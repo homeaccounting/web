@@ -13,6 +13,7 @@ export interface TransactionFilterBarProps {
   filters: TransactionFilters;
   labelOptions: DictionaryEntryResponse[];
   categoryOptions: DictionaryEntryResponse[];
+  contactOptions: DictionaryEntryResponse[];
   onFromChange: (v: string) => void;
   onToChange: (v: string) => void;
   onFiltersChange: (next: TransactionFilters) => void;
@@ -25,6 +26,7 @@ export function TransactionFilterBar({
   filters,
   labelOptions,
   categoryOptions,
+  contactOptions,
   onFromChange,
   onToChange,
   onFiltersChange,
@@ -34,6 +36,12 @@ export function TransactionFilterBar({
   const categoryOpts = useMemo(
     () => [{ id: '', name: 'All categories' }, ...categoryOptions],
     [categoryOptions],
+  );
+  // Same sentinel-first pattern for contacts; the committed value is the
+  // contact's id ('' clears the filter), matching by id (not name).
+  const contactOpts = useMemo(
+    () => [{ id: '', name: 'Any contact' }, ...contactOptions],
+    [contactOptions],
   );
 
   return (
@@ -82,6 +90,15 @@ export function TransactionFilterBar({
           value={filters.category}
           placeholder="All categories"
           onChange={(category) => onFiltersChange({ ...filters, category })}
+        />
+      </div>
+      <div className="w-56">
+        <CategoryCombobox
+          options={contactOpts}
+          value={filters.contactId}
+          placeholder="Any contact"
+          aria-label="Contact"
+          onChange={(contactId) => onFiltersChange({ ...filters, contactId })}
         />
       </div>
       <label className="flex cursor-pointer items-center gap-1.5">

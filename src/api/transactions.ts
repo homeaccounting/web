@@ -9,6 +9,7 @@ import type {
   InternalTransferRequest,
   RelationKind,
   SetTransactionAllocationsRequest,
+  SetTransactionContactRequest,
   SetTransactionLabelsRequest,
   TransactionListResponse,
   TransactionRelationsResponse,
@@ -64,6 +65,8 @@ export const transactionsApi = (client: ApiClient) => ({
     client.put<TransactionResponse>(`/api/transactions/${id}/date`, body),
   setLabels: (id: UUID, body: SetTransactionLabelsRequest) =>
     client.put<TransactionResponse>(`/api/transactions/${id}/labels`, body),
+  setContact: (id: UUID, body: SetTransactionContactRequest) =>
+    client.put<TransactionResponse>(`/api/transactions/${id}/contact`, body),
   setAllocations: (id: UUID, body: SetTransactionAllocationsRequest) =>
     client.patch<TransactionResponse>(`/api/transactions/${id}/allocations`, body),
   amend: (id: UUID, body: AmendTransactionRequest) =>

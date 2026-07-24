@@ -44,6 +44,7 @@ function makeOriginal(overrides: Partial<TransactionResponse> = {}): Transaction
     date: '2026-04-27T08:00:00Z',
     labels: [],
     amendmentCount: 0,
+    contactId: null,
     mcc: null,
     relations: [],
     ...overrides,
@@ -116,6 +117,14 @@ describe('RefundTransactionDialog', () => {
     expect(screen.getByTestId('allocations-target-readout')).toHaveTextContent('$100.00');
   });
 
+  it('renders the contact field defaulting to none', async () => {
+    renderWithProviders(<Wrapper original={makeOriginal()} />, { initialPath: '/' });
+    await screen.findByLabelText(/account/i);
+
+    const contactCb = await screen.findByRole('combobox', { name: /contact/i });
+    expect(contactCb).toHaveValue('');
+  });
+
   it('partial edit + submit: posts a genuine partial refund (sum < remaining) with contra allocations, refund relation, today date, and the original account', async () => {
     const user = userEvent.setup();
     let capturedBody: Record<string, unknown> = {};
@@ -139,6 +148,7 @@ describe('RefundTransactionDialog', () => {
           date: '2026-06-01T00:00:00.000Z',
           labels: [],
           amendmentCount: 0,
+          contactId: null,
           mcc: null,
           relations: [],
         });
@@ -268,6 +278,7 @@ describe('RefundTransactionDialog', () => {
           date: '2026-06-01T00:00:00.000Z',
           labels: [],
           amendmentCount: 0,
+          contactId: null,
           mcc: null,
           relations: [],
         });

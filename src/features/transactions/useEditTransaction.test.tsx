@@ -47,6 +47,7 @@ const txResponse = (overrides: Partial<TransactionResponse> = {}): TransactionRe
   date: '2026-03-04T00:00:00.000Z',
   labels: [],
   amendmentCount: 0,
+  contactId: null,
   mcc: null,
   relations: [],
   ...overrides,
@@ -142,6 +143,78 @@ describe('useEditTransaction', () => {
         onSubCallApplied: vi.fn(),
       }),
     ).rejects.toMatchObject({ status: 422 });
+  });
+
+  it('sends setContact with a new contactId when the diff carries one', async () => {
+    let received: unknown;
+    server.use(
+      http.put(`${apiBase}/api/transactions/:id/contact`, async ({ request }) => {
+        received = await request.json();
+        return HttpResponse.json(txResponse({ contactId: 'c2' }));
+      }),
+    );
+
+    const client = new QueryClient();
+    client.setQueryData(['transactions', 'a1'], [txResponse()] as TransactionResponse[]);
+
+    const { result } = renderHook(() => useEditTransaction(), { wrapper: makeWrapper(client) });
+    await result.current.mutateAsync({
+      id: 'tx-1',
+      accountIds: ['a1'],
+      diff: { contactId: 'c2' },
+      onSubCallApplied: vi.fn(),
+    });
+
+    expect(received).toEqual({ contactId: 'c2' });
+  });
+
+  it('sends setContact with contactId: null to clear the contact', async () => {
+    let received: unknown;
+    server.use(
+      http.put(`${apiBase}/api/transactions/:id/contact`, async ({ request }) => {
+        received = await request.json();
+        return HttpResponse.json(txResponse({ contactId: null }));
+      }),
+    );
+
+    const client = new QueryClient();
+    client.setQueryData(['transactions', 'a1'], [txResponse()] as TransactionResponse[]);
+
+    const { result } = renderHook(() => useEditTransaction(), { wrapper: makeWrapper(client) });
+    await result.current.mutateAsync({
+      id: 'tx-1',
+      accountIds: ['a1'],
+      diff: { contactId: null },
+      onSubCallApplied: vi.fn(),
+    });
+
+    expect(received).toEqual({ contactId: null });
+  });
+
+  it('does not call setContact when the diff omits contactId', async () => {
+    let contactCalled = false;
+    server.use(
+      http.put(`${apiBase}/api/transactions/:id/description`, () =>
+        HttpResponse.json(txResponse({ description: 'patched' })),
+      ),
+      http.put(`${apiBase}/api/transactions/:id/contact`, () => {
+        contactCalled = true;
+        return HttpResponse.json(txResponse());
+      }),
+    );
+
+    const client = new QueryClient();
+    client.setQueryData(['transactions', 'a1'], [txResponse()] as TransactionResponse[]);
+
+    const { result } = renderHook(() => useEditTransaction(), { wrapper: makeWrapper(client) });
+    await result.current.mutateAsync({
+      id: 'tx-1',
+      accountIds: ['a1'],
+      diff: { description: 'patched' },
+      onSubCallApplied: vi.fn(),
+    });
+
+    expect(contactCalled).toBe(false);
   });
 
   it('patches the cached row after each successful sub-call', async () => {

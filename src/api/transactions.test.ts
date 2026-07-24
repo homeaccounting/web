@@ -99,6 +99,61 @@ describe('transactionsApi edit endpoints', () => {
     );
   });
 
+  it('PUTs contact', async () => {
+    const spy = stubFetch();
+    const result = await transactionsApi(mkClient()).setContact('tx-1', { contactId: 'contact-1' });
+    expect(spy).toHaveBeenCalledWith(
+      'http://test/api/transactions/tx-1/contact',
+      expect.objectContaining({ method: 'PUT', body: '{"contactId":"contact-1"}' }),
+    );
+    expect(result.id).toBe('tx-1');
+  });
+
+  it('PUTs contact with null to clear it', async () => {
+    const spy = stubFetch();
+    await transactionsApi(mkClient()).setContact('tx-1', { contactId: null });
+    expect(spy).toHaveBeenCalledWith(
+      'http://test/api/transactions/tx-1/contact',
+      expect.objectContaining({ method: 'PUT', body: '{"contactId":null}' }),
+    );
+  });
+
+  it('createIncome forwards contactId in the body', async () => {
+    const spy = stubFetch();
+    await transactionsApi(mkClient()).createIncome({
+      accountId: 'a1',
+      currency: 'USD',
+      allocations: { incomes: [], expenses: [] },
+      description: 'gift',
+      contactId: 'contact-1',
+    });
+    expect(spy).toHaveBeenCalledWith(
+      'http://test/api/transactions/income',
+      expect.objectContaining({
+        method: 'POST',
+        body: '{"accountId":"a1","currency":"USD","allocations":{"incomes":[],"expenses":[]},"description":"gift","contactId":"contact-1"}',
+      }),
+    );
+  });
+
+  it('createExpense forwards contactId in the body', async () => {
+    const spy = stubFetch();
+    await transactionsApi(mkClient()).createExpense({
+      accountId: 'a1',
+      currency: 'USD',
+      allocations: { incomes: [], expenses: [] },
+      description: 'lunch',
+      contactId: 'contact-1',
+    });
+    expect(spy).toHaveBeenCalledWith(
+      'http://test/api/transactions/expense',
+      expect.objectContaining({
+        method: 'POST',
+        body: '{"accountId":"a1","currency":"USD","allocations":{"incomes":[],"expenses":[]},"description":"lunch","contactId":"contact-1"}',
+      }),
+    );
+  });
+
   it('PATCHes allocations', async () => {
     const spy = stubFetch();
     await transactionsApi(mkClient()).setAllocations('tx-1', {

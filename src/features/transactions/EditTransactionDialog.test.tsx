@@ -14,6 +14,7 @@ const apiBase = 'http://localhost:8080';
 // Valid UUID for account (the fixture uses 'a1' which is not a valid UUID)
 const accountId = '00000000-0000-0000-0000-000000000001';
 const categoryId = '00000000-0000-0000-0000-000000000002';
+const contactAcme = '00000000-0000-0000-0000-0000000000c1';
 
 const baseTx: TransactionResponse = {
   id: 'tx-1',
@@ -36,6 +37,7 @@ const baseTx: TransactionResponse = {
   labels: [],
   amendmentCount: 0,
   relations: [],
+  contactId: null,
   mcc: null,
 };
 
@@ -70,6 +72,9 @@ beforeEach(() => {
             roots: [{ id: categoryId, name: 'Food', type: 'item', children: [] }],
           },
           label: { roots: [] },
+          contact: {
+            roots: [{ id: contactAcme, name: 'Acme', type: 'item', children: [] }],
+          },
         },
         defaults: {
           incomeCategory: null,
@@ -217,12 +222,18 @@ describe('EditTransactionDialog', () => {
     expect(calls).toEqual(['amendment']);
   });
 
+  it('seeds the contact field from tx.contactId', async () => {
+    renderDialog({ tx: { ...baseTx, contactId: contactAcme } });
+    const contactCb = await screen.findByRole('combobox', { name: /contact/i });
+    expect(contactCb).toHaveValue('Acme');
+  });
+
   it('seeds the account picker with the transaction account after accounts load', async () => {
     // Regression: react-hook-form seeds defaultValues only on mount, so the
     // body must not render until useAccounts has resolved — otherwise the
     // picker is empty and the seeded accountId has no matching <option>.
     renderDialog({});
-    const select = await screen.findByLabelText<HTMLSelectElement>(/^Account$/i);
+    const select = await screen.findByLabelText<HTMLSelectElement>(/^Account\b/i);
     const options = Array.from(select.options).map((o) => ({ value: o.value, text: o.text }));
     expect(options).toEqual([{ value: accountId, text: 'Checking (USD)' }]);
     expect(select.value).toBe(accountId);

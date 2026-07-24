@@ -19,6 +19,7 @@ const tx = (over: Partial<TransactionResponse>): TransactionResponse => ({
   date: '2026-07-06T00:00:00Z',
   labels: [],
   amendmentCount: 0,
+  contactId: null,
   mcc: null,
   relations: [],
   ...over,

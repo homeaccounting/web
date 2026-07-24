@@ -1,7 +1,7 @@
 import { useConfiguration } from '@/features/configuration/useConfiguration';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DictionaryList } from './DictionaryList';
 
 export function ProfileDictionariesPane() {
@@ -23,39 +23,45 @@ export function ProfileDictionariesPane() {
   }
   const c = config.data;
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Categories</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <DictionaryList
-            dictId="income"
-            title="Income"
-            dict={c.dictionaries['income']}
-            addLabel="Add income category"
-          />
-          <DictionaryList
-            dictId="expense"
-            title="Expense"
-            dict={c.dictionaries['expense']}
-            addLabel="Add expense category"
-          />
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Labels</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <DictionaryList
-            dictId="label"
-            title="Labels"
-            dict={c.dictionaries.label}
-            addLabel="Add label"
-          />
-        </CardContent>
-      </Card>
-    </div>
+    <Tabs defaultValue="expense">
+      <TabsList variant="underline">
+        <TabsTrigger value="expense">Expense</TabsTrigger>
+        <TabsTrigger value="income">Income</TabsTrigger>
+        <TabsTrigger value="contact">Contact</TabsTrigger>
+        <TabsTrigger value="label">Label</TabsTrigger>
+      </TabsList>
+      <TabsContent value="expense">
+        <DictionaryList
+          dictId="expense"
+          title="Expense"
+          dict={c.dictionaries['expense']}
+          addLabel="Add expense category"
+        />
+      </TabsContent>
+      <TabsContent value="income">
+        <DictionaryList
+          dictId="income"
+          title="Income"
+          dict={c.dictionaries['income']}
+          addLabel="Add income category"
+        />
+      </TabsContent>
+      <TabsContent value="contact">
+        <DictionaryList
+          dictId="contact"
+          title="Contact"
+          dict={c.dictionaries['contact']}
+          addLabel="Add contact"
+        />
+      </TabsContent>
+      <TabsContent value="label">
+        <DictionaryList
+          dictId="label"
+          title="Labels"
+          dict={c.dictionaries['label']}
+          addLabel="Add label"
+        />
+      </TabsContent>
+    </Tabs>
   );
 }
