@@ -29,6 +29,16 @@ describe('useTransactionSelection', () => {
     expect(result.current.isSelected('a')).toBe(false);
   });
 
+  it('setOnly replaces the selection with a single id', () => {
+    const { result } = renderHook(() => useTransactionSelection('k'));
+    act(() => result.current.setMany(['a', 'b', 'c'], true));
+    expect(result.current.count).toBe(3);
+    act(() => result.current.setOnly('b'));
+    expect(result.current.count).toBe(1);
+    expect(result.current.isSelected('b')).toBe(true);
+    expect(result.current.isSelected('a')).toBe(false);
+  });
+
   it('clear empties the selection', () => {
     const { result } = renderHook(() => useTransactionSelection('k'));
     act(() => result.current.setMany(['a', 'b'], true));

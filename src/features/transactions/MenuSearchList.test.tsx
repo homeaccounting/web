@@ -212,4 +212,39 @@ describe('MenuSearchList', () => {
       expect(screen.queryByRole('button', { name: /use:/i })).not.toBeInTheDocument();
     });
   });
+
+  describe('indeterminate state', () => {
+    it('renders a dash for indeterminate options and suppresses the check', () => {
+      render(
+        <MenuSearchList
+          options={options}
+          isSelected={(id) => id === 'a'}
+          indeterminate={(id) => id === 'b'}
+          onPick={() => {}}
+          searchAriaLabel="Search labels"
+          placeholder="…"
+        />,
+      );
+      const gas = screen.getByRole('option', { name: 'Gas' }); // id 'b'
+      expect(gas.querySelector('[data-testid="indeterminate-icon"]')).toBeInTheDocument();
+      expect(gas.querySelector('[data-testid="check-icon"]')).not.toBeInTheDocument();
+      // 'a' is checked, never indeterminate.
+      const groceries = screen.getByRole('option', { name: 'Groceries' }); // id 'a'
+      expect(groceries.querySelector('[data-testid="check-icon"]')).toBeInTheDocument();
+      expect(groceries.querySelector('[data-testid="indeterminate-icon"]')).not.toBeInTheDocument();
+    });
+
+    it('renders no dash when indeterminate prop is absent (regression)', () => {
+      render(
+        <MenuSearchList
+          options={options}
+          isSelected={() => false}
+          onPick={() => {}}
+          searchAriaLabel="Search labels"
+          placeholder="…"
+        />,
+      );
+      expect(document.querySelector('[data-testid="indeterminate-icon"]')).not.toBeInTheDocument();
+    });
+  });
 });

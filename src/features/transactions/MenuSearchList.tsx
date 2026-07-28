@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Check, Plus } from 'lucide-react';
+import { Check, Minus, Plus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import type { DictionaryEntryResponse, UUID } from '@/api/types';
@@ -7,6 +7,10 @@ import type { DictionaryEntryResponse, UUID } from '@/api/types';
 export interface MenuSearchListProps {
   options: DictionaryEntryResponse[];
   isSelected: (id: UUID) => boolean;
+  // Optional third state for multi-target callers: an option that is on SOME
+  // but not all targets renders a dash instead of a check. Never both — check
+  // (on all) wins. Absent → no option is ever indeterminate.
+  indeterminate?: (id: UUID) => boolean;
   onPick: (id: UUID) => void;
   searchAriaLabel: string;
   placeholder: string;
@@ -30,6 +34,7 @@ const norm = (s: string) => s.trim().replace(/\s+/g, ' ');
 export function MenuSearchList({
   options,
   isSelected,
+  indeterminate,
   onPick,
   searchAriaLabel,
   placeholder,
@@ -133,6 +138,7 @@ export function MenuSearchList({
         )}
         {filtered.map((opt, i) => {
           const checked = isSelected(opt.id);
+          const isIndeterminate = !checked && (indeterminate?.(opt.id) ?? false);
           return (
             <li
               key={opt.id}
@@ -150,7 +156,10 @@ export function MenuSearchList({
               )}
             >
               <span className={cn(checked && 'font-medium')}>{opt.name}</span>
-              {checked && <Check aria-hidden className="h-4 w-4" />}
+              {checked && <Check data-testid="check-icon" aria-hidden className="h-4 w-4" />}
+              {isIndeterminate && (
+                <Minus data-testid="indeterminate-icon" aria-hidden className="h-4 w-4" />
+              )}
             </li>
           );
         })}

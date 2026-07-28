@@ -12,6 +12,8 @@ export interface TransactionSelection {
   toggle: (id: UUID) => void;
   // Bulk set (header select-all / clear-all over a page's rows).
   setMany: (ids: UUID[], selected: boolean) => void;
+  // Collapse the selection to exactly one row (file-manager right-click).
+  setOnly: (id: UUID) => void;
   clear: () => void;
   count: number;
 }
@@ -50,8 +52,9 @@ export function useTransactionSelection(resetKey: string): TransactionSelection 
     });
   }, []);
 
+  const setOnly = useCallback((id: UUID) => setSelectedIds(new Set([id])), []);
   const clear = useCallback(() => setSelectedIds(new Set()), []);
   const isSelected = useCallback((id: UUID) => selectedIds.has(id), [selectedIds]);
 
-  return { selectedIds, isSelected, toggle, setMany, clear, count: selectedIds.size };
+  return { selectedIds, isSelected, toggle, setMany, setOnly, clear, count: selectedIds.size };
 }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -34,6 +34,7 @@ import { useAccountById } from '@/features/accounts/useAccountById';
 import { formatDateTime, formatMoney } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { flattenDictionary } from '@/api/dictionary';
+import { toast } from '@/lib/toast';
 import type { Allocations, TransactionResponse, TransactionTypeText, UUID } from '@/api/types';
 import { useWindowedTransactions } from './useWindowedTransactions';
 import { applyTransactionFilters, type TransactionFilters } from './transactionFilters';
@@ -76,6 +77,14 @@ import { MergeTransactionsDialog } from './MergeTransactionsDialog';
 import { checkMergeEligibility, MERGE_INELIGIBILITY_MESSAGE } from './mergeEligibility';
 import { useTransactionSelection } from './useTransactionSelection';
 import { SelectionActionBar } from './SelectionActionBar';
+import { BulkTransactionMenu } from './BulkTransactionMenu';
+import {
+  allCompleted,
+  bulkCategoryEligibility,
+  hasSingleNaturalAllocation,
+  withLabelAdded,
+  withLabelRemoved,
+} from './bulkLabels';
 import { TransactionStatusIcon } from './TransactionStatusIcon';
 import { useCreateDictionaryEntry } from '@/features/configuration/useCreateDictionaryEntry';
 import { TxCategoryQuickPicker } from './TxCategoryQuickPicker';
@@ -348,6 +357,75 @@ export function TransactionsPane() {
   const [mergeSelection, setMergeSelection] = useState<TransactionResponse[] | null>(null);
   const [linkPair, setLinkPair] = useState<[TransactionResponse, TransactionResponse] | null>(null);
 
+  // Per-row remount nonce. Bumping a row's nonce changes its <ContextMenu> key,
+  // remounting it closed — the only way to programmatically close an uncontrolled
+  // Radix ContextMenu (its Root has no `open` prop). Used for single-select
+  // (category) commits; labels never call it, so the labels submenu stays open.
+  const [menuNonce, setMenuNonce] = useState<Record<string, number>>({});
+  const requestCloseMenu = useCallback(
+    (rowId: UUID) => setMenuNonce((m) => ({ ...m, [rowId]: (m[rowId] ?? 0) + 1 })),
+    [],
+  );
+  // Held while a bulk batch is in flight so the pickers disable and rapid
+  // successive picks can't overlap two Promise.allSettled batches.
+  const [isApplying, setIsApplying] = useState(false);
+
+  // Fan a per-row edit out over the selection and report the outcome once. An
+  // improvement over the single-row silent fire-and-forget: with N rows the user
+  // needs confirmation of what landed.
+  const runBulk = async (tasks: Promise<unknown>[]) => {
+    setIsApplying(true);
+    const results = await Promise.allSettled(tasks);
+    setIsApplying(false);
+    const failed = results.filter((r) => r.status === 'rejected').length;
+    const ok = results.length - failed;
+    if (failed === 0) toast.success(`Updated ${ok} transaction${ok === 1 ? '' : 's'}.`);
+    else toast.error(`Updated ${ok} of ${results.length}; ${failed} failed.`);
+  };
+
+  const bulkAddLabel = (labelId: UUID) =>
+    void runBulk(
+      selectedRows.map((t) =>
+        edit.mutateAsync({
+          id: t.id,
+          accountIds: affectedAccountIds(t),
+          diff: { labels: withLabelAdded(t.labels, labelId) },
+          onSubCallApplied: () => {},
+        }),
+      ),
+    );
+  const bulkRemoveLabel = (labelId: UUID) =>
+    void runBulk(
+      selectedRows.map((t) =>
+        edit.mutateAsync({
+          id: t.id,
+          accountIds: affectedAccountIds(t),
+          diff: { labels: withLabelRemoved(t.labels, labelId) },
+          onSubCallApplied: () => {},
+        }),
+      ),
+    );
+  const bulkSetCategory = (rowId: UUID, categoryId: UUID) => {
+    void runBulk(
+      selectedRows.map((t) =>
+        edit.mutateAsync({
+          id: t.id,
+          accountIds: affectedAccountIds(t),
+          diff: { allocations: allocationsWithCategory(t.allocations, categoryId) },
+          onSubCallApplied: () => {},
+        }),
+      ),
+    );
+    requestCloseMenu(rowId); // single-select → close the menu
+  };
+
+  const handleLink = () => {
+    if (canLink) setLinkPair([selectedRows[0]!, selectedRows[1]!]);
+  };
+  const handleMerge = () => {
+    if (selectedRows.length >= 2) setMergeSelection(selectedRows);
+  };
+
   const filtered = useMemo(
     () => applyTransactionFilters(data ?? [], filters, categoryNameById),
     [data, filters, categoryNameById],
@@ -492,7 +570,7 @@ export function TransactionsPane() {
             const negative = amount < 0;
             const deEmphasized = t.status === 'Failed' || t.status === 'Cancelled';
             return (
-              <ContextMenu key={t.id}>
+              <ContextMenu key={`${t.id}:${menuNonce[t.id] ?? 0}`}>
                 <ContextMenuTrigger asChild>
                   <tr
                     className={cn(
@@ -502,6 +580,11 @@ export function TransactionsPane() {
                     )}
                     role="button"
                     tabIndex={0}
+                    onContextMenu={() => {
+                      // File-manager behavior: right-clicking an unselected row
+                      // collapses any multi-selection to just this row.
+                      if (!selection.isSelected(t.id)) selection.setOnly(t.id);
+                    }}
                     onDoubleClick={() => openEdit(t)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
@@ -703,73 +786,101 @@ export function TransactionsPane() {
                   </tr>
                 </ContextMenuTrigger>
                 <ContextMenuContent>
-                  <ContextMenuItem onSelect={() => openEdit(t)}>
-                    <Pencil className="mr-2 h-4 w-4" aria-hidden />
-                    Edit
-                  </ContextMenuItem>
-                  {!isAdjustment(t.transactionType) && (
-                    <ContextMenuItem onSelect={() => openCopy(t)}>
-                      <Copy className="mr-2 h-4 w-4" aria-hidden />
-                      Duplicate
-                    </ContextMenuItem>
-                  )}
-                  {t.status === 'Completed' && !isAdjustment(t.transactionType) && (
-                    <ContextMenuSub>
-                      <ContextMenuSubTrigger>
-                        <ArrowLeftRight className="mr-2 h-4 w-4" aria-hidden />
-                        Convert to
-                      </ContextMenuSubTrigger>
-                      <ContextMenuSubContent>
-                        {convertTargets(t.transactionType).map((k) => (
-                          <ContextMenuItem key={k} onSelect={() => openConvert(t, k)}>
-                            {transactionTypeMeta(k).label}
-                          </ContextMenuItem>
-                        ))}
-                      </ContextMenuSubContent>
-                    </ContextMenuSub>
-                  )}
-                  {t.status === 'Completed' &&
-                    (isIncome(t.transactionType) || isExpense(t.transactionType)) &&
-                    allocationCategoryIds(t).length === 1 && (
-                      <TxCategoryQuickPicker
-                        options={
-                          isIncome(t.transactionType)
-                            ? incomeCategoryEntries
-                            : expenseCategoryEntries
-                        }
-                        value={allocationCategoryIds(t)[0]}
-                        onSelect={(categoryId) => assignCategory(t, categoryId)}
-                      />
-                    )}
-                  {t.status === 'Completed' && (
-                    <TxLabelQuickPicker
-                      options={labelOptions}
-                      value={t.labels}
-                      onCommit={(labels) => commitLabels(t, labels)}
-                      onCreate={(name) => createEntry('label', name)}
+                  {selection.isSelected(t.id) && selection.count >= 2 ? (
+                    <BulkTransactionMenu
+                      count={selection.count}
+                      rows={selectedRows}
+                      labelOptions={labelOptions}
+                      incomeCategoryEntries={incomeCategoryEntries}
+                      expenseCategoryEntries={expenseCategoryEntries}
+                      categoryEligibility={bulkCategoryEligibility(selectedRows)}
+                      labelsEnabled={allCompleted(selectedRows)}
+                      isApplying={isApplying}
+                      onSetCategory={(categoryId) => bulkSetCategory(t.id, categoryId)}
+                      onAddLabel={bulkAddLabel}
+                      onRemoveLabel={bulkRemoveLabel}
+                      onCreateLabel={(name) => createEntry('label', name)}
+                      canLink={canLink}
+                      canMerge={canMerge}
+                      mergeDisabledReason={mergeDisabledReason}
+                      onLink={handleLink}
+                      onMerge={handleMerge}
                     />
-                  )}
-                  {t.status === 'Completed' &&
-                    (isIncome(t.transactionType) || isExpense(t.transactionType)) && (
-                      <TxContactQuickPicker
-                        options={contactOptions}
-                        value={t.contactId}
-                        onSelect={(id) => void commitContact(t, id)}
-                        onCreate={(name) => createEntry('contact', name)}
-                        createHint={t.description}
-                      />
-                    )}
-                  {t.status === 'Completed' && t.transactionType === 'expense' && (
-                    <ContextMenuItem onSelect={() => openRefund(t)}>
-                      <Undo2 className="mr-2 h-4 w-4" aria-hidden />
-                      Refund
-                    </ContextMenuItem>
-                  )}
-                  {t.status !== 'Cancelled' && (
-                    <ContextMenuItem className="text-destructive" onSelect={() => openCancel(t)}>
-                      <Ban className="mr-2 h-4 w-4" aria-hidden />
-                      Cancel
-                    </ContextMenuItem>
+                  ) : (
+                    <>
+                      <ContextMenuItem onSelect={() => openEdit(t)}>
+                        <Pencil className="mr-2 h-4 w-4" aria-hidden />
+                        Edit
+                      </ContextMenuItem>
+                      {!isAdjustment(t.transactionType) && (
+                        <ContextMenuItem onSelect={() => openCopy(t)}>
+                          <Copy className="mr-2 h-4 w-4" aria-hidden />
+                          Duplicate
+                        </ContextMenuItem>
+                      )}
+                      {t.status === 'Completed' && !isAdjustment(t.transactionType) && (
+                        <ContextMenuSub>
+                          <ContextMenuSubTrigger>
+                            <ArrowLeftRight className="mr-2 h-4 w-4" aria-hidden />
+                            Convert to
+                          </ContextMenuSubTrigger>
+                          <ContextMenuSubContent>
+                            {convertTargets(t.transactionType).map((k) => (
+                              <ContextMenuItem key={k} onSelect={() => openConvert(t, k)}>
+                                {transactionTypeMeta(k).label}
+                              </ContextMenuItem>
+                            ))}
+                          </ContextMenuSubContent>
+                        </ContextMenuSub>
+                      )}
+                      {t.status === 'Completed' && hasSingleNaturalAllocation(t) && (
+                        <TxCategoryQuickPicker
+                          options={
+                            isIncome(t.transactionType)
+                              ? incomeCategoryEntries
+                              : expenseCategoryEntries
+                          }
+                          value={allocationCategoryIds(t)[0]}
+                          onSelect={(categoryId) => {
+                            assignCategory(t, categoryId);
+                            requestCloseMenu(t.id);
+                          }}
+                        />
+                      )}
+                      {t.status === 'Completed' && (
+                        <TxLabelQuickPicker
+                          options={labelOptions}
+                          value={t.labels}
+                          onCommit={(labels) => commitLabels(t, labels)}
+                          onCreate={(name) => createEntry('label', name)}
+                        />
+                      )}
+                      {t.status === 'Completed' &&
+                        (isIncome(t.transactionType) || isExpense(t.transactionType)) && (
+                          <TxContactQuickPicker
+                            options={contactOptions}
+                            value={t.contactId}
+                            onSelect={(id) => void commitContact(t, id)}
+                            onCreate={(name) => createEntry('contact', name)}
+                            createHint={t.description}
+                          />
+                        )}
+                      {t.status === 'Completed' && t.transactionType === 'expense' && (
+                        <ContextMenuItem onSelect={() => openRefund(t)}>
+                          <Undo2 className="mr-2 h-4 w-4" aria-hidden />
+                          Refund
+                        </ContextMenuItem>
+                      )}
+                      {t.status !== 'Cancelled' && (
+                        <ContextMenuItem
+                          className="text-destructive"
+                          onSelect={() => openCancel(t)}
+                        >
+                          <Ban className="mr-2 h-4 w-4" aria-hidden />
+                          Cancel
+                        </ContextMenuItem>
+                      )}
+                    </>
                   )}
                 </ContextMenuContent>
               </ContextMenu>
@@ -909,12 +1020,8 @@ export function TransactionsPane() {
         canLink={canLink}
         canMerge={canMerge}
         mergeDisabledReason={mergeDisabledReason}
-        onLink={() => {
-          if (canLink) setLinkPair([selectedRows[0]!, selectedRows[1]!]);
-        }}
-        onMerge={() => {
-          if (selectedRows.length >= 2) setMergeSelection(selectedRows);
-        }}
+        onLink={handleLink}
+        onMerge={handleMerge}
         onClear={() => selection.clear()}
       />
     </>
