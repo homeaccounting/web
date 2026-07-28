@@ -13,8 +13,6 @@ const contacts: DictionaryEntryResponse[] = [
 
 function setup(overrides = {}) {
   const props = {
-    from: '2026-05-10',
-    to: '2026-06-10',
     filters: {
       description: '',
       labelIds: [],
@@ -25,8 +23,6 @@ function setup(overrides = {}) {
     labelOptions: labels,
     categoryOptions: categories,
     contactOptions: contacts,
-    onFromChange: vi.fn(),
-    onToChange: vi.fn(),
     onFiltersChange: vi.fn(),
     onClear: vi.fn(),
     ...overrides,
@@ -42,16 +38,6 @@ describe('TransactionFilterBar', () => {
     expect(props.onFiltersChange).toHaveBeenCalledWith(
       expect.objectContaining({ description: 'coffee' }),
     );
-  });
-  it('renders From and To as date-picker trigger buttons', () => {
-    setup();
-    expect(screen.getByLabelText('From')).toBeInstanceOf(HTMLButtonElement);
-    expect(screen.getByLabelText('To')).toBeInstanceOf(HTMLButtonElement);
-  });
-  it('opens a calendar when the From trigger is clicked', () => {
-    setup();
-    fireEvent.click(screen.getByLabelText('From'));
-    expect(screen.getByRole('grid')).toBeInTheDocument();
   });
   it('fires onClear', () => {
     const props = setup();

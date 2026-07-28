@@ -1,18 +1,37 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { PageContainer } from '@/components/PageContainer';
 import { PageHeader } from '@/components/PageHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { toQueryRange, type DayRange } from './period';
-import { PeriodSelector, type PeriodValue } from './PeriodSelector';
+import { toQueryRange, type DayRange, type PeriodValue } from '@/lib/period';
+import { PeriodSelector } from '@/components/PeriodSelector';
 import { IncomeVsExpenseCard } from './IncomeVsExpenseCard';
 import { SpendingByCategoryCard } from './SpendingByCategoryCard';
 import { NetWorthCard } from './NetWorthCard';
-import { parseReportsParams, reportsParamsToSearch, type ReportsTab } from './reportsUrl';
+import { readReportsLastView, writeReportsLastView } from './lastView';
+import {
+  parseReportsParams,
+  reportsParamsToSearch,
+  REPORTS_PRESETS,
+  type ReportsTab,
+} from './reportsUrl';
 
 export function ReportsPane() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { tab, periodValue, dayRange } = parseReportsParams(searchParams, new Date());
+  const lastView = useMemo(() => readReportsLastView(), []);
+  const { tab, periodValue, dayRange } = parseReportsParams(
+    searchParams,
+    new Date(),
+    lastView ?? undefined,
+  );
+
+  useEffect(() => {
+    writeReportsLastView({
+      tab,
+      period: periodValue,
+      ...(periodValue === 'custom' ? { from: dayRange.from, to: dayRange.to } : {}),
+    });
+  }, [tab, periodValue, dayRange.from, dayRange.to]);
 
   const setState = (next: { tab: ReportsTab; periodValue: PeriodValue; dayRange: DayRange }) => {
     setSearchParams(reportsParamsToSearch(next), { replace: true });
@@ -44,6 +63,7 @@ export function ReportsPane() {
             <PeriodSelector
               value={periodValue}
               range={dayRange}
+              presets={REPORTS_PRESETS}
               onPresetChange={onPresetChange}
               onRangeChange={onRangeChange}
             />

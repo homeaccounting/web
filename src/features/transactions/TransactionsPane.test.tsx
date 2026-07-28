@@ -1,13 +1,14 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { server } from '@/test/server';
 import { renderWithProviders } from '@/test/utils';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider } from '@/auth/AuthContext';
 import { saveSession } from '@/auth/storage';
 import { TransactionsPane } from './TransactionsPane';
+import { readLastView, writeLastView } from './lastView';
 import {
   configurationFixture,
   transactionFixture,
@@ -18,6 +19,13 @@ import {
 
 const apiBase = 'http://localhost:8080';
 
+// MemoryRouter does not update window.location; surface the current search
+// string through useLocation so tests can assert URL-derived period changes.
+function LocationSearch() {
+  const { search } = useLocation();
+  return <div data-testid="search">{search}</div>;
+}
+
 function ui() {
   return (
     <AuthProvider>
@@ -25,6 +33,7 @@ function ui() {
         <Route path="/" element={<TransactionsPane />} />
         <Route path="/accounts/:id" element={<TransactionsPane />} />
       </Routes>
+      <LocationSearch />
     </AuthProvider>
   );
 }
@@ -545,14 +554,14 @@ describe('TransactionsPane', () => {
     expect(screen.getByLabelText('Cancelled')).toBeInTheDocument();
   });
 
-  // The From/To inputs are now mouse-driven DatePickers (shadcn Popover +
+  // The date window is now driven by the toolbar PeriodSelector. Switching to
+  // "Custom…" reveals mouse-driven From/To DatePickers (shadcn Popover +
   // Calendar). A calendar can only emit complete, in-range dates — it never
-  // surfaces the empty '' or from > to states the old native inputs could, so
-  // those mid-edit guards no longer apply here (the isValidDateWindow guard
-  // itself stays covered by transactionFilters.test.ts). This test exercises
-  // the new control end-to-end: opening the From picker and selecting a day
-  // refetches with a valid window and keeps the rows without an error state.
-  it('picking a From date from the calendar refetches without erroring', async () => {
+  // surfaces the empty '' or from > to states the old native inputs could. This
+  // test exercises the new control end-to-end: choosing Custom, opening the From
+  // picker and selecting a day refetches with a valid window and keeps the rows
+  // without an error state.
+  it('picking a custom From date from the calendar refetches without erroring', async () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
     const user = userEvent.setup();
     server.use(
@@ -576,8 +585,11 @@ describe('TransactionsPane', () => {
     // Wait for the row to appear (valid initial window).
     expect(await screen.findByText('GuardRow')).toBeInTheDocument();
 
+    // Switch the toolbar period to Custom to reveal the From picker.
+    await user.click(screen.getByRole('combobox', { name: /period/i }));
+    await user.click(await screen.findByRole('option', { name: /custom/i }));
+
     // Open the From picker and select an enabled day from the open calendar.
-    await openFilters(user);
     await user.click(screen.getByLabelText('From'));
     const grid = await screen.findByRole('grid');
     const days = within(grid)
@@ -1785,6 +1797,119 @@ describe('TransactionsPane', () => {
       await user.pointer({ keys: '[MouseRight]', target: row });
       await screen.findByRole('menuitem', { name: /edit/i });
       expect(screen.queryByRole('menuitem', { name: /^contact$/i })).not.toBeInTheDocument();
+    });
+  });
+
+  describe('period + view persistence', () => {
+    beforeEach(() => localStorage.clear());
+
+    it('restores period from ?period in the URL', async () => {
+      saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+      let seen: { from: string; to: string } | null = null;
+      server.use(
+        http.get(`${apiBase}/api/transactions`, ({ request }) => {
+          const url = new URL(request.url);
+          seen = {
+            from: url.searchParams.get('dateFrom') ?? '',
+            to: url.searchParams.get('dateTo') ?? '',
+          };
+          return HttpResponse.json({ transactions: [transactionFixture], totalCount: 1 });
+        }),
+      );
+      renderWithProviders(ui(), { initialPath: '/accounts/a1?period=this-year' });
+      await screen.findByText(transactionFixture.description);
+      // this-year resolves to Jan 1 .. Dec 31 of the current year.
+      await waitFor(() => expect(seen).not.toBeNull());
+      expect(seen!.from).toContain('-01-01');
+      expect(seen!.to).toContain('-12-31');
+    });
+
+    it('restores period from lastView when the URL has no period param', async () => {
+      saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+      writeLastView({
+        accountId: 'a1',
+        period: 'this-year',
+        filters: {
+          description: '',
+          labelIds: [],
+          category: '',
+          contactId: '',
+          showCancelledFailed: false,
+        },
+      });
+      let seen: { from: string; to: string } | null = null;
+      server.use(
+        http.get(`${apiBase}/api/transactions`, ({ request }) => {
+          const url = new URL(request.url);
+          seen = {
+            from: url.searchParams.get('dateFrom') ?? '',
+            to: url.searchParams.get('dateTo') ?? '',
+          };
+          return HttpResponse.json({ transactions: [transactionFixture], totalCount: 1 });
+        }),
+      );
+      renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+      await screen.findByText(transactionFixture.description);
+      // this-year resolves to Jan 1 .. Dec 31 of the current year.
+      await waitFor(() => expect(seen).not.toBeNull());
+      expect(seen!.from).toContain('-01-01');
+      expect(seen!.to).toContain('-12-31');
+    });
+
+    it('changing the preset updates the URL', async () => {
+      saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+      const user = userEvent.setup();
+      renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+      await screen.findByText(transactionFixture.description);
+      await user.click(screen.getByRole('combobox', { name: /period/i }));
+      await user.click(await screen.findByRole('option', { name: 'This year' }));
+      await waitFor(() =>
+        expect(screen.getByTestId('search').textContent).toContain('period=this-year'),
+      );
+    });
+
+    it('seeds filters from lastView', async () => {
+      saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+      const user = userEvent.setup();
+      writeLastView({
+        accountId: 'a1',
+        period: 'last-month',
+        filters: {
+          description: 'Coffee',
+          labelIds: [],
+          category: '',
+          contactId: '',
+          showCancelledFailed: false,
+        },
+      });
+      renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+      await screen.findByText(transactionFixture.description);
+      await openFilters(user);
+      expect(screen.getByPlaceholderText(/description/i)).toHaveValue('Coffee');
+    });
+
+    it('persists filters to lastView on change', async () => {
+      saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+      const user = userEvent.setup();
+      renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+      await screen.findByText(transactionFixture.description);
+      await openFilters(user);
+      await user.type(screen.getByPlaceholderText(/description/i), 'Latte');
+      await waitFor(() => expect(readLastView()?.filters.description).toBe('Latte'));
+    });
+
+    it('clear resets filters and period', async () => {
+      saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+      const user = userEvent.setup();
+      renderWithProviders(ui(), { initialPath: '/accounts/a1?period=this-year' });
+      await screen.findByText(transactionFixture.description);
+      await openFilters(user);
+      await user.type(screen.getByPlaceholderText(/description/i), 'Coffee');
+      await user.click(screen.getByRole('button', { name: /clear/i }));
+      await waitFor(() =>
+        expect(screen.getByTestId('search').textContent).toContain('period=last-month'),
+      );
+      expect(screen.getByPlaceholderText(/description/i)).toHaveValue('');
     });
   });
 });

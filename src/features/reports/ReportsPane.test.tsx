@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -27,6 +27,8 @@ const renderPane = (initialPath = '/reports') =>
   );
 
 describe('ReportsPane', () => {
+  beforeEach(() => localStorage.clear());
+
   it('shows the cash-flow reports and a period selector by default', async () => {
     signIn();
     renderPane();
@@ -60,6 +62,17 @@ describe('ReportsPane', () => {
     renderPane('/reports?tab=net-worth');
     expect(await screen.findByText('Checking')).toBeInTheDocument();
     expect(screen.queryByRole('combobox', { name: /period/i })).not.toBeInTheDocument();
+  });
+
+  it('restores the last-used tab and period from localStorage when the URL is silent', async () => {
+    signIn();
+    localStorage.setItem(
+      'ha.reports.lastView',
+      JSON.stringify({ tab: 'net-worth', period: 'this-year' }),
+    );
+    renderPane();
+    expect(await screen.findByText('Checking')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /net worth/i })).toHaveAttribute('data-state', 'active');
   });
 
   it('restores a preset period from the URL', async () => {

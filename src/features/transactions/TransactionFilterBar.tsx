@@ -1,34 +1,25 @@
 import { useMemo } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { DatePicker } from '@/components/DatePicker';
 import type { DictionaryEntryResponse } from '@/api/types';
 import { CategoryCombobox } from './CategoryCombobox';
 import { LabelMultiSelect } from './LabelMultiSelect';
 import type { TransactionFilters } from './transactionFilters';
 
 export interface TransactionFilterBarProps {
-  from: string;
-  to: string;
   filters: TransactionFilters;
   labelOptions: DictionaryEntryResponse[];
   categoryOptions: DictionaryEntryResponse[];
   contactOptions: DictionaryEntryResponse[];
-  onFromChange: (v: string) => void;
-  onToChange: (v: string) => void;
   onFiltersChange: (next: TransactionFilters) => void;
   onClear: () => void;
 }
 
 export function TransactionFilterBar({
-  from,
-  to,
   filters,
   labelOptions,
   categoryOptions,
   contactOptions,
-  onFromChange,
-  onToChange,
   onFiltersChange,
   onClear,
 }: TransactionFilterBarProps) {
@@ -46,30 +37,6 @@ export function TransactionFilterBar({
 
   return (
     <div className="flex flex-wrap items-center gap-2 border-b px-3 py-2 text-sm">
-      <label htmlFor="filter-from" className="flex items-center gap-1">
-        From
-        <DatePicker
-          id="filter-from"
-          value={from}
-          onChange={onFromChange}
-          aria-label="From"
-          maxDate={to}
-          placeholder="From"
-          className="w-auto"
-        />
-      </label>
-      <label htmlFor="filter-to" className="flex items-center gap-1">
-        To
-        <DatePicker
-          id="filter-to"
-          value={to}
-          onChange={onToChange}
-          aria-label="To"
-          minDate={from}
-          placeholder="To"
-          className="w-auto"
-        />
-      </label>
       <Input
         placeholder="Description…"
         value={filters.description}

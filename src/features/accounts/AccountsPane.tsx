@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { NavLink, useParams } from 'react-router-dom';
+import { NavLink, useLocation, useParams } from 'react-router-dom';
 import {
   Archive,
   ArchiveRestore,
@@ -46,6 +46,7 @@ function SharedRoleBadge({ role }: { role: AccountRole }) {
 export function AccountsPane() {
   const { data, isLoading, isError, refetch } = useAccounts();
   const { id } = useParams<{ id?: string }>();
+  const location = useLocation();
   const { data: selectedAccount } = useAccountById(id);
   const [creating, setCreating] = useState(false);
   const [editingAccount, setEditingAccount] = useState<AccountResponse | null>(null);
@@ -98,7 +99,7 @@ export function AccountsPane() {
         onRequestManageAccess={setManagingAccount}
       >
         <NavLink
-          to={`/accounts/${a.id}`}
+          to={{ pathname: `/accounts/${a.id}`, search: location.search }}
           onDoubleClick={() => setEditingAccount(a)}
           className={cn(
             // Static (non-function) className: this NavLink is cloned by Radix's

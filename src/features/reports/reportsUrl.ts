@@ -1,9 +1,21 @@
-import { PERIOD_PRESETS, presetRange, type DayRange, type PeriodPreset } from './period';
-import type { PeriodValue } from './PeriodSelector';
+import {
+  parsePeriodParams,
+  periodParamsToSearch,
+  type DayRange,
+  type PeriodPreset,
+  type PeriodValue,
+} from '@/lib/period';
 
 export type ReportsTab = 'cash-flow' | 'net-worth';
 
 const TABS: readonly ReportsTab[] = ['cash-flow', 'net-worth'] as const;
+
+export const REPORTS_PRESETS: readonly PeriodPreset[] = [
+  'this-month',
+  'last-month',
+  'this-year',
+  'all-time',
+] as const;
 
 export interface ReportsState {
   tab: ReportsTab;
@@ -11,42 +23,45 @@ export interface ReportsState {
   dayRange: DayRange;
 }
 
-const isTab = (v: string | null): v is ReportsTab => !!v && TABS.includes(v as ReportsTab);
-const isPreset = (v: string | null): v is PeriodPreset =>
-  !!v && PERIOD_PRESETS.includes(v as PeriodPreset);
+// Single definition of ReportsLastView — reports/lastView.ts (a later task)
+// imports it from here (do not redeclare there).
+export interface ReportsLastView {
+  tab: ReportsTab;
+  period: PeriodValue;
+  from?: string;
+  to?: string;
+}
 
-// Accept only the 'YYYY-MM-DD' day shape DatePicker/period.ts use elsewhere.
-const isDay = (v: string | null): v is string => !!v && /^\d{4}-\d{2}-\d{2}$/.test(v);
+const isTab = (v: string | null | undefined): v is ReportsTab =>
+  !!v && TABS.includes(v as ReportsTab);
 
 /**
- * Derive reports UI state from URL search params. Unknown/garbage values fall
- * back to defaults (cash-flow tab, this-month period). A `custom` period without
- * a valid from/to pair falls back to the this-month preset range.
+ * Derive reports UI state from URL search params. Precedence: URL -> lastView
+ * (persisted "last view") -> defaults (cash-flow tab, this-month period).
+ * Unknown/garbage values fall back the same way. A `custom` period without a
+ * valid from/to pair falls back to the this-month preset range.
  */
-export function parseReportsParams(params: URLSearchParams, today: Date): ReportsState {
-  const tab: ReportsTab = isTab(params.get('tab'))
-    ? (params.get('tab') as ReportsTab)
-    : 'cash-flow';
+export function parseReportsParams(
+  params: URLSearchParams,
+  today: Date,
+  lastView?: ReportsLastView,
+): ReportsState {
+  const rawTab = params.get('tab');
+  const lastTab = lastView?.tab;
+  const tab: ReportsTab = isTab(rawTab) ? rawTab : isTab(lastTab) ? lastTab : 'cash-flow';
 
-  const period = params.get('period');
-  if (period === 'custom') {
-    const from = params.get('from');
-    const to = params.get('to');
-    const dayRange: DayRange =
-      isDay(from) && isDay(to) ? { from, to } : presetRange('this-month', today);
-    return { tab, periodValue: 'custom', dayRange };
-  }
+  const { periodValue, dayRange } = parsePeriodParams(params, today, {
+    presets: REPORTS_PRESETS,
+    defaultPreset: 'this-month',
+    fallback: lastView
+      ? { period: lastView.period, from: lastView.from, to: lastView.to }
+      : undefined,
+  });
 
-  const periodValue: PeriodPreset = isPreset(period) ? period : 'this-month';
-  return { tab, periodValue, dayRange: presetRange(periodValue, today) };
+  return { tab, periodValue, dayRange };
 }
 
 /** Serialise reports state to a search-param map; from/to are emitted only for custom periods. */
 export function reportsParamsToSearch(state: ReportsState): Record<string, string> {
-  const out: Record<string, string> = { tab: state.tab, period: state.periodValue };
-  if (state.periodValue === 'custom') {
-    out.from = state.dayRange.from;
-    out.to = state.dayRange.to;
-  }
-  return out;
+  return { tab: state.tab, ...periodParamsToSearch(state.periodValue, state.dayRange) };
 }

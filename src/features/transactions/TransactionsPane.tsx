@@ -1,5 +1,5 @@
-import { useMemo, useState, type ReactNode } from 'react';
-import { useParams } from 'react-router-dom';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -36,12 +36,16 @@ import { cn } from '@/lib/utils';
 import { flattenDictionary } from '@/api/dictionary';
 import type { Allocations, TransactionResponse, TransactionTypeText, UUID } from '@/api/types';
 import { useWindowedTransactions } from './useWindowedTransactions';
+import { applyTransactionFilters, type TransactionFilters } from './transactionFilters';
 import {
-  applyTransactionFilters,
-  defaultDateWindow,
-  isValidDateWindow,
-  type TransactionFilters,
-} from './transactionFilters';
+  parsePeriodParams,
+  periodParamsToSearch,
+  presetRange,
+  type DayRange,
+  type PeriodValue,
+} from '@/lib/period';
+import { PeriodSelector } from '@/components/PeriodSelector';
+import { readLastView, writeLastView } from './lastView';
 import { TransactionFilterBar } from './TransactionFilterBar';
 import { TransactionTypeIcon } from './TransactionTypeIcon';
 import {
@@ -182,23 +186,58 @@ const EMPTY_FILTERS: TransactionFilters = {
   showCancelledFailed: false,
 };
 
+// Date-range presets offered in the toolbar. The default window is the previous
+// whole calendar month ('last-month'); 'custom' is appended by PeriodSelector.
+const TX_PRESETS = ['this-month', 'last-month', 'this-year', 'last-year'] as const;
+
 export function TransactionsPane() {
   const { id } = useParams<{ id?: string }>();
 
-  const [defaultWindow] = useState(() => defaultDateWindow(new Date()));
-  const [fromInput, setFromInput] = useState(defaultWindow.from);
-  const [toInput, setToInput] = useState(defaultWindow.to);
-  const [appliedWindow, setAppliedWindow] = useState(defaultWindow);
-  const [filters, setFilters] = useState<TransactionFilters>(EMPTY_FILTERS);
+  // The date range is derived from the URL (?period / ?from / ?to), falling back
+  // to the persisted "last view" and finally the default 'last-month' preset.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const lastView = useMemo(() => readLastView(), []);
+  const { periodValue, dayRange } = parsePeriodParams(searchParams, new Date(), {
+    presets: TX_PRESETS,
+    defaultPreset: 'last-month',
+    fallback: lastView
+      ? { period: lastView.period, from: lastView.from, to: lastView.to }
+      : undefined,
+  });
+  const onPresetChange = (next: PeriodValue) => {
+    setSearchParams(periodParamsToSearch(next, dayRange), { replace: true });
+    setPageIndex(0);
+  };
+  const onRangeChange = (range: DayRange) => {
+    setSearchParams(periodParamsToSearch('custom', range), { replace: true });
+    setPageIndex(0);
+  };
+
+  const [filters, setFilters] = useState<TransactionFilters>(
+    () => lastView?.filters ?? EMPTY_FILTERS,
+  );
   // Filter controls are collapsed by default to keep the pane simple.
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize, setPageSize] = usePersistedPageSize();
 
+  // Persist the current account + period (+ custom bounds) + filters so the
+  // view can be restored on reopen. Guard on `id` so bare `/` never writes an
+  // empty accountId.
+  useEffect(() => {
+    if (!id) return;
+    writeLastView({
+      accountId: id,
+      period: periodValue,
+      ...(periodValue === 'custom' ? { from: dayRange.from, to: dayRange.to } : {}),
+      filters,
+    });
+  }, [id, periodValue, dayRange.from, dayRange.to, filters]);
+
   const { data, isLoading, isError, refetch } = useWindowedTransactions(
     id,
-    appliedWindow.from,
-    appliedWindow.to,
+    dayRange.from,
+    dayRange.to,
   );
   const { data: account, isLoading: accountLoading } = useAccountById(id);
   const { data: configuration } = useConfiguration();
@@ -286,7 +325,7 @@ export function TransactionsPane() {
   // selection whenever the scope (account / date window / filters) changes, but
   // NOT on page changes — so a selection can span pages for a merge.
   const selection = useTransactionSelection(
-    `${id ?? ''}|${appliedWindow.from}|${appliedWindow.to}|${JSON.stringify(filters)}`,
+    `${id ?? ''}|${dayRange.from}|${dayRange.to}|${JSON.stringify(filters)}`,
   );
   // Selected rows resolved from the whole loaded window (not just the visible
   // page), so a cross-page selection still merges/links correctly.
@@ -354,25 +393,10 @@ export function TransactionsPane() {
   };
   const clearFilters = () => {
     setFilters(EMPTY_FILTERS);
-    const w = defaultDateWindow(new Date());
-    setFromInput(w.from);
-    setToInput(w.to);
-    setAppliedWindow(w);
+    setSearchParams(periodParamsToSearch('last-month', presetRange('last-month', new Date())), {
+      replace: true,
+    });
     setPageIndex(0);
-  };
-  const onFromChange = (from: string) => {
-    setFromInput(from);
-    if (isValidDateWindow(from, toInput)) {
-      setAppliedWindow({ from, to: toInput });
-      setPageIndex(0);
-    }
-  };
-  const onToChange = (to: string) => {
-    setToInput(to);
-    if (isValidDateWindow(fromInput, to)) {
-      setAppliedWindow({ from: fromInput, to });
-      setPageIndex(0);
-    }
   };
 
   const [editing, setEditing] = useState<TransactionResponse | null>(null);
@@ -761,7 +785,9 @@ export function TransactionsPane() {
       <ControlBar selectedAccountId={id} selectedAccount={account} />
       {header}
       {showFilterBar && (
-        <div className={cn('flex items-center px-3 py-2 text-sm', !filtersOpen && 'border-b')}>
+        <div
+          className={cn('flex items-center gap-3 px-3 py-2 text-sm', !filtersOpen && 'border-b')}
+        >
           <button
             type="button"
             onClick={() => setFiltersOpen((v) => !v)}
@@ -780,18 +806,21 @@ export function TransactionsPane() {
               </Badge>
             )}
           </button>
+          <PeriodSelector
+            presets={TX_PRESETS}
+            value={periodValue}
+            range={dayRange}
+            onPresetChange={onPresetChange}
+            onRangeChange={onRangeChange}
+          />
         </div>
       )}
       {showFilterBar && filtersOpen && (
         <TransactionFilterBar
-          from={fromInput}
-          to={toInput}
           filters={filters}
           labelOptions={labelOptions}
           categoryOptions={categoryOptions}
           contactOptions={contactOptions}
-          onFromChange={onFromChange}
-          onToChange={onToChange}
           onFiltersChange={updateFilters}
           onClear={clearFilters}
         />

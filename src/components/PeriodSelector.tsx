@@ -6,13 +6,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { PERIOD_PRESETS, PERIOD_PRESET_LABELS, type DayRange, type PeriodPreset } from './period';
-
-export type PeriodValue = PeriodPreset | 'custom';
+import {
+  PERIOD_PRESET_LABELS,
+  type DayRange,
+  type PeriodPreset,
+  type PeriodValue,
+} from '@/lib/period';
 
 export interface PeriodSelectorProps {
   value: PeriodValue;
   range: DayRange;
+  presets: readonly PeriodPreset[];
   onPresetChange: (preset: PeriodValue) => void;
   onRangeChange: (range: DayRange) => void;
 }
@@ -20,6 +24,7 @@ export interface PeriodSelectorProps {
 export function PeriodSelector({
   value,
   range,
+  presets,
   onPresetChange,
   onRangeChange,
 }: PeriodSelectorProps) {
@@ -30,7 +35,7 @@ export function PeriodSelector({
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          {PERIOD_PRESETS.map((p) => (
+          {presets.map((p) => (
             <SelectItem key={p} value={p}>
               {PERIOD_PRESET_LABELS[p]}
             </SelectItem>
@@ -40,10 +45,10 @@ export function PeriodSelector({
       </Select>
       {value === 'custom' && (
         <>
-          <label htmlFor="report-from" className="flex items-center gap-1">
+          <label htmlFor="period-from" className="flex items-center gap-1">
             From
             <DatePicker
-              id="report-from"
+              id="period-from"
               value={range.from}
               onChange={(from) => onRangeChange({ ...range, from })}
               aria-label="From"
@@ -52,10 +57,10 @@ export function PeriodSelector({
               className="w-auto"
             />
           </label>
-          <label htmlFor="report-to" className="flex items-center gap-1">
+          <label htmlFor="period-to" className="flex items-center gap-1">
             To
             <DatePicker
-              id="report-to"
+              id="period-to"
               value={range.to}
               onChange={(to) => onRangeChange({ ...range, to })}
               aria-label="To"

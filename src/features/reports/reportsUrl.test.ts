@@ -46,6 +46,32 @@ describe('parseReportsParams', () => {
       dayRange: THIS_MONTH,
     });
   });
+
+  it('restores tab and period from lastView when URL is silent', () => {
+    expect(
+      parseReportsParams(new URLSearchParams(''), JUN_15, {
+        tab: 'net-worth',
+        period: 'last-month',
+      }),
+    ).toEqual({
+      tab: 'net-worth',
+      periodValue: 'last-month',
+      dayRange: { from: '2026-05-01', to: '2026-05-31' },
+    });
+  });
+
+  it('URL wins over lastView', () => {
+    expect(
+      parseReportsParams(new URLSearchParams('?tab=cash-flow&period=this-year'), JUN_15, {
+        tab: 'net-worth',
+        period: 'last-month',
+      }),
+    ).toEqual({
+      tab: 'cash-flow',
+      periodValue: 'this-year',
+      dayRange: { from: '2026-01-01', to: '2026-12-31' },
+    });
+  });
 });
 
 describe('reportsParamsToSearch', () => {

@@ -65,6 +65,15 @@ describe('AccountsPane', () => {
     expect(item).toHaveAttribute('aria-current', 'page');
   });
 
+  it('preserves the current query string on account row links', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    renderWithProviders(ui(), {
+      initialPath: `/accounts/${accountFixture.id}?period=this-year`,
+    });
+    const item = await screen.findByRole('link', { name: /checking/i });
+    expect(item).toHaveAttribute('href', expect.stringContaining('?period=this-year'));
+  });
+
   it('renders an "Add account" button at the top of the pane', async () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
     renderWithProviders(ui(), { initialPath: '/' });
