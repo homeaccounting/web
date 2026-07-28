@@ -9,6 +9,7 @@ import { AuthProvider } from '@/auth/AuthContext';
 import { saveSession } from '@/auth/storage';
 import { salaryCategoryId, configurationFixture } from '@/test/fixtures';
 import { CreateIncomeDialog } from './CreateIncomeDialog';
+import { writeStickyDay } from './stickyDate';
 
 const apiBase = 'http://localhost:8080';
 
@@ -205,5 +206,41 @@ describe('CreateIncomeDialog', () => {
 
     expect(await screen.findByRole('alert')).toBeInTheDocument();
     expect(await screen.findByText(/boom/i)).toBeInTheDocument();
+  });
+
+  it('defaults the date to the sticky last-used day when reopened on a persistent instance', async () => {
+    const user = userEvent.setup();
+
+    // A persistent dialog instance whose visibility toggles — mirrors how
+    // ControlBar renders the create dialogs unconditionally. A frozen-at-mount
+    // default would keep showing today on reopen; recompute-on-open must not.
+    function ToggleWrapper() {
+      const [open, setOpen] = useState(true);
+      return (
+        <AuthProvider>
+          <button onClick={() => setOpen((o) => !o)}>toggle</button>
+          <CreateIncomeDialog open={open} onOpenChange={setOpen} />
+        </AuthProvider>
+      );
+    }
+
+    renderWithProviders(<ToggleWrapper />, { initialPath: '/' });
+    await screen.findByLabelText(/account/i);
+    // First open (empty store) shows today, not the past day.
+    expect(screen.getByLabelText(/date/i)).not.toHaveTextContent(/2020/);
+
+    // Simulate a prior submit that stuck a PAST day, recorded today (the
+    // reconciliation use case: entering rows dated Jan 15 2020 today).
+    writeStickyDay('2020-01-15T09:30', new Date());
+
+    // Close via Escape (the dialog's own close path fires onOpenChange). While
+    // the modal is open its siblings are inert, so the toggle button is only
+    // reachable once closed — then click it to reopen the same instance.
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await user.click(screen.getByRole('button', { name: 'toggle' }));
+
+    await screen.findByLabelText(/account/i);
+    expect(screen.getByLabelText(/date/i)).toHaveTextContent(/January 15th, 2020/);
   });
 });

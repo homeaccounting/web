@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -13,7 +13,7 @@ import { useAccounts } from '@/features/accounts/useAccounts';
 import { flattenDictionary } from '@/api/dictionary';
 import { useConfiguration } from '@/features/configuration/useConfiguration';
 import { useCreateDictionaryEntry } from '@/features/configuration/useCreateDictionaryEntry';
-import { nowDateTimeInput } from '@/lib/dates';
+import { defaultTransactionDate, writeStickyDay } from './stickyDate';
 import { IncomeExpenseForm, type IncomeExpenseFormApi } from './IncomeExpenseForm';
 import { useCreateIncome } from './useCreateIncome';
 import { toIncomeRequest, type IncomeExpenseFormValues } from './schema';
@@ -47,21 +47,22 @@ export function CreateIncomeDialog({
   const defaultAccount = accounts?.find((a) => a.id === selectedAccountId) ?? accounts?.[0];
   const defaultCategory = config?.defaults.incomeCategory ?? '';
 
-  const defaults = useMemo(
-    (): IncomeExpenseFormValues => ({
-      accountId: defaultAccount?.id ?? '',
-      currency: defaultAccount?.currency ?? '',
-      incomes: [{ category: defaultCategory, amount: NaN, comment: '' }],
-      expenses: [],
-      description: '',
-      date: nowDateTimeInput(),
-      labels: [],
-      contactId: null,
-      targetMode: false,
-      targetTotal: '',
-    }),
-    [defaultAccount?.id, defaultAccount?.currency, defaultCategory],
-  );
+  // Computed fresh on every render (deliberately not memoized) so the date
+  // re-seeds each time the dialog opens: the inner form remounts on open (the
+  // dialog has no forceMount) and reads these defaults, giving the sticky
+  // last-used day + the current time. See stickyDate.ts.
+  const defaults: IncomeExpenseFormValues = {
+    accountId: defaultAccount?.id ?? '',
+    currency: defaultAccount?.currency ?? '',
+    incomes: [{ category: defaultCategory, amount: NaN, comment: '' }],
+    expenses: [],
+    description: '',
+    date: defaultTransactionDate(new Date()),
+    labels: [],
+    contactId: null,
+    targetMode: false,
+    targetTotal: '',
+  };
 
   const apiRef = useRef<IncomeExpenseFormApi | null>(null);
   const handleReady = useCallback((api: IncomeExpenseFormApi) => {
@@ -71,6 +72,7 @@ export function CreateIncomeDialog({
   const handleSubmit = async (values: Parameters<typeof toIncomeRequest>[0]) => {
     try {
       await create.mutateAsync(toIncomeRequest(values));
+      writeStickyDay(values.date, new Date());
       onOpenChange(false);
     } catch (e) {
       if (e instanceof ApiError && e.fieldErrors) {

@@ -9,6 +9,7 @@ import { AuthProvider } from '@/auth/AuthContext';
 import { saveSession } from '@/auth/storage';
 import { foodCategoryId, configurationFixture } from '@/test/fixtures';
 import { CreateExpenseDialog } from './CreateExpenseDialog';
+import { writeStickyDay } from './stickyDate';
 
 const apiBase = 'http://localhost:8080';
 
@@ -247,5 +248,34 @@ describe('CreateExpenseDialog', () => {
 
     expect(await screen.findByRole('alert')).toBeInTheDocument();
     expect(await screen.findByText(/boom/i)).toBeInTheDocument();
+  });
+
+  it('defaults the date to the sticky last-used day when reopened on a persistent instance', async () => {
+    const user = userEvent.setup();
+
+    function ToggleWrapper() {
+      const [open, setOpen] = useState(true);
+      return (
+        <AuthProvider>
+          <button onClick={() => setOpen((o) => !o)}>toggle</button>
+          <CreateExpenseDialog open={open} onOpenChange={setOpen} />
+        </AuthProvider>
+      );
+    }
+
+    renderWithProviders(<ToggleWrapper />, { initialPath: '/' });
+    await screen.findByLabelText(/account/i);
+    expect(screen.getByLabelText(/date/i)).not.toHaveTextContent(/2020/);
+
+    // A prior submit stuck a PAST day, recorded today (reconciliation use case).
+    writeStickyDay('2020-01-15T09:30', new Date());
+
+    // Escape closes (siblings are inert while the modal is open); reopen via toggle.
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await user.click(screen.getByRole('button', { name: 'toggle' }));
+
+    await screen.findByLabelText(/account/i);
+    expect(screen.getByLabelText(/date/i)).toHaveTextContent(/January 15th, 2020/);
   });
 });

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -12,7 +12,7 @@ import type { UUID } from '@/api/types';
 import { useAccounts } from '@/features/accounts/useAccounts';
 import { flattenDictionary } from '@/api/dictionary';
 import { useConfiguration } from '@/features/configuration/useConfiguration';
-import { nowDateTimeInput } from '@/lib/dates';
+import { defaultTransactionDate, writeStickyDay } from './stickyDate';
 import { TransferForm, type TransferFormApi } from './TransferForm';
 import { useCreateTransfer } from './useCreateTransfer';
 import { toTransferRequest, type TransferFormValues } from './schema';
@@ -39,19 +39,20 @@ export function CreateTransferDialog({
   const sourceAccountId = sourceAccount?.id ?? '';
   const targetAccount = accounts?.find((a) => a.id !== sourceAccountId);
 
-  const defaults = useMemo(
-    () => ({
-      sourceAccountId,
-      targetAccountId: targetAccount?.id ?? '',
-      amount: 0,
-      currency: sourceAccount?.currency ?? '',
-      description: '',
-      exchangeRate: undefined,
-      date: nowDateTimeInput(),
-      labels: [] as UUID[],
-    }),
-    [sourceAccountId, targetAccount?.id, sourceAccount?.currency],
-  );
+  // Computed fresh on every render (deliberately not memoized) so the date
+  // re-seeds each time the dialog opens: the inner form remounts on open (the
+  // dialog has no forceMount) and reads these defaults, giving the sticky
+  // last-used day + the current time. See stickyDate.ts.
+  const defaults = {
+    sourceAccountId,
+    targetAccountId: targetAccount?.id ?? '',
+    amount: 0,
+    currency: sourceAccount?.currency ?? '',
+    description: '',
+    exchangeRate: undefined,
+    date: defaultTransactionDate(new Date()),
+    labels: [] as UUID[],
+  };
 
   const apiRef = useRef<TransferFormApi | null>(null);
   const handleReady = useCallback((api: TransferFormApi) => {
@@ -64,6 +65,7 @@ export function CreateTransferDialog({
     if (!source || !target) return; // schema guards make this unreachable
     try {
       await create.mutateAsync(toTransferRequest(values, source.currency, target.currency));
+      writeStickyDay(values.date, new Date());
       onOpenChange(false);
     } catch (e) {
       if (e instanceof ApiError && e.fieldErrors) {

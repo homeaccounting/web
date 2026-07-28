@@ -4,15 +4,21 @@ const pad = (n: number) => String(n).padStart(2, '0');
 
 // Format a Date as a local 'YYYY-MM-DDTHH:MM' (minute precision) — the value
 // shape a time-enabled DatePicker works with.
-function toLocalInput(d: Date): string {
+export function toDateTimeInput(d: Date): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+// Local wall-clock 'YYYY-MM-DD' for the given instant (the day part of a
+// time-enabled DatePicker value).
+export function toDayInput(d: Date): string {
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
 // Local wall-clock 'YYYY-MM-DDTHH:MM' for "now". Used as the default value for
 // a time-enabled DatePicker so a new transaction is stamped with the current
 // time and same-day rows get distinct, entry-ordered timestamps out of the box.
 export function nowDateTimeInput(): string {
-  return toLocalInput(new Date());
+  return toDateTimeInput(new Date());
 }
 
 // Convert a date-picker value (interpreted as LOCAL wall-clock time) to a real
@@ -29,7 +35,7 @@ export function dateInputToWire(v: string): ISO8601 {
 // Inverse of dateInputToWire for seeding a picker from a backend UTC timestamp:
 // 'YYYY-MM-DDTHH:MM:SSZ' -> local 'YYYY-MM-DDTHH:MM'.
 export function wireToDateInput(iso: string): string {
-  return toLocalInput(new Date(iso));
+  return toDateTimeInput(new Date(iso));
 }
 
 // Inclusive UTC day bounds for backend from/to (UTCTime) params. Start-of-day
