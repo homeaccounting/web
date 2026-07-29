@@ -445,6 +445,30 @@ export interface TransactionListResponse {
   offset: number;
 }
 
+// Prompt (natural-language) DTOs — mirror server-infra/src/Web/API/PromptAPI.hs.
+// PromptRequest { text :: Text, account :: Maybe AccountId }.
+export interface PromptRequest {
+  text: string;
+  account?: UUID;
+}
+
+// One failed transaction in the response envelope: { index, reason }.
+// `index` is the zero-based position in the parsed list.
+export interface PromptFailure {
+  index: number;
+  reason: string;
+}
+
+// Kind-tagged success envelope from POST /api/prompt. Named `PromptResponse` to
+// mirror the backend wire type (the backend's internal `PromptResult` domain
+// type is a different thing). `succeeded` are full transactions; `failed` are
+// commit-good/report-bad entries.
+export interface PromptResponse {
+  kind: 'transactions';
+  succeeded: TransactionResponse[];
+  failed: PromptFailure[];
+}
+
 // --- Configuration ---
 // JSON shape from server-infra/src/Web/API/ConfigurationAPI.hs (ConfigurationResponse,
 // ConfigurationDefaultsDTO, DictionaryResponse, BankingConfigurationDTO).

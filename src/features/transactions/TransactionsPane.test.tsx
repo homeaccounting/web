@@ -1907,9 +1907,21 @@ describe('TransactionsPane', () => {
       await user.type(screen.getByPlaceholderText(/description/i), 'Coffee');
       await user.click(screen.getByRole('button', { name: /clear/i }));
       await waitFor(() =>
-        expect(screen.getByTestId('search').textContent).toContain('period=last-month'),
+        expect(screen.getByTestId('search').textContent).toContain('period=this-month'),
       );
       expect(screen.getByPlaceholderText(/description/i)).toHaveValue('');
     });
+  });
+
+  it('renders the Quick add composer for an open account', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    expect(await screen.findByLabelText('Quick add transaction')).toBeInTheDocument();
+  });
+
+  it('does not render the Quick add composer with no account selected', () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    renderWithProviders(ui(), { initialPath: '/' });
+    expect(screen.queryByLabelText('Quick add transaction')).not.toBeInTheDocument();
   });
 });

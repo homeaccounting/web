@@ -384,4 +384,7 @@ export const handlers = [
     HttpResponse.json(incomeVsExpenseFixture),
   ),
   http.get(`${apiBase}/api/reports/net-worth`, () => HttpResponse.json(netWorthFixture)),
+  http.post(`${apiBase}/api/prompt`, () =>
+    HttpResponse.json({ kind: 'transactions', succeeded: [transactionFixture], failed: [] }),
+  ),
 ];

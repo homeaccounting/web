@@ -68,6 +68,7 @@ import { allocationCategoryIds, allocationComments } from './allocations';
 import { TransactionPagination, usePersistedPageSize } from './TransactionPagination';
 import { AccountHeader } from './AccountHeader';
 import { ControlBar } from './ControlBar';
+import { QuickAddPrompt } from './QuickAddPrompt';
 import { EditTransactionDialog } from './EditTransactionDialog';
 import { CancelTransactionDialog } from './CancelTransactionDialog';
 import { CopyTransactionDialog } from './CopyTransactionDialog';
@@ -195,20 +196,21 @@ const EMPTY_FILTERS: TransactionFilters = {
   showCancelledFailed: false,
 };
 
-// Date-range presets offered in the toolbar. The default window is the previous
-// whole calendar month ('last-month'); 'custom' is appended by PeriodSelector.
+// Date-range presets offered in the toolbar. The default window is the current
+// calendar month ('this-month') so a just-recorded (today-dated) transaction is
+// visible without changing the range; 'custom' is appended by PeriodSelector.
 const TX_PRESETS = ['this-month', 'last-month', 'this-year', 'last-year'] as const;
 
 export function TransactionsPane() {
   const { id } = useParams<{ id?: string }>();
 
   // The date range is derived from the URL (?period / ?from / ?to), falling back
-  // to the persisted "last view" and finally the default 'last-month' preset.
+  // to the persisted "last view" and finally the default 'this-month' preset.
   const [searchParams, setSearchParams] = useSearchParams();
   const lastView = useMemo(() => readLastView(), []);
   const { periodValue, dayRange } = parsePeriodParams(searchParams, new Date(), {
     presets: TX_PRESETS,
-    defaultPreset: 'last-month',
+    defaultPreset: 'this-month',
     fallback: lastView
       ? { period: lastView.period, from: lastView.from, to: lastView.to }
       : undefined,
@@ -471,7 +473,7 @@ export function TransactionsPane() {
   };
   const clearFilters = () => {
     setFilters(EMPTY_FILTERS);
-    setSearchParams(periodParamsToSearch('last-month', presetRange('last-month', new Date())), {
+    setSearchParams(periodParamsToSearch('this-month', presetRange('this-month', new Date())), {
       replace: true,
     });
     setPageIndex(0);
@@ -892,7 +894,7 @@ export function TransactionsPane() {
   }
 
   return (
-    <>
+    <div className="flex min-h-full flex-col">
       <ControlBar selectedAccountId={id} selectedAccount={account} />
       {header}
       {showFilterBar && (
@@ -949,6 +951,7 @@ export function TransactionsPane() {
           }}
         />
       )}
+      {id && <QuickAddPrompt accountId={id} accountName={account?.name} />}
       {editing && (
         <EditTransactionDialog
           open
@@ -1024,6 +1027,6 @@ export function TransactionsPane() {
         onMerge={handleMerge}
         onClear={() => selection.clear()}
       />
-    </>
+    </div>
   );
 }
