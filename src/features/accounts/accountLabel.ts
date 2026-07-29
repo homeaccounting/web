@@ -76,3 +76,27 @@ export function accountLabel(account: AccountResponse, siblings: readonly Accoun
   const { name, qualifier } = accountLabelParts(account, siblings);
   return qualifier ? `${name} · ${qualifier}` : name;
 }
+
+// Locale-aware, case/accent-insensitive string ordering.
+const byText = (a: string, b: string) => a.localeCompare(b, undefined, { sensitivity: 'base' });
+
+// Order two accounts by their DISPLAY LABEL, deterministically: name, then the
+// identifying qualifier (bank/provider/lender/storage; empty for assets &
+// unqualified kinds, so those sort first among same-named accounts), then
+// currency, then id as a final stable tiebreaker so the order never wobbles.
+// Sibling-independent — reads the per-account qualifier, not the collision
+// state — so it produces a single global order for any account list.
+export function compareAccounts(a: AccountResponse, b: AccountResponse): number {
+  return (
+    byText(a.name, b.name) ||
+    byText(qualifierOf(a) ?? '', qualifierOf(b) ?? '') ||
+    byText(a.currency, b.currency) ||
+    byText(a.id, b.id)
+  );
+}
+
+// Non-mutating sort by display label. The single ordering used across every
+// account surface (pane groups, pickers, reports); see compareAccounts.
+export function sortAccounts(accounts: readonly AccountResponse[]): AccountResponse[] {
+  return [...accounts].sort(compareAccounts);
+}

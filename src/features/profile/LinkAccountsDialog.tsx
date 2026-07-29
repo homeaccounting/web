@@ -20,6 +20,7 @@ import {
 import { ApiError } from '@/api/client';
 import type { BankConnectionDTO, UUID } from '@/api/types';
 import { useAccounts } from '@/features/accounts/useAccounts';
+import { accountLabel } from '@/features/accounts/accountLabel';
 import { useExternalAccounts } from '@/features/configuration/useExternalAccounts';
 import { useSetAccountMap } from '@/features/configuration/useSetAccountMap';
 
@@ -175,7 +176,7 @@ export function LinkAccountsDialog({ open, onOpenChange, connection }: LinkAccou
                           // the row that already holds it.
                           disabled={chosen.has(local.id) && value !== local.id}
                         >
-                          {local.name}
+                          {accountLabel(local, sameCurrency)}
                         </SelectItem>
                       ))}
                     </SelectContent>

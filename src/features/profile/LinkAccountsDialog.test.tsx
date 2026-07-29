@@ -189,6 +189,51 @@ describe('LinkAccountsDialog', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 
+  it('disambiguates same-currency local accounts by their bank label', async () => {
+    const user = userEvent.setup();
+    // Two UAH accounts that share the name "Card" — indistinguishable without
+    // the bank qualifier the accountLabel helper appends.
+    server.use(
+      http.get(`${apiBase}/api/accounts`, () => {
+        const uahAccounts: AccountResponse[] = [
+          {
+            id: 'a1',
+            name: 'Card',
+            balance: 100,
+            currency: 'UAH',
+            overdraftLimit: null,
+            subtype: { type: 'bankAccount', bankName: 'Monobank' },
+            status: 'Opened',
+            role: 'owner',
+            version: 1,
+          },
+          {
+            id: 'a3',
+            name: 'Card',
+            balance: 5,
+            currency: 'UAH',
+            overdraftLimit: null,
+            subtype: { type: 'bankAccount', bankName: 'PrivatBank' },
+            status: 'Opened',
+            role: 'owner',
+            version: 1,
+          },
+        ];
+        return HttpResponse.json({ accounts: uahAccounts, totalCount: uahAccounts.length });
+      }),
+    );
+    renderWithProviders(<Wrapper conn={connection} />, { initialPath: '/' });
+    const uahSelect = await screen.findByRole('combobox', {
+      name: /UA213223130000026007233566001/,
+    });
+    await user.click(uahSelect);
+    const listbox = await screen.findByRole('listbox');
+    expect(within(listbox).getByRole('option', { name: 'Card · Monobank' })).toBeInTheDocument();
+    expect(within(listbox).getByRole('option', { name: 'Card · PrivatBank' })).toBeInTheDocument();
+    // The bare, ambiguous name must no longer appear on its own.
+    expect(within(listbox).queryByRole('option', { name: 'Card' })).not.toBeInTheDocument();
+  });
+
   it('shows a rate-limit retry affordance on a 429 fetch', async () => {
     const user = userEvent.setup();
     let attempt = 0;

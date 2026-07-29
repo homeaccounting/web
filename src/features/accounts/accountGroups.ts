@@ -65,7 +65,8 @@ function subgroupValue(account: AccountResponse, field: string): string | null {
 
 // Partition `accounts` (all one kind) by their secondary value into nested
 // groups: named buckets sorted alphabetically, the fallback bucket last.
-// Accounts keep their incoming (backend) order within each bucket.
+// Accounts keep their incoming order within each bucket — the source
+// (useAccounts) already sorts by display label, so buckets come out ordered.
 function buildSubgroups(
   kind: AccountSubtypeType,
   accounts: AccountResponse[],

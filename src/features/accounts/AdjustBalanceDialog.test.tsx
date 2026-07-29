@@ -231,7 +231,9 @@ describe('AdjustBalanceDialog', () => {
   it('defaults to the first account when no account is highlighted', async () => {
     seedAccounts(accounts);
     renderWithProviders(ui(undefined), { queryClient: makeQueryClient() });
-    expect(await screen.findByLabelText(/account/i)).toHaveTextContent('Savings');
+    // useAccounts sorts by display label, so "first" is "Euro Wallet" (E < S),
+    // not the fixture's backend order.
+    expect(await screen.findByLabelText(/account/i)).toHaveTextContent('Euro Wallet');
   });
 
   it('switching the account updates the current balance, currency, and PUT target', async () => {
