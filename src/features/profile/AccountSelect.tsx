@@ -6,6 +6,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { accountLabel } from '@/features/accounts/accountLabel';
 
 export const NONE_VALUE = '__none__';
 
@@ -37,7 +38,7 @@ export function AccountSelect({
         {includeNone && <SelectItem value={NONE_VALUE}>— none —</SelectItem>}
         {accounts.map((a) => (
           <SelectItem key={a.id} value={a.id}>
-            {a.name}
+            {accountLabel(a, accounts)}
           </SelectItem>
         ))}
       </SelectContent>

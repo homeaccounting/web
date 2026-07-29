@@ -176,6 +176,31 @@ describe('IncomeExpenseForm', () => {
     await waitFor(() => expect(screen.getByTestId('currency-badge')).toHaveTextContent('EUR'));
   });
 
+  it('qualifies same-named accounts with their bank name in the account picker', async () => {
+    const user = userEvent.setup();
+    const sameName: AccountResponse[] = [
+      { ...accounts[0]!, id: A1, name: 'visa', subtype: { type: 'bankAccount', bankName: 'Monobank' } },
+      { ...accounts[1]!, id: A2, name: 'visa', subtype: { type: 'bankAccount', bankName: 'PrivatBank' } },
+    ];
+    renderWithProviders(
+      <IncomeExpenseForm
+        kind="expense"
+        mode="create"
+        accounts={sameName}
+        categories={categories}
+        contacts={contacts}
+        labels={labels}
+        defaultValues={expenseDefaults}
+        isSubmitting={false}
+        onSubmit={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    await user.click(screen.getByLabelText(/account/i));
+    expect(await screen.findByRole('option', { name: /visa · Monobank/ })).toBeInTheDocument();
+    expect(await screen.findByRole('option', { name: /visa · PrivatBank/ })).toBeInTheDocument();
+  });
+
   it('calls onSubmit with the expense slice in the expenses array', async () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined);
     const user = userEvent.setup();

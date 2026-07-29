@@ -20,6 +20,7 @@ import { toast } from '@/lib/toast';
 import type { AccountResponse } from '@/api/types';
 import { ApiError } from '@/api/client';
 import { buildAccountGroups } from './accountGroups';
+import { accountLabelParts } from './accountLabel';
 import { useAccounts } from './useAccounts';
 import { useAccountById } from './useAccountById';
 import { CreateAccountDialog } from './CreateAccountDialog';
@@ -41,6 +42,31 @@ import { canManage, canModify, ROLE_LABELS } from './roles';
 // call site below — the runtime guard still ensures 'owner' never reaches it.
 function SharedRoleBadge({ role }: { role: AccountRole }) {
   return <Badge variant="status">{ROLE_LABELS[role]}</Badge>;
+}
+
+// Collapse toggle for a (sub)group header. Shared by the top-level subtype
+// groups and the nested per-bank sub-groups so both read/behave identically;
+// the pane indents sub-groups via a wrapper rather than styling here.
+function GroupHeader({
+  label,
+  collapsed,
+  onToggle,
+}: {
+  label: string;
+  collapsed: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-expanded={!collapsed}
+      className="flex w-full items-center gap-1 rounded-md px-2 pb-0.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+    >
+      {collapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+      {label}
+    </button>
+  );
 }
 
 export function AccountsPane() {
@@ -88,8 +114,23 @@ export function AccountsPane() {
   // below and stay independent of role.
   const openGroups = buildAccountGroups(openAccounts);
 
-  const renderAccountRow = (a: AccountResponse) => {
+  // `qualify` turns on flat-context disambiguation: each row shows its bank
+  // name (currency on residual collision) so a user can identify the right
+  // account without a grouping header. Off inside a bank sub-group, where the
+  // sub-header already carries the bank name.
+  const renderAccountList = (accounts: AccountResponse[], qualify = false) => (
+    <ul className="space-y-0.5">
+      {accounts.map((a) => (
+        <li key={a.id}>{renderAccountRow(a, qualify ? accounts : undefined)}</li>
+      ))}
+    </ul>
+  );
+
+  const renderAccountRow = (a: AccountResponse, siblings?: readonly AccountResponse[]) => {
     const isClosed = a.status === 'Closed';
+    const { qualifier } = siblings
+      ? accountLabelParts(a, siblings)
+      : { qualifier: null as string | null };
     return (
       <AccountContextMenu
         account={a}
@@ -113,6 +154,9 @@ export function AccountsPane() {
         >
           <span className="flex min-w-0 items-baseline gap-1.5">
             <span className="truncate">{a.name}</span>
+            {qualifier && (
+              <span className="shrink-0 text-xs text-muted-foreground">{qualifier}</span>
+            )}
             {!canManage(a.role) && <SharedRoleBadge role={a.role} />}
           </span>
           <span className="tabular-nums">{formatAccountBalance(a)}</span>
@@ -238,26 +282,33 @@ export function AccountsPane() {
             const collapsed = collapsedGroups.has(group.key);
             return (
               <div key={group.key} className="mb-2 last:mb-0">
-                <button
-                  type="button"
-                  onClick={() => toggleGroup(group.key)}
-                  aria-expanded={!collapsed}
-                  className="flex w-full items-center gap-1 rounded-md px-2 pb-0.5 text-xs font-medium text-muted-foreground hover:text-foreground"
-                >
-                  {collapsed ? (
-                    <ChevronRight className="h-3 w-3" />
+                <GroupHeader
+                  label={group.label}
+                  collapsed={collapsed}
+                  onToggle={() => toggleGroup(group.key)}
+                />
+                {!collapsed &&
+                  (group.subgroups ? (
+                    // Nested per-key sub-groups (e.g. bank accounts by bank name).
+                    // Each toggles independently via its own composite key.
+                    <div className="space-y-1 pl-3">
+                      {group.subgroups.map((sub) => {
+                        const subCollapsed = collapsedGroups.has(sub.key);
+                        return (
+                          <div key={sub.key}>
+                            <GroupHeader
+                              label={sub.label}
+                              collapsed={subCollapsed}
+                              onToggle={() => toggleGroup(sub.key)}
+                            />
+                            {!subCollapsed && renderAccountList(sub.accounts)}
+                          </div>
+                        );
+                      })}
+                    </div>
                   ) : (
-                    <ChevronDown className="h-3 w-3" />
-                  )}
-                  {group.label}
-                </button>
-                {!collapsed && (
-                  <ul className="space-y-0.5">
-                    {group.accounts.map((a) => (
-                      <li key={a.id}>{renderAccountRow(a)}</li>
-                    ))}
-                  </ul>
-                )}
+                    renderAccountList(group.accounts, true)
+                  ))}
               </div>
             );
           })}
@@ -274,7 +325,7 @@ export function AccountsPane() {
               {showClosed && (
                 <ul className="mt-1 space-y-0.5 border-t pt-2">
                   {closedAccounts.map((a) => (
-                    <li key={a.id}>{renderAccountRow(a)}</li>
+                    <li key={a.id}>{renderAccountRow(a, closedAccounts)}</li>
                   ))}
                 </ul>
               )}

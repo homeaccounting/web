@@ -18,6 +18,7 @@ import { LabelMultiSelect } from './LabelMultiSelect';
 import { DatePicker } from '@/components/DatePicker';
 import { RequiredMarker } from '@/components/RequiredMarker';
 import { TRANSACTION_KIND_LABELS } from './labels';
+import { accountLabelParts } from '@/features/accounts/accountLabel';
 
 export interface TransferFormApi {
   setFieldError: (field: string, message: string) => void;
@@ -114,11 +115,18 @@ export function TransferForm({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {accounts.map((a) => (
-                          <SelectItem key={a.id} value={a.id}>
-                            {a.name} ({a.currency})
-                          </SelectItem>
-                        ))}
+                        {accounts.map((a) => {
+                          // Currency is already shown in parentheses, so the
+                          // qualifier carries only the bank name.
+                          const { qualifier } = accountLabelParts(a, accounts, {
+                            currencyTiebreaker: false,
+                          });
+                          return (
+                            <SelectItem key={a.id} value={a.id}>
+                              {qualifier ? `${a.name} · ${qualifier}` : a.name} ({a.currency})
+                            </SelectItem>
+                          );
+                        })}
                       </SelectContent>
                     </Select>
                   </FormControl>
@@ -141,11 +149,18 @@ export function TransferForm({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {accounts.map((a) => (
-                          <SelectItem key={a.id} value={a.id}>
-                            {a.name} ({a.currency})
-                          </SelectItem>
-                        ))}
+                        {accounts.map((a) => {
+                          // Currency is already shown in parentheses, so the
+                          // qualifier carries only the bank name.
+                          const { qualifier } = accountLabelParts(a, accounts, {
+                            currencyTiebreaker: false,
+                          });
+                          return (
+                            <SelectItem key={a.id} value={a.id}>
+                              {qualifier ? `${a.name} · ${qualifier}` : a.name} ({a.currency})
+                            </SelectItem>
+                          );
+                        })}
                       </SelectContent>
                     </Select>
                   </FormControl>

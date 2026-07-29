@@ -115,7 +115,9 @@ describe('BankConnectionDialog', () => {
 
     const accountSelect = await screen.findByRole('combobox', { name: /import into account/i });
     await user.click(accountSelect);
-    await user.click(await screen.findByRole('option', { name: accountFixture.name }));
+    // AccountSelect now qualifies rows with the bank name (e.g. "Checking · ACME"),
+    // so match the account by substring rather than exact label.
+    await user.click(await screen.findByRole('option', { name: new RegExp(accountFixture.name) }));
 
     await user.click(screen.getByRole('button', { name: /^ok$/i }));
 
@@ -158,7 +160,9 @@ describe('BankConnectionDialog', () => {
 
     const accountSelect = await screen.findByRole('combobox', { name: /import into account/i });
     await user.click(accountSelect);
-    await user.click(await screen.findByRole('option', { name: accountFixture.name }));
+    // AccountSelect now qualifies rows with the bank name (e.g. "Checking · ACME"),
+    // so match the account by substring rather than exact label.
+    await user.click(await screen.findByRole('option', { name: new RegExp(accountFixture.name) }));
 
     // First submit: add() succeeds, setAccountMap() returns 500.
     await user.click(screen.getByRole('button', { name: /^ok$/i }));

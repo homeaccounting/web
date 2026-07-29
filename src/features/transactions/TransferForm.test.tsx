@@ -58,6 +58,28 @@ const defaults = {
 };
 
 describe('TransferForm', () => {
+  it('qualifies same-named accounts with their bank name in the source picker', async () => {
+    const user = userEvent.setup();
+    const sameName: AccountResponse[] = [
+      { ...accounts[0]!, id: A1, name: 'visa', subtype: { type: 'bankAccount', bankName: 'Monobank' } },
+      { ...accounts[2]!, id: A3, name: 'visa', subtype: { type: 'bankAccount', bankName: 'PrivatBank' } },
+    ];
+    renderWithProviders(
+      <TransferForm
+        mode="create"
+        accounts={sameName}
+        labels={labels}
+        defaultValues={defaults}
+        isSubmitting={false}
+        onSubmit={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    await user.click(screen.getByLabelText(/source account/i));
+    expect(await screen.findByRole('option', { name: /visa · Monobank/ })).toBeInTheDocument();
+    expect(await screen.findByRole('option', { name: /visa · PrivatBank/ })).toBeInTheDocument();
+  });
+
   it('hides exchangeRate when source/target share a currency', () => {
     renderWithProviders(
       <TransferForm

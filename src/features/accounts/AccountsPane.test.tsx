@@ -377,4 +377,110 @@ describe('AccountsPane', () => {
       expect(close).not.toBeDisabled();
     });
   });
+
+  function serveManyBankAccounts() {
+    const mk = (id: string, bankName: string) => ({
+      ...accountFixture,
+      id,
+      name: id,
+      subtype: { type: 'bankAccount', bankName },
+    });
+    const accounts = [
+      mk('Al1', 'Alpha'),
+      mk('Be1', 'Beta'),
+      mk('Al2', 'Alpha'),
+      mk('Be2', 'Beta'),
+      mk('Al3', 'Alpha'),
+      mk('Be3', 'Beta'),
+    ];
+    server.use(
+      http.get(`${apiBase}/api/accounts`, () =>
+        HttpResponse.json({ accounts, totalCount: accounts.length }),
+      ),
+    );
+  }
+
+  it('sub-groups a large bank-account section under per-bank sub-headers', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    serveManyBankAccounts();
+    renderWithProviders(ui(), { initialPath: '/' });
+    await screen.findByText('Al1');
+    expect(screen.getByRole('button', { name: /^bank account$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^alpha$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^beta$/i })).toBeInTheDocument();
+  });
+
+  it('collapses each bank sub-group independently', async () => {
+    const user = userEvent.setup();
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    serveManyBankAccounts();
+    renderWithProviders(ui(), { initialPath: '/' });
+    await screen.findByText('Al1');
+    await user.click(screen.getByRole('button', { name: /^beta$/i }));
+    // Beta's rows hide; Alpha's stay visible.
+    expect(screen.queryByText('Be1')).not.toBeInTheDocument();
+    expect(screen.getByText('Al1')).toBeInTheDocument();
+  });
+
+  it('collapsing the parent Bank account group hides all sub-groups', async () => {
+    const user = userEvent.setup();
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    serveManyBankAccounts();
+    renderWithProviders(ui(), { initialPath: '/' });
+    await screen.findByText('Al1');
+    await user.click(screen.getByRole('button', { name: /^bank account$/i }));
+    expect(screen.queryByText('Al1')).not.toBeInTheDocument();
+    expect(screen.queryByText('Be1')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^alpha$/i })).not.toBeInTheDocument();
+  });
+
+  it('qualifies rows with their bank name in a flat (ungrouped) Bank account section', async () => {
+    const mk = (id: string, bankName: string) => ({
+      ...accountFixture,
+      id,
+      name: 'visa',
+      subtype: { type: 'bankAccount', bankName },
+    });
+    const accounts = [mk('v1', 'Monobank'), mk('v2', 'PrivatBank')];
+    server.use(
+      http.get(`${apiBase}/api/accounts`, () =>
+        HttpResponse.json({ accounts, totalCount: accounts.length }),
+      ),
+    );
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    renderWithProviders(ui(), { initialPath: '/' });
+    await screen.findAllByText('visa');
+    // Flat section: no per-bank sub-header, so the bank name shown is the row qualifier.
+    expect(screen.getByText('Monobank')).toBeInTheDocument();
+    expect(screen.getByText('PrivatBank')).toBeInTheDocument();
+    // There is no "Monobank" collapse-toggle header in a flat section.
+    expect(screen.queryByRole('button', { name: /^monobank$/i })).not.toBeInTheDocument();
+  });
+
+  it('does not repeat the bank name on rows inside a bank sub-group (header carries it)', async () => {
+    const mk = (id: string, name: string, bankName: string) => ({
+      ...accountFixture,
+      id,
+      name,
+      subtype: { type: 'bankAccount', bankName },
+    });
+    const accounts = [
+      mk('1', 'Black', 'Monobank'),
+      mk('2', 'White', 'Monobank'),
+      mk('3', 'Gold', 'Monobank'),
+      mk('4', 'Salary', 'PrivatBank'),
+      mk('5', 'Savings', 'PrivatBank'),
+      mk('6', 'Card', 'PrivatBank'),
+    ];
+    server.use(
+      http.get(`${apiBase}/api/accounts`, () =>
+        HttpResponse.json({ accounts, totalCount: accounts.length }),
+      ),
+    );
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    renderWithProviders(ui(), { initialPath: '/' });
+    await screen.findByText('Black');
+    // "Monobank" appears once — as the sub-group header — not repeated per row.
+    expect(screen.getAllByText('Monobank')).toHaveLength(1);
+  });
 });
