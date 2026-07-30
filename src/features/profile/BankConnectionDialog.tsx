@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -22,26 +21,16 @@ import {
   SelectItem,
 } from '@/components/ui/select';
 import { ApiError } from '@/api/client';
-import type { BankConnectionDTO, UUID } from '@/api/types';
+import type { BankConnectionDTO } from '@/api/types';
 import { useAddConnection } from '@/features/configuration/useAddConnection';
 import { useUpdateConnection } from '@/features/configuration/useUpdateConnection';
 import { useChangeToken } from '@/features/configuration/useChangeToken';
-import { useSetAccountMap } from '@/features/configuration/useSetAccountMap';
 import { useProviders } from '@/features/banking/useProviders';
-import { useAccounts } from '@/features/accounts/useAccounts';
 import { RequiredMarker } from '@/components/RequiredMarker';
-import { AccountSelect } from './AccountSelect';
 import {
   makeBankConnectionFormSchema,
   type BankConnectionFormValues,
 } from './bankConnectionSchema';
-
-// Single-account routing (tracker#38): a file-only connection maps every
-// imported statement row to one local account, so the accountMap needs
-// exactly one entry. The backend's single-account routing ignores the key but
-// its validation rejects an empty one, so this is a stable non-empty
-// placeholder rather than a real external account id.
-const FILE_IMPORT_ACCOUNT_MAP_KEY = 'statement';
 
 export interface BankConnectionDialogProps {
   open: boolean;
@@ -64,25 +53,9 @@ export function BankConnectionDialog({
   // submittable, rather than falling back to a hardcoded provider.
   const providersUnavailable = !isEdit && providerList.length === 0;
 
-  const accountsQuery = useAccounts();
-
   const add = useAddConnection();
   const update = useUpdateConnection();
   const changeToken = useChangeToken();
-  const setAccountMap = useSetAccountMap();
-
-  // Data-integrity guard for the create + file-only path: `add` mints a fresh
-  // connection with no backend dedup, so if the follow-up `setAccountMap`
-  // fails, resubmitting must NOT call `add` again — it would create a SECOND
-  // connection. Persisting the id here lets a retry skip straight to
-  // `setAccountMap` on the same connection. Reset when a fresh create session
-  // starts (dialog reopened) so a brand-new session never reuses a stale id.
-  const [createdConnectionId, setCreatedConnectionId] = useState<UUID | undefined>(undefined);
-  useEffect(() => {
-    if (open) {
-      setCreatedConnectionId(undefined);
-    }
-  }, [open]);
 
   const form = useForm<BankConnectionFormValues>({
     resolver: zodResolver(makeBankConnectionFormSchema(providerList, isEdit)),
@@ -92,9 +65,8 @@ export function BankConnectionDialog({
           provider: connection.provider,
           token: '',
           enabled: connection.enabled,
-          accountId: Object.values(connection.accountMap)[0] ?? '',
         }
-      : { name: '', provider: '', token: '', enabled: true, accountId: '' },
+      : { name: '', provider: '', token: '', enabled: true },
   });
 
   // Selected provider's transport capabilities drive which fields the dialog
@@ -103,13 +75,8 @@ export function BankConnectionDialog({
   const selectedProviderId = form.watch('provider');
   const selectedProvider = providerList.find((p) => p.id === selectedProviderId);
   const supportsPull = selectedProvider?.supportsPull ?? true;
-  // A provider advertising BOTH pull and file is treated as pull-only in this
-  // UI today (token required, no inline account picker) — a conscious
-  // current-scope choice.
-  const fileOnly = selectedProvider != null && selectedProvider.supportsFile && !supportsPull;
 
-  const isSubmitting =
-    add.isPending || update.isPending || changeToken.isPending || setAccountMap.isPending;
+  const isSubmitting = add.isPending || update.isPending || changeToken.isPending;
 
   const applyFieldErrors = (e: unknown): boolean => {
     if (e instanceof ApiError && e.fieldErrors) {
@@ -125,69 +92,34 @@ export function BankConnectionDialog({
 
   const submit = form.handleSubmit(async (values) => {
     const token = values.token?.trim() ?? '';
-    const accountId = values.accountId ?? '';
     try {
       if (!isEdit) {
-        if (fileOnly) {
-          // Reuse the connection from a prior failed attempt instead of
-          // calling `add` again — the backend has no dedup, so a resubmit
-          // that re-ran `add` would mint a second connection every time
-          // `setAccountMap` below keeps failing.
-          let id = createdConnectionId;
-          if (id === undefined) {
-            const created = await add.mutateAsync({
-              provider: values.provider,
-              name: values.name,
-              token: undefined,
-              enabled: values.enabled,
-            });
-            id = created.id;
-            // Persist BEFORE setAccountMap so a failure there still leaves
-            // this retry-safe: the connection exists and is remembered even
-            // though the overall submit is about to throw.
-            setCreatedConnectionId(id);
-          }
-          // Surfaced via the mutation-error Alert below if it fails — the
-          // connection now exists but is left unmapped, which is reported
-          // rather than silently swallowed.
-          await setAccountMap.mutateAsync({
-            id,
-            body: { accountMap: { [FILE_IMPORT_ACCOUNT_MAP_KEY]: accountId } },
-          });
-        } else {
-          await add.mutateAsync({
-            provider: values.provider,
-            name: values.name,
-            token,
-            enabled: values.enabled,
-          });
-        }
+        // File connections are created unmapped: their accountMap is built
+        // afterwards via "Link accounts". File-only providers show no token
+        // field, so `token` is '' for them — omit it so the request carries no
+        // credential (the field is optional server-side).
+        await add.mutateAsync({
+          provider: values.provider,
+          name: values.name,
+          token: token === '' ? undefined : token,
+          enabled: values.enabled,
+        });
       } else {
         await update.mutateAsync({
           id: connection.id,
           body: { name: values.name, enabled: values.enabled },
         });
-        if (!fileOnly && token !== '') {
+        if (token !== '') {
           await changeToken.mutateAsync({ id: connection.id, body: { token } });
         }
-        if (fileOnly && accountId !== '') {
-          await setAccountMap.mutateAsync({
-            id: connection.id,
-            body: { accountMap: { [FILE_IMPORT_ACCOUNT_MAP_KEY]: accountId } },
-          });
-        }
       }
-      // Full success: clear the retry guard so a later fresh create session
-      // (this dialog instance is reused across "Add connection" clicks)
-      // doesn't mistakenly reuse this connection's id.
-      setCreatedConnectionId(undefined);
       onOpenChange(false);
     } catch (e) {
       applyFieldErrors(e);
     }
   });
 
-  const mutationError = add.error ?? update.error ?? changeToken.error ?? setAccountMap.error;
+  const mutationError = add.error ?? update.error ?? changeToken.error;
   const showBanner =
     mutationError != null && !(mutationError instanceof ApiError && mutationError.fieldErrors);
   const bannerMessage =
@@ -290,29 +222,6 @@ export function BankConnectionDialog({
                         value={field.value ?? ''}
                         onChange={field.onChange}
                         placeholder={isEdit ? '•••• kept' : undefined}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
-
-            {fileOnly && (
-              <FormField
-                control={form.control}
-                name="accountId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Import into account</FormLabel>
-                    <FormControl>
-                      <AccountSelect
-                        label="Import into account"
-                        value={field.value ?? ''}
-                        accounts={accountsQuery.data ?? []}
-                        includeNone={false}
-                        placeholder="Select an account…"
-                        onChange={field.onChange}
                       />
                     </FormControl>
                     <FormMessage />

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -9,6 +9,8 @@ import {
 } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Select,
@@ -18,10 +20,13 @@ import {
   SelectItem,
 } from '@/components/ui/select';
 import { ApiError } from '@/api/client';
-import type { BankConnectionDTO, UUID } from '@/api/types';
+import type { BankConnectionDTO, ExternalAccountDTO, UUID } from '@/api/types';
 import { useAccounts } from '@/features/accounts/useAccounts';
 import { accountLabel } from '@/features/accounts/accountLabel';
+import { useProviders } from '@/features/banking/useProviders';
+import { useConfiguration } from '@/features/configuration/useConfiguration';
 import { useExternalAccounts } from '@/features/configuration/useExternalAccounts';
+import { useExternalAccountsFromFile } from '@/features/configuration/useExternalAccountsFromFile';
 import { useSetAccountMap } from '@/features/configuration/useSetAccountMap';
 
 export interface LinkAccountsDialogProps {
@@ -40,39 +45,91 @@ function isRateLimited(error: unknown): boolean {
   );
 }
 
+// The external-account rows can come from two transports. Both resolve to the
+// same shape so the row-rendering / selection / Save path below is identical.
+interface RowSource {
+  rows: ExternalAccountDTO[] | undefined;
+  loading: boolean;
+  error: unknown;
+  // Retry the live pull; undefined for file providers (they re-pick a file).
+  retry?: () => void;
+  // Hand a picked statement to the file-discovery endpoint; undefined for pull.
+  onPickFiles?: (files: File[]) => void;
+}
+
 export function LinkAccountsDialog({ open, onOpenChange, connection }: LinkAccountsDialogProps) {
-  const external = useExternalAccounts(connection.id);
+  const { data: providers } = useProviders();
+  const provider = providers?.find((p) => p.id === connection.provider);
+  const supportsPull = provider?.supportsPull ?? false;
+  const supportsFile = provider?.supportsFile ?? false;
+  // A connection is treated as file-based only when it cannot pull; a
+  // provider that supports both keeps the live pull transport here.
+  const isFile = !supportsPull && supportsFile;
+
   const accounts = useAccounts();
   const setAccountMap = useSetAccountMap();
+  const configuration = useConfiguration();
+
+  // Local accounts already claimed by a DIFFERENT connection must not be
+  // offered here — a local account may back at most one bank connection. Built
+  // once from every OTHER connection's accountMap values; accounts unlinked or
+  // mapped by THIS connection stay eligible.
+  const linkedByOtherConnections = useMemo(() => {
+    const claimed = new Set<string>();
+    for (const c of configuration.data?.banking.connections ?? []) {
+      if (c.id === connection.id) continue;
+      for (const accountId of Object.values(c.accountMap)) claimed.add(accountId);
+    }
+    return claimed;
+  }, [configuration.data, connection.id]);
+
+  // Both transports are wired unconditionally (rules of hooks); only the one
+  // matching the provider is exercised.
+  const pull = useExternalAccounts(connection.id);
+  const fromFile = useExternalAccountsFromFile();
+
+  // Fetch the live listing whenever the dialog opens (lazy query) — pull only.
+  const { refetch: pullRefetch } = pull;
+  useEffect(() => {
+    if (open && supportsPull) {
+      void pullRefetch();
+    }
+  }, [open, supportsPull, pullRefetch]);
+
+  const source: RowSource = isFile
+    ? {
+        rows: fromFile.data,
+        loading: fromFile.isPending,
+        error: fromFile.error,
+        onPickFiles: (files) =>
+          fromFile.mutate({ connId: connection.id, format: 'csv', files }),
+      }
+    : {
+        rows: pull.data,
+        loading: pull.isFetching,
+        error: pull.error,
+        retry: () => void pull.refetch(),
+      };
+
+  const { rows, loading, error } = source;
 
   // externalId -> local accountId (or NOT_IMPORTED). Seeded from the
   // connection's current map once the external accounts arrive.
   const [selection, setSelection] = useState<Record<string, string>>({});
 
-  // Fetch the live monobank listing whenever the dialog opens (lazy query).
-  const { refetch } = external;
+  // Seed the row selection from the current accountMap once data loads. A file
+  // connection opens with an empty map, so this is a no-op until upload.
   useEffect(() => {
-    if (open) {
-      void refetch();
-    }
-  }, [open, refetch]);
-
-  const externalAccounts = external.data;
-
-  // Seed the row selection from the current accountMap once data loads.
-  useEffect(() => {
-    if (!externalAccounts) return;
+    if (!rows) return;
     setSelection(() => {
       const next: Record<string, string> = {};
-      for (const acc of externalAccounts) {
+      for (const acc of rows) {
         const mapped = connection.accountMap[acc.externalId];
         next[acc.externalId] = mapped ?? NOT_IMPORTED;
       }
       return next;
     });
-  }, [externalAccounts, connection.accountMap]);
-
-  const chosen = new Set(Object.values(selection).filter((v) => v !== NOT_IMPORTED));
+  }, [rows, connection.accountMap]);
 
   const handleSave = async () => {
     const accountMap: Record<string, UUID> = {};
@@ -103,36 +160,52 @@ export function LinkAccountsDialog({ open, onOpenChange, connection }: LinkAccou
           </DialogDescription>
         </DialogHeader>
 
-        {external.isFetching && (
+        {isFile && (
+          <div className="space-y-1">
+            <Label htmlFor="statement-files">Statement files</Label>
+            <Input
+              id="statement-files"
+              type="file"
+              multiple
+              accept=".csv,text/csv"
+              onChange={(e) => {
+                const files = Array.from(e.target.files ?? []);
+                if (files.length > 0) source.onPickFiles?.(files);
+              }}
+            />
+            {!loading && !error && !rows && (
+              <p className="text-xs text-muted-foreground">
+                Upload your statement(s) to list accounts.
+              </p>
+            )}
+          </div>
+        )}
+
+        {loading && (
           <div className="space-y-3" aria-busy="true">
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-10 w-full" />
           </div>
         )}
 
-        {!external.isFetching && external.error && (
+        {!loading && error != null && (
           <Alert variant="destructive" role="alert">
             <AlertDescription className="space-y-3">
               <p>
-                {isRateLimited(external.error)
-                  ? 'monobank is rate-limited. Try again in a moment.'
+                {isRateLimited(error)
+                  ? `${provider?.displayName ?? 'The provider'} is rate-limited. Try again in a moment.`
                   : 'Couldn’t load external accounts. Please try again.'}
               </p>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  void external.refetch();
-                }}
-              >
-                Try again
-              </Button>
+              {source.retry && (
+                <Button type="button" variant="outline" size="sm" onClick={source.retry}>
+                  Try again
+                </Button>
+              )}
             </AlertDescription>
           </Alert>
         )}
 
-        {!external.isFetching && !external.error && externalAccounts && (
+        {!loading && !error && rows && (
           <div className="space-y-4">
             {saveError != null && (
               <Alert variant="destructive" role="alert">
@@ -140,15 +213,31 @@ export function LinkAccountsDialog({ open, onOpenChange, connection }: LinkAccou
               </Alert>
             )}
 
-            {externalAccounts.map((acc) => {
+            {rows.map((acc) => {
               const value = selection[acc.externalId] ?? NOT_IMPORTED;
               const label = acc.iban;
-              // The backend cannot post a transaction whose currency differs
-              // from its local account's currency, so a monobank account may
-              // only map to a same-currency local account.
+              // Offered local accounts must be relevant to this connection:
+              //  - same currency: the backend cannot post a transaction whose
+              //    currency differs from its local account's currency;
+              //  - a real bank account (not cash / asset / loan / eWallet);
+              //  - not already claimed by another connection.
               const sameCurrency = (accounts.data ?? []).filter(
-                (local) => local.currency.toUpperCase() === acc.currency.toUpperCase(),
+                (local) =>
+                  local.currency.toUpperCase() === acc.currency.toUpperCase() &&
+                  local.subtype?.type === 'bankAccount' &&
+                  !linkedByOtherConnections.has(local.id),
               );
+              // The row's current selection must stay selectable even when the
+              // filters above would exclude it (e.g. a legacy non-bank mapping),
+              // so re-opening the dialog never silently drops a valid mapping.
+              const selected =
+                value !== NOT_IMPORTED
+                  ? (accounts.data ?? []).find((local) => local.id === value)
+                  : undefined;
+              const options =
+                selected && !sameCurrency.some((local) => local.id === selected.id)
+                  ? [...sameCurrency, selected]
+                  : sameCurrency;
               return (
                 <div key={acc.externalId} className="space-y-1">
                   <div className="text-sm font-medium">{acc.iban}</div>
@@ -167,21 +256,18 @@ export function LinkAccountsDialog({ open, onOpenChange, connection }: LinkAccou
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value={NOT_IMPORTED}>— not imported —</SelectItem>
-                      {sameCurrency.map((local) => (
-                        <SelectItem
-                          key={local.id}
-                          value={local.id}
-                          // Prevent mapping the same local account to two
-                          // external accounts: disable it everywhere except
-                          // the row that already holds it.
-                          disabled={chosen.has(local.id) && value !== local.id}
-                        >
-                          {accountLabel(local, sameCurrency)}
+                      {/* The backend accountMap is many-to-one: sibling cards
+                          (e.g. two PrivatBank cards) legitimately share one
+                          local account, so a chosen account stays selectable in
+                          every same-currency row. */}
+                      {options.map((local) => (
+                        <SelectItem key={local.id} value={local.id}>
+                          {accountLabel(local, options)}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  {sameCurrency.length === 0 && (
+                  {options.length === 0 && (
                     <p className="text-xs text-muted-foreground">
                       No {acc.currency} account — create one to import this card.
                     </p>
@@ -201,12 +287,7 @@ export function LinkAccountsDialog({ open, onOpenChange, connection }: LinkAccou
             onClick={() => {
               void handleSave();
             }}
-            disabled={
-              external.isFetching ||
-              external.error != null ||
-              !externalAccounts ||
-              setAccountMap.isPending
-            }
+            disabled={loading || error != null || !rows || setAccountMap.isPending}
           >
             {setAccountMap.isPending ? 'Saving…' : 'OK'}
           </Button>

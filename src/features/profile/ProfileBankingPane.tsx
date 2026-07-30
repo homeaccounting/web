@@ -36,11 +36,14 @@ function ConnectionRow({ connection }: { connection: BankConnectionDTO }) {
   const [confirmRemove, setConfirmRemove] = useState(false);
   const mappedCount = Object.keys(connection.accountMap).length;
   const opError = update.error ?? remove.error;
-  // "Link accounts" calls GET .../external-accounts, which the backend
-  // rejects for file-only providers (no pull transport). Only offer it for
-  // connections whose provider supports pull; fail-closed like SyncNowButton
-  // and ImportStatementButton (hidden until providers resolve).
-  const supportsPull = providers?.find((p) => p.id === connection.provider)?.supportsPull ?? false;
+  // "Link accounts" maps external accounts to local ones. Pull providers list
+  // them live via GET .../external-accounts; file providers discover them from
+  // an uploaded statement inside the dialog. Offer it for either transport;
+  // fail-closed like SyncNowButton / ImportStatementButton (hidden until
+  // providers resolve).
+  const provider = providers?.find((p) => p.id === connection.provider);
+  const supportsPull = provider?.supportsPull ?? false;
+  const supportsFile = provider?.supportsFile ?? false;
 
   return (
     <li className="space-y-2 py-3">
@@ -58,7 +61,7 @@ function ConnectionRow({ connection }: { connection: BankConnectionDTO }) {
             }
             aria-label={`Enable ${connection.name}`}
           />
-          {supportsPull && (
+          {(supportsPull || supportsFile) && (
             <Button variant="outline" size="sm" onClick={() => setLinkOpen(true)}>
               Link accounts
             </Button>

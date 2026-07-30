@@ -12,6 +12,7 @@ import {
   authResponseFixture,
   configurationFixture,
   externalAccountsFixture,
+  externalAccountsFromFileFixture,
   incomeVsExpenseFixture,
   netWorthFixture,
   profileFixture,
@@ -349,25 +350,61 @@ export const handlers = [
   http.get(`${apiBase}/api/banking/connections/:id/external-accounts`, () =>
     HttpResponse.json(externalAccountsFixture),
   ),
+  // Statement-based account discovery (file providers). The client sends a
+  // multipart body (one or more `files` parts) with a `format` query param.
+  // Validate the request shape the real backend requires, then return the
+  // discovered accounts. Tests may override to assert the exact call.
+  http.post(
+    `${apiBase}/api/banking/connections/:id/external-accounts/from-file`,
+    async ({ request }) => {
+      const format = new URL(request.url).searchParams.get('format');
+      const form = await request.formData();
+      const files = form.getAll('files');
+      if (!format || files.length === 0) {
+        return HttpResponse.json(
+          {
+            code: 'INVALID_REQUEST',
+            message: 'from-file discovery requires a `format` and at least one file part',
+          },
+          { status: 400 },
+        );
+      }
+      return HttpResponse.json(externalAccountsFromFileFixture);
+    },
+  ),
   http.post(`${apiBase}/api/banking/connections/:id/import`, () =>
     HttpResponse.json({ accounts: [], unresolved: [] }),
   ),
-  // Statement file upload. Body is raw bytes (OctetStream), not JSON — don't
-  // attempt to parse `request.json()` here.
-  http.post(`${apiBase}/api/banking/connections/:id/import/file`, () =>
-    HttpResponse.json({
+  // Statement file upload — a multipart body carrying one or more `files` parts
+  // and a `format` query param. Validate that shape, then reflect the uploaded
+  // file count in the summary so multi-file imports are visibly distinct.
+  http.post(`${apiBase}/api/banking/connections/:id/import/file`, async ({ request }) => {
+    const format = new URL(request.url).searchParams.get('format');
+    const form = await request.formData();
+    const files = form.getAll('files');
+    if (!format || files.length === 0) {
+      return HttpResponse.json(
+        {
+          code: 'INVALID_REQUEST',
+          message: 'file import requires a `format` and at least one file part',
+        },
+        { status: 400 },
+      );
+    }
+    return HttpResponse.json({
       accounts: [
         {
           externalAccountId: 'ext-acc-1',
           localAccountId: accountFixture.id,
-          importedCount: 3,
+          // One imported transaction per uploaded statement file.
+          importedCount: files.length,
           skipped: [],
           failureCount: 0,
         },
       ],
       unresolved: [],
-    }),
-  ),
+    });
+  }),
   http.post(
     `${apiBase}/api/users/me/change-password`,
     () => new HttpResponse(null, { status: 204 }),

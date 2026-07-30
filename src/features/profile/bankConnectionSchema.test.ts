@@ -85,25 +85,14 @@ describe('makeBankConnectionFormSchema', () => {
     expect(result.success).toBe(true);
   });
 
-  it('create + file-only provider: token not required, but accountId is', () => {
+  it('create + file-only provider: neither token nor an account is required (created unmapped)', () => {
     const schema = makeBankConnectionFormSchema(providers, false);
-    const noAccount = schema.safeParse({
+    const result = schema.safeParse({
       name: 'My PrivatBank',
       provider: 'privatbank',
       enabled: true,
     });
-    expect(noAccount.success).toBe(false);
-    if (!noAccount.success) {
-      expect(noAccount.error.issues.some((i) => i.path[0] === 'accountId')).toBe(true);
-    }
-
-    const withAccount = schema.safeParse({
-      name: 'My PrivatBank',
-      provider: 'privatbank',
-      enabled: true,
-      accountId: 'a1',
-    });
-    expect(withAccount.success).toBe(true);
+    expect(result.success).toBe(true);
   });
 
   it('create + no provider selected: reports only the provider error, not a spurious token error', () => {
@@ -120,7 +109,7 @@ describe('makeBankConnectionFormSchema', () => {
     }
   });
 
-  it('edit mode never requires token or accountId', () => {
+  it('edit mode never requires a token', () => {
     const schema = makeBankConnectionFormSchema(providers, true);
     const result = schema.safeParse({
       name: 'My Monobank',

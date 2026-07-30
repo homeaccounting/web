@@ -7,20 +7,20 @@ import { useAuth } from '@/auth/useAuth';
 export interface ImportStatementInput {
   connId: UUID;
   format: string;
-  file: Blob;
+  files: File[];
 }
 
 export function useImportStatement() {
   const { tokenRef, signOut } = useAuth();
   const queryClient = useQueryClient();
   return useMutation<ImportResponse, Error, ImportStatementInput>({
-    mutationFn: ({ connId, format, file }) => {
+    mutationFn: ({ connId, format, files }) => {
       const client = new ApiClient({
         baseUrl,
         getToken: () => tokenRef.current,
         onUnauthorized: signOut,
       });
-      return bankingApi(client).importStatement(connId, format, file);
+      return bankingApi(client).importStatement(connId, format, files);
     },
     onSuccess: () => {
       // A file import changes both transactions and accounts, same as a pull import.

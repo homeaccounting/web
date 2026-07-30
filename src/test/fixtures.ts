@@ -173,6 +173,26 @@ export const externalAccountsFixture: ExternalAccountDTO[] = [
   },
 ];
 
+// Accounts discovered from an uploaded statement (file providers), returned by
+// POST /api/banking/connections/:id/external-accounts/from-file. Same shape as
+// the pull listing; distinct ids/ibans so tests can tell the two sources apart.
+export const externalAccountsFromFileFixture: ExternalAccountDTO[] = [
+  {
+    externalId: 'ext-file-1',
+    iban: 'UA903052992990004149123456789',
+    maskedPan: '516875******4321',
+    currency: 'UAH',
+    balance: 777700,
+  },
+  {
+    externalId: 'ext-file-2',
+    iban: 'UA903052992990004149987654321',
+    maskedPan: null,
+    currency: 'USD',
+    balance: 42000,
+  },
+];
+
 // `configurationFixture.bankingFeatureEnabled` stays `false` so existing
 // ProfilePage/profile tests keep their current behavior. Banking-specific tests
 // opt into a banking-enabled config via `server.use(...)` returning this variant

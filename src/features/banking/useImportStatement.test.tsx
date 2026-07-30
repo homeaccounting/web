@@ -43,8 +43,8 @@ describe('useImportStatement', () => {
       </QueryClientProvider>
     );
     const { result } = renderHook(() => useImportStatement(), { wrapper });
-    const file = new Blob(['raw bytes'], { type: 'text/csv' });
-    result.current.mutate({ connId: 'conn-1', format: 'csv', file });
+    const file = new File(['raw bytes'], 'statement.csv', { type: 'text/csv' });
+    result.current.mutate({ connId: 'conn-1', format: 'csv', files: [file] });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(method).toBe('POST');
     expect(url).toBe('http://localhost:8080/api/banking/connections/conn-1/import/file?format=csv');

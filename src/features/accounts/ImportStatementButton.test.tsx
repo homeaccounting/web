@@ -74,6 +74,34 @@ function makeCsvFile(name = 'statement.csv'): File {
   return new File(['date,amount\n2026-07-01,100'], name, { type: 'text/csv' });
 }
 
+// Capture every file part sent to the import endpoint across all POSTs so a
+// test can assert the whole batch arrived in a SINGLE request.
+function captureImportRequests() {
+  const capture = { calls: 0, lastFileNames: [] as string[], calledPath: '', format: '' };
+  server.use(
+    http.post(`${apiBase}/api/banking/connections/:id/import/file`, async ({ request, params }) => {
+      capture.calls += 1;
+      capture.calledPath = String(params.id);
+      capture.format = new URL(request.url).searchParams.get('format') ?? '';
+      const form = await request.formData();
+      capture.lastFileNames = form.getAll('files').map((f) => (f as File).name);
+      return HttpResponse.json({
+        accounts: [
+          {
+            externalAccountId: 'ext-acc-2',
+            localAccountId: accountFixture.id,
+            importedCount: 4,
+            skipped: [],
+            failureCount: 0,
+          },
+        ],
+        unresolved: [],
+      });
+    }),
+  );
+  return capture;
+}
+
 describe('import statement button', () => {
   it('is shown when the account has an enabled file-capable connection', async () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
@@ -184,6 +212,44 @@ describe('import statement button', () => {
     await waitFor(() =>
       expect(toast.success).toHaveBeenCalledWith('Imported 3 transactions · 2 rows need attention'),
     );
+  });
+
+  it('sends a single-file selection as one request with one file part', async () => {
+    const user = userEvent.setup();
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    useConfigHandler(configWith([privatbankConnection]));
+    useProvidersHandler();
+    const capture = captureImportRequests();
+
+    renderWithProviders(ui(), { initialPath: '/' });
+    await screen.findByRole('button', { name: /import statement/i });
+    const fileInput = screen.getByTestId('import-statement-file-input');
+    await user.upload(fileInput, makeCsvFile('one.csv'));
+
+    await waitFor(() => expect(toast.success).toHaveBeenCalled());
+    expect(capture.calls).toBe(1);
+    expect(capture.lastFileNames).toEqual(['one.csv']);
+    expect(capture.calledPath).toBe('conn-privatbank');
+    expect(capture.format).toBe('csv');
+  });
+
+  it('sends multiple selected files as one request carrying every file', async () => {
+    const user = userEvent.setup();
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    useConfigHandler(configWith([privatbankConnection]));
+    useProvidersHandler();
+    const capture = captureImportRequests();
+
+    renderWithProviders(ui(), { initialPath: '/' });
+    await screen.findByRole('button', { name: /import statement/i });
+    const fileInput = screen.getByTestId('import-statement-file-input');
+    await user.upload(fileInput, [makeCsvFile('jan.csv'), makeCsvFile('feb.csv')]);
+
+    await waitFor(() => expect(toast.success).toHaveBeenCalled());
+    expect(capture.calls).toBe(1);
+    expect(capture.lastFileNames).toEqual(['jan.csv', 'feb.csv']);
+    expect(capture.calledPath).toBe('conn-privatbank');
+    expect(capture.format).toBe('csv');
   });
 
   it('renders a destructive alert on an error response', async () => {

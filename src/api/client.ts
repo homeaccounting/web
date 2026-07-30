@@ -61,9 +61,21 @@ export class ApiClient {
     });
   }
 
+  /**
+   * POST a `FormData` (multipart/form-data) body, e.g. one or more file parts.
+   * The `Content-Type` header (with its multipart boundary) is deliberately left
+   * unset so the browser assembles it; see `request` below.
+   */
+  postForm<T>(path: string, form: FormData): Promise<T> {
+    return this.request<T>(path, { method: 'POST', body: form });
+  }
+
   private async request<T>(path: string, init: RequestInit): Promise<T> {
     const headers = new Headers(init.headers ?? {});
-    if (init.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
+    // Don't force JSON on a FormData body — the browser must set the multipart
+    // boundary itself. Only default the content-type for other (JSON) bodies.
+    if (init.body && !(init.body instanceof FormData) && !headers.has('Content-Type'))
+      headers.set('Content-Type', 'application/json');
     const token = this.opts.getToken();
     if (token) headers.set('Authorization', `Bearer ${token}`);
 

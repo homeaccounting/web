@@ -120,7 +120,10 @@ describe('ProfileBankingPane', () => {
     await waitFor(() => expect(screen.getByText('Monobank')).toBeInTheDocument());
   });
 
-  it('hides "Link accounts" for a file-only (privatbank) connection', async () => {
+  it('shows "Link accounts" for a file-only (privatbank) connection', async () => {
+    // privatbank is supportsPull:false / supportsFile:true in the default
+    // providers handler; the dialog discovers accounts from an uploaded
+    // statement, so the trigger is offered for file providers too.
     const privatbankConnection: BankConnectionDTO = {
       id: 'conn-privatbank',
       provider: 'privatbank',
@@ -143,8 +146,6 @@ describe('ProfileBankingPane', () => {
     );
     render();
     await screen.findByText('PrivatBank');
-    await waitFor(() =>
-      expect(screen.queryByRole('button', { name: /link accounts/i })).not.toBeInTheDocument(),
-    );
+    expect(await screen.findByRole('button', { name: /link accounts/i })).toBeInTheDocument();
   });
 });

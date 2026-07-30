@@ -53,7 +53,7 @@ describe('bankingApi', () => {
     expect(result).toEqual(response);
   });
 
-  it('POSTs a statement file and returns the ImportResponse', async () => {
+  it('POSTs multiple statement files as one multipart request and returns the ImportResponse', async () => {
     const response: ImportResponse = {
       accounts: [
         {
@@ -66,24 +66,67 @@ describe('bankingApi', () => {
       ],
       unresolved: [],
     };
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue(
-        new Response(JSON.stringify(response), {
-          status: 200,
-          headers: { 'content-type': 'application/json' },
-        }),
-      ),
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(response), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
     );
+    vi.stubGlobal('fetch', fetchMock);
 
-    const file = new Blob(['raw bytes'], { type: 'application/octet-stream' });
-    const result = await bankingApi(mkClient()).importStatement('conn-1', 'csv', file);
+    const file1 = new File(['row1,row2'], 'jan.csv', { type: 'text/csv' });
+    const file2 = new File(['row3,row4'], 'feb.csv', { type: 'text/csv' });
+    const result = await bankingApi(mkClient()).importStatement('conn-1', 'csv', [file1, file2]);
 
-    expect(fetch).toHaveBeenCalledWith(
-      'http://test/api/banking/connections/conn-1/import/file?format=csv',
-      expect.objectContaining({ method: 'POST', body: file }),
-    );
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe('http://test/api/banking/connections/conn-1/import/file?format=csv');
+    expect(init.method).toBe('POST');
+    expect(init.body).toBeInstanceOf(FormData);
+    const files = (init.body as FormData).getAll('files');
+    expect(files).toHaveLength(2);
+    expect((files[0] as File).name).toBe('jan.csv');
+    expect((files[1] as File).name).toBe('feb.csv');
+    // The browser must set the multipart boundary itself; we must NOT force a JSON content-type.
+    const sentHeaders = new Headers(init.headers);
+    expect(sentHeaders.get('Content-Type')).toBeNull();
     expect(result).toEqual(response);
+  });
+
+  it('POSTs files to the from-file discovery endpoint and returns ExternalAccountDTO[]', async () => {
+    const accounts: ExternalAccountDTO[] = [
+      {
+        externalId: 'ext-1',
+        iban: 'UA000000000000000000000000001',
+        maskedPan: '537541******1234',
+        currency: 'UAH',
+        balance: 12345,
+      },
+    ];
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(accounts), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const file = new File(['row1,row2'], 'statement.csv', { type: 'text/csv' });
+    const result = await bankingApi(mkClient()).listExternalAccountsFromFile('conn-1', 'csv', [
+      file,
+    ]);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(
+      'http://test/api/banking/connections/conn-1/external-accounts/from-file?format=csv',
+    );
+    expect(init.method).toBe('POST');
+    expect(init.body).toBeInstanceOf(FormData);
+    const files = (init.body as FormData).getAll('files');
+    expect(files).toHaveLength(1);
+    expect((files[0] as File).name).toBe('statement.csv');
+    expect(result).toEqual(accounts);
   });
 
   it('GETs external accounts and returns ExternalAccountDTO[]', async () => {

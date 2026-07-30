@@ -42,12 +42,14 @@ export function ImportStatementButton({ selectedAccount }: ImportStatementButton
   };
 
   const onFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    // Reset the input so the same file can be re-selected later.
+    const files = Array.from(e.target.files ?? []);
+    // Reset the input so the same files can be re-selected later.
     e.target.value = '';
-    if (!file || !matched) return;
+    if (files.length === 0 || !matched) return;
     importStatement.mutate(
-      { connId: matched.id, format: 'csv', file },
+      // All selected files go in one request so the backend concatenates them
+      // into a single batch (cross-file transfers pair). One file is just N=1.
+      { connId: matched.id, format: 'csv', files },
       {
         onSuccess: (result) => toast.success(formatSummary(summarize(result))),
         onError: (err) => {
@@ -83,6 +85,7 @@ export function ImportStatementButton({ selectedAccount }: ImportStatementButton
         ref={fileInputRef}
         type="file"
         accept=".csv,text/csv"
+        multiple
         data-testid="import-statement-file-input"
         className="hidden"
         onChange={onFileSelected}

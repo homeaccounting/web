@@ -84,18 +84,18 @@ describe('BankConnectionDialog', () => {
     expect(called).toBe(false);
   });
 
-  it('selecting the file-only provider hides the token field and shows the account picker', async () => {
+  it('selecting the file-only provider hides both the token field and the account picker', async () => {
     const user = userEvent.setup();
     renderWithProviders(<Wrapper />, { initialPath: '/' });
     await selectProvider(user, 'PrivatBank');
     expect(screen.queryByLabelText(/^token$/i)).not.toBeInTheDocument();
-    expect(await screen.findByLabelText(/import into account/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/import into account/i)).not.toBeInTheDocument();
   });
 
-  it('submitting for the file-only provider creates the connection and sets its accountMap', async () => {
+  it('submitting for the file-only provider creates the connection unmapped, with no accountMap PUT', async () => {
     const user = userEvent.setup();
     let postedBody: unknown = null;
-    let putBody: unknown = null;
+    let accountsPutCalled = false;
     server.use(
       http.post(connectionsUrl, async ({ request }) => {
         postedBody = await request.json();
@@ -104,8 +104,8 @@ describe('BankConnectionDialog', () => {
           { status: 201 },
         );
       }),
-      http.put(`${connectionsUrl}/conn-file/accounts`, async ({ request }) => {
-        putBody = await request.json();
+      http.put(`${connectionsUrl}/conn-file/accounts`, () => {
+        accountsPutCalled = true;
         return new HttpResponse(null, { status: 200 });
       }),
     );
@@ -113,11 +113,9 @@ describe('BankConnectionDialog', () => {
     await user.type(await screen.findByLabelText(/name/i), 'My PrivatBank');
     await selectProvider(user, 'PrivatBank');
 
-    const accountSelect = await screen.findByRole('combobox', { name: /import into account/i });
-    await user.click(accountSelect);
-    // AccountSelect now qualifies rows with the bank name (e.g. "Checking · ACME"),
-    // so match the account by substring rather than exact label.
-    await user.click(await screen.findByRole('option', { name: new RegExp(accountFixture.name) }));
+    // No account picker is rendered for file connections — they are created
+    // unmapped and mapped later via "Link accounts".
+    expect(screen.queryByLabelText(/import into account/i)).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /^ok$/i }));
 
@@ -128,54 +126,9 @@ describe('BankConnectionDialog', () => {
         enabled: true,
       });
     });
-    await waitFor(() => {
-      expect(putBody).toEqual({ accountMap: { statement: accountFixture.id } });
-    });
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-  });
-
-  it('file-only create: setAccountMap failing once does not create a duplicate connection on retry', async () => {
-    const user = userEvent.setup();
-    let postCount = 0;
-    let putAttempt = 0;
-    server.use(
-      http.post(connectionsUrl, () => {
-        postCount += 1;
-        return HttpResponse.json(
-          { ...existingConnection, id: 'conn-file', provider: 'privatbank' },
-          { status: 201 },
-        );
-      }),
-      http.put(`${connectionsUrl}/conn-file/accounts`, () => {
-        putAttempt += 1;
-        if (putAttempt === 1) {
-          return HttpResponse.json({ message: 'Internal error' }, { status: 500 });
-        }
-        return new HttpResponse(null, { status: 200 });
-      }),
-    );
-    renderWithProviders(<Wrapper />, { initialPath: '/' });
-    await user.type(await screen.findByLabelText(/name/i), 'My PrivatBank');
-    await selectProvider(user, 'PrivatBank');
-
-    const accountSelect = await screen.findByRole('combobox', { name: /import into account/i });
-    await user.click(accountSelect);
-    // AccountSelect now qualifies rows with the bank name (e.g. "Checking · ACME"),
-    // so match the account by substring rather than exact label.
-    await user.click(await screen.findByRole('option', { name: new RegExp(accountFixture.name) }));
-
-    // First submit: add() succeeds, setAccountMap() returns 500.
-    await user.click(screen.getByRole('button', { name: /^ok$/i }));
-    expect(await screen.findByRole('alert')).toBeInTheDocument();
-    await waitFor(() => expect(postCount).toBe(1));
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
-
-    // Second submit (retry): must NOT call add() again — only setAccountMap()
-    // retries, on the same connection id — and this time it succeeds.
-    await user.click(screen.getByRole('button', { name: /^ok$/i }));
-    await waitFor(() => expect(putAttempt).toBe(2));
-    expect(postCount).toBe(1);
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    // The connection is left unmapped: no accountMap PUT is issued.
+    expect(accountsPutCalled).toBe(false);
   });
 
   it('happy create posts {provider,name,token,enabled} and closes', async () => {
