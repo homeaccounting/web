@@ -18,7 +18,7 @@ export function useAdjustBalance(id: UUID) {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['accounts'] });
-      void queryClient.invalidateQueries({ queryKey: ['transactions', id] });
+      void queryClient.invalidateQueries({ queryKey: ['transactions'] });
     },
   });
 }

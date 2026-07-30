@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { NavLink, useLocation, useParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   Archive,
   ArchiveRestore,
   ChevronDown,
   ChevronRight,
+  Layers,
   Pencil,
   Plus,
   Users,
@@ -23,6 +24,12 @@ import { buildAccountGroups } from './accountGroups';
 import { accountLabelParts } from './accountLabel';
 import { useAccounts } from './useAccounts';
 import { useAccountById } from './useAccountById';
+import {
+  parseAccountScope,
+  withAccountScope,
+  isSingleAccount,
+  type AccountScope,
+} from '@/features/transactions/accountScope';
 import { CreateAccountDialog } from './CreateAccountDialog';
 import { EditAccountDialog } from './EditAccountDialog';
 import { CloseAccountDialog } from './CloseAccountDialog';
@@ -71,9 +78,10 @@ function GroupHeader({
 
 export function AccountsPane() {
   const { data, isLoading, isError, refetch } = useAccounts();
-  const { id } = useParams<{ id?: string }>();
-  const location = useLocation();
-  const { data: selectedAccount } = useAccountById(id);
+  const [searchParams] = useSearchParams();
+  const scope = parseAccountScope(searchParams, data);
+  const single = isSingleAccount(scope);
+  const { data: selectedAccount } = useAccountById(single ?? undefined);
   const [creating, setCreating] = useState(false);
   const [editingAccount, setEditingAccount] = useState<AccountResponse | null>(null);
   const [closingAccount, setClosingAccount] = useState<AccountResponse | null>(null);
@@ -114,6 +122,13 @@ export function AccountsPane() {
   // below and stay independent of role.
   const openGroups = buildAccountGroups(openAccounts);
 
+  // Target for a sidebar link: preserves period/from/to and sets (or clears,
+  // for all) the `accounts` param. Returns '' when there is no query string.
+  const scopeSearch = (next: AccountScope) => {
+    const qs = withAccountScope(searchParams, next).toString();
+    return qs ? `?${qs}` : '';
+  };
+
   // `qualify` turns on flat-context disambiguation: each row shows its bank
   // name (currency on residual collision) so a user can identify the right
   // account without a grouping header. Off inside a bank sub-group, where the
@@ -128,6 +143,7 @@ export function AccountsPane() {
 
   const renderAccountRow = (a: AccountResponse, siblings?: readonly AccountResponse[]) => {
     const isClosed = a.status === 'Closed';
+    const active = single === a.id;
     const { qualifier } = siblings
       ? accountLabelParts(a, siblings)
       : { qualifier: null as string | null };
@@ -139,16 +155,21 @@ export function AccountsPane() {
         onRequestReopen={reopen}
         onRequestManageAccess={setManagingAccount}
       >
-        <NavLink
-          to={{ pathname: `/accounts/${a.id}`, search: location.search }}
+        <Link
+          to={{
+            pathname: '/transactions',
+            search: scopeSearch({ kind: 'accounts', ids: [a.id] }),
+          }}
+          aria-current={active ? 'page' : undefined}
           onDoubleClick={() => setEditingAccount(a)}
           className={cn(
-            // Static (non-function) className: this NavLink is cloned by Radix's
+            // Static (non-function) className: this Link is cloned by Radix's
             // ContextMenuTrigger `asChild` Slot, which does not resolve a
-            // function-form className — so the active state uses the
-            // `aria-current` attribute NavLink sets, via a Tailwind variant.
+            // function-form className — so `active` is computed above and the
+            // `aria-current` attribute is set manually rather than relying on
+            // NavLink's automatic (pathname-only) active detection.
             'flex items-baseline justify-between gap-2 rounded-md px-2 py-1 text-sm hover:bg-muted',
-            'aria-[current=page]:bg-muted aria-[current=page]:font-medium',
+            active && 'bg-muted font-medium',
             isClosed && 'opacity-60',
           )}
         >
@@ -160,7 +181,7 @@ export function AccountsPane() {
             {!canManage(a.role) && <SharedRoleBadge role={a.role} />}
           </span>
           <span className="tabular-nums">{formatAccountBalance(a)}</span>
-        </NavLink>
+        </Link>
       </AccountContextMenu>
     );
   };
@@ -278,6 +299,21 @@ export function AccountsPane() {
 
       {!isLoading && !isError && data && data.length > 0 && (
         <div className="p-2">
+          {/* All-accounts scope shortcut. A leading icon + the divider below
+              set it apart from the account rows so it reads as a view-mode,
+              not another account. */}
+          <Link
+            to={{ pathname: '/transactions', search: scopeSearch({ kind: 'all' }) }}
+            aria-current={scope.kind === 'all' ? 'page' : undefined}
+            className={cn(
+              'flex items-center gap-2 rounded-md px-2 py-1 text-sm hover:bg-muted',
+              scope.kind === 'all' && 'bg-muted font-medium',
+            )}
+          >
+            <Layers className="h-4 w-4 text-muted-foreground" aria-hidden />
+            All accounts
+          </Link>
+          <div className="my-2 border-t" />
           {openGroups.map((group) => {
             const collapsed = collapsedGroups.has(group.key);
             return (

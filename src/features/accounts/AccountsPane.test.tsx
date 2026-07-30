@@ -29,6 +29,7 @@ function ui() {
       <Routes>
         <Route path="/" element={<AccountsPane />} />
         <Route path="/accounts/:id" element={<AccountsPane />} />
+        <Route path="/transactions" element={<AccountsPane />} />
       </Routes>
     </AuthProvider>
   );
@@ -60,7 +61,7 @@ describe('AccountsPane', () => {
 
   it('marks the selected account as active', async () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
-    renderWithProviders(ui(), { initialPath: `/accounts/${accountFixture.id}` });
+    renderWithProviders(ui(), { initialPath: `/transactions?accounts=${accountFixture.id}` });
     const item = await screen.findByRole('link', { name: /checking/i });
     expect(item).toHaveAttribute('aria-current', 'page');
   });
@@ -68,10 +69,57 @@ describe('AccountsPane', () => {
   it('preserves the current query string on account row links', async () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
     renderWithProviders(ui(), {
-      initialPath: `/accounts/${accountFixture.id}?period=this-year`,
+      initialPath: `/transactions?accounts=${accountFixture.id}&period=this-year`,
     });
     const item = await screen.findByRole('link', { name: /checking/i });
-    expect(item).toHaveAttribute('href', expect.stringContaining('?period=this-year'));
+    const href = item.getAttribute('href') ?? '';
+    expect(href).toContain('/transactions');
+    expect(href).toContain(`accounts=${accountFixture.id}`);
+    expect(href).toContain('period=this-year');
+  });
+
+  it('renders an All accounts row', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    renderWithProviders(ui(), { initialPath: '/transactions' });
+    const item = await screen.findByRole('link', { name: /all accounts/i });
+    expect(item).toHaveAttribute('aria-current', 'page');
+    const href = item.getAttribute('href') ?? '';
+    expect(href).toContain('/transactions');
+    expect(href).not.toContain('accounts=');
+  });
+
+  it('All accounts row is not active when a single account is scoped', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    renderWithProviders(ui(), { initialPath: `/transactions?accounts=${accountFixture.id}` });
+    const all = await screen.findByRole('link', { name: /all accounts/i });
+    expect(all).not.toHaveAttribute('aria-current', 'page');
+    const checking = await screen.findByRole('link', { name: /checking/i });
+    expect(checking).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('account row links target /transactions with its accounts param', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    renderWithProviders(ui(), { initialPath: '/transactions' });
+    const item = await screen.findByRole('link', { name: /checking/i });
+    const href = item.getAttribute('href') ?? '';
+    expect(href).toContain('/transactions');
+    expect(href).toContain(`accounts=${accountFixture.id}`);
+  });
+
+  it('marks only the scoped row active among sibling account rows', async () => {
+    const savingsAccount = { ...accountFixture, id: 'a5', name: 'Savings' };
+    server.use(
+      http.get(`${apiBase}/api/accounts`, () =>
+        HttpResponse.json({ accounts: [accountFixture, savingsAccount], totalCount: 2 }),
+      ),
+    );
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    renderWithProviders(ui(), { initialPath: `/transactions?accounts=${accountFixture.id}` });
+    const checking = await screen.findByRole('link', { name: /checking/i });
+    const savings = await screen.findByRole('link', { name: /savings/i });
+    expect(checking).toHaveAttribute('aria-current', 'page');
+    expect(savings).not.toHaveAttribute('aria-current');
+    expect(screen.getByRole('link', { name: /all accounts/i })).not.toHaveAttribute('aria-current');
   });
 
   it('renders an "Add account" button at the top of the pane', async () => {
@@ -98,7 +146,7 @@ describe('AccountsPane', () => {
 
   it('enables the Edit button when an account is selected', async () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
-    renderWithProviders(ui(), { initialPath: `/accounts/${accountFixture.id}` });
+    renderWithProviders(ui(), { initialPath: `/transactions?accounts=${accountFixture.id}` });
     const edit = await screen.findByRole('button', { name: /edit account/i });
     await waitFor(() => expect(edit).not.toBeDisabled());
   });
@@ -106,7 +154,7 @@ describe('AccountsPane', () => {
   it('opens the Edit dialog from the sidebar when an account is selected', async () => {
     const user = userEvent.setup();
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
-    renderWithProviders(ui(), { initialPath: `/accounts/${accountFixture.id}` });
+    renderWithProviders(ui(), { initialPath: `/transactions?accounts=${accountFixture.id}` });
     const edit = await screen.findByRole('button', { name: /edit account/i });
     await waitFor(() => expect(edit).not.toBeDisabled());
     await user.click(edit);
@@ -186,7 +234,7 @@ describe('AccountsPane', () => {
   it('shows a Close action in the toolbar for a selected open account', async () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
     serveMixedAccounts();
-    renderWithProviders(ui(), { initialPath: `/accounts/${accountFixture.id}` });
+    renderWithProviders(ui(), { initialPath: `/transactions?accounts=${accountFixture.id}` });
     const btn = await screen.findByRole('button', { name: /close account/i });
     await waitFor(() => expect(btn).not.toBeDisabled());
   });
@@ -195,7 +243,7 @@ describe('AccountsPane', () => {
     const user = userEvent.setup();
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
     serveMixedAccounts();
-    renderWithProviders(ui(), { initialPath: `/accounts/${accountFixture.id}` });
+    renderWithProviders(ui(), { initialPath: `/transactions?accounts=${accountFixture.id}` });
     const btn = await screen.findByRole('button', { name: /close account/i });
     await waitFor(() => expect(btn).not.toBeDisabled());
     await user.click(btn);
@@ -213,7 +261,7 @@ describe('AccountsPane', () => {
         return new HttpResponse(null, { status: 204 });
       }),
     );
-    renderWithProviders(ui(), { initialPath: `/accounts/${closedAccountFixture.id}` });
+    renderWithProviders(ui(), { initialPath: `/transactions?accounts=${closedAccountFixture.id}` });
     const btn = await screen.findByRole('button', { name: /reopen account/i });
     await waitFor(() => expect(btn).not.toBeDisabled());
     await user.click(btn);
@@ -243,7 +291,7 @@ describe('AccountsPane', () => {
         ),
       ),
     );
-    renderWithProviders(ui(), { initialPath: `/accounts/${closedAccountFixture.id}` });
+    renderWithProviders(ui(), { initialPath: `/transactions?accounts=${closedAccountFixture.id}` });
     const btn = await screen.findByRole('button', { name: /reopen account/i });
     await waitFor(() => expect(btn).not.toBeDisabled());
     await user.click(btn);
@@ -255,7 +303,7 @@ describe('AccountsPane', () => {
   it('enables the Manage access toolbar button for a selected owned account and opens the dialog', async () => {
     const user = userEvent.setup();
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
-    renderWithProviders(ui(), { initialPath: `/accounts/${accountFixture.id}` });
+    renderWithProviders(ui(), { initialPath: `/transactions?accounts=${accountFixture.id}` });
     const btn = await screen.findByRole('button', { name: /manage access/i });
     await waitFor(() => expect(btn).not.toBeDisabled());
     server.use(
@@ -275,7 +323,7 @@ describe('AccountsPane', () => {
       ),
     );
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
-    renderWithProviders(ui(), { initialPath: `/accounts/${editorAccount.id}` });
+    renderWithProviders(ui(), { initialPath: `/transactions?accounts=${editorAccount.id}` });
     const btn = await screen.findByRole('button', { name: /manage access/i });
     await waitFor(() => expect(btn).toBeDisabled());
   });
@@ -335,7 +383,7 @@ describe('AccountsPane', () => {
   it('disables Edit and Close in the toolbar when a viewer account is selected', async () => {
     const { viewerAccount } = serveSharedMix();
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
-    renderWithProviders(ui(), { initialPath: `/accounts/${viewerAccount.id}` });
+    renderWithProviders(ui(), { initialPath: `/transactions?accounts=${viewerAccount.id}` });
     const edit = await screen.findByRole('button', { name: /edit account/i });
     const close = await screen.findByRole('button', { name: /close account/i });
     await waitFor(() => {
@@ -347,7 +395,7 @@ describe('AccountsPane', () => {
   it('disables Edit and Close when an editor account is selected (both are owner-only)', async () => {
     const { editorAccount } = serveSharedMix();
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
-    renderWithProviders(ui(), { initialPath: `/accounts/${editorAccount.id}` });
+    renderWithProviders(ui(), { initialPath: `/transactions?accounts=${editorAccount.id}` });
     const edit = await screen.findByRole('button', { name: /edit account/i });
     const close = await screen.findByRole('button', { name: /close account/i });
     await waitFor(() => {
@@ -359,7 +407,7 @@ describe('AccountsPane', () => {
   it('shows an "Owner only" tooltip on Edit when a non-owner account is selected', async () => {
     const { editorAccount } = serveSharedMix();
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
-    renderWithProviders(ui(), { initialPath: `/accounts/${editorAccount.id}` });
+    renderWithProviders(ui(), { initialPath: `/transactions?accounts=${editorAccount.id}` });
     const edit = await screen.findByRole('button', { name: /edit account/i });
     await waitFor(() => expect(edit).toBeDisabled());
     fireEvent.focus(edit);
@@ -369,7 +417,7 @@ describe('AccountsPane', () => {
   it('enables Edit and Close when an owned account is selected', async () => {
     serveSharedMix();
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
-    renderWithProviders(ui(), { initialPath: `/accounts/${accountFixture.id}` });
+    renderWithProviders(ui(), { initialPath: `/transactions?accounts=${accountFixture.id}` });
     const edit = await screen.findByRole('button', { name: /edit account/i });
     const close = await screen.findByRole('button', { name: /close account/i });
     await waitFor(() => {

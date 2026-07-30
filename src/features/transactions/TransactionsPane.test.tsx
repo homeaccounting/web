@@ -4,12 +4,15 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { server } from '@/test/server';
 import { renderWithProviders } from '@/test/utils';
+import type { AccountResponse } from '@/api/types';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider } from '@/auth/AuthContext';
 import { saveSession } from '@/auth/storage';
 import { TransactionsPane } from './TransactionsPane';
 import { readLastView, writeLastView } from './lastView';
 import {
+  accountFixture,
+  closedAccountFixture,
   configurationFixture,
   transactionFixture,
   tripLabelId,
@@ -31,6 +34,7 @@ function ui() {
     <AuthProvider>
       <Routes>
         <Route path="/" element={<TransactionsPane />} />
+        <Route path="/transactions" element={<TransactionsPane />} />
         <Route path="/accounts/:id" element={<TransactionsPane />} />
       </Routes>
       <LocationSearch />
@@ -45,21 +49,15 @@ async function openFilters(user: ReturnType<typeof userEvent.setup>) {
 }
 
 describe('TransactionsPane', () => {
-  it('shows placeholder when no account selected', () => {
-    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
-    renderWithProviders(ui(), { initialPath: '/' });
-    expect(screen.getByText(/select an account/i)).toBeInTheDocument();
-  });
-
   it('renders transactions for the selected account', async () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
     expect(await screen.findByText(transactionFixture.description)).toBeInTheDocument();
   });
 
   it('renders the category name resolved from the configuration dictionary', async () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
     expect(await screen.findByText('Food')).toBeInTheDocument();
     // The raw category id must not leak into the cell; only its resolved name.
     expect(
@@ -69,7 +67,7 @@ describe('TransactionsPane', () => {
 
   it('renders a single-slice category as one chip with just the name', async () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
     const cell = await screen.findByText('Food');
     expect(cell.textContent).toBe('Food');
     expect(screen.queryByText(/\+\d/)).not.toBeInTheDocument();
@@ -97,7 +95,7 @@ describe('TransactionsPane', () => {
         }),
       ),
     );
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
     // Both categories render as separate chips; no "+N" summary.
     expect(await screen.findByText('Salary')).toBeInTheDocument();
     expect(screen.getByText('Food')).toBeInTheDocument();
@@ -137,7 +135,7 @@ describe('TransactionsPane', () => {
   it('shows allocation comments after the description, muted', async () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
     seed(commentedTx('Groceries', ['milk', 'eggs']));
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
     const cell = (await screen.findByText('Groceries')).closest('td')!;
     expect(cell).toHaveTextContent('Groceries · milk, eggs');
   });
@@ -145,14 +143,14 @@ describe('TransactionsPane', () => {
   it('shows comments as the primary text when the description is empty', async () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
     seed(commentedTx('', ['milk', 'eggs']));
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
     expect(await screen.findByText('milk, eggs')).toBeInTheDocument();
   });
 
   it('suppresses the comment tail when it equals the description', async () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
     seed(commentedTx('milk, eggs', ['milk', 'eggs']));
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
     const cell = (await screen.findByText('milk, eggs')).closest('td')!;
     expect(cell.textContent).not.toContain('·');
   });
@@ -164,7 +162,7 @@ describe('TransactionsPane', () => {
         HttpResponse.json({ transactions: [], totalCount: 0 }),
       ),
     );
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
     expect(await screen.findByText(/no transactions in this date range/i)).toBeInTheDocument();
   });
 
@@ -172,22 +170,28 @@ describe('TransactionsPane', () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
     const calledFor: string[] = [];
     server.use(
+      // Both a1 and a2 must be known accounts so each `?accounts=<id>` resolves
+      // to a single-account scope (an unknown id would collapse to all-accounts,
+      // which fetches without an accountId).
+      http.get(`${apiBase}/api/accounts`, () =>
+        HttpResponse.json({ accounts: [accountFixture, closedAccountFixture], totalCount: 2 }),
+      ),
       http.get(`${apiBase}/api/transactions`, ({ request }) => {
         const url = new URL(request.url);
         calledFor.push(url.searchParams.get('accountId') ?? '');
         return HttpResponse.json({ transactions: [], totalCount: 0 });
       }),
     );
-    const first = renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    const first = renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
     await waitFor(() => expect(calledFor).toContain('a1'));
     first.unmount();
-    renderWithProviders(ui(), { initialPath: '/accounts/a2' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a2' });
     await waitFor(() => expect(calledFor).toContain('a2'));
   });
 
   it('renders the AccountHeader above transactions when the account is loaded', async () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
     const heading = await screen.findByRole('heading', { name: 'Checking' });
     expect(heading).toBeInTheDocument();
     expect(heading.tagName).toBe('H2');
@@ -196,7 +200,7 @@ describe('TransactionsPane', () => {
   it('renders a header skeleton while the accounts list is still loading', async () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
     server.use(http.get(`${apiBase}/api/accounts`, () => new Promise<never>(() => {})));
-    const { container } = renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    const { container } = renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
     // The account header lives in a border-b container above the transactions area.
     // Note: ControlBar also has border-b, so find the one that contains the skeleton.
     await waitFor(() => {
@@ -256,7 +260,7 @@ describe('TransactionsPane', () => {
         }),
       ),
     );
-    renderWithProviders(ui(), { initialPath: '/accounts/a-uah' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a-uah' });
     expect(await screen.findByText(/4,000/)).toBeInTheDocument();
     expect(screen.queryByText(/100\.00/)).not.toBeInTheDocument();
     expect(screen.queryByText(/USD/)).not.toBeInTheDocument();
@@ -310,12 +314,12 @@ describe('TransactionsPane', () => {
         }),
       ),
     );
-    renderWithProviders(ui(), { initialPath: '/accounts/a-uah' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a-uah' });
     expect(await screen.findByText(/-.*2,000\.00/)).toBeInTheDocument();
     expect(screen.queryByText(/USD/)).not.toBeInTheDocument();
   });
 
-  it('renders no header when the account id is not in the loaded accounts list', async () => {
+  it('renders the empty state in the all-accounts view when there are no transactions', async () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
     server.use(
       http.get(`${apiBase}/api/accounts`, () => HttpResponse.json({ accounts: [], totalCount: 0 })),
@@ -323,27 +327,20 @@ describe('TransactionsPane', () => {
         HttpResponse.json({ transactions: [], totalCount: 0 }),
       ),
     );
-    renderWithProviders(ui(), { initialPath: '/accounts/a99' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a99' });
     expect(await screen.findByText(/no transactions in this date range/i)).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { level: 2 })).not.toBeInTheDocument();
   });
 
-  it('renders the control bar even when no account is selected', () => {
+  it('renders the control bar in the all-accounts view', () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
-    renderWithProviders(ui(), { initialPath: '/' });
+    renderWithProviders(ui(), { initialPath: '/transactions' });
     expect(screen.getByRole('button', { name: /add income/i })).toBeInTheDocument();
-  });
-
-  it('shows the "Select an account." prompt when no account is selected', () => {
-    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
-    renderWithProviders(ui(), { initialPath: '/' });
-    expect(screen.getByText(/select an account\./i)).toBeInTheDocument();
   });
 
   it('opens EditTransactionDialog on double-click of a transaction row', async () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
     const user = userEvent.setup();
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
     const cell = await screen.findByText(transactionFixture.description);
     const row = cell.closest('tr')!;
     await user.dblClick(row);
@@ -353,7 +350,7 @@ describe('TransactionsPane', () => {
   it('opens EditTransactionDialog via context menu Edit item on right-click', async () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
     const user = userEvent.setup();
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
     const cell = await screen.findByText(transactionFixture.description);
     const row = cell.closest('tr')!;
     await user.pointer({ keys: '[MouseRight]', target: row });
@@ -365,7 +362,7 @@ describe('TransactionsPane', () => {
   it('opens EditTransactionDialog when Enter is pressed on a focused row', async () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
     const user = userEvent.setup();
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
     const cell = await screen.findByText(transactionFixture.description);
     const row = cell.closest('tr')!;
     row.focus();
@@ -385,20 +382,20 @@ describe('TransactionsPane', () => {
         }),
       ),
     );
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
     expect(await screen.findByText('Trip')).toBeInTheDocument();
   });
 
   it('renders the transaction type icon', async () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
     await screen.findByText(transactionFixture.description);
     expect(screen.getByLabelText('Expense')).toBeInTheDocument();
   });
 
   it('keeps the filter controls collapsed by default', async () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
     await screen.findByText(transactionFixture.description);
     // The toggle is present, but the controls are not mounted until expanded.
     expect(screen.getByRole('button', { name: /^filters/i })).toBeInTheDocument();
@@ -408,7 +405,7 @@ describe('TransactionsPane', () => {
   it('reveals and hides the filter controls when the Filters toggle is clicked', async () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
     const user = userEvent.setup();
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
     await screen.findByText(transactionFixture.description);
     await openFilters(user);
     expect(screen.getByPlaceholderText(/description/i)).toBeInTheDocument();
@@ -419,7 +416,7 @@ describe('TransactionsPane', () => {
   it('shows an active-filter count on the toggle while collapsed', async () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
     const user = userEvent.setup();
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
     await screen.findByText(transactionFixture.description);
     // No active filters → toggle reads just "Filters".
     expect(screen.getByRole('button', { name: /^filters$/i })).toBeInTheDocument();
@@ -447,7 +444,7 @@ describe('TransactionsPane', () => {
         }),
       ),
     );
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
     expect(await screen.findByText('Coffee')).toBeInTheDocument();
     expect(screen.getByText('Groceries')).toBeInTheDocument();
     await openFilters(user);
@@ -458,7 +455,7 @@ describe('TransactionsPane', () => {
 
   it('shows a "Showing 1–N of T" pagination footer', async () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
     await screen.findByText(transactionFixture.description);
     expect(screen.getByText(/showing 1–1 of 1/i)).toBeInTheDocument();
   });
@@ -466,7 +463,7 @@ describe('TransactionsPane', () => {
   it('shows a no-matches message when a filter matches nothing', async () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
     const user = userEvent.setup();
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
     await screen.findByText(transactionFixture.description);
     await openFilters(user);
     await user.type(screen.getByPlaceholderText(/description/i), 'zzzznomatch');
@@ -501,7 +498,7 @@ describe('TransactionsPane', () => {
         }),
       ),
     );
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
     expect(await screen.findByText('CompletedTx')).toBeInTheDocument();
     expect(screen.queryByText('FailedTx')).not.toBeInTheDocument();
     expect(screen.queryByText('CancelledTx')).not.toBeInTheDocument();
@@ -536,7 +533,7 @@ describe('TransactionsPane', () => {
         }),
       ),
     );
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
     // Wait until the completed row is visible (ensures the list is loaded)
     expect(await screen.findByText('CompletedTx')).toBeInTheDocument();
 
@@ -581,7 +578,7 @@ describe('TransactionsPane', () => {
         });
       }),
     );
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
     // Wait for the row to appear (valid initial window).
     expect(await screen.findByText('GuardRow')).toBeInTheDocument();
 
@@ -608,7 +605,7 @@ describe('TransactionsPane', () => {
 
   it('exposes a "Cancel" control on a non-cancelled row', async () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
     await screen.findByText(transactionFixture.description);
     expect(screen.getByLabelText('Cancel')).toBeInTheDocument();
   });
@@ -616,7 +613,7 @@ describe('TransactionsPane', () => {
   it('opens the cancel dialog from the row control without opening the edit dialog', async () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
     const user = userEvent.setup();
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
     await screen.findByText(transactionFixture.description);
     await user.click(screen.getByLabelText('Cancel'));
     expect(await screen.findByText('Cancel this transaction?')).toBeInTheDocument();
@@ -626,7 +623,7 @@ describe('TransactionsPane', () => {
   it('offers a "Cancel" item in the row context menu', async () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
     const user = userEvent.setup();
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
     const cell = await screen.findByText(transactionFixture.description);
     const row = cell.closest('tr')!;
     await user.pointer({ keys: '[MouseRight]', target: row });
@@ -654,7 +651,7 @@ describe('TransactionsPane', () => {
         }),
       ),
     );
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
     // Cancelled rows are hidden by default; reveal them first.
     await openFilters(user);
     await user.click(await screen.findByLabelText(/cancelled & failed/i));
@@ -665,7 +662,7 @@ describe('TransactionsPane', () => {
   it('opens CopyTransactionDialog via the context menu Duplicate item', async () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
     const user = userEvent.setup();
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
     const cell = await screen.findByText(transactionFixture.description);
     const row = cell.closest('tr')!;
     await user.pointer({ keys: '[MouseRight]', target: row });
@@ -676,7 +673,7 @@ describe('TransactionsPane', () => {
   it('exposes a Duplicate icon control that opens the copy dialog (not edit)', async () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
     const user = userEvent.setup();
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
     await screen.findByText(transactionFixture.description);
     await user.click(screen.getByLabelText('Duplicate'));
     expect(await screen.findByRole('dialog', { name: /copy expense/i })).toBeInTheDocument();
@@ -702,7 +699,7 @@ describe('TransactionsPane', () => {
         }),
       ),
     );
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
     await screen.findByText('AdjustmentTx');
     expect(screen.queryByLabelText('Duplicate')).not.toBeInTheDocument();
 
@@ -717,7 +714,7 @@ describe('TransactionsPane', () => {
   it('offers the two other kinds in the Convert submenu and opens the dialog', async () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
     const user = userEvent.setup();
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
     const cell = await screen.findByText(transactionFixture.description); // an expense fixture
     const row = cell.closest('tr')!;
     await user.pointer({ keys: '[MouseRight]', target: row });
@@ -751,7 +748,7 @@ describe('TransactionsPane', () => {
         }),
       ),
     );
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
     const row = (await screen.findByText('AdjustmentTx')).closest('tr')!;
     await user.pointer({ keys: '[MouseRight]', target: row });
     await screen.findByRole('menuitem', { name: /edit/i });
@@ -771,7 +768,7 @@ describe('TransactionsPane', () => {
         }),
       ),
     );
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
     const row = (await screen.findByText('PendingTx')).closest('tr')!;
     await user.pointer({ keys: '[MouseRight]', target: row });
     await screen.findByRole('menuitem', { name: /edit/i });
@@ -781,7 +778,7 @@ describe('TransactionsPane', () => {
   it('offers a "Refund" item on a completed expense row and opens the dialog', async () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
     const user = userEvent.setup();
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' }); // fixture is a completed expense
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' }); // fixture is a completed expense
     const cell = await screen.findByText(transactionFixture.description);
     const row = cell.closest('tr')!;
     await user.pointer({ keys: '[MouseRight]', target: row });
@@ -814,7 +811,7 @@ describe('TransactionsPane', () => {
         }),
       ),
     );
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
     const row = (await screen.findByText('Paycheck')).closest('tr')!;
     await user.pointer({ keys: '[MouseRight]', target: row });
     await screen.findByRole('menuitem', { name: /edit/i });
@@ -840,7 +837,7 @@ describe('TransactionsPane', () => {
         }),
       ),
     );
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
     // Cancelled rows are hidden by default; reveal them first.
     await openFilters(user);
     await user.click(await screen.findByLabelText(/cancelled & failed/i));
@@ -884,7 +881,7 @@ describe('TransactionsPane', () => {
         }),
       ),
     );
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
     expect(await screen.findByText('partially refunded ($30.00 of $100.00)')).toBeInTheDocument();
   });
 
@@ -924,7 +921,7 @@ describe('TransactionsPane', () => {
         }),
       ),
     );
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
     expect(await screen.findByText('refunded in full')).toBeInTheDocument();
   });
 
@@ -962,7 +959,7 @@ describe('TransactionsPane', () => {
         }),
       ),
     );
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
     expect(await screen.findByText('refund of Laptop')).toBeInTheDocument();
   });
 
@@ -988,7 +985,7 @@ describe('TransactionsPane', () => {
         }),
       ),
     );
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
     await screen.findByText('Some refund');
     expect(screen.getByText('refund')).toBeInTheDocument();
   });
@@ -996,7 +993,7 @@ describe('TransactionsPane', () => {
   it('no longer offers a "Link" item in the row context menu', async () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
     const user = userEvent.setup();
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' }); // fixture is a completed expense
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' }); // fixture is a completed expense
     const row = (await screen.findByText(transactionFixture.description)).closest('tr')!;
     await user.pointer({ keys: '[MouseRight]', target: row });
     await screen.findByRole('menuitem', { name: /edit/i });
@@ -1019,7 +1016,7 @@ describe('TransactionsPane', () => {
         }),
       ),
     );
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
     await screen.findByText('RowOne');
 
     await user.click(screen.getByRole('checkbox', { name: /select rowone/i }));
@@ -1052,7 +1049,7 @@ describe('TransactionsPane', () => {
         }),
       ),
     );
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
     expect(await screen.findByText('associated with Invoice')).toBeInTheDocument();
   });
 
@@ -1079,7 +1076,7 @@ describe('TransactionsPane', () => {
         }),
       ),
     );
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
     // The counterpart (tx-b) shows the association pointing back at tx-a.
     expect(await screen.findByText('associated with Deposit')).toBeInTheDocument();
   });
@@ -1110,7 +1107,7 @@ describe('TransactionsPane', () => {
         }),
       ),
     );
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
     // Reveal cancelled rows so both are loaded in the window.
     await screen.findByText('Deposit');
     await openFilters(user);
@@ -1156,7 +1153,7 @@ describe('TransactionsPane', () => {
         return HttpResponse.json(transactionFixture);
       }),
     );
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
     await screen.findByText('associated with Invoice');
     const unlinkButtons = screen.getAllByRole('button', { name: /unlink/i });
     await user.click(unlinkButtons[0]!);
@@ -1201,7 +1198,7 @@ describe('TransactionsPane', () => {
         return HttpResponse.json(transactionFixture);
       }),
     );
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
     await screen.findByText('associated with Invoice');
     const unlinkButtons = screen.getAllByRole('button', { name: /unlink/i });
     await user.click(unlinkButtons[0]!);
@@ -1239,7 +1236,7 @@ describe('TransactionsPane', () => {
         }),
       ),
     );
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
     const row = (await screen.findByText('Invoice')).closest('tr')!;
     expect(within(row).queryByText(/associated with/i)).not.toBeInTheDocument();
   });
@@ -1280,7 +1277,7 @@ describe('TransactionsPane', () => {
         }),
       ),
     );
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
 
     // Both rows visible initially.
     expect(await screen.findByText('Paycheck')).toBeInTheDocument();
@@ -1336,7 +1333,7 @@ describe('TransactionsPane', () => {
           return HttpResponse.json({ ...transactionFixture });
         }),
       );
-      renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+      renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
       const row = (await screen.findByText(transactionFixture.description)).closest('tr')!;
       await user.pointer({ keys: '[MouseRight]', target: row });
       await user.hover(await screen.findByRole('menuitem', { name: /^category$/i }));
@@ -1365,7 +1362,7 @@ describe('TransactionsPane', () => {
         ),
         http.patch(`${apiBase}/api/transactions/:id/allocations`, patch),
       );
-      renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+      renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
       const row = (await screen.findByText(transactionFixture.description)).closest('tr')!;
       await user.pointer({ keys: '[MouseRight]', target: row });
       await user.hover(await screen.findByRole('menuitem', { name: /^category$/i }));
@@ -1401,7 +1398,7 @@ describe('TransactionsPane', () => {
           }),
         ),
       );
-      renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+      renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
       const row = (await screen.findByText('SplitTx')).closest('tr')!;
       await user.pointer({ keys: '[MouseRight]', target: row });
       await screen.findByRole('menuitem', { name: /edit/i });
@@ -1427,7 +1424,7 @@ describe('TransactionsPane', () => {
           }),
         ),
       );
-      renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+      renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
       const row = (await screen.findByText('AdjustmentTx')).closest('tr')!;
       await user.pointer({ keys: '[MouseRight]', target: row });
       await screen.findByRole('menuitem', { name: /edit/i });
@@ -1447,7 +1444,7 @@ describe('TransactionsPane', () => {
           }),
         ),
       );
-      renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+      renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
       const row = (await screen.findByText('PendingTx')).closest('tr')!;
       await user.pointer({ keys: '[MouseRight]', target: row });
       await screen.findByRole('menuitem', { name: /edit/i });
@@ -1463,7 +1460,7 @@ describe('TransactionsPane', () => {
           HttpResponse.json(twoExpenseCategoriesConfig()),
         ),
       );
-      renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+      renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
       const row = (await screen.findByText(transactionFixture.description)).closest('tr')!;
       await user.pointer({ keys: '[MouseRight]', target: row });
       await user.hover(await screen.findByRole('menuitem', { name: /^category$/i }));
@@ -1499,7 +1496,7 @@ describe('TransactionsPane', () => {
           return HttpResponse.json({ ...transactionFixture, labels: body.labels });
         }),
       );
-      renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+      renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
       const row = (await screen.findByText(transactionFixture.description)).closest('tr')!;
       await user.pointer({ keys: '[MouseRight]', target: row });
       await user.hover(await screen.findByRole('menuitem', { name: /^labels$/i }));
@@ -1540,7 +1537,7 @@ describe('TransactionsPane', () => {
           return HttpResponse.json({ ...transactionFixture, labels: body.labels });
         }),
       );
-      renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+      renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
       const row = (await screen.findByText(transactionFixture.description)).closest('tr')!;
       await user.pointer({ keys: '[MouseRight]', target: row });
       await user.hover(await screen.findByRole('menuitem', { name: /^labels$/i }));
@@ -1566,7 +1563,7 @@ describe('TransactionsPane', () => {
           () => new HttpResponse(null, { status: 500 }),
         ),
       );
-      renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+      renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
       const row = (await screen.findByText(transactionFixture.description)).closest('tr')!;
       await user.pointer({ keys: '[MouseRight]', target: row });
       await user.hover(await screen.findByRole('menuitem', { name: /^labels$/i }));
@@ -1601,7 +1598,7 @@ describe('TransactionsPane', () => {
           }),
         ),
       );
-      renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+      renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
       const row = (await screen.findByText('XferTx')).closest('tr')!;
       await user.pointer({ keys: '[MouseRight]', target: row });
       expect(await screen.findByRole('menuitem', { name: /^labels$/i })).toBeInTheDocument();
@@ -1651,7 +1648,7 @@ describe('TransactionsPane', () => {
           }),
         ),
       );
-      renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+      renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
       const row = (await screen.findByText('Paycheck')).closest('tr')!;
       // The chip renders the resolved contact name in the description cell.
       expect(within(row).getByText('Amazon')).toBeInTheDocument();
@@ -1672,7 +1669,7 @@ describe('TransactionsPane', () => {
           }),
         ),
       );
-      renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+      renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
       const row = (await screen.findByText('Orphan')).closest('tr')!;
       expect(within(row).queryByText('gone')).not.toBeInTheDocument();
       expect(within(row).queryByText('Amazon')).not.toBeInTheDocument();
@@ -1691,7 +1688,7 @@ describe('TransactionsPane', () => {
           return HttpResponse.json({ ...transactionFixture, contactId: AMAZON_ID });
         }),
       );
-      renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+      renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
       const row = (await screen.findByText(transactionFixture.description)).closest('tr')!;
       await user.pointer({ keys: '[MouseRight]', target: row });
       await user.hover(await screen.findByRole('menuitem', { name: /^contact$/i }));
@@ -1724,7 +1721,7 @@ describe('TransactionsPane', () => {
           return HttpResponse.json({ ...transactionFixture, contactId: NEW_ID });
         }),
       );
-      renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+      renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
       const row = (await screen.findByText(transactionFixture.description)).closest('tr')!;
       await user.pointer({ keys: '[MouseRight]', target: row });
       await user.hover(await screen.findByRole('menuitem', { name: /^contact$/i }));
@@ -1763,7 +1760,7 @@ describe('TransactionsPane', () => {
           }),
         ),
       );
-      renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+      renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
       const row = (await screen.findByText('XferTx')).closest('tr')!;
       await user.pointer({ keys: '[MouseRight]', target: row });
       await screen.findByRole('menuitem', { name: /edit/i });
@@ -1792,7 +1789,7 @@ describe('TransactionsPane', () => {
           }),
         ),
       );
-      renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+      renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
       const row = (await screen.findByText('AdjustmentTx')).closest('tr')!;
       await user.pointer({ keys: '[MouseRight]', target: row });
       await screen.findByRole('menuitem', { name: /edit/i });
@@ -1816,7 +1813,7 @@ describe('TransactionsPane', () => {
           return HttpResponse.json({ transactions: [transactionFixture], totalCount: 1 });
         }),
       );
-      renderWithProviders(ui(), { initialPath: '/accounts/a1?period=this-year' });
+      renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1&period=this-year' });
       await screen.findByText(transactionFixture.description);
       // this-year resolves to Jan 1 .. Dec 31 of the current year.
       await waitFor(() => expect(seen).not.toBeNull());
@@ -1827,7 +1824,7 @@ describe('TransactionsPane', () => {
     it('restores period from lastView when the URL has no period param', async () => {
       saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
       writeLastView({
-        accountId: 'a1',
+        accounts: ['a1'],
         period: 'this-year',
         filters: {
           description: '',
@@ -1848,7 +1845,7 @@ describe('TransactionsPane', () => {
           return HttpResponse.json({ transactions: [transactionFixture], totalCount: 1 });
         }),
       );
-      renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+      renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
       await screen.findByText(transactionFixture.description);
       // this-year resolves to Jan 1 .. Dec 31 of the current year.
       await waitFor(() => expect(seen).not.toBeNull());
@@ -1859,7 +1856,7 @@ describe('TransactionsPane', () => {
     it('changing the preset updates the URL', async () => {
       saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
       const user = userEvent.setup();
-      renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+      renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
       await screen.findByText(transactionFixture.description);
       await user.click(screen.getByRole('combobox', { name: /period/i }));
       await user.click(await screen.findByRole('option', { name: 'This year' }));
@@ -1872,7 +1869,7 @@ describe('TransactionsPane', () => {
       saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
       const user = userEvent.setup();
       writeLastView({
-        accountId: 'a1',
+        accounts: ['a1'],
         period: 'last-month',
         filters: {
           description: 'Coffee',
@@ -1882,7 +1879,7 @@ describe('TransactionsPane', () => {
           showCancelledFailed: false,
         },
       });
-      renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+      renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
       await screen.findByText(transactionFixture.description);
       await openFilters(user);
       expect(screen.getByPlaceholderText(/description/i)).toHaveValue('Coffee');
@@ -1891,7 +1888,7 @@ describe('TransactionsPane', () => {
     it('persists filters to lastView on change', async () => {
       saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
       const user = userEvent.setup();
-      renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+      renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
       await screen.findByText(transactionFixture.description);
       await openFilters(user);
       await user.type(screen.getByPlaceholderText(/description/i), 'Latte');
@@ -1901,7 +1898,7 @@ describe('TransactionsPane', () => {
     it('clear resets filters and period', async () => {
       saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
       const user = userEvent.setup();
-      renderWithProviders(ui(), { initialPath: '/accounts/a1?period=this-year' });
+      renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1&period=this-year' });
       await screen.findByText(transactionFixture.description);
       await openFilters(user);
       await user.type(screen.getByPlaceholderText(/description/i), 'Coffee');
@@ -1915,13 +1912,180 @@ describe('TransactionsPane', () => {
 
   it('renders the Quick add composer for an open account', async () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
-    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
     expect(await screen.findByLabelText('Quick add transaction')).toBeInTheDocument();
   });
 
-  it('does not render the Quick add composer with no account selected', () => {
+  it('does not render the Quick add composer in the all-accounts view', () => {
     saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
-    renderWithProviders(ui(), { initialPath: '/' });
+    renderWithProviders(ui(), { initialPath: '/transactions' });
     expect(screen.queryByLabelText('Quick add transaction')).not.toBeInTheDocument();
+  });
+
+  describe('account scope (multi-account)', () => {
+    // Two owned, open accounts sharing the same bank name — accountLabel only
+    // qualifies by bank when NAMES collide, so distinct names ("Checking" /
+    // "Savings") render as bare names, matching how the rows are asserted below.
+    const checkingAccount: AccountResponse = { ...accountFixture };
+    const savingsAccount: AccountResponse = {
+      id: 'a2',
+      name: 'Savings',
+      balance: 500,
+      currency: 'USD',
+      overdraftLimit: null,
+      subtype: { type: 'bankAccount', bankName: 'ACME' },
+      status: 'Opened',
+      role: 'owner',
+      version: 1,
+    };
+    const creditAccount: AccountResponse = {
+      id: 'a3',
+      name: 'Credit Card',
+      balance: -200,
+      currency: 'USD',
+      overdraftLimit: null,
+      subtype: { type: 'bankAccount', bankName: 'Chase' },
+      status: 'Opened',
+      role: 'owner',
+      version: 1,
+    };
+
+    it('shows rows from multiple accounts, each labeled, under an Account column in the all-accounts view', async () => {
+      saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+      server.use(
+        http.get(`${apiBase}/api/accounts`, () =>
+          HttpResponse.json({ accounts: [checkingAccount, savingsAccount], totalCount: 2 }),
+        ),
+        http.get(`${apiBase}/api/transactions`, () =>
+          HttpResponse.json({
+            transactions: [
+              {
+                ...transactionFixture,
+                id: 'tx-a1',
+                description: 'ExpenseA1',
+                transactionType: 'expense',
+                sourceAccountId: 'a1',
+                targetAccountId: 'ext',
+              },
+              {
+                ...transactionFixture,
+                id: 'tx-a2',
+                description: 'IncomeA2',
+                transactionType: 'income',
+                sourceAccountId: 'ext',
+                targetAccountId: 'a2',
+                allocations: {
+                  incomes: [
+                    { categoryId: salaryCategoryId, amount: { amount: 100, currency: 'USD' } },
+                  ],
+                  expenses: [],
+                },
+              },
+            ],
+            totalCount: 2,
+          }),
+        ),
+      );
+      renderWithProviders(ui(), { initialPath: '/transactions' });
+
+      expect(await screen.findByRole('heading', { name: 'All accounts' })).toBeInTheDocument();
+      expect(await screen.findByRole('columnheader', { name: 'Account' })).toBeInTheDocument();
+
+      // accountLabel always appends the bank-name qualifier ("Checking · ACME"),
+      // even without a name collision — see accountLabelParts — so match by
+      // substring rather than the bare account name.
+      const expenseRow = (await screen.findByText('ExpenseA1')).closest('tr')!;
+      expect(within(expenseRow).getByText(/Checking/)).toBeInTheDocument();
+      const incomeRow = (await screen.findByText('IncomeA2')).closest('tr')!;
+      expect(within(incomeRow).getByText(/Savings/)).toBeInTheDocument();
+    });
+
+    it('filters to the selected subset while still showing the Account column', async () => {
+      saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+      server.use(
+        http.get(`${apiBase}/api/accounts`, () =>
+          HttpResponse.json({
+            accounts: [checkingAccount, savingsAccount, creditAccount],
+            totalCount: 3,
+          }),
+        ),
+        http.get(`${apiBase}/api/transactions`, () =>
+          HttpResponse.json({
+            transactions: [
+              {
+                ...transactionFixture,
+                id: 'tx-a1',
+                description: 'ExpenseA1',
+                transactionType: 'expense',
+                sourceAccountId: 'a1',
+                targetAccountId: 'ext',
+              },
+              {
+                ...transactionFixture,
+                id: 'tx-a2',
+                description: 'IncomeA2',
+                transactionType: 'income',
+                sourceAccountId: 'ext',
+                targetAccountId: 'a2',
+                allocations: {
+                  incomes: [
+                    { categoryId: salaryCategoryId, amount: { amount: 100, currency: 'USD' } },
+                  ],
+                  expenses: [],
+                },
+              },
+              {
+                ...transactionFixture,
+                id: 'tx-a3',
+                description: 'ExpenseA3Only',
+                transactionType: 'expense',
+                sourceAccountId: 'a3',
+                targetAccountId: 'ext',
+              },
+            ],
+            totalCount: 3,
+          }),
+        ),
+      );
+      renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1,a2' });
+
+      expect(await screen.findByRole('heading', { name: '2 accounts' })).toBeInTheDocument();
+      expect(await screen.findByRole('columnheader', { name: 'Account' })).toBeInTheDocument();
+      expect(await screen.findByText('ExpenseA1')).toBeInTheDocument();
+      expect(screen.getByText('IncomeA2')).toBeInTheDocument();
+      expect(screen.queryByText('ExpenseA3Only')).not.toBeInTheDocument();
+    });
+
+    it('has no Account column in single-account scope, and shows the account header + Quick add', async () => {
+      saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+      renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
+      expect(await screen.findByRole('heading', { name: 'Checking' })).toBeInTheDocument();
+      expect(await screen.findByLabelText('Quick add transaction')).toBeInTheDocument();
+      expect(screen.queryByRole('columnheader', { name: /account/i })).not.toBeInTheDocument();
+    });
+
+    it('changing the account filter chip to a single account updates the accounts URL param', async () => {
+      saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+      const user = userEvent.setup();
+      renderWithProviders(ui(), { initialPath: '/transactions' });
+      await screen.findByText(transactionFixture.description);
+      await openFilters(user);
+      await user.click(screen.getByPlaceholderText('All accounts'));
+      await user.click(await screen.findByRole('option', { name: /checking/i }));
+      await waitFor(() =>
+        expect(screen.getByTestId('search').textContent).toContain('accounts=a1'),
+      );
+    });
+
+    it('keeps the create actions enabled in the all-accounts view', async () => {
+      saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+      renderWithProviders(ui(), { initialPath: '/transactions' });
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: /add expense/i })).toHaveAttribute(
+          'aria-disabled',
+          'false',
+        ),
+      );
+    });
   });
 });

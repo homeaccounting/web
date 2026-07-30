@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -36,8 +36,19 @@ import { cn } from '@/lib/utils';
 import { flattenDictionary } from '@/api/dictionary';
 import { toast } from '@/lib/toast';
 import type { Allocations, TransactionResponse, TransactionTypeText, UUID } from '@/api/types';
-import { useWindowedTransactions } from './useWindowedTransactions';
 import { applyTransactionFilters, type TransactionFilters } from './transactionFilters';
+import {
+  accountsOf,
+  isSingleAccount,
+  parseAccountScope,
+  scopeSpansMultiple,
+  withAccountScope,
+} from './accountScope';
+import { transactionAccountCell, transactionDisplayAmount } from './transactionDisplayAmount';
+import { useScopedTransactions } from './useScopedTransactions';
+import { useAccounts } from '@/features/accounts/useAccounts';
+import { accountLabel } from '@/features/accounts/accountLabel';
+import { ScopeHeader } from './ScopeHeader';
 import {
   parsePeriodParams,
   periodParamsToSearch,
@@ -53,8 +64,6 @@ import {
   isAdjustment,
   isExpense,
   isIncome,
-  isTransfer,
-  transactionAmountClass,
   transactionKind,
   transactionTypeMeta,
 } from './transactionType';
@@ -102,15 +111,6 @@ const CONVERT_KINDS = ['income', 'expense', 'transfer'] as const;
 function convertTargets(type: TransactionTypeText): TransactionKind[] {
   const current = transactionKind(type);
   return CONVERT_KINDS.filter((k) => k !== current);
-}
-
-// Accounts whose cached transaction lists hold this row — mirrors
-// EditTransactionDialog's derivation so useEditTransaction patches the right caches.
-function affectedAccountIds(t: TransactionResponse): UUID[] {
-  if (isTransfer(t.transactionType) || isAdjustment(t.transactionType)) {
-    return [t.sourceAccountId, t.targetAccountId];
-  }
-  return [isIncome(t.transactionType) ? t.targetAccountId : t.sourceAccountId];
 }
 
 // Rebuild allocations with a new categoryId on the single slice (in whichever
@@ -203,12 +203,24 @@ const EMPTY_FILTERS: TransactionFilters = {
 const TX_PRESETS = ['this-month', 'last-month', 'this-year', 'last-year'] as const;
 
 export function TransactionsPane() {
-  const { id } = useParams<{ id?: string }>();
-
   // The date range is derived from the URL (?period / ?from / ?to), falling back
   // to the persisted "last view" and finally the default 'this-month' preset.
   const [searchParams, setSearchParams] = useSearchParams();
   const lastView = useMemo(() => readLastView(), []);
+
+  // Account scope is the URL `accounts` param resolved against the loaded
+  // accounts: all / a subset / a single account. `single` (the sole scoped id
+  // or null) drives per-account behaviours (header/balance, Quick add,
+  // viewed-leg amount); `showAccountColumn` gates the multi-account Account
+  // column.
+  const { data: accounts } = useAccounts();
+  const scope = useMemo(() => parseAccountScope(searchParams, accounts), [searchParams, accounts]);
+  const single = isSingleAccount(scope);
+  const showAccountColumn = scopeSpansMultiple(scope);
+  const accountsById = useMemo(
+    () => new Map((accounts ?? []).map((a) => [a.id, a] as const)),
+    [accounts],
+  );
   const { periodValue, dayRange } = parsePeriodParams(searchParams, new Date(), {
     presets: TX_PRESETS,
     defaultPreset: 'this-month',
@@ -233,25 +245,28 @@ export function TransactionsPane() {
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize, setPageSize] = usePersistedPageSize();
 
-  // Persist the current account + period (+ custom bounds) + filters so the
-  // view can be restored on reopen. Guard on `id` so bare `/` never writes an
-  // empty accountId.
+  // Persist the current scope + period (+ custom bounds) + filters so the
+  // view can be restored on reopen. Skip the bare `/` cold-start frame: HomePage
+  // renders this pane at `/` while it decides where to redirect, and writing the
+  // (transiently all-accounts) scope there would clobber the persisted last view
+  // before the redirect reads it. Persist only on the canonical `/transactions`.
+  const { pathname } = useLocation();
   useEffect(() => {
-    if (!id) return;
+    if (pathname === '/') return;
     writeLastView({
-      accountId: id,
+      accounts: scope.kind === 'all' ? 'all' : scope.ids,
       period: periodValue,
       ...(periodValue === 'custom' ? { from: dayRange.from, to: dayRange.to } : {}),
       filters,
     });
-  }, [id, periodValue, dayRange.from, dayRange.to, filters]);
+  }, [pathname, scope, periodValue, dayRange.from, dayRange.to, filters]);
 
-  const { data, isLoading, isError, refetch } = useWindowedTransactions(
-    id,
+  const { data, isLoading, isError, refetch } = useScopedTransactions(
+    scope,
     dayRange.from,
     dayRange.to,
   );
-  const { data: account, isLoading: accountLoading } = useAccountById(id);
+  const { data: account, isLoading: accountLoading } = useAccountById(single ?? undefined);
   const { data: configuration } = useConfiguration();
   const labelNameById = useDictionaryEntryNames(configuration);
   // The same id->name map resolves category names for the Category column.
@@ -274,7 +289,7 @@ export function TransactionsPane() {
     void edit
       .mutateAsync({
         id: t.id,
-        accountIds: affectedAccountIds(t),
+        accountIds: accountsOf(t),
         diff: { allocations: allocationsWithCategory(t.allocations, categoryId) },
         onSubCallApplied: () => {},
       })
@@ -288,7 +303,7 @@ export function TransactionsPane() {
   const commitLabels = (t: TransactionResponse, labels: UUID[]) =>
     edit.mutateAsync({
       id: t.id,
-      accountIds: affectedAccountIds(t),
+      accountIds: accountsOf(t),
       diff: { labels },
       onSubCallApplied: () => {},
     });
@@ -298,7 +313,7 @@ export function TransactionsPane() {
   const commitContact = (t: TransactionResponse, contactId: UUID | null) =>
     edit.mutateAsync({
       id: t.id,
-      accountIds: affectedAccountIds(t),
+      accountIds: accountsOf(t),
       diff: { contactId },
       onSubCallApplied: () => {},
     });
@@ -336,8 +351,9 @@ export function TransactionsPane() {
   // Multi-selection drives the bulk Link/Merge actions. The reset key clears the
   // selection whenever the scope (account / date window / filters) changes, but
   // NOT on page changes — so a selection can span pages for a merge.
+  const scopeKey = scope.kind === 'all' ? 'all' : scope.ids.join(',');
   const selection = useTransactionSelection(
-    `${id ?? ''}|${dayRange.from}|${dayRange.to}|${JSON.stringify(filters)}`,
+    `${scopeKey}|${dayRange.from}|${dayRange.to}|${JSON.stringify(filters)}`,
   );
   // Selected rows resolved from the whole loaded window (not just the visible
   // page), so a cross-page selection still merges/links correctly.
@@ -391,7 +407,7 @@ export function TransactionsPane() {
       selectedRows.map((t) =>
         edit.mutateAsync({
           id: t.id,
-          accountIds: affectedAccountIds(t),
+          accountIds: accountsOf(t),
           diff: { labels: withLabelAdded(t.labels, labelId) },
           onSubCallApplied: () => {},
         }),
@@ -402,7 +418,7 @@ export function TransactionsPane() {
       selectedRows.map((t) =>
         edit.mutateAsync({
           id: t.id,
-          accountIds: affectedAccountIds(t),
+          accountIds: accountsOf(t),
           diff: { labels: withLabelRemoved(t.labels, labelId) },
           onSubCallApplied: () => {},
         }),
@@ -413,7 +429,7 @@ export function TransactionsPane() {
       selectedRows.map((t) =>
         edit.mutateAsync({
           id: t.id,
-          accountIds: affectedAccountIds(t),
+          accountIds: accountsOf(t),
           diff: { allocations: allocationsWithCategory(t.allocations, categoryId) },
           onSubCallApplied: () => {},
         }),
@@ -499,21 +515,23 @@ export function TransactionsPane() {
   const [refundTarget, setRefundTarget] = useState<TransactionResponse | null>(null);
   const openRefund = (t: TransactionResponse) => setRefundTarget(t);
 
-  const header = account ? (
-    <AccountHeader account={account} />
-  ) : accountLoading ? (
-    <div className="border-b px-4 py-3">
-      <Skeleton className="h-8 w-full" />
-    </div>
-  ) : null;
+  const header = single ? (
+    account ? (
+      <AccountHeader account={account} />
+    ) : accountLoading ? (
+      <div className="border-b px-4 py-3">
+        <Skeleton className="h-8 w-full" />
+      </div>
+    ) : null
+  ) : (
+    <ScopeHeader scope={scope} accounts={accounts ?? []} />
+  );
 
-  const showFilterBar = !!id && !isLoading;
-  const showPagination = !!id && !isLoading && !isError && !!data && filtered.length > 0;
+  const showFilterBar = !isLoading;
+  const showPagination = !isLoading && !isError && !!data && filtered.length > 0;
 
   let body: ReactNode;
-  if (!id) {
-    body = <EmptyState message="Select an account." />;
-  } else if (isLoading) {
+  if (isLoading) {
     body = (
       <div className="space-y-2 p-4">
         {[0, 1, 2].map((i) => (
@@ -555,6 +573,7 @@ export function TransactionsPane() {
             <th className="w-8 px-4 py-2" />
             <th className="px-4 py-2 text-left font-medium">Date</th>
             <th className="px-4 py-2 text-left font-medium">Description</th>
+            {showAccountColumn && <th className="px-4 py-2 text-left font-medium">Account</th>}
             <th className="w-40 px-4 py-2 text-left font-medium">Category</th>
             <th className="px-4 py-2 text-right font-medium">Amount</th>
             <th className="w-20 px-2 py-2" />
@@ -562,14 +581,10 @@ export function TransactionsPane() {
         </thead>
         <tbody>
           {pageRows.map((t) => {
-            // Display the leg matching the currently-viewed account so the
-            // amount appears in that account's currency. Adjustments are
-            // booked against an External account in the base currency, so
-            // blindly using sourceAmount/sourceCurrency would show base
-            // currency for any incoming transfer.
-            const isTarget = t.targetAccountId === id && t.sourceAccountId !== id;
-            const amount = isTarget ? t.targetAmount : -t.sourceAmount;
-            const currency = isTarget ? t.targetCurrency : t.sourceCurrency;
+            // Display the leg matching the scoped account (single scope) so the
+            // amount appears in that account's currency; in multi/all scope a
+            // scope-independent per-type rule applies. See transactionDisplayAmount.
+            const { amount, currency, colorClass } = transactionDisplayAmount(t, single);
             const deEmphasized = t.status === 'Failed' || t.status === 'Cancelled';
             return (
               <ContextMenu key={`${t.id}:${menuNonce[t.id] ?? 0}`}>
@@ -719,6 +734,24 @@ export function TransactionsPane() {
                         );
                       })()}
                     </td>
+                    {showAccountColumn &&
+                      (() => {
+                        const cell = transactionAccountCell(t);
+                        const from = accountsById.get(cell.fromId);
+                        const to = cell.toId ? accountsById.get(cell.toId) : undefined;
+                        const list = accounts ?? [];
+                        return (
+                          <td className="whitespace-nowrap px-4 py-2 text-muted-foreground">
+                            {from ? accountLabel(from, list) : '—'}
+                            {cell.toId && (
+                              <>
+                                {' '}
+                                <span aria-hidden>→</span> {to ? accountLabel(to, list) : '—'}
+                              </>
+                            )}
+                          </td>
+                        );
+                      })()}
                     <td className="w-40 overflow-hidden px-4 py-2">
                       {/* A (possibly split) transaction's categories render as
                           colored chips — the same treatment as labels. Chips
@@ -733,7 +766,7 @@ export function TransactionsPane() {
                     <td
                       className={cn(
                         'px-4 py-2 text-right tabular-nums',
-                        !deEmphasized && transactionAmountClass(t.transactionType),
+                        !deEmphasized && colorClass,
                       )}
                     >
                       {formatMoney(amount, currency)}
@@ -894,7 +927,7 @@ export function TransactionsPane() {
 
   return (
     <div className="flex min-h-full flex-col">
-      <ControlBar selectedAccountId={id} selectedAccount={account} />
+      <ControlBar selectedAccountId={single ?? undefined} selectedAccount={account} />
       {header}
       {showFilterBar && (
         <div
@@ -933,6 +966,18 @@ export function TransactionsPane() {
           labelOptions={labelOptions}
           categoryOptions={categoryOptions}
           contactOptions={contactOptions}
+          accountOptions={accounts ?? []}
+          accountValue={scope.kind === 'all' ? [] : scope.ids}
+          onAccountChange={(ids) => {
+            setSearchParams(
+              withAccountScope(
+                searchParams,
+                ids.length ? { kind: 'accounts', ids } : { kind: 'all' },
+              ),
+              { replace: true },
+            );
+            setPageIndex(0);
+          }}
           onFiltersChange={updateFilters}
           onClear={clearFilters}
         />
@@ -950,7 +995,7 @@ export function TransactionsPane() {
           }}
         />
       )}
-      {id && <QuickAddPrompt accountId={id} accountName={account?.name} />}
+      {single && <QuickAddPrompt accountId={single} accountName={account?.name} />}
       {editing && (
         <EditTransactionDialog
           open

@@ -2,9 +2,10 @@ import { test, expect, type Page } from '@playwright/test';
 
 // End-to-end coverage for the transactions "view persistence" feature: the
 // selected account's period + filters survive a reload (localStorage lastView)
-// and a cold-start visit to `/` restores the last-opened account. Runs against
-// a live backend (@local). Follows the register/addWallet pattern used by
-// e2e/reports-grouping.spec.ts and e2e/sticky-transaction-date.spec.ts.
+// and a cold-start visit to `/` restores the last-opened account scope via
+// `/transactions?accounts=<id>`. Runs against a live backend (@local). Follows
+// the register/addWallet pattern used by e2e/reports-grouping.spec.ts and
+// e2e/sticky-transaction-date.spec.ts.
 
 async function register(page: Page) {
   const email = `e2e-tx-view-${Date.now()}-${Math.floor(performance.now())}@example.com`;
@@ -31,7 +32,7 @@ test.describe('transactions view persistence @local', () => {
     await addWallet(page);
 
     await page.getByRole('link', { name: /wallet/i }).click();
-    await expect(page).toHaveURL(/\/accounts\//);
+    await expect(page).toHaveURL(/\/transactions\?accounts=/);
 
     // Change the period → reflected in the URL.
     const period = page.getByRole('combobox', { name: /period/i });
@@ -54,8 +55,8 @@ test.describe('transactions view persistence @local', () => {
     await expect(page.getByPlaceholder(/description/i)).toHaveValue('Coffee');
 
     // Cold-start: visiting the bare app root redirects back to the last
-    // account once the accounts list loads.
+    // scope (`/transactions?accounts=<id>`) once the accounts list loads.
     await page.goto('');
-    await expect(page).toHaveURL(/\/accounts\//);
+    await expect(page).toHaveURL(/\/transactions/);
   });
 });

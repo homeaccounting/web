@@ -1,36 +1,41 @@
 import { useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { AccountsPane } from '@/features/accounts/AccountsPane';
 import { TransactionsPane } from '@/features/transactions/TransactionsPane';
 import { useAccounts } from '@/features/accounts/useAccounts';
 import { readLastView } from '@/features/transactions/lastView';
 import { periodParamsToSearch } from '@/lib/period';
+import { scopeToParam } from '@/features/transactions/accountScope';
 
-// Cold-start redirect: on bare `/` (no `:id`), once the accounts list has
-// loaded, jump to the last-opened account (from the transactions "last view"
-// persistence) and reconstruct its period into the URL so the transactions
-// pane restores the date range via its URL-first precedence. Guards: only
-// fires from `/` (never `/accounts/:id`, so it can't loop or hijack a
-// deep link); waits for accounts.isSuccess; no-ops if there's no last view or
-// the stored account was deleted (not in the current accounts list).
-function useRestoreLastAccount() {
-  const { id } = useParams<{ id?: string }>();
+// Cold-start: on bare `/`, once accounts have loaded, redirect to the canonical
+// `/transactions` route, reconstructing the persisted account scope + period so
+// the pane restores its view. Only fires from `/` (never `/transactions` or a
+// deep link). All-scope (or no last view) → `/transactions` with just the
+// period; a subset → `?accounts=…`, dropping ids no longer present.
+function useRestoreLastView() {
+  const { pathname } = useLocation();
   const navigate = useNavigate();
   const accounts = useAccounts();
   useEffect(() => {
-    if (id || !accounts.isSuccess) return;
+    if (pathname !== '/' || !accounts.isSuccess) return;
     const lv = readLastView();
-    if (!lv || !accounts.data?.some((a) => a.id === lv.accountId)) return;
     const search = new URLSearchParams(
-      periodParamsToSearch(lv.period, { from: lv.from ?? '', to: lv.to ?? '' }),
-    ).toString();
-    navigate(`/accounts/${lv.accountId}?${search}`, { replace: true });
-  }, [id, accounts.isSuccess, accounts.data, navigate]);
+      lv ? periodParamsToSearch(lv.period, { from: lv.from ?? '', to: lv.to ?? '' }) : '',
+    );
+    if (lv) {
+      const known = new Set(accounts.data?.map((a) => a.id));
+      const ids = lv.accounts === 'all' ? [] : lv.accounts.filter((id) => known.has(id));
+      const param = scopeToParam(ids.length ? { kind: 'accounts', ids } : { kind: 'all' });
+      if (param) search.set('accounts', param);
+    }
+    const qs = search.toString();
+    navigate(`/transactions${qs ? `?${qs}` : ''}`, { replace: true });
+  }, [pathname, accounts.isSuccess, accounts.data, navigate]);
 }
 
 export default function HomePage() {
-  useRestoreLastAccount();
+  useRestoreLastView();
   return (
     <div className="flex h-screen flex-col">
       <Header />

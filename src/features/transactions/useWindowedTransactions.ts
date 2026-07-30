@@ -64,11 +64,15 @@ export function useWindowedTransactions(
 //
 // The queryKey stays under the `['transactions', …]` prefix so link/unlink
 // invalidation (which invalidates the `['transactions']` prefix) refreshes it.
-export function useAllAccountsWindowedTransactions(fromDate: string, toDate: string) {
+export function useAllAccountsWindowedTransactions(
+  fromDate: string,
+  toDate: string,
+  enabled = true,
+) {
   const { tokenRef, signOut, session } = useAuth();
   return useQuery({
     queryKey: ['transactions', 'all', fromDate, toDate],
-    enabled: !!session,
+    enabled: !!session && enabled,
     queryFn: async (): Promise<TransactionResponse[]> => {
       const client = new ApiClient({
         baseUrl,

@@ -16,8 +16,8 @@ export function useCreateExpense() {
       });
       return transactionsApi(client).createExpense(body);
     },
-    onSuccess: (_tx, body) => {
-      void queryClient.invalidateQueries({ queryKey: ['transactions', body.accountId] });
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['transactions'] });
       void queryClient.invalidateQueries({ queryKey: ['accounts'] });
     },
   });

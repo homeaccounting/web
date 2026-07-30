@@ -48,11 +48,9 @@ export function useEditTransaction() {
 
       return last;
     },
-    onSettled: (_data, _err, { accountIds }) => {
+    onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: ['accounts'] });
-      for (const acc of accountIds) {
-        void queryClient.invalidateQueries({ queryKey: ['transactions', acc] });
-      }
+      void queryClient.invalidateQueries({ queryKey: ['transactions'] });
     },
   });
 }

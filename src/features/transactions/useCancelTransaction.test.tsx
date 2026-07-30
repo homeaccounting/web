@@ -42,7 +42,7 @@ describe('useCancelTransaction', () => {
     expect(deletedId).toBe('tx-1');
   });
 
-  it('invalidates accounts and transactions queries per account on settle', async () => {
+  it('invalidates accounts and the broad transactions prefix on settle', async () => {
     server.use(
       http.delete(`${apiBase}/api/transactions/:id`, () => new HttpResponse(null, { status: 204 })),
     );
@@ -56,7 +56,9 @@ describe('useCancelTransaction', () => {
     await result.current.mutateAsync({ id: 'tx-1', accountIds: ['a1', 'a2'] });
 
     expect(spy).toHaveBeenCalledWith({ queryKey: ['accounts'] });
-    expect(spy).toHaveBeenCalledWith({ queryKey: ['transactions', 'a1'] });
-    expect(spy).toHaveBeenCalledWith({ queryKey: ['transactions', 'a2'] });
+    // Single broad invalidation (not per-account) so it prefix-matches both
+    // the per-account key and the all-accounts/subset key
+    // (['transactions','all',from,to]) used by the all-accounts view.
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['transactions'] });
   });
 });

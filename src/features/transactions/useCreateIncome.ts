@@ -16,8 +16,8 @@ export function useCreateIncome() {
       });
       return transactionsApi(client).createIncome(body);
     },
-    onSuccess: (_tx, body) => {
-      void queryClient.invalidateQueries({ queryKey: ['transactions', body.accountId] });
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['transactions'] });
       void queryClient.invalidateQueries({ queryKey: ['accounts'] });
     },
   });

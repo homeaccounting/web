@@ -106,7 +106,9 @@ describe('useRefundTransaction', () => {
     });
     await result.current.mutateAsync(incomeRequestWithRelation);
 
-    expect(spy).toHaveBeenCalledWith({ queryKey: ['transactions', 'acc-1'] });
+    // Broad prefix so the all-accounts/subset view (['transactions','all',from,to])
+    // also refreshes, not just the per-account key.
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['transactions'] });
     expect(spy).toHaveBeenCalledWith({ queryKey: ['accounts'] });
     expect(spy).toHaveBeenCalledWith({ queryKey: ['transaction-relations', 'tx-original'] });
   });

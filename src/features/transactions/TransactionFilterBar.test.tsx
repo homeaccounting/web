@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { DictionaryEntryResponse } from '@/api/types';
+import type { AccountResponse, DictionaryEntryResponse } from '@/api/types';
 import { TransactionFilterBar } from './TransactionFilterBar';
 
 const labels: DictionaryEntryResponse[] = [{ id: 'l1', name: 'Trip' }];
@@ -10,6 +10,10 @@ const contacts: DictionaryEntryResponse[] = [
   { id: 'ct1', name: 'Acme Corp' },
   { id: 'ct2', name: 'Bob Builder' },
 ];
+const accounts = [
+  { id: 'a1', name: 'Checking', currency: 'USD' },
+  { id: 'a2', name: 'Savings', currency: 'USD' },
+] as AccountResponse[];
 
 function setup(overrides = {}) {
   const props = {
@@ -23,6 +27,9 @@ function setup(overrides = {}) {
     labelOptions: labels,
     categoryOptions: categories,
     contactOptions: contacts,
+    accountOptions: accounts,
+    accountValue: [],
+    onAccountChange: vi.fn(),
     onFiltersChange: vi.fn(),
     onClear: vi.fn(),
     ...overrides,
@@ -67,5 +74,16 @@ describe('TransactionFilterBar', () => {
     expect(props.onFiltersChange).toHaveBeenCalledWith(
       expect.objectContaining({ contactId: 'ct1' }),
     );
+  });
+  it('renders the account chip with the "All accounts" placeholder', () => {
+    setup();
+    expect(screen.getByPlaceholderText('All accounts')).toBeInTheDocument();
+  });
+  it('picking an account calls onAccountChange with that account id', async () => {
+    const user = userEvent.setup();
+    const props = setup();
+    await user.click(screen.getByPlaceholderText('All accounts'));
+    await user.click(screen.getByRole('option', { name: /Checking/ }));
+    expect(props.onAccountChange).toHaveBeenCalledWith(['a1']);
   });
 });

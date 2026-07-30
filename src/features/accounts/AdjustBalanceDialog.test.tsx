@@ -159,7 +159,9 @@ describe('AdjustBalanceDialog', () => {
       (call) => (call[0] as { queryKey: unknown[] } | undefined)?.queryKey,
     );
     expect(invalidationKeys).toContainEqual(['accounts']);
-    expect(invalidationKeys).toContainEqual(['transactions', 'a1']);
+    // Broad prefix so the all-accounts/subset view (['transactions','all',from,to])
+    // also refreshes, not just the per-account key.
+    expect(invalidationKeys).toContainEqual(['transactions']);
   });
 
   it('server returns 400 with fieldErrors.targetBalance: field error shown, dialog stays open', async () => {

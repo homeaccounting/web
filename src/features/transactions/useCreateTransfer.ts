@@ -16,10 +16,9 @@ export function useCreateTransfer() {
       });
       return transactionsApi(client).createTransfer(body);
     },
-    onSuccess: (_tx, body) => {
+    onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['accounts'] });
-      void queryClient.invalidateQueries({ queryKey: ['transactions', body.sourceAccountId] });
-      void queryClient.invalidateQueries({ queryKey: ['transactions', body.targetAccountId] });
+      void queryClient.invalidateQueries({ queryKey: ['transactions'] });
     },
   });
 }

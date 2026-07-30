@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import type { DictionaryEntryResponse } from '@/api/types';
+import type { AccountResponse, DictionaryEntryResponse, UUID } from '@/api/types';
+import { AccountMultiSelect } from './AccountMultiSelect';
 import { CategoryCombobox } from './CategoryCombobox';
 import { LabelMultiSelect } from './LabelMultiSelect';
 import type { TransactionFilters } from './transactionFilters';
@@ -11,6 +12,12 @@ export interface TransactionFilterBarProps {
   labelOptions: DictionaryEntryResponse[];
   categoryOptions: DictionaryEntryResponse[];
   contactOptions: DictionaryEntryResponse[];
+  // Account scope is URL-based (distinct from the in-state TransactionFilters
+  // above), so it is passed as separate props rather than folded into
+  // `filters` — see the TransactionsPane wiring (Task 9).
+  accountOptions: AccountResponse[];
+  accountValue: UUID[];
+  onAccountChange: (ids: UUID[]) => void;
   onFiltersChange: (next: TransactionFilters) => void;
   onClear: () => void;
 }
@@ -20,6 +27,9 @@ export function TransactionFilterBar({
   labelOptions,
   categoryOptions,
   contactOptions,
+  accountOptions,
+  accountValue,
+  onAccountChange,
   onFiltersChange,
   onClear,
 }: TransactionFilterBarProps) {
@@ -37,6 +47,14 @@ export function TransactionFilterBar({
 
   return (
     <div className="flex flex-wrap items-center gap-2 border-b px-3 py-2 text-sm">
+      <div className="w-64">
+        <AccountMultiSelect
+          options={accountOptions}
+          value={accountValue}
+          onChange={onAccountChange}
+          containerClassName="h-10 flex-nowrap overflow-x-auto"
+        />
+      </div>
       <Input
         placeholder="Description…"
         value={filters.description}

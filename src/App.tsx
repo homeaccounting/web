@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from '@/auth/ProtectedRoute';
 import HomePage from '@/pages/HomePage';
+import AccountRedirect from '@/pages/AccountRedirect';
 import LoginPage from '@/pages/LoginPage';
 import RegisterPage from '@/pages/RegisterPage';
 import OAuthCallbackPage from '@/pages/OAuthCallbackPage';
@@ -16,9 +17,10 @@ export default function App() {
       <Route path="/auth/oauth/:provider/callback" element={<OAuthCallbackPage />} />
       <Route element={<ProtectedRoute />}>
         <Route path="/" element={<HomePage />} />
-        {/* Bare /accounts has no index view — canonicalize to the home URL. */}
-        <Route path="/accounts" element={<Navigate to="/" replace />} />
-        <Route path="/accounts/:id" element={<HomePage />} />
+        <Route path="/transactions" element={<HomePage />} />
+        {/* Legacy account-scoped URLs redirect to the canonical /transactions route. */}
+        <Route path="/accounts" element={<Navigate to="/transactions" replace />} />
+        <Route path="/accounts/:id" element={<AccountRedirect />} />
         <Route path="/reports" element={<ReportsPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/profile/:tab" element={<ProfilePage />} />

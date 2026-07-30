@@ -37,7 +37,9 @@ describe('usePrompt', () => {
     const { result } = renderHook(() => usePrompt(), { wrapper: makeWrapper(client) });
     await result.current.mutateAsync({ text: 'coffee 4.50', account: 'a1' });
     await waitFor(() => {
-      expect(spy).toHaveBeenCalledWith({ queryKey: ['transactions', 'a1'] });
+      // Broad prefix so the all-accounts/subset view (['transactions','all',from,to])
+      // also refreshes, not just the per-account key.
+      expect(spy).toHaveBeenCalledWith({ queryKey: ['transactions'] });
       expect(spy).toHaveBeenCalledWith({ queryKey: ['accounts'] });
     });
   });
