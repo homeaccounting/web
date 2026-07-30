@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ArrowDownToLine, ArrowUpFromLine, ArrowLeftRight, Scale } from 'lucide-react';
-import { transactionTypeMeta } from './transactionType';
+import { transactionAmountClass, transactionTypeMeta } from './transactionType';
 
 describe('transactionTypeMeta', () => {
   it('maps each known type to its icon, color, and label', () => {
@@ -26,5 +26,21 @@ describe('transactionTypeMeta', () => {
     const meta = transactionTypeMeta('weird');
     expect(meta.label).toBe('weird');
     expect(meta.Icon).toBeTypeOf('object');
+  });
+});
+
+describe('transactionAmountClass', () => {
+  it('colors income green and expense red', () => {
+    expect(transactionAmountClass('income')).toBe('text-positive');
+    expect(transactionAmountClass('expense')).toBe('text-negative');
+  });
+
+  it('leaves transfer and adjustment neutral (red/green is only for external-account income/expense)', () => {
+    expect(transactionAmountClass('transfer')).toBe('');
+    expect(transactionAmountClass('adjustment')).toBe('');
+  });
+
+  it('leaves an unknown type neutral', () => {
+    expect(transactionAmountClass('weird')).toBe('');
   });
 });

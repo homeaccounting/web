@@ -56,3 +56,18 @@ export function transactionTypeMeta(type: TransactionTypeText): TransactionTypeM
       return { Icon: Circle, colorClass: 'text-muted-foreground', label: type || 'Unknown' };
   }
 }
+
+// Directional color class for a transaction AMOUNT. Red/green is reserved for
+// money genuinely entering or leaving via an external account — i.e. income
+// (green) and expense (red). A transfer moves money between the user's own
+// accounts and an adjustment reconciles a balance, so neither is "spending" or
+// "earning": both render neutral (default foreground), consistently on the
+// source and target legs. Returns '' for the neutral case.
+//
+// Distinct from `transactionTypeMeta().colorClass`, which colors the type icon
+// (e.g. a transfer icon is blue) rather than the amount.
+export function transactionAmountClass(type: TransactionTypeText): string {
+  if (isIncome(type)) return 'text-positive';
+  if (isExpense(type)) return 'text-negative';
+  return '';
+}

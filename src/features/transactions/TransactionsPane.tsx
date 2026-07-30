@@ -54,6 +54,7 @@ import {
   isExpense,
   isIncome,
   isTransfer,
+  transactionAmountClass,
   transactionKind,
   transactionTypeMeta,
 } from './transactionType';
@@ -569,7 +570,6 @@ export function TransactionsPane() {
             const isTarget = t.targetAccountId === id && t.sourceAccountId !== id;
             const amount = isTarget ? t.targetAmount : -t.sourceAmount;
             const currency = isTarget ? t.targetCurrency : t.sourceCurrency;
-            const negative = amount < 0;
             const deEmphasized = t.status === 'Failed' || t.status === 'Cancelled';
             return (
               <ContextMenu key={`${t.id}:${menuNonce[t.id] ?? 0}`}>
@@ -733,8 +733,7 @@ export function TransactionsPane() {
                     <td
                       className={cn(
                         'px-4 py-2 text-right tabular-nums',
-                        !deEmphasized && negative && 'text-negative',
-                        !deEmphasized && isIncome(t.transactionType) && 'text-positive',
+                        !deEmphasized && transactionAmountClass(t.transactionType),
                       )}
                     >
                       {formatMoney(amount, currency)}
