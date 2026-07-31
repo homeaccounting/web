@@ -110,6 +110,73 @@ describe('TransactionsPane — selection-driven merge', () => {
     expect(screen.getByRole('radio', { name: /Pastry/ })).toBeInTheDocument();
   });
 
+  it('merges an income+expense pair on different accounts into a transfer', async () => {
+    const user = userEvent.setup();
+    const transferIn: TransactionResponse = {
+      ...transactionFixture,
+      id: 't-in',
+      description: 'Transfer in',
+      transactionType: 'income',
+      sourceAccountId: 'external',
+      targetAccountId: 'a-savings',
+      sourceAmount: 100,
+      sourceCurrency: 'USD',
+      targetAmount: 100,
+      targetCurrency: 'USD',
+      allocations: {
+        incomes: [{ categoryId: 'c', amount: { amount: 100, currency: 'USD' } }],
+        expenses: [],
+      },
+    };
+    const transferOut: TransactionResponse = {
+      ...transactionFixture,
+      id: 't-out',
+      description: 'Transfer out',
+      transactionType: 'expense',
+      sourceAccountId: 'a-checking',
+      targetAccountId: 'external',
+      sourceAmount: 100,
+      sourceCurrency: 'USD',
+      targetAmount: 100,
+      targetCurrency: 'USD',
+      allocations: {
+        incomes: [],
+        expenses: [{ categoryId: 'c', amount: { amount: 100, currency: 'USD' } }],
+      },
+    };
+    let captured: unknown;
+    let calledId = '';
+    server.use(
+      http.get(`${apiBase}/api/transactions`, () =>
+        HttpResponse.json({
+          transactions: [transferIn, transferOut],
+          totalCount: 2,
+          limit: 50,
+          offset: 0,
+        }),
+      ),
+      http.post(`${apiBase}/api/transactions/:id/merge`, async ({ request, params }) => {
+        calledId = params.id as string;
+        captured = await request.json();
+        return HttpResponse.json({ ...transferIn, transactionType: 'transfer', amendmentCount: 1 });
+      }),
+    );
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    await screen.findByText('Transfer in');
+
+    await select(user, 'transfer in');
+    await select(user, 'transfer out');
+    await user.click(await screen.findByRole('button', { name: /merge selected/i }));
+
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveTextContent(/merge into transfer/i);
+    await user.click(await screen.findByRole('button', { name: /make transfer/i }));
+
+    // Income is the survivor (:id); the expense is the single cancelled source.
+    await waitFor(() => expect(calledId).toBe('t-in'));
+    expect(captured).toEqual({ sourceTransactionIds: ['t-out'] });
+  });
+
   it('merges the selected rows into the chosen survivor and clears the selection', async () => {
     const user = userEvent.setup();
     let captured: unknown;

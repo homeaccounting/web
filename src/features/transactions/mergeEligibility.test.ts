@@ -6,6 +6,8 @@ import {
   mergeAccountId,
   mergeCurrency,
   resolveMergeContact,
+  transferPairOf,
+  MERGE_TRANSFER_WINDOW_MS,
 } from './mergeEligibility';
 
 const tx = (over: Partial<TransactionResponse>): TransactionResponse => ({
@@ -70,11 +72,17 @@ describe('checkMergeEligibility', () => {
   });
 
   it('accepts two compatible expenses on the same account/currency', () => {
-    expect(checkMergeEligibility([expense(), expense()])).toEqual({ eligible: true });
+    expect(checkMergeEligibility([expense(), expense()])).toEqual({
+      eligible: true,
+      mode: 'same-kind',
+    });
   });
 
   it('accepts three compatible incomes', () => {
-    expect(checkMergeEligibility([income(), income(), income()])).toEqual({ eligible: true });
+    expect(checkMergeEligibility([income(), income(), income()])).toEqual({
+      eligible: true,
+      mode: 'same-kind',
+    });
   });
 
   it('rejects when any transaction is not Completed', () => {
@@ -93,8 +101,8 @@ describe('checkMergeEligibility', () => {
     ).toEqual({ eligible: false, reason: 'unsupported-kind' });
   });
 
-  it('rejects mixing income with expense', () => {
-    expect(checkMergeEligibility([expense(), income()])).toEqual({
+  it('rejects a three-row mix of income and expense (not a one-to-one transfer)', () => {
+    expect(checkMergeEligibility([income(), income(), expense()])).toEqual({
       eligible: false,
       reason: 'mixed-kinds',
     });
@@ -123,11 +131,13 @@ describe('checkMergeEligibility', () => {
       checkMergeEligibility([expense({ contactId: 'k' }), expense({ contactId: null })]),
     ).toEqual({
       eligible: true,
+      mode: 'same-kind',
     });
     expect(
       checkMergeEligibility([expense({ contactId: 'k' }), expense({ contactId: 'k' })]),
     ).toEqual({
       eligible: true,
+      mode: 'same-kind',
     });
   });
 
@@ -135,6 +145,113 @@ describe('checkMergeEligibility', () => {
     expect(
       checkMergeEligibility([expense({ contactId: 'k1' }), expense({ contactId: 'k2' })]),
     ).toEqual({ eligible: false, reason: 'conflicting-contacts' });
+  });
+});
+
+// A matching income+expense pair on two different accounts: same amount +
+// currency, same instant. Mirrors the backend transfer-merge guards.
+const transferIncome = (over: Partial<TransactionResponse> = {}): TransactionResponse =>
+  income({
+    targetAccountId: 'accIn',
+    targetAmount: 100,
+    targetCurrency: 'EUR',
+    date: '2026-07-06T00:00:00Z',
+    ...over,
+  });
+const transferExpense = (over: Partial<TransactionResponse> = {}): TransactionResponse =>
+  expense({
+    sourceAccountId: 'accEx',
+    sourceAmount: 100,
+    sourceCurrency: 'EUR',
+    date: '2026-07-06T00:00:00Z',
+    ...over,
+  });
+
+describe('checkMergeEligibility — transfer pair (income + expense)', () => {
+  it('accepts a matching income+expense pair on different accounts', () => {
+    expect(checkMergeEligibility([transferIncome(), transferExpense()])).toEqual({
+      eligible: true,
+      mode: 'transfer',
+    });
+  });
+
+  it('is order-independent (expense listed first)', () => {
+    expect(checkMergeEligibility([transferExpense(), transferIncome()])).toEqual({
+      eligible: true,
+      mode: 'transfer',
+    });
+  });
+
+  it('rejects a pair that resolves to the same account', () => {
+    expect(
+      checkMergeEligibility([
+        transferIncome({ targetAccountId: 'same' }),
+        transferExpense({ sourceAccountId: 'same' }),
+      ]),
+    ).toEqual({ eligible: false, reason: 'transfer-same-account' });
+  });
+
+  it('rejects legs with unequal amounts', () => {
+    expect(
+      checkMergeEligibility([
+        transferIncome({ targetAmount: 100 }),
+        transferExpense({ sourceAmount: 90 }),
+      ]),
+    ).toEqual({ eligible: false, reason: 'transfer-legs-mismatch' });
+  });
+
+  it('rejects legs with unequal currencies', () => {
+    expect(
+      checkMergeEligibility([
+        transferIncome({ targetCurrency: 'EUR' }),
+        transferExpense({ sourceCurrency: 'USD' }),
+      ]),
+    ).toEqual({ eligible: false, reason: 'transfer-legs-mismatch' });
+  });
+
+  it('rejects legs more than the window apart', () => {
+    expect(
+      checkMergeEligibility([
+        transferIncome({ date: '2026-07-06T00:00:00Z' }),
+        transferExpense({ date: '2026-07-07T00:00:01Z' }), // 24h + 1s
+      ]),
+    ).toEqual({ eligible: false, reason: 'transfer-legs-mismatch' });
+  });
+
+  it('accepts legs exactly at the window boundary (inclusive)', () => {
+    expect(
+      checkMergeEligibility([
+        transferIncome({ date: '2026-07-06T00:00:00Z' }),
+        transferExpense({ date: '2026-07-07T00:00:00Z' }), // exactly 24h
+      ]),
+    ).toEqual({ eligible: true, mode: 'transfer' });
+  });
+
+  it('rejects when a leg is not Completed', () => {
+    expect(
+      checkMergeEligibility([transferIncome(), transferExpense({ status: 'Cancelled' })]),
+    ).toEqual({ eligible: false, reason: 'not-completed' });
+  });
+});
+
+describe('transferPairOf', () => {
+  it('resolves the income and expense regardless of order', () => {
+    const inc = transferIncome();
+    const exp = transferExpense();
+    expect(transferPairOf([inc, exp])).toEqual({ income: inc, expense: exp });
+    expect(transferPairOf([exp, inc])).toEqual({ income: inc, expense: exp });
+  });
+
+  it('returns null for non-pairs', () => {
+    expect(transferPairOf([transferIncome()])).toBeNull();
+    expect(transferPairOf([transferIncome(), transferIncome()])).toBeNull();
+    expect(transferPairOf([transferIncome(), transferExpense(), transferExpense()])).toBeNull();
+  });
+});
+
+describe('MERGE_TRANSFER_WINDOW_MS', () => {
+  it('mirrors the backend 24h merge window', () => {
+    expect(MERGE_TRANSFER_WINDOW_MS).toBe(24 * 60 * 60 * 1000);
   });
 });
 

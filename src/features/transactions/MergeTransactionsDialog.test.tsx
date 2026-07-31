@@ -57,6 +57,79 @@ const expenseOf = (
     ...over,
   });
 
+// A matching income+expense transfer pair on two different accounts.
+const accEx = '00000000-0000-0000-0000-0000000000ex';
+const accIn = '00000000-0000-0000-0000-0000000000in';
+
+function transferExpense(over: Partial<TransactionResponse> = {}): TransactionResponse {
+  return expenseTx({
+    id: 'EXP',
+    description: 'Sent to savings',
+    sourceAccountId: accEx,
+    sourceAmount: 100,
+    sourceCurrency: 'EUR',
+    targetAmount: 100,
+    targetCurrency: 'EUR',
+    date: '2026-04-27T08:00:00Z',
+    ...over,
+  });
+}
+
+function transferIncome(over: Partial<TransactionResponse> = {}): TransactionResponse {
+  return expenseTx({
+    id: 'INC',
+    description: 'Received from checking',
+    transactionType: 'income',
+    sourceAccountId: 'external-1',
+    targetAccountId: accIn,
+    sourceAmount: 100,
+    sourceCurrency: 'EUR',
+    targetAmount: 100,
+    targetCurrency: 'EUR',
+    allocations: {
+      incomes: [{ categoryId: 'c', amount: { amount: 100, currency: 'EUR' } }],
+      expenses: [],
+    },
+    date: '2026-04-27T08:00:00Z',
+    ...over,
+  });
+}
+
+// Two accounts so the From→To summary resolves distinct labels.
+function useTwoAccounts() {
+  server.use(
+    http.get(`${apiBase}/api/accounts`, () =>
+      HttpResponse.json({
+        accounts: [
+          {
+            id: accEx,
+            name: 'Checking',
+            balance: 0,
+            currency: 'EUR',
+            overdraftLimit: null,
+            subtype: { type: 'bankAccount', bankName: 'ACME' },
+            status: 'Opened',
+            role: 'owner',
+            version: 1,
+          },
+          {
+            id: accIn,
+            name: 'Savings',
+            balance: 0,
+            currency: 'EUR',
+            overdraftLimit: null,
+            subtype: { type: 'bankAccount', bankName: 'ACME' },
+            status: 'Opened',
+            role: 'owner',
+            version: 1,
+          },
+        ],
+        totalCount: 2,
+      }),
+    ),
+  );
+}
+
 function Wrapper({ selected }: { selected: TransactionResponse[] }) {
   const [open, setOpen] = useState(true);
   return (
@@ -161,6 +234,69 @@ describe('MergeTransactionsDialog', () => {
     renderWithProviders(<Wrapper selected={selected} />, { initialPath: '/' });
     expect(screen.getByRole('button', { name: /^merge$/i })).toBeDisabled();
     expect(screen.getByRole('alert')).toHaveTextContent(/currency/i);
+  });
+
+  it('renders a transfer summary (no survivor radios) for an income+expense pair', async () => {
+    useTwoAccounts();
+    renderWithProviders(<Wrapper selected={[transferIncome(), transferExpense()]} />, {
+      initialPath: '/',
+    });
+
+    // From = the expense's account, To = the income's account (await accounts load).
+    const summary = await screen.findByTestId('transfer-summary');
+    await waitFor(() => expect(summary).toHaveTextContent('Checking'));
+    expect(summary).toHaveTextContent('Savings');
+    expect(summary).toHaveTextContent('€100.00');
+    // No survivor picker in transfer mode — the income is always the survivor.
+    expect(screen.queryAllByRole('radio')).toHaveLength(0);
+  });
+
+  it('merges an income+expense pair into a transfer: posts the expense as source to the income id', async () => {
+    const user = userEvent.setup();
+    useTwoAccounts();
+    let captured: unknown;
+    let calledId = '';
+    server.use(
+      http.post(`${apiBase}/api/transactions/:id/merge`, async ({ request, params }) => {
+        calledId = params.id as string;
+        captured = await request.json();
+        return HttpResponse.json({
+          ...transferIncome(),
+          transactionType: 'transfer',
+          amendmentCount: 1,
+        });
+      }),
+    );
+    renderWithProviders(<Wrapper selected={[transferExpense(), transferIncome()]} />, {
+      initialPath: '/',
+    });
+
+    await user.click(await screen.findByRole('button', { name: /transfer/i }));
+
+    await waitFor(() => expect(calledId).toBe('INC'));
+    expect(captured).toEqual({ sourceTransactionIds: ['EXP'] });
+  });
+
+  it('blocks and explains a same-account income+expense pair', () => {
+    useTwoAccounts();
+    renderWithProviders(
+      <Wrapper selected={[transferIncome({ targetAccountId: accEx }), transferExpense()]} />,
+      { initialPath: '/' },
+    );
+    expect(screen.getByRole('button', { name: /transfer|merge/i })).toBeDisabled();
+    expect(screen.getByRole('alert')).toHaveTextContent(/two different accounts/i);
+  });
+
+  it('blocks and explains a non-matching income+expense pair (unequal amount)', () => {
+    useTwoAccounts();
+    renderWithProviders(
+      <Wrapper
+        selected={[transferIncome({ targetAmount: 100 }), transferExpense({ sourceAmount: 90 })]}
+      />,
+      { initialPath: '/' },
+    );
+    expect(screen.getByRole('button', { name: /transfer|merge/i })).toBeDisabled();
+    expect(screen.getByRole('alert')).toHaveTextContent(/must match/i);
   });
 
   it('surfaces a server error without closing', async () => {

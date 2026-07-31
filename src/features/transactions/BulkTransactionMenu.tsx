@@ -121,10 +121,18 @@ export function BulkTransactionMenu({
         </ContextMenuItem>
       )}
       {count >= 2 && (
-        <ContextMenuItem onSelect={onMerge} disabled={!canMerge}>
-          <Merge className="mr-2 h-4 w-4" aria-hidden />
-          Merge{!canMerge && mergeDisabledReason ? ` — ${mergeDisabledReason}` : ''}
-        </ContextMenuItem>
+        <>
+          <ContextMenuItem onSelect={onMerge} disabled={!canMerge}>
+            <Merge className="mr-2 h-4 w-4" aria-hidden />
+            Merge
+          </ContextMenuItem>
+          {/* Reason as a muted subtitle (matching the disabled category/labels
+              items above) rather than appended inline, so a long transfer-merge
+              reason wraps instead of stretching the menu. */}
+          {!canMerge && mergeDisabledReason && (
+            <div className="px-2 pb-1 text-xs text-muted-foreground">{mergeDisabledReason}</div>
+          )}
+        </>
       )}
     </>
   );

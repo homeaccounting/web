@@ -20,6 +20,7 @@ const base = {
   onCreateLabel: () => Promise.resolve(null),
   canLink: false,
   canMerge: true,
+  mergeDisabledReason: undefined as string | undefined,
   onLink: vi.fn(),
   onMerge: vi.fn(),
 };
@@ -53,6 +54,20 @@ describe('BulkTransactionMenu', () => {
     await open(user);
     expect(await screen.findByText(/3 selected/i)).toBeInTheDocument();
     expect(screen.getByText(/one type to set a category/i)).toBeInTheDocument();
+  });
+
+  it('shows the merge-disabled reason as a subtitle without lengthening the item', async () => {
+    const user = userEvent.setup();
+    renderMenu({
+      categoryEligibility: { enabled: true, type: 'expense' },
+      canMerge: false,
+      mergeDisabledReason: 'A transfer needs two different accounts.',
+    });
+    await open(user);
+    // The item's accessible name stays just "Merge" (reason is a separate line).
+    const item = await screen.findByRole('menuitem', { name: /^merge$/i });
+    expect(item).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.getByText(/two different accounts/i)).toBeInTheDocument();
   });
 
   it('fires onMerge but hides Link when canLink is false', async () => {

@@ -16,6 +16,18 @@ export function mergeCurrency(tx: TransactionResponse): string {
   return tx.transactionType === TRANSACTION_TYPE.income ? tx.targetCurrency : tx.sourceCurrency;
 }
 
+// Amount of the leg that moves in a transfer-merge: an income's credited target
+// amount, an expense's debited source amount. Matches the backend's leg
+// projection (`transferMerge` uses `income.targetAmount` / `expense.sourceAmount`).
+export function mergeLegAmount(tx: TransactionResponse): number {
+  return tx.transactionType === TRANSACTION_TYPE.income ? tx.targetAmount : tx.sourceAmount;
+}
+
+// Time tolerance for a manual income/expense → transfer merge, mirroring the
+// backend `mergeTransferWindow` (24h). More relaxed than import's 5-minute
+// pairing: a manually-reconciled transfer may have legs dated further apart.
+export const MERGE_TRANSFER_WINDOW_MS = 24 * 60 * 60 * 1000;
+
 // Categorised total: sum of both allocation buckets. Matches how the backend
 // derives a transaction's categorised total (and relationIndex.txTotal).
 export function categorisedTotal(tx: TransactionResponse): number {
@@ -36,9 +48,20 @@ export type MergeIneligibility =
   | 'mixed-kinds'
   | 'different-accounts'
   | 'different-currencies'
-  | 'conflicting-contacts';
+  | 'conflicting-contacts'
+  | 'transfer-same-account'
+  | 'transfer-legs-mismatch';
 
-export type MergeEligibility = { eligible: true } | { eligible: false; reason: MergeIneligibility };
+// The two merge modes, dispatched on the selection's shape:
+//  - 'same-kind': ≥2 income (or ≥2 expense) on one account/currency folded into
+//    a survivor that absorbs their allocations (the original merge).
+//  - 'transfer': one income + one expense on different accounts collapsed into a
+//    single Transfer (tracker#44). The income is always the survivor.
+export type MergeMode = 'same-kind' | 'transfer';
+
+export type MergeEligibility =
+  | { eligible: true; mode: MergeMode }
+  | { eligible: false; reason: MergeIneligibility };
 
 // User-facing explanation per ineligibility reason. Shared by the merge dialog
 // (inline alert) and the selection action bar (disabled-Merge tooltip).
@@ -51,11 +74,39 @@ export const MERGE_INELIGIBILITY_MESSAGE: Record<MergeIneligibility, string> = {
   'different-currencies': 'All transactions must use the same currency.',
   'conflicting-contacts':
     'The selection has two different contacts. They must share one contact, or leave it unset.',
+  'transfer-same-account': 'A transfer needs two different accounts.',
+  'transfer-legs-mismatch': 'Amount, currency, and dates (within 24h) must match.',
 };
 
 const nonEmptyContacts = (txs: TransactionResponse[]): UUID[] => [
   ...new Set(txs.map((t) => t.contactId).filter((c): c is UUID => c != null)),
 ];
+
+// A transfer-merge selection is exactly one income + one expense. Returns the
+// two legs (income = the eventual survivor, expense = the cancelled leg) in a
+// fixed shape regardless of selection order, or null for any other shape.
+export function transferPairOf(
+  txs: TransactionResponse[],
+): { income: TransactionResponse; expense: TransactionResponse } | null {
+  if (txs.length !== 2) return null;
+  const income = txs.find((t) => t.transactionType === TRANSACTION_TYPE.income);
+  const expense = txs.find((t) => t.transactionType === TRANSACTION_TYPE.expense);
+  return income && expense ? { income, expense } : null;
+}
+
+// Whether an income+expense pair is really one movement, mirroring the backend
+// `isTransferMatch mergeTransferWindow`: equal amount ∧ currency (opposite
+// direction is implied by the one-income/one-expense shape) within the 24h
+// window. Account distinctness is checked separately so the UI can explain it.
+function legsMatch(income: TransactionResponse, expense: TransactionResponse): boolean {
+  const sameMoney =
+    roundMoney(mergeLegAmount(income)) === roundMoney(mergeLegAmount(expense)) &&
+    mergeCurrency(income) === mergeCurrency(expense);
+  const withinWindow =
+    Math.abs(new Date(income.date).getTime() - new Date(expense.date).getTime()) <=
+    MERGE_TRANSFER_WINDOW_MS;
+  return sameMoney && withinWindow;
+}
 
 // Client-side pre-check mirroring the backend merge compatibility rules so the
 // UI can disable/explain before calling the endpoint. Only income+income or
@@ -65,6 +116,18 @@ export function checkMergeEligibility(txs: TransactionResponse[]): MergeEligibil
   if (txs.length < 2) return { eligible: false, reason: 'too-few' };
   if (!txs.every((t) => t.status === 'Completed'))
     return { eligible: false, reason: 'not-completed' };
+
+  // Transfer-merge branch: one income + one expense. Dispatched on shape before
+  // the same-kind checks, which would otherwise reject the opposite kinds as
+  // 'mixed-kinds'. Mirrors the backend routing opposite kinds to transfer-merge.
+  const pair = transferPairOf(txs);
+  if (pair) {
+    if (mergeAccountId(pair.income) === mergeAccountId(pair.expense))
+      return { eligible: false, reason: 'transfer-same-account' };
+    if (!legsMatch(pair.income, pair.expense))
+      return { eligible: false, reason: 'transfer-legs-mismatch' };
+    return { eligible: true, mode: 'transfer' };
+  }
 
   const kinds = new Set(txs.map((t) => t.transactionType));
   const supported = (k: string): boolean =>
@@ -78,7 +141,7 @@ export function checkMergeEligibility(txs: TransactionResponse[]): MergeEligibil
     return { eligible: false, reason: 'different-currencies' };
   if (nonEmptyContacts(txs).length > 1) return { eligible: false, reason: 'conflicting-contacts' };
 
-  return { eligible: true };
+  return { eligible: true, mode: 'same-kind' };
 }
 
 // The contact carried onto the merged transaction: the single distinct contact
