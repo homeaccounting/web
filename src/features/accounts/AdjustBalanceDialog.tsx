@@ -20,8 +20,9 @@ import {
   SelectItem,
 } from '@/components/ui/select';
 import { DatePicker } from '@/components/DatePicker';
+import { MoneyInput } from '@/components/MoneyInput';
 import { RequiredMarker } from '@/components/RequiredMarker';
-import { nowDateTimeInput } from '@/lib/dates';
+import { defaultTransactionDate, writeStickyDay } from '@/lib/stickyDate';
 import { ApiError } from '@/api/client';
 import type { AccountResponse, UUID } from '@/api/types';
 import {
@@ -94,7 +95,9 @@ function AdjustBalanceForm({ accounts, selectedAccountId, onClose }: AdjustBalan
       accountId: defaultAccount.id,
       targetBalance: defaultAccount.balance,
       description: '',
-      date: nowDateTimeInput(),
+      // Seed from the shared sticky last-used day (parity with the
+      // income/expense/transfer dialogs); falls back to now. See stickyDate.ts.
+      date: defaultTransactionDate(new Date()),
     },
   });
 
@@ -120,6 +123,7 @@ function AdjustBalanceForm({ accounts, selectedAccountId, onClose }: AdjustBalan
   const onSubmit = form.handleSubmit(async (values) => {
     try {
       await adjust.mutateAsync(toAdjustBalanceRequest(values, selected.currency));
+      writeStickyDay(values.date, new Date());
       onClose();
       form.reset();
     } catch (e) {
@@ -178,44 +182,61 @@ function AdjustBalanceForm({ accounts, selectedAccountId, onClose }: AdjustBalan
             ({selected.currency})
           </div>
 
-          <FormField
-            control={form.control}
-            name="targetBalance"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>
-                  Target balance
-                  <RequiredMarker />
-                </FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    step="any"
-                    name={field.name}
-                    ref={field.ref}
-                    onBlur={field.onBlur}
-                    value={
-                      field.value === undefined ||
-                      field.value === null ||
-                      (typeof field.value === 'number' && Number.isNaN(field.value))
-                        ? ''
-                        : field.value
-                    }
-                    onChange={(e) => {
-                      const raw = e.target.value;
-                      if (raw === '' || raw === '-') {
-                        field.onChange(raw);
-                        return;
-                      }
-                      const n = e.target.valueAsNumber;
-                      field.onChange(Number.isNaN(n) ? raw : n);
-                    }}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          {/* Target balance + Date share one row, mirroring TransferForm's
+              "Amount | Date" layout so the primary value and date sit in
+              consistent places across the transaction dialogs. */}
+          <div
+            data-testid="form-grid-target-date"
+            className="grid grid-cols-1 gap-4 sm:grid-cols-2"
+          >
+            <FormField
+              control={form.control}
+              name="targetBalance"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Target balance
+                    <RequiredMarker />
+                  </FormLabel>
+                  <FormControl>
+                    <MoneyInput
+                      currency={selected.currency}
+                      value={field.value}
+                      onChange={field.onChange}
+                      name={field.name}
+                      onBlur={field.onBlur}
+                      inputRef={field.ref}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="date"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Date
+                    <RequiredMarker />
+                  </FormLabel>
+                  <FormControl>
+                    <DatePicker
+                      withTime
+                      value={field.value ?? ''}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                      maxDate={today}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
 
           <FormField
             control={form.control}
@@ -225,30 +246,6 @@ function AdjustBalanceForm({ accounts, selectedAccountId, onClose }: AdjustBalan
                 <FormLabel>Description</FormLabel>
                 <FormControl>
                   <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="date"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>
-                  Date
-                  <RequiredMarker />
-                </FormLabel>
-                <FormControl>
-                  <DatePicker
-                    withTime
-                    value={field.value ?? ''}
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                    name={field.name}
-                    maxDate={today}
-                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

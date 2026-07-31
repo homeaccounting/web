@@ -118,7 +118,7 @@ describe('IncomeExpenseForm', () => {
     expect(screen.getByRole('button', { name: /add reimbursement/i })).toBeInTheDocument();
   });
 
-  it('lays out the account and currency fields in a 2-column grid on wide screens', () => {
+  it('shows currency inline with the amount instead of a standalone currency field', () => {
     renderWithProviders(
       <IncomeExpenseForm
         kind="expense"
@@ -133,7 +133,11 @@ describe('IncomeExpenseForm', () => {
         onCancel={vi.fn()}
       />,
     );
-    expect(screen.getByTestId('form-grid-account-currency').className).toContain('sm:grid-cols-2');
+    // The old standalone Account | Currency grid is gone.
+    expect(screen.queryByTestId('form-grid-account-currency')).toBeNull();
+    // The currency badge now sits alongside the Amount input (MoneyInput).
+    const amount = screen.getByLabelText('Amount');
+    expect(amount.parentElement).toContainElement(screen.getByTestId('currency-badge'));
   });
 
   it('keeps a visible currency display', () => {
@@ -179,8 +183,18 @@ describe('IncomeExpenseForm', () => {
   it('qualifies same-named accounts with their bank name in the account picker', async () => {
     const user = userEvent.setup();
     const sameName: AccountResponse[] = [
-      { ...accounts[0]!, id: A1, name: 'visa', subtype: { type: 'bankAccount', bankName: 'Monobank' } },
-      { ...accounts[1]!, id: A2, name: 'visa', subtype: { type: 'bankAccount', bankName: 'PrivatBank' } },
+      {
+        ...accounts[0]!,
+        id: A1,
+        name: 'visa',
+        subtype: { type: 'bankAccount', bankName: 'Monobank' },
+      },
+      {
+        ...accounts[1]!,
+        id: A2,
+        name: 'visa',
+        subtype: { type: 'bankAccount', bankName: 'PrivatBank' },
+      },
     ];
     renderWithProviders(
       <IncomeExpenseForm

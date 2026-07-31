@@ -587,7 +587,9 @@ describe('TransactionsPane', () => {
     await user.click(await screen.findByRole('option', { name: /custom/i }));
 
     // Open the From picker and select an enabled day from the open calendar.
-    await user.click(screen.getByLabelText('From'));
+    // The shared DatePicker exposes a typable input ("From") plus a calendar
+    // button ("From calendar") that opens the grid.
+    await user.click(screen.getByRole('button', { name: 'From calendar' }));
     const grid = await screen.findByRole('grid');
     const days = within(grid)
       .getAllByRole('button')
@@ -709,6 +711,60 @@ describe('TransactionsPane', () => {
     // Edit is always present — confirms the menu opened.
     expect(await screen.findByRole('menuitem', { name: /edit/i })).toBeInTheDocument();
     expect(screen.queryByRole('menuitem', { name: /duplicate/i })).not.toBeInTheDocument();
+  });
+
+  it('does not open the edit dialog on double-click of an adjustment row', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    const user = userEvent.setup();
+    server.use(
+      http.get(`${apiBase}/api/transactions`, () =>
+        HttpResponse.json({
+          transactions: [
+            {
+              ...transactionFixture,
+              id: 'adj-1',
+              description: 'AdjustmentTx',
+              transactionType: 'adjustment',
+              allocations: { incomes: [], expenses: [] },
+            },
+          ],
+          totalCount: 1,
+        }),
+      ),
+    );
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
+    const row = (await screen.findByText('AdjustmentTx')).closest('tr')!;
+    await user.dblClick(row);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('disables the context menu Edit item for an adjustment row', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    const user = userEvent.setup();
+    server.use(
+      http.get(`${apiBase}/api/transactions`, () =>
+        HttpResponse.json({
+          transactions: [
+            {
+              ...transactionFixture,
+              id: 'adj-1',
+              description: 'AdjustmentTx',
+              transactionType: 'adjustment',
+              allocations: { incomes: [], expenses: [] },
+            },
+          ],
+          totalCount: 1,
+        }),
+      ),
+    );
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
+    const row = (await screen.findByText('AdjustmentTx')).closest('tr')!;
+    await user.pointer({ keys: '[MouseRight]', target: row });
+    const editItem = await screen.findByRole('menuitem', { name: /edit/i });
+    expect(editItem).toHaveAttribute('aria-disabled', 'true');
+    // Clicking the disabled item must not open the edit dialog.
+    await user.click(editItem);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
   it('offers the two other kinds in the Convert submenu and opens the dialog', async () => {

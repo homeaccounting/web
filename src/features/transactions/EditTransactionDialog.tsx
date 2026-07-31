@@ -78,7 +78,10 @@ export function EditTransactionDialog({ open, onOpenChange, tx }: EditTransactio
   if (currentTx.status !== 'Completed') {
     body = <ReadOnlyNotice status={currentTx.status} onClose={close} />;
   } else if (adjustment) {
-    body = <AdjustmentNotice onClose={close} />;
+    // Adjustments are not editable; TransactionsPane.openEdit prevents this
+    // dialog from opening for them. Render nothing defensively rather than
+    // falling through to the income/expense edit form.
+    body = null;
   } else if (!accounts) {
     // Wait for accounts to load: react-hook-form seeds defaultValues once and
     // does not re-init when they change, so mounting the form against an empty
@@ -137,24 +140,6 @@ function ReadOnlyNotice({ status, onClose }: { status: string; onClose: () => vo
     <div className="space-y-3">
       <Alert role="alert">
         <AlertDescription>This transaction is {status} and cannot be edited.</AlertDescription>
-      </Alert>
-      <div className="flex justify-end">
-        <Button type="button" variant="outline" onClick={onClose}>
-          OK
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-function AdjustmentNotice({ onClose }: { onClose: () => void }) {
-  return (
-    <div className="space-y-3">
-      <Alert role="alert">
-        <AlertDescription>
-          This is a balance adjustment and cannot be edited. Use “Adjust balance” to record a new
-          adjustment.
-        </AlertDescription>
       </Alert>
       <div className="flex justify-end">
         <Button type="button" variant="outline" onClick={onClose}>

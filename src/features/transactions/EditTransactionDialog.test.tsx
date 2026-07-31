@@ -127,11 +127,13 @@ describe('EditTransactionDialog', () => {
     expect(screen.queryByRole('form')).toBeNull();
   });
 
-  it('renders read-only for an adjustment instead of the expense edit form', async () => {
+  it('does not render the expense edit form for an adjustment (nor the old cannot-be-edited notice)', async () => {
     // Balance adjustments are booked External -> regular account, so the
     // regular (viewed) account is the *target* leg in account currency while
     // the source leg is the External account in base currency. They must not
-    // open the income/expense edit form (the backend cannot amend them).
+    // open the income/expense edit form (the backend cannot amend them). In the
+    // app, TransactionsPane prevents this dialog from opening for adjustments at
+    // all; here we assert the dialog renders no editable body as a safety net.
     const adjustment: TransactionResponse = {
       ...baseTx,
       transactionType: 'adjustment',
@@ -145,13 +147,12 @@ describe('EditTransactionDialog', () => {
       description: 'Fix2',
     };
     renderDialog({ tx: adjustment });
-    expect(await screen.findByText(/balance adjustment and cannot be edited/i)).toBeInTheDocument();
-    // Must NOT render the expense edit form (its submit button is now "OK",
-    // indistinguishable by name from the notice's dismiss button, so assert on
-    // the absence of the form element instead).
+    // The dialog still mounts (title only), but the old "cannot be edited"
+    // notice is gone and no edit form renders.
+    expect(await screen.findByRole('dialog', { name: /balance adjustment/i })).toBeInTheDocument();
+    expect(screen.queryByText(/cannot be edited/i)).toBeNull();
     expect(screen.queryByRole('form')).toBeNull();
     expect(screen.queryByLabelText(/^Amount$/i)).toBeNull();
-    expect(screen.queryByText(/Edit expense/i)).toBeNull();
   });
 
   it('description-only edit fires exactly one PUT description and closes the dialog', async () => {

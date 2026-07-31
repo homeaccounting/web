@@ -82,4 +82,31 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Neutral, theme-aware scrollbars. The browser default renders a heavy dark
+     thumb that clashes with the light surfaces; use a soft muted thumb over a
+     transparent track so it reads as part of the design system in both themes. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.35) transparent;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    background-color: hsl(var(--muted-foreground) / 0.35);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground) / 0.55);
+  }
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
 }

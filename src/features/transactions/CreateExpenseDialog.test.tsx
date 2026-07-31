@@ -9,7 +9,7 @@ import { AuthProvider } from '@/auth/AuthContext';
 import { saveSession } from '@/auth/storage';
 import { foodCategoryId, configurationFixture } from '@/test/fixtures';
 import { CreateExpenseDialog } from './CreateExpenseDialog';
-import { writeStickyDay } from './stickyDate';
+import { writeStickyDay } from '@/lib/stickyDate';
 
 const apiBase = 'http://localhost:8080';
 
@@ -265,7 +265,8 @@ describe('CreateExpenseDialog', () => {
 
     renderWithProviders(<ToggleWrapper />, { initialPath: '/' });
     await screen.findByLabelText(/account/i);
-    expect(screen.getByLabelText(/date/i)).not.toHaveTextContent(/2020/);
+    // The shared DatePicker is a typable text field ('YYYY-MM-DD HH:MM').
+    expect(screen.getByLabelText<HTMLInputElement>(/date/i).value).not.toContain('2020');
 
     // A prior submit stuck a PAST day, recorded today (reconciliation use case).
     writeStickyDay('2020-01-15T09:30', new Date());
@@ -276,6 +277,6 @@ describe('CreateExpenseDialog', () => {
     await user.click(screen.getByRole('button', { name: 'toggle' }));
 
     await screen.findByLabelText(/account/i);
-    expect(screen.getByLabelText(/date/i)).toHaveTextContent(/January 15th, 2020/);
+    expect(screen.getByLabelText<HTMLInputElement>(/date/i).value).toMatch(/^2020-01-15/);
   });
 });

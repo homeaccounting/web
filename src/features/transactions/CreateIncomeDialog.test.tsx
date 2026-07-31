@@ -9,7 +9,7 @@ import { AuthProvider } from '@/auth/AuthContext';
 import { saveSession } from '@/auth/storage';
 import { salaryCategoryId, configurationFixture } from '@/test/fixtures';
 import { CreateIncomeDialog } from './CreateIncomeDialog';
-import { writeStickyDay } from './stickyDate';
+import { writeStickyDay } from '@/lib/stickyDate';
 
 const apiBase = 'http://localhost:8080';
 
@@ -226,8 +226,9 @@ describe('CreateIncomeDialog', () => {
 
     renderWithProviders(<ToggleWrapper />, { initialPath: '/' });
     await screen.findByLabelText(/account/i);
-    // First open (empty store) shows today, not the past day.
-    expect(screen.getByLabelText(/date/i)).not.toHaveTextContent(/2020/);
+    // First open (empty store) shows today, not the past day. The shared
+    // DatePicker is a typable text field ('YYYY-MM-DD HH:MM').
+    expect(screen.getByLabelText<HTMLInputElement>(/date/i).value).not.toContain('2020');
 
     // Simulate a prior submit that stuck a PAST day, recorded today (the
     // reconciliation use case: entering rows dated Jan 15 2020 today).
@@ -241,6 +242,6 @@ describe('CreateIncomeDialog', () => {
     await user.click(screen.getByRole('button', { name: 'toggle' }));
 
     await screen.findByLabelText(/account/i);
-    expect(screen.getByLabelText(/date/i)).toHaveTextContent(/January 15th, 2020/);
+    expect(screen.getByLabelText<HTMLInputElement>(/date/i).value).toMatch(/^2020-01-15/);
   });
 });

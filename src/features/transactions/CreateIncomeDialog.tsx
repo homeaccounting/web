@@ -13,7 +13,7 @@ import { useAccounts } from '@/features/accounts/useAccounts';
 import { flattenDictionary } from '@/api/dictionary';
 import { useConfiguration } from '@/features/configuration/useConfiguration';
 import { useCreateDictionaryEntry } from '@/features/configuration/useCreateDictionaryEntry';
-import { defaultTransactionDate, writeStickyDay } from './stickyDate';
+import { defaultTransactionDate, writeStickyDay } from '@/lib/stickyDate';
 import { IncomeExpenseForm, type IncomeExpenseFormApi } from './IncomeExpenseForm';
 import { useCreateIncome } from './useCreateIncome';
 import { toIncomeRequest, type IncomeExpenseFormValues } from './schema';

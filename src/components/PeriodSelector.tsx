@@ -45,8 +45,12 @@ export function PeriodSelector({
       </Select>
       {value === 'custom' && (
         <>
-          <label htmlFor="period-from" className="flex items-center gap-1">
-            From
+          {/* Label points at the input via htmlFor rather than wrapping the
+              DatePicker: the picker renders two labelable controls (the typable
+              input + the calendar button), so a wrapping <label> would
+              ambiguously name both. */}
+          <div className="flex items-center gap-1">
+            <label htmlFor="period-from">From</label>
             <DatePicker
               id="period-from"
               value={range.from}
@@ -56,9 +60,9 @@ export function PeriodSelector({
               placeholder="From"
               className="w-auto"
             />
-          </label>
-          <label htmlFor="period-to" className="flex items-center gap-1">
-            To
+          </div>
+          <div className="flex items-center gap-1">
+            <label htmlFor="period-to">To</label>
             <DatePicker
               id="period-to"
               value={range.to}
@@ -68,7 +72,7 @@ export function PeriodSelector({
               placeholder="To"
               className="w-auto"
             />
-          </label>
+          </div>
         </>
       )}
     </div>

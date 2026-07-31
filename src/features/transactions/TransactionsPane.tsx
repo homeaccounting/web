@@ -497,7 +497,13 @@ export function TransactionsPane() {
   };
 
   const [editing, setEditing] = useState<TransactionResponse | null>(null);
-  const openEdit = (t: TransactionResponse) => setEditing(t);
+  // Adjustments are not editable (the backend cannot amend them). Double-click,
+  // Enter/Space and the context-menu Edit item all funnel through here, so a
+  // single guard keeps them a no-op rather than opening a dead-end dialog.
+  const openEdit = (t: TransactionResponse) => {
+    if (isAdjustment(t.transactionType)) return;
+    setEditing(t);
+  };
 
   const [cancelTarget, setCancelTarget] = useState<TransactionResponse | null>(null);
   const openCancel = (t: TransactionResponse) => setCancelTarget(t);
@@ -842,7 +848,10 @@ export function TransactionsPane() {
                     />
                   ) : (
                     <>
-                      <ContextMenuItem onSelect={() => openEdit(t)}>
+                      <ContextMenuItem
+                        onSelect={() => openEdit(t)}
+                        disabled={isAdjustment(t.transactionType)}
+                      >
                         <Pencil className="mr-2 h-4 w-4" aria-hidden />
                         Edit
                       </ContextMenuItem>

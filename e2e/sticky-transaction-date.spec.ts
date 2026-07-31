@@ -12,8 +12,7 @@ test.describe('sticky transaction date @local', () => {
     // A deterministic past day: the 15th of last month (always exists, always past).
     const pastDay = subMonths(new Date(), 1);
     pastDay.setDate(15);
-    const pastLabel = format(pastDay, 'PPP'); // e.g. "June 15th, 2026"
-    const pastDataDay = format(pastDay, 'yyyy-MM-dd'); // calendar cell key
+    const pastDataDay = format(pastDay, 'yyyy-MM-dd'); // 'YYYY-MM-DD'
 
     // Register + create an account.
     await page.goto('register');
@@ -42,16 +41,16 @@ test.describe('sticky transaction date @local', () => {
     await dialog.getByRole('option', { name: 'Groceries' }).click();
     await dialog.getByLabel(/description/i).fill('Coffee');
 
-    // Open the date picker and pick the 15th of last month.
-    await dialog.getByLabel(/date/i).click();
-    await page.getByRole('button', { name: /previous/i }).click();
-    await page.locator(`td[data-day="${pastDataDay}"] button`).click();
-    // The date trigger now reflects the past day.
-    await expect(dialog.getByLabel(/date/i)).toContainText(pastLabel);
-    // Dismiss the calendar popover, then submit. A successful submit closes the
-    // dialog (the row may fall outside the default "last month..today" window,
-    // so we key success off the dialog closing rather than a visible row).
-    await page.keyboard.press('Escape');
+    // Type the 15th of last month directly into the editable date field
+    // ('YYYY-MM-DD HH:MM') and commit with Enter — the picker is typable now.
+    const dateField = dialog.getByLabel(/date/i);
+    await dateField.fill(`${pastDataDay} 09:30`);
+    await dateField.press('Enter');
+    // The field reflects the past day.
+    await expect(dateField).toHaveValue(new RegExp(`^${pastDataDay}`));
+    // Submit. A successful submit closes the dialog (the row may fall outside
+    // the default "last month..today" window, so we key success off the dialog
+    // closing rather than a visible row).
     await dialog.getByRole('button', { name: /^ok$/i }).click();
     await expect(dialog).toBeHidden();
 
@@ -59,6 +58,6 @@ test.describe('sticky transaction date @local', () => {
     // to the past day we last used, not today.
     await page.getByRole('button', { name: /^add expense$/i }).click();
     dialog = page.getByRole('dialog', { name: /add expense/i });
-    await expect(dialog.getByLabel(/date/i)).toContainText(pastLabel);
+    await expect(dialog.getByLabel(/date/i)).toHaveValue(new RegExp(`^${pastDataDay}`));
   });
 });

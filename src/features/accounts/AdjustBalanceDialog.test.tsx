@@ -2,12 +2,12 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { format, parse } from 'date-fns';
 import { server } from '@/test/server';
 import { renderWithProviders, makeQueryClient } from '@/test/utils';
 import { AuthProvider } from '@/auth/AuthContext';
 import { saveSession } from '@/auth/storage';
 import { AdjustBalanceDialog } from './AdjustBalanceDialog';
+import { STICKY_DATE_KEY, writeStickyDay } from '@/lib/stickyDate';
 import type { AccountResponse } from '@/api/types';
 
 const apiBase = 'http://localhost:8080';
@@ -54,8 +54,6 @@ function ui(selectedAccountId?: string, onOpenChange: (open: boolean) => void = 
 }
 
 const today = new Date().toISOString().slice(0, 10);
-// How the shared DatePicker renders the trigger label for a 'YYYY-MM-DD' value.
-const todayLabel = format(parse(today, 'yyyy-MM-dd', new Date()), 'PPP');
 
 beforeEach(() => {
   saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
@@ -68,8 +66,60 @@ describe('AdjustBalanceDialog', () => {
     renderWithProviders(ui('a1'), { queryClient: qc });
     expect(await screen.findByRole('dialog', { name: /adjust balance/i })).toBeInTheDocument();
     expect(await screen.findByLabelText(/target balance/i)).toHaveValue(100);
-    expect(screen.getByLabelText(/date/i)).toHaveTextContent(todayLabel);
+    // The shared DatePicker is a typable text field ('YYYY-MM-DD HH:MM').
+    expect(screen.getByLabelText<HTMLInputElement>(/date/i).value).toMatch(
+      new RegExp(`^${today} \\d{2}:\\d{2}$`),
+    );
     expect(screen.getByLabelText(/description/i)).toHaveValue('');
+  });
+
+  it('lays out Target balance and Date on one row (consistency with Transfer)', async () => {
+    seedAccounts(accounts);
+    renderWithProviders(ui('a1'), { queryClient: makeQueryClient() });
+    const grid = await screen.findByTestId('form-grid-target-date');
+    expect(grid.className).toContain('sm:grid-cols-2');
+    // Both fields live inside the shared two-column row.
+    expect(grid).toContainElement(screen.getByLabelText(/target balance/i));
+    expect(grid).toContainElement(screen.getByLabelText(/date/i));
+  });
+
+  it('seeds the date from the shared sticky last-used day (parity with transactions)', async () => {
+    seedAccounts(accounts);
+    // A past day recorded today — the reconciliation use case shared with the
+    // income/expense/transfer dialogs (see stickyDate.ts).
+    writeStickyDay('2026-07-03T09:30', new Date());
+    let body: Record<string, unknown> | null = null;
+    server.use(
+      http.put('http://localhost:8080/api/accounts/a1/balance', async ({ request }) => {
+        body = (await request.json()) as Record<string, unknown>;
+        return HttpResponse.json({});
+      }),
+    );
+    renderWithProviders(ui('a1'), { queryClient: makeQueryClient() });
+    const target = await screen.findByLabelText(/target balance/i);
+    await userEvent.clear(target);
+    await userEvent.type(target, '150');
+    await userEvent.click(screen.getByRole('button', { name: /ok/i }));
+    await waitFor(() => {
+      expect(body?.date).toMatch(/^2026-07-03T\d{2}:\d{2}:00\.000Z$/);
+    });
+  });
+
+  it('writes the submitted day back to the shared sticky store', async () => {
+    seedAccounts(accounts);
+    server.use(
+      http.put('http://localhost:8080/api/accounts/a1/balance', () => HttpResponse.json({})),
+    );
+    renderWithProviders(ui('a1'), { queryClient: makeQueryClient() });
+    const target = await screen.findByLabelText(/target balance/i);
+    await userEvent.clear(target);
+    await userEvent.type(target, '150');
+    await userEvent.click(screen.getByRole('button', { name: /ok/i }));
+    await waitFor(() => {
+      expect(sessionStorage.getItem(STICKY_DATE_KEY)).toBeTruthy();
+    });
+    const stored = JSON.parse(sessionStorage.getItem(STICKY_DATE_KEY)!) as { day: string };
+    expect(stored.day).toBe(today);
   });
 
   it('submits with an empty description (optional): fires PUT with empty description', async () => {
@@ -96,15 +146,16 @@ describe('AdjustBalanceDialog', () => {
     );
   });
 
-  // The "Date" field uses the shared DatePicker (calendar popover) rather than a
-  // native date input. Clicking the trigger opens the calendar grid. The
-  // future-date guard itself (date <= today) is covered deterministically by
-  // adjustBalanceSchema.test.ts; here we only confirm the common control is wired
-  // in and the picker is bounded to today via maxDate.
-  it('uses the shared date picker: clicking the field opens a calendar', async () => {
+  // The "Date" field uses the shared DatePicker (typable input + calendar
+  // button popover) rather than a native date input. The calendar button opens
+  // the grid. The future-date guard itself (date <= today) is covered
+  // deterministically by adjustBalanceSchema.test.ts; here we only confirm the
+  // common control is wired in and the picker is bounded to today via maxDate.
+  it('uses the shared date picker: the calendar button opens a calendar', async () => {
     seedAccounts(accounts);
     renderWithProviders(ui('a1'), { queryClient: makeQueryClient() });
-    await userEvent.click(await screen.findByLabelText(/date/i));
+    await screen.findByLabelText(/date/i);
+    await userEvent.click(screen.getByRole('button', { name: /open calendar/i }));
     expect(await screen.findByRole('grid')).toBeInTheDocument();
   });
 

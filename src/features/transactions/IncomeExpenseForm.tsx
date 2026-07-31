@@ -13,7 +13,6 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
 import type { AccountResponse, DictionaryEntryResponse, UUID } from '@/api/types';
 import { makeIncomeExpenseFormSchema, type IncomeExpenseFormValues } from './schema';
 import { LabelMultiSelect } from './LabelMultiSelect';
@@ -161,56 +160,43 @@ export function IncomeExpenseForm({
         className="flex min-h-0 flex-1 flex-col"
       >
         <DialogBody>
-          <div
-            data-testid="form-grid-account-currency"
-            className="grid grid-cols-1 gap-4 sm:grid-cols-2"
-          >
-            <FormField
-              control={form.control}
-              name="accountId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>
-                    Account
-                    <RequiredMarker />
-                  </FormLabel>
-                  <FormControl>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger aria-label="Account">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {accounts.map((a) => {
-                          // Currency is already shown in parentheses, so the
-                          // qualifier carries only the bank name.
-                          const { qualifier } = accountLabelParts(a, accounts, {
-                            currencyTiebreaker: false,
-                          });
-                          return (
-                            <SelectItem key={a.id} value={a.id}>
-                              {qualifier ? `${a.name} · ${qualifier}` : a.name} ({a.currency})
-                            </SelectItem>
-                          );
-                        })}
-                      </SelectContent>
-                    </Select>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="space-y-2">
-              <Label>Currency</Label>
-              <div
-                data-testid="currency-badge"
-                className="flex h-10 items-center rounded-md border bg-muted px-3 text-sm tabular-nums text-muted-foreground"
-                aria-label="Currency"
-              >
-                {form.watch('currency') || '—'}
-              </div>
-            </div>
-          </div>
+          {/* Currency is no longer a standalone field: it shows inline in each
+              amount row (via MoneyInput) and in the account option's "(USD)"
+              suffix, so the account picker spans the full width. */}
+          <FormField
+            control={form.control}
+            name="accountId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  Account
+                  <RequiredMarker />
+                </FormLabel>
+                <FormControl>
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger aria-label="Account">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {accounts.map((a) => {
+                        // Currency is already shown in parentheses, so the
+                        // qualifier carries only the bank name.
+                        const { qualifier } = accountLabelParts(a, accounts, {
+                          currencyTiebreaker: false,
+                        });
+                        return (
+                          <SelectItem key={a.id} value={a.id}>
+                            {qualifier ? `${a.name} · ${qualifier}` : a.name} ({a.currency})
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
           <AllocationsEditor
             sections={sections}

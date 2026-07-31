@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { DialogBody, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { MoneyInput } from '@/components/MoneyInput';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import {
   Select,
@@ -183,40 +184,16 @@ export function TransferForm({
                     Amount
                     <RequiredMarker />
                   </FormLabel>
-                  <div className="flex items-end gap-2">
-                    <FormControl>
-                      <Input
-                        type="number"
-                        step="any"
-                        name={field.name}
-                        ref={field.ref}
-                        onBlur={field.onBlur}
-                        value={
-                          field.value === undefined ||
-                          field.value === null ||
-                          (typeof field.value === 'number' && Number.isNaN(field.value))
-                            ? ''
-                            : field.value
-                        }
-                        onChange={(e) => {
-                          const raw = e.target.value;
-                          if (raw === '' || raw === '-') {
-                            field.onChange(raw);
-                            return;
-                          }
-                          const n = e.target.valueAsNumber;
-                          field.onChange(Number.isNaN(n) ? raw : n);
-                        }}
-                      />
-                    </FormControl>
-                    <div
-                      data-testid="currency-badge"
-                      className="inline-flex h-10 shrink-0 items-center rounded-md border bg-muted px-3 text-sm tabular-nums text-muted-foreground"
-                      aria-label="Currency"
-                    >
-                      {source?.currency ?? '—'}
-                    </div>
-                  </div>
+                  <FormControl>
+                    <MoneyInput
+                      currency={source?.currency ?? ''}
+                      value={field.value}
+                      onChange={field.onChange}
+                      name={field.name}
+                      onBlur={field.onBlur}
+                      inputRef={field.ref}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}

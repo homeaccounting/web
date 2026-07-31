@@ -12,7 +12,7 @@ import type { UUID } from '@/api/types';
 import { useAccounts } from '@/features/accounts/useAccounts';
 import { flattenDictionary } from '@/api/dictionary';
 import { useConfiguration } from '@/features/configuration/useConfiguration';
-import { defaultTransactionDate, writeStickyDay } from './stickyDate';
+import { defaultTransactionDate, writeStickyDay } from '@/lib/stickyDate';
 import { TransferForm, type TransferFormApi } from './TransferForm';
 import { useCreateTransfer } from './useCreateTransfer';
 import { toTransferRequest, type TransferFormValues } from './schema';

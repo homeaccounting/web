@@ -4,6 +4,7 @@ import { Check, ChevronDown, ChevronRight, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { MoneyInput } from '@/components/MoneyInput';
 import { FormField, FormItem, FormControl, FormMessage } from '@/components/ui/form';
 import { CategoryCombobox } from './CategoryCombobox';
 import { formatMoney } from '@/lib/format';
@@ -115,32 +116,16 @@ function AllocationSectionRows({
               control={control}
               name={`${section.name}.${i}.amount`}
               render={({ field: f }) => (
-                <FormItem className="w-32">
+                <FormItem className="w-44">
                   <FormControl>
-                    <Input
-                      type="number"
-                      step="any"
-                      aria-label="Amount"
+                    <MoneyInput
+                      currency={currency}
                       placeholder="Amount"
+                      value={f.value as number | string}
+                      onChange={f.onChange}
                       name={f.name}
-                      ref={f.ref}
                       onBlur={f.onBlur}
-                      value={
-                        f.value === undefined ||
-                        f.value === null ||
-                        (typeof f.value === 'number' && Number.isNaN(f.value))
-                          ? ''
-                          : (f.value as number | string)
-                      }
-                      onChange={(e) => {
-                        const raw = e.target.value;
-                        if (raw === '' || raw === '-') {
-                          f.onChange(raw);
-                          return;
-                        }
-                        const n = e.target.valueAsNumber;
-                        f.onChange(Number.isNaN(n) ? raw : n);
-                      }}
+                      inputRef={f.ref}
                     />
                   </FormControl>
                   <FormMessage />
