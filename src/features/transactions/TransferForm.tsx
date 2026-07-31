@@ -272,7 +272,7 @@ export function TransferForm({
                     />
                   </FormControl>
                   <p className="text-xs text-muted-foreground">
-                    Optional. Backend uses its default if omitted.
+                    Uses the default rate if left blank.
                   </p>
                   <FormMessage />
                 </FormItem>

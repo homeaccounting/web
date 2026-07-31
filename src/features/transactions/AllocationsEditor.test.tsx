@@ -178,6 +178,28 @@ describe('target total mode', () => {
     expect(screen.getByLabelText('Target total')).toBeInTheDocument();
   });
 
+  it('seeds the target with the current total when the toggle is switched on', () => {
+    render(
+      <Host
+        sections={[incomeSection, expenseSection]}
+        incomes={[{ category: C1, amount: 5000 }]}
+        expenses={[{ category: C1, amount: 500 }]}
+      />,
+    );
+    fireEvent.click(screen.getByLabelText('Target'));
+    // Prefills with the current allocations sum (5000 + 500) rather than blank,
+    // so editing starts from the existing total.
+    expect(screen.getByLabelText('Target total')).toHaveValue(5500);
+  });
+
+  it('keeps the toggle and total on one compact row when target is off', () => {
+    render(<Host sections={[expenseSection]} expenses={[{ category: C1, amount: 100 }]} />);
+    const toggle = screen.getByLabelText('Target');
+    const total = screen.getByTestId('allocations-total');
+    // Both share the toggle's row (toggle left, total right) — no stacked, half-empty card.
+    expect(toggle.closest('div')).toContainElement(total);
+  });
+
   // The readout is a progress bar (fills sum/target) plus a short colored caption
   // giving the exact remaining. Color signals the under/over/balanced state.
   it('shows a partial bar and a muted "left" caption when under', () => {

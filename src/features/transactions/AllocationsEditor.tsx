@@ -194,7 +194,7 @@ function AllocationSectionRows({
                   <Input
                     type="text"
                     aria-label="Comment"
-                    placeholder="Comment (optional)"
+                    placeholder="Comment"
                     className="h-8 text-sm"
                     name={f.name}
                     ref={f.ref}
@@ -297,9 +297,11 @@ export function AllocationsEditor({ sections, currency, lockTarget }: Allocation
           the Total line, and — when a target is set — a progress bar filling toward
           the target with a short remaining caption. Colour signals the state
           (primary/muted = under, destructive = over, emerald = balanced). */}
-      <Card className="space-y-3 p-4">
+      <Card data-testid="allocations-totals-card" className="space-y-3 p-4">
         {/* When the target is locked (e.g. refund flow) the toggle is hidden and
-            the target is shown read-only; otherwise it's a user checkbox. */}
+            the target is shown read-only; otherwise it's a user checkbox. When the
+            target is off, the Total shares this row (toggle left, Total right) so
+            the collapsed card stays a single compact line with no wasted space. */}
         {lockTarget ? (
           <div className="flex items-center justify-between text-sm font-medium">
             <span>Target</span>
@@ -308,63 +310,78 @@ export function AllocationsEditor({ sections, currency, lockTarget }: Allocation
             </span>
           </div>
         ) : (
-          <label className="flex items-center gap-2 text-sm font-medium">
-            <input
-              type="checkbox"
-              checked={targetMode}
-              onChange={(e) =>
-                setValue('targetMode', e.target.checked, {
-                  shouldDirty: true,
-                  shouldValidate: true,
-                })
-              }
-            />
-            Target
-          </label>
-        )}
-        {/* Target input (when on) sits on the same row as the Total, input left,
-            Total right. */}
-        <div className={cn('flex items-end gap-3', targetMode ? 'justify-between' : 'justify-end')}>
-          {targetMode && !lockTarget && (
-            <FormField
-              control={control}
-              name="targetTotal"
-              render={({ field: f }) => (
-                <FormItem className="w-40">
-                  <FormControl>
-                    <Input
-                      type="number"
-                      step="any"
-                      aria-label="Target total"
-                      placeholder="Target"
-                      name={f.name}
-                      ref={f.ref}
-                      onBlur={f.onBlur}
-                      value={
-                        f.value === undefined || f.value === null
-                          ? ''
-                          : (f.value as number | string)
-                      }
-                      onChange={(e) => {
-                        const raw = e.target.value;
-                        if (raw === '') {
-                          f.onChange('');
-                          return;
-                        }
-                        const n = e.target.valueAsNumber;
-                        f.onChange(Number.isNaN(n) ? '' : n);
-                      }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
-          <div data-testid="allocations-total" className="text-sm font-medium tabular-nums">
-            Total: {money(sum)}
+          <div className="flex items-center justify-between gap-3">
+            <label className="flex items-center gap-2 text-sm font-medium">
+              <input
+                type="checkbox"
+                checked={targetMode}
+                onChange={(e) => {
+                  const on = e.target.checked;
+                  setValue('targetMode', on, { shouldDirty: true, shouldValidate: true });
+                  // Enabling seeds the target with the current allocations total:
+                  // editing usually tweaks the allocation split, not the overall
+                  // amount, so starting from the existing sum beats a blank field.
+                  if (on) {
+                    setValue('targetTotal', sum, { shouldDirty: true, shouldValidate: true });
+                  }
+                }}
+              />
+              Target
+            </label>
+            {!targetMode && (
+              <div data-testid="allocations-total" className="text-sm font-medium tabular-nums">
+                Total: {money(sum)}
+              </div>
+            )}
           </div>
-        </div>
+        )}
+        {/* Once a target is active (editable or locked) the input and Total move to
+            their own row — input left, Total right. */}
+        {(targetMode || lockTarget) && (
+          <div
+            className={cn('flex items-end gap-3', targetMode ? 'justify-between' : 'justify-end')}
+          >
+            {targetMode && !lockTarget && (
+              <FormField
+                control={control}
+                name="targetTotal"
+                render={({ field: f }) => (
+                  <FormItem className="w-40">
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="any"
+                        aria-label="Target total"
+                        placeholder="Target"
+                        name={f.name}
+                        ref={f.ref}
+                        onBlur={f.onBlur}
+                        value={
+                          f.value === undefined || f.value === null
+                            ? ''
+                            : (f.value as number | string)
+                        }
+                        onChange={(e) => {
+                          const raw = e.target.value;
+                          if (raw === '') {
+                            f.onChange('');
+                            return;
+                          }
+                          const n = e.target.valueAsNumber;
+                          f.onChange(Number.isNaN(n) ? '' : n);
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+            <div data-testid="allocations-total" className="text-sm font-medium tabular-nums">
+              Total: {money(sum)}
+            </div>
+          </div>
+        )}
         {hasTarget && (
           <div className="space-y-1">
             <div
