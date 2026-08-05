@@ -3,7 +3,9 @@ import type { BankProviderDTO } from '@/api/types';
 import {
   bankConnectionFormSchema,
   makeBankConnectionFormSchema,
-  mccRowSchema,
+  parseBankProviderCategoryKey,
+  bankProviderCategoryRowSchema,
+  renderBankProviderCategoryKey,
 } from '@/features/profile/bankConnectionSchema';
 
 const pullProvider: BankProviderDTO = {
@@ -120,23 +122,79 @@ describe('makeBankConnectionFormSchema', () => {
   });
 });
 
-describe('mccRowSchema', () => {
+describe('provider-category key helpers', () => {
+  it('renders the tagged key form for each kind', () => {
+    expect(renderBankProviderCategoryKey({ kind: 'mcc', value: '0742' })).toBe('mcc:0742');
+    expect(renderBankProviderCategoryKey({ kind: 'label', value: 'eating_out' })).toBe(
+      'label:eating_out',
+    );
+  });
+
+  it('parses the tagged key form for each kind', () => {
+    expect(parseBankProviderCategoryKey('mcc:0742')).toEqual({ kind: 'mcc', value: '0742' });
+    expect(parseBankProviderCategoryKey('label:eating_out')).toEqual({
+      kind: 'label',
+      value: 'eating_out',
+    });
+  });
+
+  it('splits on the first colon only, so labels containing colons round-trip', () => {
+    const key = renderBankProviderCategoryKey({ kind: 'label', value: 'a:b:c' });
+    expect(key).toBe('label:a:b:c');
+    expect(parseBankProviderCategoryKey(key)).toEqual({ kind: 'label', value: 'a:b:c' });
+  });
+
+  it('returns null for an unknown prefix or a key without a colon', () => {
+    expect(parseBankProviderCategoryKey('bogus:x')).toBeNull();
+    expect(parseBankProviderCategoryKey('5411')).toBeNull();
+  });
+});
+
+describe('bankProviderCategoryRowSchema', () => {
   const validUuid = '123e4567-e89b-12d3-a456-426614174000';
 
-  it('rejects a non-4-digit mcc', () => {
-    expect(mccRowSchema.safeParse({ mcc: '12', categoryId: validUuid }).success).toBe(false);
-    expect(mccRowSchema.safeParse({ mcc: 'abcd', categoryId: validUuid }).success).toBe(false);
+  it('mcc row: rejects a non-4-digit value', () => {
+    expect(
+      bankProviderCategoryRowSchema.safeParse({ kind: 'mcc', value: '12', categoryId: validUuid })
+        .success,
+    ).toBe(false);
+    expect(
+      bankProviderCategoryRowSchema.safeParse({ kind: 'mcc', value: 'abcd', categoryId: validUuid })
+        .success,
+    ).toBe(false);
   });
 
-  it('accepts a 4-digit mcc', () => {
-    expect(mccRowSchema.safeParse({ mcc: '5411', categoryId: validUuid }).success).toBe(true);
+  it('mcc row: accepts a 4-digit value', () => {
+    expect(
+      bankProviderCategoryRowSchema.safeParse({ kind: 'mcc', value: '5411', categoryId: validUuid })
+        .success,
+    ).toBe(true);
   });
 
-  it('rejects a non-uuid categoryId', () => {
-    expect(mccRowSchema.safeParse({ mcc: '5411', categoryId: 'x' }).success).toBe(false);
+  it('label row: rejects a blank value', () => {
+    expect(
+      bankProviderCategoryRowSchema.safeParse({
+        kind: 'label',
+        value: '   ',
+        categoryId: validUuid,
+      }).success,
+    ).toBe(false);
   });
 
-  it('accepts a valid uuid categoryId', () => {
-    expect(mccRowSchema.safeParse({ mcc: '5411', categoryId: validUuid }).success).toBe(true);
+  it('label row: accepts a non-blank value and trims it', () => {
+    const result = bankProviderCategoryRowSchema.safeParse({
+      kind: 'label',
+      value: '  eating_out  ',
+      categoryId: validUuid,
+    });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.value).toBe('eating_out');
+  });
+
+  it('rejects a non-uuid categoryId (either kind)', () => {
+    expect(
+      bankProviderCategoryRowSchema.safeParse({ kind: 'mcc', value: '5411', categoryId: 'x' })
+        .success,
+    ).toBe(false);
   });
 });

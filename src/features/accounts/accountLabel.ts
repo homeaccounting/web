@@ -72,7 +72,10 @@ export function accountLabelParts(
 
 // Single-string form for single-line surfaces (e.g. account pickers) that can't
 // style the qualifier separately.
-export function accountLabel(account: AccountResponse, siblings: readonly AccountResponse[]): string {
+export function accountLabel(
+  account: AccountResponse,
+  siblings: readonly AccountResponse[],
+): string {
   const { name, qualifier } = accountLabelParts(account, siblings);
   return qualifier ? `${name} · ${qualifier}` : name;
 }

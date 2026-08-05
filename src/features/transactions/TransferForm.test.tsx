@@ -61,8 +61,18 @@ describe('TransferForm', () => {
   it('qualifies same-named accounts with their bank name in the source picker', async () => {
     const user = userEvent.setup();
     const sameName: AccountResponse[] = [
-      { ...accounts[0]!, id: A1, name: 'visa', subtype: { type: 'bankAccount', bankName: 'Monobank' } },
-      { ...accounts[2]!, id: A3, name: 'visa', subtype: { type: 'bankAccount', bankName: 'PrivatBank' } },
+      {
+        ...accounts[0]!,
+        id: A1,
+        name: 'visa',
+        subtype: { type: 'bankAccount', bankName: 'Monobank' },
+      },
+      {
+        ...accounts[2]!,
+        id: A3,
+        name: 'visa',
+        subtype: { type: 'bankAccount', bankName: 'PrivatBank' },
+      },
     ];
     renderWithProviders(
       <TransferForm

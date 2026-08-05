@@ -28,10 +28,10 @@ describe('useUpdateBanking', () => {
       </QueryClientProvider>
     );
     const { result } = renderHook(() => useUpdateBanking(), { wrapper });
-    result.current.mutate({ mccExpenseCategoryMap: { '5411': 'cat-1' } });
+    result.current.mutate({ expenseCategoryMap: { 'mcc:5411': 'cat-1' } });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(method).toBe('PUT');
-    expect(body).toEqual({ mccExpenseCategoryMap: { '5411': 'cat-1' } });
+    expect(body).toEqual({ expenseCategoryMap: { 'mcc:5411': 'cat-1' } });
     expect(result.current.data).toEqual(bankingEnabledConfigurationFixture.banking);
   });
 });

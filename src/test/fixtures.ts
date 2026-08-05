@@ -85,7 +85,7 @@ export const transactionFixture: TransactionResponse = {
   amendmentCount: 0,
   relations: [],
   contactId: null,
-  mcc: null,
+  bankProviderCategory: null,
 };
 
 export const salaryCategoryId = '00000000-0000-0000-0000-00000005a1a0';
@@ -116,7 +116,7 @@ export const configurationFixture: ConfigurationResponse = {
     subtypeAccounts: {},
   },
   banking: {
-    mccExpenseCategoryMap: {},
+    expenseCategoryMap: {},
     connections: [],
   },
 };

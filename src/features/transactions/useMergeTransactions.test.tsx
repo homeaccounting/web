@@ -45,7 +45,7 @@ const merged = {
   amendmentCount: 1,
   relations: [] as unknown[],
   contactId: null,
-  mcc: null,
+  bankProviderCategory: null,
 };
 
 describe('useMergeTransactions', () => {

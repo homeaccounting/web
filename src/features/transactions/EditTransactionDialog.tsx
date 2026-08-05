@@ -120,11 +120,18 @@ export function EditTransactionDialog({ open, onOpenChange, tx }: EditTransactio
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>Update transaction details.</DialogDescription>
-          {currentTx.mcc && (
+          {currentTx.bankProviderCategory && (
             <p className="text-xs text-muted-foreground">
-              Imported · MCC{' '}
-              <span className="select-all font-mono" title="Merchant category code from the bank">
-                {currentTx.mcc}
+              Imported · {currentTx.bankProviderCategory.kind === 'mcc' ? 'MCC' : 'Category'}{' '}
+              <span
+                className="select-all font-mono"
+                title={
+                  currentTx.bankProviderCategory.kind === 'mcc'
+                    ? 'Merchant category code from the bank'
+                    : "Provider's own category label"
+                }
+              >
+                {currentTx.bankProviderCategory.value}
               </span>
             </p>
           )}

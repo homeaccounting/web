@@ -24,7 +24,7 @@ const baseTx: TransactionResponse = {
   labels: ['l1'],
   amendmentCount: 0,
   contactId: null,
-  mcc: null,
+  bankProviderCategory: null,
   relations: [],
 };
 

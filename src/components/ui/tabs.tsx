@@ -46,8 +46,8 @@ const TabsTrigger = React.forwardRef<
         // sub-tabs so the two tiers are visually distinct. See item #2 of the
         // design-consistency pass.
         variant === 'underline'
-          ? 'text-sm -mb-px border-b-2 border-transparent px-1 py-2 hover:text-foreground data-[state=active]:border-primary data-[state=active]:text-foreground'
-          : 'text-base rounded-sm px-3 py-1.5 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm',
+          ? '-mb-px border-b-2 border-transparent px-1 py-2 text-sm hover:text-foreground data-[state=active]:border-primary data-[state=active]:text-foreground'
+          : 'rounded-sm px-3 py-1.5 text-base data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm',
         className,
       )}
       {...props}

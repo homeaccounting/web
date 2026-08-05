@@ -19,6 +19,7 @@ Radix `ContextMenu.Root` is **uncontrolled** — its props are only `children / 
 ## File structure
 
 **New**
+
 - `src/features/transactions/bulkLabels.ts` — pure helpers: `allCompleted`, `labelState`, `withLabelAdded`, `withLabelRemoved`, `bulkCategoryEligibility`.
 - `src/features/transactions/bulkLabels.test.ts`
 - `src/features/transactions/BulkLabelPicker.tsx` — tri-state labels submenu over `MenuSearchList`.
@@ -28,6 +29,7 @@ Radix `ContextMenu.Root` is **uncontrolled** — its props are only `children / 
 - `e2e/bulk-label-category.spec.ts`
 
 **Modified**
+
 - `src/features/transactions/useTransactionSelection.ts` — add `setOnly(id)`.
 - `src/features/transactions/useTransactionSelection.test.ts` — cover `setOnly`.
 - `src/features/transactions/MenuSearchList.tsx` — add optional `indeterminate?: (id) => boolean` + Minus icon.
@@ -39,6 +41,7 @@ Radix `ContextMenu.Root` is **uncontrolled** — its props are only `children / 
 ## Task 1: Pure helpers (`bulkLabels.ts`)
 
 **Files:**
+
 - Create: `src/features/transactions/bulkLabels.ts`
 - Test: `src/features/transactions/bulkLabels.test.ts`
 
@@ -115,7 +118,10 @@ describe('bulkCategoryEligibility', () => {
     expect(r.reason).toMatch(/no category/i);
   });
   it('disables (mixed type) when income and expense are mixed', () => {
-    const inc = row({ transactionType: 'income', allocations: { incomes: [slice('c2')], expenses: [] } });
+    const inc = row({
+      transactionType: 'income',
+      allocations: { incomes: [slice('c2')], expenses: [] },
+    });
     const r = bulkCategoryEligibility([row({}), inc]);
     expect(r.enabled).toBe(false);
     expect(r.reason).toMatch(/one type/i);
@@ -215,6 +221,7 @@ git commit -m "feat(transactions): pure helpers for bulk label state & category 
 ## Task 2: `setOnly` on the selection hook
 
 **Files:**
+
 - Modify: `src/features/transactions/useTransactionSelection.ts`
 - Test: `src/features/transactions/useTransactionSelection.test.ts`
 
@@ -242,17 +249,22 @@ Expected: FAIL — `setOnly` is not a function.
 - [ ] **Step 3: Implement**
 
 In `useTransactionSelection.ts`, add to the interface (after `setMany`):
+
 ```ts
   // Collapse the selection to exactly one row (file-manager right-click).
   setOnly: (id: UUID) => void;
 ```
+
 Add the callback near `clear`:
+
 ```ts
-  const setOnly = useCallback((id: UUID) => setSelectedIds(new Set([id])), []);
+const setOnly = useCallback((id: UUID) => setSelectedIds(new Set([id])), []);
 ```
+
 Add `setOnly` to the returned object:
+
 ```ts
-  return { selectedIds, isSelected, toggle, setMany, setOnly, clear, count: selectedIds.size };
+return { selectedIds, isSelected, toggle, setMany, setOnly, clear, count: selectedIds.size };
 ```
 
 - [ ] **Step 4: Run to verify it passes**
@@ -272,6 +284,7 @@ git commit -m "feat(transactions): add setOnly to collapse selection to one row"
 ## Task 3: `indeterminate` state in `MenuSearchList`
 
 **Files:**
+
 - Modify: `src/features/transactions/MenuSearchList.tsx`
 - Test: `src/features/transactions/MenuSearchList.test.tsx`
 
@@ -320,14 +333,17 @@ Expected: FAIL — no indeterminate icon rendered.
 
 - Import `Minus`: change `import { Check, Plus } from 'lucide-react';` → `import { Check, Minus, Plus } from 'lucide-react';`
 - Add to `MenuSearchListProps` (after `isSelected`):
+
 ```ts
   // Optional third state for multi-target callers: an option that is on SOME
   // but not all targets renders a dash instead of a check. Never both — check
   // (on all) wins. Absent → no option is ever indeterminate.
   indeterminate?: (id: UUID) => boolean;
 ```
+
 - Destructure `indeterminate` in the params.
 - In the option `map`, replace the `checked` block:
+
 ```tsx
           const checked = isSelected(opt.id);
           const isIndeterminate = !checked && (indeterminate?.(opt.id) ?? false);
@@ -362,6 +378,7 @@ git commit -m "feat(transactions): tri-state (indeterminate) option in MenuSearc
 ## Task 4: `BulkLabelPicker`
 
 **Files:**
+
 - Create: `src/features/transactions/BulkLabelPicker.tsx`
 - Test: `src/features/transactions/BulkLabelPicker.test.tsx`
 
@@ -379,13 +396,15 @@ const options = [
   { id: 'l1' as UUID, name: 'Trip' },
   { id: 'l2' as UUID, name: 'Work' },
 ];
-const row = (labels: UUID[]) => ({ id: 'x', labels } as unknown as TransactionResponse);
+const row = (labels: UUID[]) => ({ id: 'x', labels }) as unknown as TransactionResponse;
 
 function Harness({ onAdd, onRemove }: { onAdd: (id: UUID) => void; onRemove: (id: UUID) => void }) {
   const rows = [row(['l1']), row([])]; // l1 = some, l2 = none
   return (
     <ContextMenu>
-      <ContextMenuTrigger><div data-testid="target">row</div></ContextMenuTrigger>
+      <ContextMenuTrigger>
+        <div data-testid="target">row</div>
+      </ContextMenuTrigger>
       <ContextMenuContent>
         <BulkLabelPicker
           options={options}
@@ -427,10 +446,17 @@ describe('BulkLabelPicker', () => {
     // Both rows carry l1 → 'all' → clicking removes.
     render(
       <ContextMenu>
-        <ContextMenuTrigger><div data-testid="target">row</div></ContextMenuTrigger>
+        <ContextMenuTrigger>
+          <div data-testid="target">row</div>
+        </ContextMenuTrigger>
         <ContextMenuContent>
-          <BulkLabelPicker options={options} rows={[row(['l1']), row(['l1'])]}
-            onAdd={() => {}} onRemove={onRemove} onCreate={() => Promise.resolve(null)} />
+          <BulkLabelPicker
+            options={options}
+            rows={[row(['l1']), row(['l1'])]}
+            onAdd={() => {}}
+            onRemove={onRemove}
+            onCreate={() => Promise.resolve(null)}
+          />
         </ContextMenuContent>
       </ContextMenu>,
     );
@@ -533,6 +559,7 @@ git commit -m "feat(transactions): BulkLabelPicker tri-state add/remove submenu"
 ## Task 5: `BulkTransactionMenu`
 
 **Files:**
+
 - Create: `src/features/transactions/BulkTransactionMenu.tsx`
 - Test: `src/features/transactions/BulkTransactionMenu.test.tsx`
 
@@ -564,10 +591,16 @@ const base = {
   onMerge: vi.fn(),
 };
 
-function renderMenu(props: Partial<typeof base> & { categoryEligibility: { enabled: boolean; reason?: string; type?: 'income' | 'expense' } }) {
+function renderMenu(
+  props: Partial<typeof base> & {
+    categoryEligibility: { enabled: boolean; reason?: string; type?: 'income' | 'expense' };
+  },
+) {
   return render(
     <ContextMenu>
-      <ContextMenuTrigger><div data-testid="target">row</div></ContextMenuTrigger>
+      <ContextMenuTrigger>
+        <div data-testid="target">row</div>
+      </ContextMenuTrigger>
       <ContextMenuContent>
         <BulkTransactionMenu {...base} {...props} />
       </ContextMenuContent>
@@ -580,7 +613,12 @@ const open = (user: ReturnType<typeof userEvent.setup>) =>
 describe('BulkTransactionMenu', () => {
   it('shows the count and a disabled category reason when ineligible', async () => {
     const user = userEvent.setup();
-    renderMenu({ categoryEligibility: { enabled: false, reason: 'Select transactions of one type to set a category' } });
+    renderMenu({
+      categoryEligibility: {
+        enabled: false,
+        reason: 'Select transactions of one type to set a category',
+      },
+    });
     await open(user);
     expect(await screen.findByText(/3 selected/i)).toBeInTheDocument();
     expect(screen.getByText(/one type to set a category/i)).toBeInTheDocument();
@@ -589,7 +627,11 @@ describe('BulkTransactionMenu', () => {
   it('fires onMerge but hides Link when canLink is false', async () => {
     const user = userEvent.setup();
     const onMerge = vi.fn();
-    renderMenu({ categoryEligibility: { enabled: true, type: 'expense' }, onMerge, canLink: false });
+    renderMenu({
+      categoryEligibility: { enabled: true, type: 'expense' },
+      onMerge,
+      canLink: false,
+    });
     await open(user);
     expect(screen.queryByRole('menuitem', { name: /^link$/i })).not.toBeInTheDocument();
     await user.click(screen.getByRole('menuitem', { name: /^merge$/i }));
@@ -759,6 +801,7 @@ git commit -m "feat(transactions): BulkTransactionMenu bulk context-menu body"
 ## Task 6: Wire into `TransactionsPane`
 
 **Files:**
+
 - Modify: `src/features/transactions/TransactionsPane.tsx`
 - Test: `src/features/transactions/TransactionsPane.test.tsx` (add cases)
 
@@ -767,15 +810,15 @@ git commit -m "feat(transactions): BulkTransactionMenu bulk context-menu body"
 - [ ] **Step 1:** Add state + helper near the other pane state (after `selectedRows` / `selection`):
 
 ```tsx
-  // Per-row remount nonce. Bumping a row's nonce changes its <ContextMenu> key,
-  // remounting it closed — the only way to programmatically close an uncontrolled
-  // Radix ContextMenu. Used for single-select (category) commits.
-  const [menuNonce, setMenuNonce] = useState<Record<string, number>>({});
-  const requestCloseMenu = useCallback(
-    (rowId: UUID) => setMenuNonce((m) => ({ ...m, [rowId]: (m[rowId] ?? 0) + 1 })),
-    [],
-  );
-  const [isApplying, setIsApplying] = useState(false);
+// Per-row remount nonce. Bumping a row's nonce changes its <ContextMenu> key,
+// remounting it closed — the only way to programmatically close an uncontrolled
+// Radix ContextMenu. Used for single-select (category) commits.
+const [menuNonce, setMenuNonce] = useState<Record<string, number>>({});
+const requestCloseMenu = useCallback(
+  (rowId: UUID) => setMenuNonce((m) => ({ ...m, [rowId]: (m[rowId] ?? 0) + 1 })),
+  [],
+);
+const [isApplying, setIsApplying] = useState(false);
 ```
 
 - [ ] **Step 2:** Change the row `ContextMenu` key and add `onContextMenu` to the `<tr>`:
@@ -800,52 +843,52 @@ git commit -m "feat(transactions): BulkTransactionMenu bulk context-menu body"
 - [ ] **Step 3:** Add the toast import and handlers. Import at top: `import { toast } from '@/lib/toast';` and from `./bulkLabels`: `import { allCompleted, bulkCategoryEligibility, withLabelAdded, withLabelRemoved } from './bulkLabels';`
 
 ```tsx
-  // Fan a per-row edit out over the selection and report the outcome once.
-  const runBulk = async (tasks: Promise<unknown>[]) => {
-    setIsApplying(true);
-    const results = await Promise.allSettled(tasks);
-    setIsApplying(false);
-    const failed = results.filter((r) => r.status === 'rejected').length;
-    const ok = results.length - failed;
-    if (failed === 0) toast.success(`Updated ${ok} transaction${ok === 1 ? '' : 's'}.`);
-    else toast.error(`Updated ${ok} of ${results.length}; ${failed} failed.`);
-  };
+// Fan a per-row edit out over the selection and report the outcome once.
+const runBulk = async (tasks: Promise<unknown>[]) => {
+  setIsApplying(true);
+  const results = await Promise.allSettled(tasks);
+  setIsApplying(false);
+  const failed = results.filter((r) => r.status === 'rejected').length;
+  const ok = results.length - failed;
+  if (failed === 0) toast.success(`Updated ${ok} transaction${ok === 1 ? '' : 's'}.`);
+  else toast.error(`Updated ${ok} of ${results.length}; ${failed} failed.`);
+};
 
-  const bulkAddLabel = (labelId: UUID) =>
-    void runBulk(
-      selectedRows.map((t) =>
-        edit.mutateAsync({
-          id: t.id,
-          accountIds: affectedAccountIds(t),
-          diff: { labels: withLabelAdded(t.labels, labelId) },
-          onSubCallApplied: () => {},
-        }),
-      ),
-    );
-  const bulkRemoveLabel = (labelId: UUID) =>
-    void runBulk(
-      selectedRows.map((t) =>
-        edit.mutateAsync({
-          id: t.id,
-          accountIds: affectedAccountIds(t),
-          diff: { labels: withLabelRemoved(t.labels, labelId) },
-          onSubCallApplied: () => {},
-        }),
-      ),
-    );
-  const bulkSetCategory = (rowId: UUID, categoryId: UUID) => {
-    void runBulk(
-      selectedRows.map((t) =>
-        edit.mutateAsync({
-          id: t.id,
-          accountIds: affectedAccountIds(t),
-          diff: { allocations: allocationsWithCategory(t.allocations, categoryId) },
-          onSubCallApplied: () => {},
-        }),
-      ),
-    );
-    requestCloseMenu(rowId); // single-select → close the menu
-  };
+const bulkAddLabel = (labelId: UUID) =>
+  void runBulk(
+    selectedRows.map((t) =>
+      edit.mutateAsync({
+        id: t.id,
+        accountIds: affectedAccountIds(t),
+        diff: { labels: withLabelAdded(t.labels, labelId) },
+        onSubCallApplied: () => {},
+      }),
+    ),
+  );
+const bulkRemoveLabel = (labelId: UUID) =>
+  void runBulk(
+    selectedRows.map((t) =>
+      edit.mutateAsync({
+        id: t.id,
+        accountIds: affectedAccountIds(t),
+        diff: { labels: withLabelRemoved(t.labels, labelId) },
+        onSubCallApplied: () => {},
+      }),
+    ),
+  );
+const bulkSetCategory = (rowId: UUID, categoryId: UUID) => {
+  void runBulk(
+    selectedRows.map((t) =>
+      edit.mutateAsync({
+        id: t.id,
+        accountIds: affectedAccountIds(t),
+        diff: { allocations: allocationsWithCategory(t.allocations, categoryId) },
+        onSubCallApplied: () => {},
+      }),
+    ),
+  );
+  requestCloseMenu(rowId); // single-select → close the menu
+};
 ```
 
 ### 6c — Extract Link/Merge handlers
@@ -853,13 +896,14 @@ git commit -m "feat(transactions): BulkTransactionMenu bulk context-menu body"
 - [ ] **Step 4:** Extract the inline `SelectionActionBar` handlers into named ones and reuse them. Find `onLink={() => { ... setLinkPair(...) }}` / `onMerge={() => { ... setMergeSelection(...) }}` (~lines 912–917) and define above the return:
 
 ```tsx
-  const handleLink = () => {
-    if (canLink) setLinkPair([selectedRows[0]!, selectedRows[1]!]);
-  };
-  const handleMerge = () => {
-    if (selectedRows.length >= 2) setMergeSelection(selectedRows);
-  };
+const handleLink = () => {
+  if (canLink) setLinkPair([selectedRows[0]!, selectedRows[1]!]);
+};
+const handleMerge = () => {
+  if (selectedRows.length >= 2) setMergeSelection(selectedRows);
+};
 ```
+
 Then set `onLink={handleLink}` and `onMerge={handleMerge}` on `SelectionActionBar`.
 
 ### 6d — Swap menu content on multi-selection
@@ -867,34 +911,34 @@ Then set `onLink={handleLink}` and `onMerge={handleMerge}` on `SelectionActionBa
 - [ ] **Step 5:** Wrap the existing `<ContextMenuContent>` body in the bulk/single branch:
 
 ```tsx
-                <ContextMenuContent>
-                  {selection.isSelected(t.id) && selection.count >= 2 ? (
-                    <BulkTransactionMenu
-                      count={selection.count}
-                      rows={selectedRows}
-                      labelOptions={labelOptions}
-                      incomeCategoryEntries={incomeCategoryEntries}
-                      expenseCategoryEntries={expenseCategoryEntries}
-                      categoryEligibility={bulkCategoryEligibility(selectedRows)}
-                      labelsEnabled={allCompleted(selectedRows)}
-                      isApplying={isApplying}
-                      onSetCategory={(categoryId) => bulkSetCategory(t.id, categoryId)}
-                      onAddLabel={bulkAddLabel}
-                      onRemoveLabel={bulkRemoveLabel}
-                      onCreateLabel={(name) => createEntry('label', name)}
-                      canLink={canLink}
-                      canMerge={canMerge}
-                      mergeDisabledReason={mergeDisabledReason}
-                      onLink={handleLink}
-                      onMerge={handleMerge}
-                    />
-                  ) : (
-                    <>
-                      {/* PHYSICALLY MOVE the existing single-row items here
+<ContextMenuContent>
+  {selection.isSelected(t.id) && selection.count >= 2 ? (
+    <BulkTransactionMenu
+      count={selection.count}
+      rows={selectedRows}
+      labelOptions={labelOptions}
+      incomeCategoryEntries={incomeCategoryEntries}
+      expenseCategoryEntries={expenseCategoryEntries}
+      categoryEligibility={bulkCategoryEligibility(selectedRows)}
+      labelsEnabled={allCompleted(selectedRows)}
+      isApplying={isApplying}
+      onSetCategory={(categoryId) => bulkSetCategory(t.id, categoryId)}
+      onAddLabel={bulkAddLabel}
+      onRemoveLabel={bulkRemoveLabel}
+      onCreateLabel={(name) => createEntry('label', name)}
+      canLink={canLink}
+      canMerge={canMerge}
+      mergeDisabledReason={mergeDisabledReason}
+      onLink={handleLink}
+      onMerge={handleMerge}
+    />
+  ) : (
+    <>
+      {/* PHYSICALLY MOVE the existing single-row items here
                           (TransactionsPane.tsx:706-773) — do not retype them. */}
-                    </>
-                  )}
-                </ContextMenuContent>
+    </>
+  )}
+</ContextMenuContent>
 ```
 
 - [ ] **Step 6:** Add `requestCloseMenu` to the single-row category picker so it also closes on pick:
@@ -944,6 +988,7 @@ git commit -m "feat(transactions): bulk label/category via right-click menu on m
 ## Task 7: Playwright e2e (`@local`)
 
 **Files:**
+
 - Create: `e2e/bulk-label-category.spec.ts`
 
 - [ ] **Step 1:** Write the spec, reusing the setup style from `e2e/merge-transaction.spec.ts` (register → create Wallet → seed completed expenses). Then:

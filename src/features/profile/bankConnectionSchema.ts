@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { BankProviderDTO } from '@/api/types';
+import type { BankProviderCategory, BankProviderDTO } from '@/api/types';
 
 export const bankConnectionFormSchema = z.object({
   name: z.string().trim().min(1, 'Name is required').max(80),
@@ -42,8 +42,39 @@ export function makeBankConnectionFormSchema(providers: BankProviderDTO[], isEdi
   });
 }
 
-export const mccRowSchema = z.object({
-  mcc: z.string().regex(/^\d{4}$/, 'MCC must be 4 digits'),
-  categoryId: z.string().uuid('Pick a category'),
-});
-export type MccRow = z.infer<typeof mccRowSchema>;
+// One entry of the unified provider-category → category map (tracker#51/#52).
+// A key is either an ISO-18245 MCC (`ByMcc`) or a provider's own label
+// (`ByLabel`); both live in the same map. `value` is the 4-digit code for an
+// mcc row or the free-text label for a label row. Mirrors backend
+// `Domain.Core.Types.BankProviderCategory`.
+export const bankProviderCategoryRowSchema = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('mcc'),
+    value: z.string().regex(/^\d{4}$/, 'MCC must be 4 digits'),
+    categoryId: z.string().uuid('Pick a category'),
+  }),
+  z.object({
+    kind: z.literal('label'),
+    // Backend `mkByLabel` trims and rejects blank — mirror that here.
+    value: z.string().trim().min(1, 'Label is required'),
+    categoryId: z.string().uuid('Pick a category'),
+  }),
+]);
+export type BankProviderCategoryRow = z.infer<typeof bankProviderCategoryRowSchema>;
+
+// Tagged text key form shared with the backend map keys: `"mcc:0742"` /
+// `"label:eating_out"`. Mirrors backend `renderBankProviderCategoryKey` /
+// `parseBankProviderCategoryKey` (Domain/Core/Types.hs): split on the FIRST
+// colon only, so a label containing colons round-trips.
+export function renderBankProviderCategoryKey(c: BankProviderCategory): string {
+  return `${c.kind}:${c.value}`;
+}
+
+export function parseBankProviderCategoryKey(key: string): BankProviderCategory | null {
+  const idx = key.indexOf(':');
+  if (idx === -1) return null;
+  const prefix = key.slice(0, idx);
+  const value = key.slice(idx + 1);
+  if (prefix === 'mcc' || prefix === 'label') return { kind: prefix, value };
+  return null;
+}

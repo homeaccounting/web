@@ -25,7 +25,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { BankConnectionDialog } from './BankConnectionDialog';
 import { LinkAccountsDialog } from './LinkAccountsDialog';
-import { MccMappingEditor } from './MccMappingEditor';
+import { BankProviderExpenseCategoryMapEditor } from './BankProviderExpenseCategoryMapEditor';
 
 function ConnectionRow({ connection }: { connection: BankConnectionDTO }) {
   const update = useUpdateConnection();
@@ -160,11 +160,11 @@ export function ProfileBankingPane() {
 
       <Card>
         <CardHeader>
-          <CardTitle>MCC → category mapping</CardTitle>
+          <CardTitle>Bank provider category → expense category</CardTitle>
         </CardHeader>
         <CardContent>
-          <MccMappingEditor
-            value={c.banking.mccExpenseCategoryMap}
+          <BankProviderExpenseCategoryMapEditor
+            value={c.banking.expenseCategoryMap}
             expenseCategories={expenseCategories}
           />
         </CardContent>

@@ -15,6 +15,7 @@
 ## File Structure
 
 **New files**
+
 - `src/features/transactions/accountScope.ts` — scope type; `parseAccountScope`, `scopeToParam`, `withAccountScope`, `isSingleAccount`, `scopeSpansMultiple`, `accountsOf`, `transactionInScope`.
 - `src/features/transactions/accountScope.test.ts`
 - `src/features/transactions/transactionDisplayAmount.ts` — `transactionDisplayAmount(t, viewedAccountId)` and `transactionAccountCell(t)`.
@@ -27,6 +28,7 @@
 - `src/pages/AccountRedirect.tsx` — `/accounts/:id` → `/transactions?accounts=:id` redirect.
 
 **Modified files**
+
 - `src/features/transactions/lastView.ts` — `accountId: string` → `accounts: 'all' | UUID[]` + migration.
 - `src/features/transactions/lastView.test.ts`
 - `src/App.tsx` — add `/transactions`; redirect `/accounts/:id`, `/accounts`, `/`.
@@ -37,6 +39,7 @@
 - `e2e/` — new smoke spec.
 
 **Convention reminders**
+
 - Import via `@/…` (no deep relative paths). Run `just check` (typecheck + lint + format-check) and `just test` before each commit-heavy task. Commit after every task.
 - `TransactionResponse` fields used: `transactionType`, `status`, `sourceAccountId`, `targetAccountId`, `sourceAmount`, `targetAmount`, `sourceCurrency`, `targetCurrency` (see `src/api/types.ts`).
 
@@ -45,6 +48,7 @@
 ## Task 1: `accountScope.ts` — pure scope model
 
 **Files:**
+
 - Create: `src/features/transactions/accountScope.ts`
 - Test: `src/features/transactions/accountScope.test.ts`
 - Modify: `src/features/transactions/TransactionsPane.tsx` (remove local `affectedAccountIds`, import `accountsOf`)
@@ -283,10 +287,12 @@ git commit -m "feat(transactions): add account-scope model (all/subset/single)"
 ## Task 2: `transactionDisplayAmount.ts` — amount leg + account cell
 
 **Files:**
+
 - Create: `src/features/transactions/transactionDisplayAmount.ts`
 - Test: `src/features/transactions/transactionDisplayAmount.test.ts`
 
 Behaviour (from spec §"List — Account column & amount"):
+
 - **Single scope** (`viewedAccountId` provided): preserve today's leg logic exactly — `isTarget ? +targetAmount : −sourceAmount`, currency from that leg.
 - **Multi/all scope** (`viewedAccountId` null): income → `+targetAmount`/targetCurrency; expense → `−sourceAmount`/sourceCurrency; transfer/adjustment → `+sourceAmount`/sourceCurrency (unsigned magnitude, direction is shown by the From→To cell).
 - **Colour** always via `transactionAmountClass` (income green, expense red, transfer/adjustment neutral) — independent of scope.
@@ -330,7 +336,12 @@ describe('transactionDisplayAmount — multi/all scope (viewedAccountId null)', 
     });
   });
   it('transfer → +source magnitude, neutral', () => {
-    const t = tx({ transactionType: 'Transfer', sourceAccountId: 'a1', targetAccountId: 'a2', sourceAmount: 500 });
+    const t = tx({
+      transactionType: 'Transfer',
+      sourceAccountId: 'a1',
+      targetAccountId: 'a2',
+      sourceAmount: 500,
+    });
     expect(transactionDisplayAmount(t, null)).toEqual({
       amount: 500,
       currency: 'USD',
@@ -341,25 +352,48 @@ describe('transactionDisplayAmount — multi/all scope (viewedAccountId null)', 
 
 describe('transactionDisplayAmount — single scope preserves leg logic', () => {
   it('shows the target leg when viewing the target account', () => {
-    const t = tx({ transactionType: 'Transfer', sourceAccountId: 'a1', targetAccountId: 'a2', targetAmount: 500, targetCurrency: 'EUR' });
-    expect(transactionDisplayAmount(t, 'a2')).toEqual({ amount: 500, currency: 'EUR', colorClass: '' });
+    const t = tx({
+      transactionType: 'Transfer',
+      sourceAccountId: 'a1',
+      targetAccountId: 'a2',
+      targetAmount: 500,
+      targetCurrency: 'EUR',
+    });
+    expect(transactionDisplayAmount(t, 'a2')).toEqual({
+      amount: 500,
+      currency: 'EUR',
+      colorClass: '',
+    });
   });
   it('shows the negated source leg when viewing the source account', () => {
-    const t = tx({ transactionType: 'Transfer', sourceAccountId: 'a1', targetAccountId: 'a2', sourceAmount: 500 });
-    expect(transactionDisplayAmount(t, 'a1')).toEqual({ amount: -500, currency: 'USD', colorClass: '' });
+    const t = tx({
+      transactionType: 'Transfer',
+      sourceAccountId: 'a1',
+      targetAccountId: 'a2',
+      sourceAmount: 500,
+    });
+    expect(transactionDisplayAmount(t, 'a1')).toEqual({
+      amount: -500,
+      currency: 'USD',
+      colorClass: '',
+    });
   });
 });
 
 describe('transactionAccountCell', () => {
   it('income → target only', () => {
-    expect(transactionAccountCell(tx({ transactionType: 'Income', targetAccountId: 'a2' }))).toEqual({ fromId: 'a2' });
+    expect(
+      transactionAccountCell(tx({ transactionType: 'Income', targetAccountId: 'a2' })),
+    ).toEqual({ fromId: 'a2' });
   });
   it('expense → source only', () => {
     expect(transactionAccountCell(tx({ sourceAccountId: 'a1' }))).toEqual({ fromId: 'a1' });
   });
   it('transfer → source → target', () => {
     expect(
-      transactionAccountCell(tx({ transactionType: 'Transfer', sourceAccountId: 'a1', targetAccountId: 'a2' })),
+      transactionAccountCell(
+        tx({ transactionType: 'Transfer', sourceAccountId: 'a1', targetAccountId: 'a2' }),
+      ),
     ).toEqual({ fromId: 'a1', toId: 'a2' });
   });
 });
@@ -375,7 +409,13 @@ Expected: FAIL — module not found.
 ```ts
 // src/features/transactions/transactionDisplayAmount.ts
 import type { TransactionResponse, UUID } from '@/api/types';
-import { isAdjustment, isExpense, isIncome, isTransfer, transactionAmountClass } from './transactionType';
+import {
+  isAdjustment,
+  isExpense,
+  isIncome,
+  isTransfer,
+  transactionAmountClass,
+} from './transactionType';
 
 export interface DisplayAmount {
   amount: number; // signed for income/expense; positive magnitude for transfer/adjustment
@@ -442,6 +482,7 @@ git commit -m "feat(transactions): amount-leg + account-cell helpers for multi-a
 ## Task 3: `lastView.ts` — persist scope instead of a single id
 
 **Files:**
+
 - Modify: `src/features/transactions/lastView.ts`
 - Test: `src/features/transactions/lastView.test.ts` (extend)
 
@@ -564,6 +605,7 @@ git commit -m "feat(transactions): persist account scope (all/subset) with legac
 ## Task 4: Routing — `/transactions` canonical + redirects
 
 **Files:**
+
 - Create: `src/pages/AccountRedirect.tsx`
 - Modify: `src/App.tsx`, `src/pages/HomePage.tsx`
 - Test: `src/pages/HomePage.test.tsx` (adjust), plus a small `AccountRedirect` test
@@ -662,6 +704,7 @@ git commit -m "feat(routing): canonical /transactions route + legacy /accounts r
 ## Task 5: `useScopedTransactions` — scope-driven fetch
 
 **Files:**
+
 - Create: `src/features/transactions/useScopedTransactions.ts`
 - Test: `src/features/transactions/useScopedTransactions.test.tsx`
 
@@ -709,9 +752,27 @@ describe('useScopedTransactions', () => {
       http.get(`${apiBase}/api/transactions`, () =>
         HttpResponse.json({
           transactions: [
-            { id: 't1', transactionType: 'Expense', status: 'Completed', sourceAccountId: 'a1', targetAccountId: 'ext' },
-            { id: 't2', transactionType: 'Income', status: 'Completed', sourceAccountId: 'ext', targetAccountId: 'a2' },
-            { id: 't3', transactionType: 'Expense', status: 'Completed', sourceAccountId: 'a3', targetAccountId: 'ext' },
+            {
+              id: 't1',
+              transactionType: 'Expense',
+              status: 'Completed',
+              sourceAccountId: 'a1',
+              targetAccountId: 'ext',
+            },
+            {
+              id: 't2',
+              transactionType: 'Income',
+              status: 'Completed',
+              sourceAccountId: 'ext',
+              targetAccountId: 'a2',
+            },
+            {
+              id: 't3',
+              transactionType: 'Expense',
+              status: 'Completed',
+              sourceAccountId: 'a3',
+              targetAccountId: 'ext',
+            },
           ],
           totalCount: 3,
           limit: 200,
@@ -720,7 +781,8 @@ describe('useScopedTransactions', () => {
       ),
     );
     const { result } = renderHook(
-      () => useScopedTransactions({ kind: 'accounts', ids: ['a1', 'a2'] }, '2026-05-01', '2026-05-31'),
+      () =>
+        useScopedTransactions({ kind: 'accounts', ids: ['a1', 'a2'] }, '2026-05-01', '2026-05-31'),
       { wrapper },
     );
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -742,7 +804,10 @@ import { useMemo } from 'react';
 import type { TransactionResponse } from '@/api/types';
 import type { AccountScope } from './accountScope';
 import { isSingleAccount, transactionInScope } from './accountScope';
-import { useAllAccountsWindowedTransactions, useWindowedTransactions } from './useWindowedTransactions';
+import {
+  useAllAccountsWindowedTransactions,
+  useWindowedTransactions,
+} from './useWindowedTransactions';
 
 // Fetch the date-bounded transactions for an account scope. Both underlying
 // queries are always called (React hook rules); only the one matching the scope
@@ -783,6 +848,7 @@ git commit -m "feat(transactions): useScopedTransactions (single/all/subset fetc
 ## Task 6: `AccountMultiSelect` — account chip
 
 **Files:**
+
 - Create: `src/features/transactions/AccountMultiSelect.tsx`
 - Test: `src/features/transactions/AccountMultiSelect.test.tsx`
 
@@ -846,6 +912,7 @@ git commit -m "feat(transactions): AccountMultiSelect chip for account filtering
 ## Task 7: Wire the account chip into `TransactionFilterBar`
 
 **Files:**
+
 - Modify: `src/features/transactions/TransactionFilterBar.tsx`
 - Test: `src/features/transactions/TransactionFilterBar.test.tsx` (extend)
 
@@ -894,6 +961,7 @@ git commit -m "feat(transactions): add account filter chip to the filter bar"
 ## Task 8: Sidebar — "All accounts" row + scope-driven active state
 
 **Files:**
+
 - Modify: `src/features/accounts/AccountsPane.tsx`
 - Test: `src/features/accounts/AccountsPane.test.tsx` (extend or create)
 
@@ -902,6 +970,7 @@ Key change: sidebar rows link to `/transactions?accounts=:id` (overriding the cu
 - [ ] **Step 1: Write the failing test**
 
 Render `AccountsPane` at `/transactions?accounts=a1` (via the `MemoryRouter`/render helper) with two accounts in MSW. Assert:
+
 - an "All accounts" link exists with `href="/transactions"`;
 - the `a1` row link points to `/transactions?accounts=a1` and is styled active (e.g. has `bg-muted` / `aria-current` substitute — assert via a stable `data-active` attribute you add);
 - the "All accounts" row is **not** active.
@@ -915,6 +984,7 @@ At `/transactions` (no param) assert "All accounts" is active and no account row
 - [ ] **Step 3: Implement**
 
 In `AccountsPane`:
+
 - Replace `const { id } = useParams(...)` **and** the `useLocation()` usage with scope parsing off `useSearchParams` (commit to `searchParams` as the single representation of the query string — do not also read `location.search`):
 
 ```tsx
@@ -987,6 +1057,7 @@ git commit -m "feat(accounts): sidebar 'All accounts' row + scope-driven selecti
 ## Task 9: `TransactionsPane` integration
 
 **Files:**
+
 - Modify: `src/features/transactions/TransactionsPane.tsx`
 - Create: `src/features/transactions/ScopeHeader.tsx`
 - Test: `src/features/transactions/TransactionsPane.test.tsx` (extend)
@@ -998,7 +1069,10 @@ This is the integration task; do it as small sub-steps, running `pnpm exec vites
     ```tsx
     const [searchParams, setSearchParams] = useSearchParams();
     const { data: accounts } = useAccounts();
-    const scope = useMemo(() => parseAccountScope(searchParams, accounts), [searchParams, accounts]);
+    const scope = useMemo(
+      () => parseAccountScope(searchParams, accounts),
+      [searchParams, accounts],
+    );
     const single = isSingleAccount(scope);
     const showAccountColumn = scopeSpansMultiple(scope);
     ```
@@ -1074,6 +1148,7 @@ git commit -m "feat(transactions): all/subset/single account scope in the transa
 ## Task 10: E2E smoke (Playwright `@local`)
 
 **Files:**
+
 - Create: `e2e/transactions-account-scope.spec.ts`
 
 - [ ] **Step 1: Write the smoke spec** (follow an existing `e2e/*.spec.ts` for auth/setup + the `@local` tag convention)

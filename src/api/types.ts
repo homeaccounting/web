@@ -429,11 +429,24 @@ export interface TransactionResponse {
   // the transaction has no contact. Mirrors backend
   // Web/Types.hs TransactionResponse.contactId :: Maybe UUID.
   contactId: UUID | null;
-  // Original provider merchant category code for imported transactions; `null`
-  // for manual entries and providers that supply no MCC. Mirrors backend
-  // Web/Types.hs `TransactionResponse.mcc :: Maybe Text`. Lets the user read the
-  // MCC of a miscategorised import and adjust their MCC→category mapping.
-  mcc: string | null;
+  // Original provider category signal for imported transactions; `null` for
+  // manual entries and providers that supply none. A tagged value: an
+  // ISO-18245 merchant category code (`kind: 'mcc'`, 4-digit zero-padded) or a
+  // provider's own label (`kind: 'label'`). Mirrors backend Web/Types.hs
+  // `TransactionResponse.bankProviderCategory :: Maybe BankProviderCategory`
+  // (serialised by Domain/Core/Types.hs `instance ToJSON BankProviderCategory`).
+  // Lets the user read the signal of a miscategorised import and adjust their
+  // provider-category → category mapping.
+  bankProviderCategory: BankProviderCategory | null;
+}
+
+// A provider's category signal for a transaction, tagged by kind. `mcc` values
+// are the 4-digit zero-padded code; `label` values are the provider's own
+// free-text token. Mirrors backend `Domain.Core.Types.BankProviderCategory`
+// (`{ "kind": "mcc" | "label", "value": <string> }`).
+export interface BankProviderCategory {
+  kind: 'mcc' | 'label';
+  value: string;
 }
 
 export interface TransactionListResponse {
@@ -546,7 +559,10 @@ export interface SetAccountMapRequest {
   accountMap: Record<string, UUID>;
 }
 export interface UpdateBankingRequest {
-  mccExpenseCategoryMap?: Record<string, UUID>;
+  // Keys are tagged provider-category strings (`"mcc:0742"` / `"label:…"`).
+  // Present replaces the whole map; absent means no change. Mirrors backend
+  // Web/API/ConfigurationAPI.hs `UpdateBankingRequest.expenseCategoryMap`.
+  expenseCategoryMap?: Record<string, UUID>;
 }
 export interface UpdateDefaultsRequest {
   incomeCategory?: UUID | null;
@@ -592,7 +608,11 @@ export interface BankProviderDTO {
 }
 
 export interface BankingConfigurationDTO {
-  mccExpenseCategoryMap: Record<string, UUID>;
+  // The unified user-editable provider-category → category map. Keys are tagged
+  // strings (`"mcc:0742"` / `"label:eating_out"`), seeded from banking defaults
+  // (universal MCC defaults ∪ each provider's label defaults). Mirrors backend
+  // Web/API/ConfigurationAPI.hs `BankingConfigurationDTO.expenseCategoryMap`.
+  expenseCategoryMap: Record<string, UUID>;
   connections: BankConnectionDTO[];
 }
 

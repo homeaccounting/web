@@ -271,7 +271,7 @@ const baseTx = (overrides: Partial<TransactionResponse>): TransactionResponse =>
   labels: ['l1'],
   amendmentCount: 0,
   contactId: null,
-  mcc: null,
+  bankProviderCategory: null,
   relations: [],
   ...overrides,
 });

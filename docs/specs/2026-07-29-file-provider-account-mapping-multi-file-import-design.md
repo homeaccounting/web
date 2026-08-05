@@ -11,7 +11,7 @@ server-infra PR #143 — also works for file providers, with **no provider-speci
 This is a cross-repo feature: a thin, generic **backend** addition in `server-infra`
 (prerequisite) plus **web-client** reuse in this repo. The backend transfer-detection
 mechanism itself already exists (PR #143); this feature only supplies the missing
-*account-enumeration + mapping + batching* plumbing that the file transport lacks.
+_account-enumeration + mapping + batching_ plumbing that the file transport lacks.
 
 ## Problem
 
@@ -49,7 +49,7 @@ whose two legs live in two per-card statements never lands in one batch. Consequ
   accounts view = transaction-creating actions** (both import actions — `SyncNowButton`,
   `ImportStatementButton` — already live in the accounts view, while connection config /
   account linking / MCC mapping live in profile).
-- **One unified mechanism; single-file import still works.** There must be a *single*
+- **One unified mechanism; single-file import still works.** There must be a _single_
   import + mapping path, not a separate single-account special-case. A single-file import is
   simply the N = 1 case of the same multi-file mechanism (parse → route by real
   `externalAccountId` → import); a one-account connection is just an `accountMap` with one
@@ -68,11 +68,11 @@ The capability model is asymmetric: pull can enumerate accounts and batch-import
 cannot. Two generic additions close the gap, both derived from machinery that already
 exists:
 
-| Concern | Pull (today) | File (this feature) |
-|---|---|---|
-| Enumerate accounts | `fetchAccounts` (live API) → `GET …/external-accounts` | Parse an uploaded statement via existing `parsers` → `POST …/external-accounts/from-file` |
-| Map accounts | `LinkAccountsDialog` + `setAccountMap` | **same** dialog + endpoint (un-gated) |
-| Import as one batch | `importConnection` fetches all accounts, imports once | `POST …/import/file` accepts **multiple** files → concat → one `importMany` |
+| Concern             | Pull (today)                                           | File (this feature)                                                                       |
+| ------------------- | ------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
+| Enumerate accounts  | `fetchAccounts` (live API) → `GET …/external-accounts` | Parse an uploaded statement via existing `parsers` → `POST …/external-accounts/from-file` |
+| Map accounts        | `LinkAccountsDialog` + `setAccountMap`                 | **same** dialog + endpoint (un-gated)                                                     |
+| Import as one batch | `importConnection` fetches all accounts, imports once  | `POST …/import/file` accepts **multiple** files → concat → one `importMany`               |
 
 The account-map **save** path (`setBankConnectionAccountMap`) is already transport-neutral
 and many-to-one capable (proven in PR #143). Only the **enumeration** and **batching**
@@ -169,8 +169,8 @@ a provider whose files aren't CSV is a future concern.
 Guiding IA rule (an established convention of this codebase, not a written rule): **the
 profile page configures; it does not create transactions.** Both existing import actions
 (`SyncNowButton`, `ImportStatementButton`) live in the accounts view; profile holds only
-connection config, account linking, and MCC mapping. Therefore *mapping/discovery* lives in
-profile, and *importing* stays in the accounts view.
+connection config, account linking, and MCC mapping. Therefore _mapping/discovery_ lives in
+profile, and _importing_ stays in the accounts view.
 
 ### W1. Generalize `LinkAccountsDialog` to both transports (profile — configuration)
 

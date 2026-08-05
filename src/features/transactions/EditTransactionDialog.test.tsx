@@ -38,7 +38,7 @@ const baseTx: TransactionResponse = {
   amendmentCount: 0,
   relations: [],
   contactId: null,
-  mcc: null,
+  bankProviderCategory: null,
 };
 
 beforeEach(() => {
@@ -83,7 +83,7 @@ beforeEach(() => {
           subtypeAccounts: {},
         },
         banking: {
-          mccExpenseCategoryMap: {},
+          expenseCategoryMap: {},
         },
       }),
     ),
@@ -104,17 +104,26 @@ function renderDialog(props: {
 }
 
 describe('EditTransactionDialog', () => {
-  it('shows the original MCC for an imported transaction', async () => {
-    renderDialog({ tx: { ...baseTx, mcc: '5411' } });
-    expect(await screen.findByText(/MCC/i)).toBeInTheDocument();
+  it('shows the original MCC for an mcc-based imported transaction', async () => {
+    renderDialog({ tx: { ...baseTx, bankProviderCategory: { kind: 'mcc', value: '5411' } } });
+    expect(await screen.findByText(/imported/i)).toBeInTheDocument();
+    expect(screen.getByText(/MCC/i)).toBeInTheDocument();
     expect(screen.getByText('5411')).toBeInTheDocument();
   });
 
-  it('does not show an MCC line for a manual transaction', async () => {
-    renderDialog({ tx: { ...baseTx, mcc: null } });
+  it('shows the provider label for a label-based imported transaction', async () => {
+    renderDialog({
+      tx: { ...baseTx, bankProviderCategory: { kind: 'label', value: 'eating_out' } },
+    });
+    expect(await screen.findByText(/imported/i)).toBeInTheDocument();
+    expect(screen.getByText('eating_out')).toBeInTheDocument();
+  });
+
+  it('does not show a provider-category line for a manual transaction', async () => {
+    renderDialog({ tx: { ...baseTx, bankProviderCategory: null } });
     // Let the dialog settle (form renders once accounts/config resolve).
     await screen.findByRole('dialog');
-    expect(screen.queryByText(/MCC/i)).toBeNull();
+    expect(screen.queryByText(/imported/i)).toBeNull();
   });
 
   it('renders read-only with a status notice when the transaction is not Completed', async () => {

@@ -40,6 +40,7 @@
 | `src/test/handlers.ts`, `src/test/fixtures.ts`, `e2e/banking.spec.ts` | MSW routes + fixtures + e2e | Modify |
 
 Notes for implementers:
+
 - Backend: `nix develop -c just build` / `just test` / `just format` / `just lint`; `-Werror` via `-fci`; Postgres container `accounting-postgres` must be up for integration specs.
 - Web: `pnpm test` (Vitest), `pnpm lint`, `pnpm build`; MSW handlers in `src/test/handlers.ts`, fixtures in `src/test/fixtures.ts`; strings hardcoded (no i18n).
 
@@ -53,7 +54,7 @@ Notes for implementers:
 
 - [ ] **Step 1:** Add `servant-multipart` to `package.yaml` dependencies; `nix develop -c hpack`.
 - [ ] **Step 2:** Convert the **existing** import endpoint to multipart as a **single-file, behavior-preserving** move first (prove the plumbing before adding multi-file/discovery). In `BankingAPI`, change the `import/file` row from `ReqBody '[OctetStream] ByteString` to `MultipartForm Mem (MultipartData Mem)` (keep the `QueryParam' '[Required,Strict] "format"`). Update `importStatementFileHandler`'s signature to take `MultipartData Mem` and read `fdPayload <$> files` (use the **first** file for now to preserve behavior).
-- [ ] **Step 3:** Server wiring lives in `src/Web/Server.hs` `buildApplication`, which already uses `serveWithContext` with `authContext = authHandler jwtConfig :. EmptyContext` and a `hoistServerWithContext … (Proxy :: Proxy AuthContext)`. Add `defaultMultipartOptions (Proxy :: Proxy Mem)` to that context (`authHandler … :. defaultMultipartOptions (Proxy @Mem) :. EmptyContext`) and extend the `AuthContext` type-level list accordingly so `hoistServerWithContext` still matches. **Note:** servant-multipart's `HasServer` instance *defaults* `MultipartOptions` when it's absent from the Context, so a compile-clean build **without** touching the Context is acceptable too — don't treat the no-Context path as wrong; only add it if you need non-default limits or the build demands it.
+- [ ] **Step 3:** Server wiring lives in `src/Web/Server.hs` `buildApplication`, which already uses `serveWithContext` with `authContext = authHandler jwtConfig :. EmptyContext` and a `hoistServerWithContext … (Proxy :: Proxy AuthContext)`. Add `defaultMultipartOptions (Proxy :: Proxy Mem)` to that context (`authHandler … :. defaultMultipartOptions (Proxy @Mem) :. EmptyContext`) and extend the `AuthContext` type-level list accordingly so `hoistServerWithContext` still matches. **Note:** servant-multipart's `HasServer` instance _defaults_ `MultipartOptions` when it's absent from the Context, so a compile-clean build **without** touching the Context is acceptable too — don't treat the no-Context path as wrong; only add it if you need non-default limits or the build demands it.
 - [ ] **Step 4:** `nix develop -c just build` clean. Run the existing file-import handler test (single file) — it must still pass (adjust the test's request construction to multipart with one file; behavior unchanged). Expected: green.
 - [ ] **Step 5:** `just format` + `just lint`; commit: `feat(banking): multipart file-import endpoint (single-file behavior preserved)`.
 
@@ -72,7 +73,7 @@ Notes for implementers:
 
 **Files:** `src/Web/API/BankingAPI.hs` (the `accountLink` computation in `importStatementFileHandler`), tests.
 
-- [ ] **Step 1 (failing test):** Handler spec — a connection whose `accountMap` maps a **single real card mask** to account A, importing a file that also contains card B (unmapped) → card A's rows import to A, card B's rows go to `unresolved` (NOT routed to A). Expected FAIL (today the single-entry special-case routes *all* cards to A).
+- [ ] **Step 1 (failing test):** Handler spec — a connection whose `accountMap` maps a **single real card mask** to account A, importing a file that also contains card B (unmapped) → card A's rows import to A, card B's rows go to `unresolved` (NOT routed to A). Expected FAIL (today the single-entry special-case routes _all_ cards to A).
 - [ ] **Step 2:** Replace
   ```haskell
   accountLink = case writableMap of
@@ -162,4 +163,5 @@ Notes for implementers:
 ---
 
 ## Final review
+
 After both phases: REQUIRED SUB-SKILL superpowers:requesting-code-review on each PR's diff; then superpowers:finishing-a-development-branch per repo.

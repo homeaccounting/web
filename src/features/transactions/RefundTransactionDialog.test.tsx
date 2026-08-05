@@ -45,7 +45,7 @@ function makeOriginal(overrides: Partial<TransactionResponse> = {}): Transaction
     labels: [],
     amendmentCount: 0,
     contactId: null,
-    mcc: null,
+    bankProviderCategory: null,
     relations: [],
     ...overrides,
   };
@@ -149,7 +149,7 @@ describe('RefundTransactionDialog', () => {
           labels: [],
           amendmentCount: 0,
           contactId: null,
-          mcc: null,
+          bankProviderCategory: null,
           relations: [],
         });
       }),
@@ -279,7 +279,7 @@ describe('RefundTransactionDialog', () => {
           labels: [],
           amendmentCount: 0,
           contactId: null,
-          mcc: null,
+          bankProviderCategory: null,
           relations: [],
         });
       }),

@@ -23,8 +23,8 @@ Radix menu popup). These commit to a **single** transaction via the parent's `as
 
 ### The problems
 
-1. **Double surface.** When 2+ rows are selected, right-clicking a row *still* opens that row's
-   single-row context menu, *while* the floating selection bar is also visible. Two competing action
+1. **Double surface.** When 2+ rows are selected, right-clicking a row _still_ opens that row's
+   single-row context menu, _while_ the floating selection bar is also visible. Two competing action
    surfaces for what the user perceives as one multi-selection.
 2. **No bulk label/category.** Bulk actions are limited to Link and Merge. There is no way to apply a
    label or a category to all selected rows at once — the user must open each row's menu individually.
@@ -136,7 +136,7 @@ pane so no move is required — do not create a duplicate helper.
 **Close-on-commit (applies to single-row category too).** A single-select pick is terminal, so picking
 a category **closes the whole context menu** (then the toast confirms). A multi-select labels submenu
 **stays open** for more edits and dismisses on Escape/outside-click — the current `TxLabelQuickPicker`
-behavior, kept. Today *neither* closes on pick because `MenuSearchList` commits via `onMouseDown` +
+behavior, kept. Today _neither_ closes on pick because `MenuSearchList` commits via `onMouseDown` +
 `preventDefault()` (to beat the input blur), which also suppresses Radix's built-in select-closes-menu.
 So category needs an **explicit close** after commit. Because Radix `ContextMenu.Root` is uncontrolled
 (no `open` prop), the plan closes the menu by **force-remounting the affected row's `<ContextMenu>`**
@@ -234,7 +234,7 @@ per-row (the pane maps them over `selectedRows`, using each row's `t.labels` (`t
   single-row pickers. A mixed-status selection disables both with a reason (no silent partial apply).
 - **Transfers/adjustments:** included in a selection, they disable Set category ("no category"); labels
   are unaffected by type but still require `Completed`.
-- **Close-on-commit:** single-select category closes the menu on pick (bulk *and* single-row); labels
+- **Close-on-commit:** single-select category closes the menu on pick (bulk _and_ single-row); labels
   stay open, dismiss on Escape/outside-click.
 
 ## Open questions / risks

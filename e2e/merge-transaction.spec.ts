@@ -27,7 +27,10 @@ async function setupWallet(page: Page) {
 }
 
 /** Seed a completed expense in the "Food"/"Groceries" category and wait for its row. */
-async function seedExpense(page: Page, { amount, description }: { amount: string; description: string }) {
+async function seedExpense(
+  page: Page,
+  { amount, description }: { amount: string; description: string },
+) {
   await page.getByRole('button', { name: /^add expense$/i }).click();
   const dialog = page.getByRole('dialog');
   await dialog.getByLabel(/amount/i).fill(amount);

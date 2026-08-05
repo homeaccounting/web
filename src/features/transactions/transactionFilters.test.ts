@@ -28,7 +28,7 @@ const base: TransactionResponse = {
   labels: ['lbl-trip'],
   amendmentCount: 0,
   contactId: null,
-  mcc: null,
+  bankProviderCategory: null,
   relations: [],
 };
 // A single expense (or income) slice carrying `categoryId` (or no slice for

@@ -259,7 +259,7 @@ describe('LinkAccountsDialog', () => {
     const user = userEvent.setup();
     // a1 is claimed by THIS connection (conn-1) — it must stay eligible.
     useLocalAccounts([bankAccount('a1', 'Checking', 'UAH')]);
-    useConfigConnections([{ ...bankConnectionFixture, id: 'conn-1', accountMap: { 'x': 'a1' } }]);
+    useConfigConnections([{ ...bankConnectionFixture, id: 'conn-1', accountMap: { x: 'a1' } }]);
     renderWithProviders(<Wrapper conn={connection} />, { initialPath: '/' });
 
     const uahSelect = await screen.findByRole('combobox', {

@@ -5,7 +5,12 @@ import { accountLabelParts, accountLabel, compareAccounts, sortAccounts } from '
 function acc(
   id: string,
   name: string,
-  opts: { bankName?: unknown; currency?: string; kind?: string; sub?: Record<string, unknown> } = {},
+  opts: {
+    bankName?: unknown;
+    currency?: string;
+    kind?: string;
+    sub?: Record<string, unknown>;
+  } = {},
 ): AccountResponse {
   const kind = opts.kind ?? 'bankAccount';
   const subtype = {
@@ -82,7 +87,9 @@ describe('accountLabelParts', () => {
   it('still returns the bank name (and null when none) with currencyTiebreaker off', () => {
     const bank = acc('1', 'card', { bankName: 'Monobank' });
     const cash = acc('2', 'wallet', { kind: 'cash' });
-    expect(accountLabelParts(bank, [bank], { currencyTiebreaker: false }).qualifier).toBe('Monobank');
+    expect(accountLabelParts(bank, [bank], { currencyTiebreaker: false }).qualifier).toBe(
+      'Monobank',
+    );
     expect(accountLabelParts(cash, [cash], { currencyTiebreaker: false }).qualifier).toBeNull();
   });
 });
@@ -106,8 +113,16 @@ describe('accountLabelParts — other account kinds', () => {
   });
 
   it('disambiguates a colliding asset name by currency only, never by asset type', () => {
-    const a = acc('1', 'Downtown', { kind: 'asset', currency: 'UAH', sub: { assetType: 'property' } });
-    const b = acc('2', 'Downtown', { kind: 'asset', currency: 'USD', sub: { assetType: 'property' } });
+    const a = acc('1', 'Downtown', {
+      kind: 'asset',
+      currency: 'UAH',
+      sub: { assetType: 'property' },
+    });
+    const b = acc('2', 'Downtown', {
+      kind: 'asset',
+      currency: 'USD',
+      sub: { assetType: 'property' },
+    });
     expect(accountLabelParts(a, [a, b]).qualifier).toBe('UAH');
     expect(accountLabelParts(b, [a, b]).qualifier).toBe('USD');
   });

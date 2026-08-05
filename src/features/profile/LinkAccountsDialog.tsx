@@ -101,8 +101,7 @@ export function LinkAccountsDialog({ open, onOpenChange, connection }: LinkAccou
         rows: fromFile.data,
         loading: fromFile.isPending,
         error: fromFile.error,
-        onPickFiles: (files) =>
-          fromFile.mutate({ connId: connection.id, format: 'csv', files }),
+        onPickFiles: (files) => fromFile.mutate({ connId: connection.id, format: 'csv', files }),
       }
     : {
         rows: pull.data,

@@ -13,7 +13,7 @@ multi-transaction flows through each row's right-click `ContextMenu`:
   (`associated` or retroactive `refund`) from the right-clicked row to **one** counterpart
   chosen from a `<Select>` dropdown. The dropdown is populated by
   `useAllAccountsWindowedTransactions` over a wide window (acting date − 1yr … today) across
-  **all** accounts, because association's core use case is linking rows on *different* accounts.
+  **all** accounts, because association's core use case is linking rows on _different_ accounts.
 - **Merge into this…** (`ContextMenuItem` → `MergeTransactionsDialog`) — folds **N**
   compatible rows (same account/kind/currency, Completed, non-conflicting contact) into the
   right-clicked survivor. Sources are chosen from a **checkbox list** inside the dialog, drawn
@@ -64,7 +64,7 @@ that search is retired here, and cross-account linking returns with the all-acco
 
 4. **The per-row context-menu "Link" and "Merge into this…" items are removed.** All other
    context items stay (Edit, Duplicate, Convert to, category/label/contact quick-pickers,
-   Refund, Cancel). Note: the context-menu **Refund** item is a *distinct* flow (creates a new
+   Refund, Cancel). Note: the context-menu **Refund** item is a _distinct_ flow (creates a new
    refund transaction) and is unrelated to Link's retroactive `refund` relation — it is kept.
 
 5. **No new bulk actions** beyond Link/Merge (no bulk-cancel, bulk-label). The bar is
@@ -106,7 +106,7 @@ useTransactionSelection(resetKey: string): {
   - checked when every `pageRows` id is selected,
   - indeterminate when some (not all) are selected,
   - unchecked otherwise.
-  Toggling calls `setMany(pageRows.map(r => r.id), nextChecked)`.
+    Toggling calls `setMany(pageRows.map(r => r.id), nextChecked)`.
 - Add a leading `<td>` per row with a checkbox bound to `isSelected(t.id)` / `toggle(t.id)`.
   - `onClick`/`onChange` calls `stopPropagation()` so the row's `onDoubleClick`/`onKeyDown`
     (edit) and the context menu are not triggered.
@@ -152,11 +152,11 @@ the selection.
 ### Merge dialog rework — `MergeTransactionsDialog.tsx`
 
 - Props change from `{ acting, candidates, onMerged? }` to `{ selected: TransactionResponse[],
-  onMerged? }` (plus `open`/`onOpenChange`).
+onMerged? }` (plus `open`/`onOpenChange`).
 - Internal `survivorId: UUID`, defaulting to the **most recent** selected row (max `date`;
   ties broken by `selected` array order, i.e. the first such row wins — deterministic for tests).
   Radios let the user pick a different survivor; the survivor is badged and highlighted.
-- The old "Merge in" checkbox list is removed — `selected` already *is* the set. The dialog
+- The old "Merge in" checkbox list is removed — `selected` already _is_ the set. The dialog
   still lists all selected rows (survivor + to-be-cancelled) for confirmation, with the
   merged total and "N will be cancelled".
 - Submit: `useMergeTransactions(survivorId)` with
@@ -172,7 +172,7 @@ the selection.
 - **Kind + direction inference** from the pair, reusing `isIncomeWithContra`/`accountIdOf`:
   - Both kinds start from `associated`, which is always available (owner picked deterministically,
     e.g. the more recent row).
-  - **Refund** is offered *only* when exactly one row is income-with-contra and the other is a
+  - **Refund** is offered _only_ when exactly one row is income-with-contra and the other is a
     non-cancelled expense on the **same account**. In that case owner = the income-with-contra
     row, counterpart = the expense; `useRefundSummary` guards over-refunding.
   - If the two rows are already related, surface a message and disable Link. Check by scanning
@@ -183,7 +183,7 @@ the selection.
 - Kind toggle UI: a two-option segmented control (Association / Refund) when both apply;
   Association-only (no toggle, or a single disabled Refund) when the pair doesn't qualify.
 - Submit: `useLinkRelation(owner.id).mutateAsync({ relatedTransactionId: counterpart.id,
-  relationKind })`.
+relationKind })`.
 
 ## Error handling
 
@@ -195,6 +195,7 @@ the selection.
 ## Testing
 
 Unit:
+
 - `useTransactionSelection`: toggle, `setMany`, `clear`, resets when `resetKey` changes but
   survives page-only changes.
 - Survivor default = most recent; survivor switch recomputes sources.
@@ -203,6 +204,7 @@ Unit:
 - Merge-eligibility gating feeding `canMerge`/`mergeDisabledReason`.
 
 Component (Testing Library + MSW, via `src/test/utils.tsx`):
+
 - Checkbox toggles selection without opening the edit dialog / context menu.
 - Header checkbox select-all / indeterminate / clear on current page.
 - Bar appears at `count > 0`; Link visible only at exactly 2 Completed rows (not when one is

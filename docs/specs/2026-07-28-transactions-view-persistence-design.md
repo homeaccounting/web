@@ -11,7 +11,7 @@ single source of truth, read independently by `AccountsPane` (`useParams`,
 `src/features/accounts/AccountsPane.tsx:48`) and `TransactionsPane`
 (`src/features/transactions/TransactionsPane.tsx:186`). Selecting an account is navigation.
 
-Everything *else* about the transactions view is ephemeral React state in `TransactionsPane` and is
+Everything _else_ about the transactions view is ephemeral React state in `TransactionsPane` and is
 **neither persisted nor in the URL**:
 
 - **Date window** — `defaultWindow` / `fromInput` / `toInput` / `appliedWindow`
@@ -49,12 +49,12 @@ stale-across-midnight guard). Auth uses localStorage (`src/auth/storage.ts`, key
   and filters — a single **global "last view"** (one remembered account + period + filters, not
   per-account).
 - **Date range in the URL** on `/accounts/:id`, using the **reports period model** (presets +
-  custom), so a shared/bookmarked link carries account + date range and stays *live* (presets are
+  custom), so a shared/bookmarked link carries account + date range and stays _live_ (presets are
   relative). This is consistent with the accounting-app norm (reports/periods are the one thing those
   apps make addressable) and with this app's own `/reports` page.
 - **Reuse, not reinvent, the date-range data model** — extract the reports period pieces up a layer
   so both `/reports` and `/accounts/:id` share one model.
-- **Reports parity**: `/reports` reuses the *same* precedence (`URL → lastView → default`) for its
+- **Reports parity**: `/reports` reuses the _same_ precedence (`URL → lastView → default`) for its
   date range and restores its last period + tab on reopen — symmetric with transactions. (This
   replaces the earlier "no change to reports behavior" goal: reports now gains restore-on-reopen too,
   via the shared mechanism.)
@@ -65,11 +65,11 @@ stale-across-midnight guard). Auth uses localStorage (`src/auth/storage.ts`, key
 
 - **Filters in the URL.** Per the accounting-app norm, ad-hoc transaction filters
   (search text, labels, category, contact, cancelled/failed) stay **storage-only**. Sharing a
-  *filtered* slice via a link is out of scope; a shared link carries account + date range only.
+  _filtered_ slice via a link is out of scope; a shared link carries account + date range only.
   Export remains the path for sharing filtered data.
 - **Per-account memory.** One global last view only (transactions).
 - **`all-time` for transactions** (see Preset model).
-- **Cross-page restore.** Opening the app root restores the last *account/transactions* view; it does
+- **Cross-page restore.** Opening the app root restores the last _account/transactions_ view; it does
   not route you to `/reports` even if reports was the last page visited. Each page restores its own
   view when navigated to.
 - New filter facets, sorting, server-side filter params, changing pagination persistence.
@@ -81,7 +81,7 @@ stale-across-midnight guard). Auth uses localStorage (`src/auth/storage.ts`, key
 Date range resolves as **URL → lastView → default (`last-month`)**, derive-only:
 
 1. **URL carries `period`** → authoritative (shared links, bookmarks, back/forward, and the
-   cold-start redirect, which rebuilds the URL *from* lastView so the restored range arrives through
+   cold-start redirect, which rebuilds the URL _from_ lastView so the restored range arrives through
    the URL).
 2. **URL has no `period`** → fall back to stored `lastView.period` (+ its custom `from`/`to`).
 3. **No lastView** → default preset `last-month`.
@@ -105,11 +105,11 @@ date-range fallback. See "Reports parity" below.
 Extract the reports period pieces up a layer so `features/transactions/` can consume them without a
 feature→feature import (the dependency rule is `pages → features → (api | auth | lib | components)`):
 
-| Piece | From | To |
-| --- | --- | --- |
-| `period.ts` (`PeriodPreset`, `PERIOD_PRESET_LABELS`, `DayRange`, `presetRange`, `toQueryRange`) | `src/features/reports/period.ts` | `src/lib/period.ts` |
-| `PeriodSelector.tsx` | `src/features/reports/PeriodSelector.tsx` | `src/components/PeriodSelector.tsx` |
-| **new** `parsePeriodParams` / `periodParamsToSearch` (period, from, to) | — | `src/lib/period.ts` (or `src/lib/periodUrl.ts`) |
+| Piece                                                                                           | From                                      | To                                              |
+| ----------------------------------------------------------------------------------------------- | ----------------------------------------- | ----------------------------------------------- |
+| `period.ts` (`PeriodPreset`, `PERIOD_PRESET_LABELS`, `DayRange`, `presetRange`, `toQueryRange`) | `src/features/reports/period.ts`          | `src/lib/period.ts`                             |
+| `PeriodSelector.tsx`                                                                            | `src/features/reports/PeriodSelector.tsx` | `src/components/PeriodSelector.tsx`             |
+| **new** `parsePeriodParams` / `periodParamsToSearch` (period, from, to)                         | —                                         | `src/lib/period.ts` (or `src/lib/periodUrl.ts`) |
 
 Adjustments:
 
@@ -130,15 +130,15 @@ Adjustments:
   optional **`fallback?: { period: PeriodValue; from?: string; to?: string }`** is the persisted
   `lastView` period portion: when the URL carries no `period`, the resolver uses `fallback` (if
   valid) before the `defaultPreset` — this is the single implementation of the `URL → lastView →
-  default` order, reused by both views. `periodParamsToSearch(periodValue, dayRange)` emits `period`,
+default` order, reused by both views. `periodParamsToSearch(periodValue, dayRange)` emits `period`,
   plus `from`/`to` only for `custom`.
 - `reportsUrl.ts`'s `parseReportsParams(params, today, lastReportsView?)` becomes `{ tab } +
-  parsePeriodParams(params, today, { presets: REPORTS_PRESETS, defaultPreset: 'this-month', fallback:
-  lastReportsView })`, where `tab` resolves `URL → lastReportsView.tab → 'cash-flow'`. Same URL param
+parsePeriodParams(params, today, { presets: REPORTS_PRESETS, defaultPreset: 'this-month', fallback:
+lastReportsView })`, where `tab` resolves `URL → lastReportsView.tab → 'cash-flow'`. Same URL param
   names (`tab`/`period`/`from`/`to`) and same preset set (incl. `all-time`); the only behavior change
   is the added `lastView` fallback (goal, not regression).
 
-`last-month` default = the previous *whole calendar month* (e.g. viewing in July → June 1–30), not a
+`last-month` default = the previous _whole calendar month_ (e.g. viewing in July → June 1–30), not a
 rolling 30 days.
 
 ### Transactions date range → URL (mirror `ReportsPane`)
@@ -154,7 +154,7 @@ emits complete dates (as it already does in reports), so the mid-edit guard is n
 **Period selector placement.** The two raw `DatePicker`s live today inside `TransactionFilterBar`,
 which renders only when the collapsible "Filters" panel is expanded (`TransactionsPane.tsx:785`), and
 `activeFilterCount` deliberately excludes the date window. Because a restored/shared non-default
-period must be *visible* (a stated goal — the range should be prominent and addressable), the
+period must be _visible_ (a stated goal — the range should be prominent and addressable), the
 `<PeriodSelector presets={TX_PRESETS}>` is placed **outside** the collapsed filters panel — always
 visible in the pane header/toolbar area — rather than inside `TransactionFilterBar` with the other
 raw pickers. (This is the one deliberate UX change from today's collapsed date pickers.)
@@ -174,8 +174,8 @@ a full restart, unlike the sticky-date's sessionStorage), key `ha.transactions.l
 ```ts
 interface LastView {
   accountId: string;
-  period: PeriodValue;      // preset or 'custom'
-  from?: string;            // only when period === 'custom'
+  period: PeriodValue; // preset or 'custom'
+  from?: string; // only when period === 'custom'
   to?: string;
   filters: TransactionFilters;
 }
@@ -205,16 +205,16 @@ A sibling store, same idiom, **`localStorage`** key `ha.reports.lastView`:
 
 ```ts
 interface ReportsLastView {
-  tab: ReportsTab;          // 'cash-flow' | 'net-worth'
+  tab: ReportsTab; // 'cash-flow' | 'net-worth'
   period: PeriodValue;
-  from?: string;            // only when period === 'custom'
+  from?: string; // only when period === 'custom'
   to?: string;
 }
 ```
 
 - `readReportsLastView()` / `writeReportsLastView(v)` — tolerant parse (as above).
 - `ReportsPane` passes `readReportsLastView()` into `parseReportsParams(searchParams, new Date(),
-  lastView)` so the URL-silent case restores tab + period; and adds a write effect that persists
+lastView)` so the URL-silent case restores tab + period; and adds a write effect that persists
   `{ tab, periodValue, from, to }` whenever they change. No redirect and no forced URL write —
   `/reports` restores purely by deriving from `lastView` when the URL lacks params (same derive-only
   rule as transactions).
@@ -275,7 +275,7 @@ precedence chain, a `NavLink` that ever lacks `period` still resolves via `lastV
   (Verify the endpoint's behavior only if `all-time` is ever added; reports handles empty bounds via
   `toQueryRange` omitting them.)
 - **Corrupt / partial `localStorage`** — `readLastView` returns `null`; falls back to default preset
-  + empty filters.
+  - empty filters.
 - **Stored account deleted** — cold-start redirect is skipped; if the user is already on a stale
   `/accounts/:deleted`, existing not-found handling applies (unchanged).
 - **Reports behavior** — same URL param names and preset set (incl. `all-time`) after delegating to
@@ -309,5 +309,7 @@ precedence chain, a `NavLink` that ever lacks `period` still resolves via `lastV
   `/accounts/:id?period=…`; deleted account → no redirect; no `lastView` → no redirect.
 - **E2E smoke** (`e2e/`): set account + period + a filter, reload → all three restored; open the app
   root cold → redirected to the last account with its period.
+
 ```
 
+```

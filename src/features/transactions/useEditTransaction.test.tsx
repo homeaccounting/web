@@ -48,7 +48,7 @@ const txResponse = (overrides: Partial<TransactionResponse> = {}): TransactionRe
   labels: [],
   amendmentCount: 0,
   contactId: null,
-  mcc: null,
+  bankProviderCategory: null,
   relations: [],
   ...overrides,
 });

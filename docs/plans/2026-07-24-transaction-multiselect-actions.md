@@ -15,6 +15,7 @@
 ### Task 1: `useTransactionSelection` hook
 
 **Files:**
+
 - Create: `src/features/transactions/useTransactionSelection.ts`
 - Test: `src/features/transactions/useTransactionSelection.test.ts`
 
@@ -75,6 +76,7 @@ export function useTransactionSelection(resetKey: string) {
 ### Task 2: `SelectionActionBar` component
 
 **Files:**
+
 - Create: `src/features/transactions/SelectionActionBar.tsx`
 - Test: `src/features/transactions/SelectionActionBar.test.tsx`
 
@@ -85,8 +87,8 @@ export function useTransactionSelection(resetKey: string) {
 ```ts
 interface SelectionActionBarProps {
   count: number;
-  canLink: boolean;       // exactly 2 selected AND both Completed
-  canMerge: boolean;      // >=2 selected AND checkMergeEligibility(rows).eligible
+  canLink: boolean; // exactly 2 selected AND both Completed
+  canMerge: boolean; // >=2 selected AND checkMergeEligibility(rows).eligible
   mergeDisabledReason?: string;
   onLink: () => void;
   onMerge: () => void;
@@ -104,6 +106,7 @@ Fixed, bottom-center container (`fixed inset-x-0 bottom-4 z-40 mx-auto w-fit`), 
 ### Task 3: Rework `MergeTransactionsDialog` (survivor picker)
 
 **Files:**
+
 - Modify: `src/features/transactions/MergeTransactionsDialog.tsx`
 - Modify: `src/features/transactions/MergeTransactionsDialog.test.tsx`
 
@@ -124,6 +127,7 @@ Fixed, bottom-center container (`fixed inset-x-0 bottom-4 z-40 mx-auto w-fit`), 
 ### Task 4: Rework `LinkTransactionDialog` (pair mode)
 
 **Files:**
+
 - Modify: `src/features/transactions/LinkTransactionDialog.tsx`
 - Modify: `src/features/transactions/LinkTransactionDialog.test.tsx`
 
@@ -148,6 +152,7 @@ Fixed, bottom-center container (`fixed inset-x-0 bottom-4 z-40 mx-auto w-fit`), 
 ### Task 5: Wire selection into `TransactionsPane`
 
 **Files:**
+
 - Modify: `src/features/transactions/TransactionsPane.tsx`
 - Modify: `src/features/transactions/TransactionsPane.test.tsx`, `TransactionsPane.merge.test.tsx`
 

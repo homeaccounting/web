@@ -57,7 +57,7 @@ const base: TransactionResponse = {
   labels: ['lbl-1'],
   amendmentCount: 0,
   contactId: null,
-  mcc: null,
+  bankProviderCategory: null,
   relations: [],
 };
 

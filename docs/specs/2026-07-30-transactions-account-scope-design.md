@@ -60,11 +60,11 @@ confirms the issue's open question: **tracker#43 is web-only.**
 Account scope is carried in the URL query param **`accounts`** — the single source of
 truth, joining `period`/`from`/`to` which are already URL-based:
 
-| URL                              | Scope                        |
-| -------------------------------- | ---------------------------- |
-| `/transactions`                  | **all accounts** (default)   |
-| `/transactions?accounts=a1`      | single account `a1`          |
-| `/transactions?accounts=a1,a2`   | subset (union of a1, a2)     |
+| URL                            | Scope                      |
+| ------------------------------ | -------------------------- |
+| `/transactions`                | **all accounts** (default) |
+| `/transactions?accounts=a1`    | single account `a1`        |
+| `/transactions?accounts=a1,a2` | subset (union of a1, a2)   |
 
 - **Absence** of the param = all accounts. A single id is just a one-element set.
 - `/transactions` becomes the canonical page and renders the existing two-pane
