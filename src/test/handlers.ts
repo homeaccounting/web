@@ -330,6 +330,7 @@ export const handlers = [
     const body = (await request.json()) as UpdateBankingRequest;
     const banking: BankingConfigurationDTO = {
       expenseCategoryMap: body.expenseCategoryMap ?? {},
+      contactMap: body.contactMap ?? {},
       connections: [],
     };
     return HttpResponse.json(banking);

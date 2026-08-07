@@ -39,6 +39,7 @@ const baseTx: TransactionResponse = {
   relations: [],
   contactId: null,
   bankProviderCategory: null,
+  bankProviderContact: null,
 };
 
 beforeEach(() => {
@@ -104,9 +105,9 @@ function renderDialog(props: {
 }
 
 describe('EditTransactionDialog', () => {
-  it('shows the original MCC for an mcc-based imported transaction', async () => {
+  it('shows the original MCC in the Import details section (below the form)', async () => {
     renderDialog({ tx: { ...baseTx, bankProviderCategory: { kind: 'mcc', value: '5411' } } });
-    expect(await screen.findByText(/imported/i)).toBeInTheDocument();
+    expect(await screen.findByText(/import details/i)).toBeInTheDocument();
     expect(screen.getByText(/MCC/i)).toBeInTheDocument();
     expect(screen.getByText('5411')).toBeInTheDocument();
   });
@@ -115,15 +116,81 @@ describe('EditTransactionDialog', () => {
     renderDialog({
       tx: { ...baseTx, bankProviderCategory: { kind: 'label', value: 'eating_out' } },
     });
-    expect(await screen.findByText(/imported/i)).toBeInTheDocument();
+    expect(await screen.findByText(/import details/i)).toBeInTheDocument();
     expect(screen.getByText('eating_out')).toBeInTheDocument();
   });
 
-  it('does not show a provider-category line for a manual transaction', async () => {
+  it('does not show the Import details section for a manual transaction', async () => {
     renderDialog({ tx: { ...baseTx, bankProviderCategory: null } });
     // Let the dialog settle (form renders once accounts/config resolve).
     await screen.findByRole('dialog');
-    expect(screen.queryByText(/imported/i)).toBeNull();
+    expect(screen.queryByText(/import details/i)).toBeNull();
+  });
+
+  const bankingConfig = (contactMap: Record<string, string>) => ({
+    baseCurrency: 'USD',
+    defaultCurrency: 'USD',
+    dictionaries: {
+      income: { roots: [{ id: categoryId, name: 'Salary', type: 'item', children: [] }] },
+      expense: { roots: [{ id: categoryId, name: 'Food', type: 'item', children: [] }] },
+      label: { roots: [] },
+      contact: { roots: [{ id: contactAcme, name: 'Acme', type: 'item', children: [] }] },
+    },
+    defaults: { incomeCategory: null, expenseCategory: null, account: null, subtypeAccounts: {} },
+    banking: { expenseCategoryMap: {}, contactMap },
+  });
+
+  it('unmapped provider-contact token → creatable mapper writes the merged contactMap', async () => {
+    server.use(
+      http.get(`${apiBase}/api/users/me/configuration`, () => HttpResponse.json(bankingConfig({}))),
+    );
+    let body: unknown = null;
+    server.use(
+      http.put(`${apiBase}/api/users/me/configuration/banking`, async ({ request }) => {
+        body = await request.json();
+        return HttpResponse.json({}, { status: 200 });
+      }),
+    );
+    renderDialog({ tx: { ...baseTx, bankProviderContact: 'MagazinREMONTI' } });
+    const user = userEvent.setup();
+
+    expect(await screen.findByText('MagazinREMONTI')).toBeInTheDocument();
+    const combobox = await screen.findByRole('combobox', { name: /map to contact/i });
+    await user.click(combobox);
+    await user.click(await screen.findByRole('option', { name: 'Acme' }));
+
+    await vi.waitFor(() => expect(body).toEqual({ contactMap: { MagazinREMONTI: contactAcme } }));
+  });
+
+  it('already-mapped token → read-only "→ contact" line, no mapper', async () => {
+    server.use(
+      http.get(`${apiBase}/api/users/me/configuration`, () =>
+        HttpResponse.json(bankingConfig({ MagazinREMONTI: contactAcme })),
+      ),
+    );
+    renderDialog({ tx: { ...baseTx, bankProviderContact: 'MagazinREMONTI' } });
+
+    expect(await screen.findByText(/→ Acme/)).toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: /map to contact/i })).toBeNull();
+  });
+
+  it('no provider-contact token → neither the line nor the mapper', async () => {
+    renderDialog({ tx: { ...baseTx, bankProviderContact: null } });
+    await screen.findByRole('dialog');
+    expect(screen.queryByText(/counterparty/i)).toBeNull();
+    expect(screen.queryByRole('combobox', { name: /map to contact/i })).toBeNull();
+  });
+
+  it('while config is unresolved → token shows read-only with no mapper', async () => {
+    // A config request that never resolves keeps `config` undefined, so the
+    // mapper must not render (it would merge into an unknown map).
+    server.use(
+      http.get(`${apiBase}/api/users/me/configuration`, () => new Promise<never>(() => {})),
+    );
+    renderDialog({ tx: { ...baseTx, bankProviderContact: 'MagazinREMONTI' } });
+
+    expect(await screen.findByText('MagazinREMONTI')).toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: /map to contact/i })).toBeNull();
   });
 
   it('renders read-only with a status notice when the transaction is not Completed', async () => {

@@ -39,6 +39,7 @@ function makeTx(overrides: Partial<TransactionResponse> = {}): TransactionRespon
     amendmentCount: 0,
     contactId: null,
     bankProviderCategory: null,
+    bankProviderContact: null,
     relations: [],
     ...overrides,
   };

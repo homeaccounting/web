@@ -36,6 +36,7 @@ function expenseTx(over: Partial<TransactionResponse> = {}): TransactionResponse
     amendmentCount: 0,
     contactId: null,
     bankProviderCategory: null,
+    bankProviderContact: null,
     relations: [],
     ...over,
   };

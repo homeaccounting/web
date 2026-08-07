@@ -78,3 +78,13 @@ export function parseBankProviderCategoryKey(key: string): BankProviderCategory 
   if (prefix === 'mcc' || prefix === 'label') return { kind: prefix, value };
   return null;
 }
+
+// One entry of the provider-token → contact map (tracker#54). Unlike the
+// category map there is no kind tag: the key is the bare trimmed token (backend
+// `mkBankProviderContact` trims and rejects blank — mirror that here). `contactId`
+// is a contact dictionary-entry id.
+export const bankProviderContactRowSchema = z.object({
+  token: z.string().trim().min(1, 'Token is required'),
+  contactId: z.string().uuid('Pick a contact'),
+});
+export type BankProviderContactRow = z.infer<typeof bankProviderContactRowSchema>;

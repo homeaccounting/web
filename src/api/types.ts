@@ -438,6 +438,14 @@ export interface TransactionResponse {
   // Lets the user read the signal of a miscategorised import and adjust their
   // provider-category → category mapping.
   bankProviderCategory: BankProviderCategory | null;
+  // Raw provider counterparty token for imported transactions; `null` for
+  // manual entries, transfers/adjustments, and providers that supply none. A
+  // PLAIN string (unlike the tagged bankProviderCategory) — the backend key is
+  // the bare trimmed token. Mirrors server-infra Web/Types.hs:693
+  // `TransactionResponse.bankProviderContact :: Maybe BankProviderContact`
+  // (plain-string ToJSON at Domain/Core/Types.hs). Lets the user map an
+  // unmapped merchant to a contact from the edit dialog.
+  bankProviderContact: string | null;
 }
 
 // A provider's category signal for a transaction, tagged by kind. `mcc` values
@@ -563,6 +571,10 @@ export interface UpdateBankingRequest {
   // Present replaces the whole map; absent means no change. Mirrors backend
   // Web/API/ConfigurationAPI.hs `UpdateBankingRequest.expenseCategoryMap`.
   expenseCategoryMap?: Record<string, UUID>;
+  // Present replaces the whole contact map (set-semantics); absent = no change.
+  // Keys are bare trimmed provider tokens. Mirrors server-infra
+  // Web/API/ConfigurationAPI.hs:565 `UpdateBankingRequest.contactMap`.
+  contactMap?: Record<string, UUID>;
 }
 export interface UpdateDefaultsRequest {
   incomeCategory?: UUID | null;
@@ -613,6 +625,10 @@ export interface BankingConfigurationDTO {
   // (universal MCC defaults ∪ each provider's label defaults). Mirrors backend
   // Web/API/ConfigurationAPI.hs `BankingConfigurationDTO.expenseCategoryMap`.
   expenseCategoryMap: Record<string, UUID>;
+  // User-editable provider-token → contact map. Keys are bare trimmed provider
+  // counterparty tokens (no mcc:/label: tag). Starts empty (no seed). Mirrors
+  // server-infra Web/API/ConfigurationAPI.hs:314 `BankingConfigurationDTO.contactMap`.
+  contactMap: Record<string, UUID>;
   connections: BankConnectionDTO[];
 }
 

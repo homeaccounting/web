@@ -18,12 +18,12 @@ beforeEach(() => {
   server.use(http.get(configUrl, () => HttpResponse.json(bankingEnabledConfigurationFixture)));
 });
 
-function render() {
+function render(initialPath = '/') {
   return renderWithProviders(
     <AuthProvider>
       <ProfileBankingPane />
     </AuthProvider>,
-    { initialPath: '/' },
+    { initialPath },
   );
 }
 
@@ -118,6 +118,35 @@ describe('ProfileBankingPane', () => {
     server.use(http.get(configUrl, () => HttpResponse.json(bankingEnabledConfigurationFixture)));
     await userEvent.setup().click(screen.getByRole('button', { name: /retry/i }));
     await waitFor(() => expect(screen.getByText('Monobank')).toBeInTheDocument());
+  });
+
+  it('renders Connections / Expenses / Contacts sub-tabs', async () => {
+    render();
+    await screen.findByText('Monobank');
+    expect(screen.getByRole('tab', { name: /connections/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /expenses/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /contacts/i })).toBeInTheDocument();
+  });
+
+  it('defaults to the Connections section (no ?section) and hides the contact editor', async () => {
+    render();
+    await screen.findByText('Monobank');
+    expect(screen.getByRole('button', { name: /add connection/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /add mapping/i })).not.toBeInTheDocument();
+  });
+
+  it('?section=contacts renders the contact map editor', async () => {
+    render('/?section=contacts');
+    expect(await screen.findByText(/bank provider token → contact/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /add mapping/i })).toBeInTheDocument();
+    // Connections list is on another sub-tab now.
+    expect(screen.queryByText('Monobank')).not.toBeInTheDocument();
+  });
+
+  it('an unknown ?section falls back to Connections', async () => {
+    render('/?section=zzz');
+    await screen.findByText('Monobank');
+    expect(screen.getByRole('button', { name: /add connection/i })).toBeInTheDocument();
   });
 
   it('shows "Link accounts" for a file-only (privatbank) connection', async () => {

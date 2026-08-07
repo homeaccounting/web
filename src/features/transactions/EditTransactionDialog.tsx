@@ -16,6 +16,8 @@ import { useAccounts } from '@/features/accounts/useAccounts';
 import { flattenDictionary } from '@/api/dictionary';
 import { useConfiguration } from '@/features/configuration/useConfiguration';
 import { useCreateDictionaryEntry } from '@/features/configuration/useCreateDictionaryEntry';
+import { useUpdateBanking } from '@/features/configuration/useUpdateBanking';
+import { ContactCombobox } from './ContactCombobox';
 import { IncomeExpenseForm, type IncomeExpenseFormApi } from './IncomeExpenseForm';
 import { TransferForm, type TransferFormApi } from './TransferForm';
 import {
@@ -74,6 +76,13 @@ export function EditTransactionDialog({ open, onOpenChange, tx }: EditTransactio
   const title = adjustment ? 'Balance adjustment' : TRANSACTION_KIND_LABELS[kind].editTitle;
   const close = useCallback(() => onOpenChange(false), [onOpenChange]);
 
+  // Inline "map to contact" for the imported provider token — curates the
+  // global provider-token → contact map (future imports), independent of this
+  // transaction's own contact field (tracker#54).
+  const updateBanking = useUpdateBanking();
+  const createContact = useCreateDictionaryEntry();
+  const contacts = flattenDictionary(config?.dictionaries.contact);
+
   let body: React.ReactNode;
   if (currentTx.status !== 'Completed') {
     body = <ReadOnlyNotice status={currentTx.status} onClose={close} />;
@@ -120,23 +129,81 @@ export function EditTransactionDialog({ open, onOpenChange, tx }: EditTransactio
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>Update transaction details.</DialogDescription>
-          {currentTx.bankProviderCategory && (
-            <p className="text-xs text-muted-foreground">
-              Imported · {currentTx.bankProviderCategory.kind === 'mcc' ? 'MCC' : 'Category'}{' '}
-              <span
-                className="select-all font-mono"
-                title={
-                  currentTx.bankProviderCategory.kind === 'mcc'
-                    ? 'Merchant category code from the bank'
-                    : "Provider's own category label"
-                }
-              >
-                {currentTx.bankProviderCategory.value}
-              </span>
-            </p>
-          )}
         </DialogHeader>
         {body}
+        {/* Import provenance is secondary metadata — keep it below the form,
+            de-emphasised, not competing with the edit fields for attention. */}
+        {(currentTx.bankProviderCategory || currentTx.bankProviderContact) && (
+          <div className="mt-2 space-y-1 border-t pt-3">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              Import details
+            </p>
+            {currentTx.bankProviderCategory && (
+              <p className="text-xs text-muted-foreground">
+                {currentTx.bankProviderCategory.kind === 'mcc' ? 'MCC' : 'Category'}{' '}
+                <span
+                  className="select-all font-mono"
+                  title={
+                    currentTx.bankProviderCategory.kind === 'mcc'
+                      ? 'Merchant category code from the bank'
+                      : "Provider's own category label"
+                  }
+                >
+                  {currentTx.bankProviderCategory.value}
+                </span>
+              </p>
+            )}
+            {currentTx.bankProviderContact &&
+              (() => {
+                const token = currentTx.bankProviderContact;
+                const map = config?.banking.contactMap;
+                const readOnly = (suffix?: string) => (
+                  <p className="text-xs text-muted-foreground">
+                    Counterparty{' '}
+                    <span className="select-all font-mono" title="Counterparty token from the bank">
+                      {token}
+                    </span>
+                    {suffix}
+                  </p>
+                );
+                // Config not yet loaded: show the token, no mapper (can't merge
+                // into an unknown map).
+                if (!map) return readOnly();
+                const mappedId = map[token];
+                if (mappedId) {
+                  const name = contacts.find((x) => x.id === mappedId)?.name;
+                  return readOnly(` → ${name ?? 'mapped contact'}`);
+                }
+                const mapTo = (id: UUID) =>
+                  updateBanking.mutate({ contactMap: { ...map, [token]: id } });
+                return (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span>Counterparty</span>
+                    <span className="select-all font-mono">{token}</span>
+                    <div className="w-56">
+                      <ContactCombobox
+                        options={contacts}
+                        value={null}
+                        onChange={(id) => {
+                          if (id) mapTo(id);
+                        }}
+                        onCreate={async (name) => {
+                          const r = await createContact.mutateAsync({
+                            dictId: 'contact',
+                            name,
+                            dict: config?.dictionaries.contact,
+                          });
+                          mapTo(r.id);
+                        }}
+                        placeholder="Map to contact…"
+                        aria-label="Map to contact"
+                      />
+                    </div>
+                  </div>
+                );
+              })()}
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

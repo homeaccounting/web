@@ -53,6 +53,7 @@ const original: TransactionResponse = {
   amendmentCount: 0,
   contactId: null,
   bankProviderCategory: null,
+  bankProviderContact: null,
   relations: [],
 };
 
@@ -79,6 +80,7 @@ const refundR1 = (id = 'R1'): TransactionResponse => ({
   amendmentCount: 0,
   contactId: null,
   bankProviderCategory: null,
+  bankProviderContact: null,
   relations: [{ relatedTransactionId: 'O', relationKind: 'refund' }],
 });
 

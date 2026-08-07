@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { BankProviderDTO } from '@/api/types';
 import {
   bankConnectionFormSchema,
+  bankProviderContactRowSchema,
   makeBankConnectionFormSchema,
   parseBankProviderCategoryKey,
   bankProviderCategoryRowSchema,
@@ -196,5 +197,30 @@ describe('bankProviderCategoryRowSchema', () => {
       bankProviderCategoryRowSchema.safeParse({ kind: 'mcc', value: '5411', categoryId: 'x' })
         .success,
     ).toBe(false);
+  });
+});
+
+describe('bankProviderContactRowSchema', () => {
+  const validUuid = '123e4567-e89b-12d3-a456-426614174000';
+
+  it('accepts a token + uuid contact, trimming the token', () => {
+    const result = bankProviderContactRowSchema.safeParse({
+      token: '  MagazinREMONTI ',
+      contactId: validUuid,
+    });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.token).toBe('MagazinREMONTI');
+  });
+
+  it('rejects a blank/whitespace token', () => {
+    expect(
+      bankProviderContactRowSchema.safeParse({ token: '   ', contactId: validUuid }).success,
+    ).toBe(false);
+  });
+
+  it('rejects a missing/invalid contactId', () => {
+    expect(bankProviderContactRowSchema.safeParse({ token: 'X', contactId: '' }).success).toBe(
+      false,
+    );
   });
 });

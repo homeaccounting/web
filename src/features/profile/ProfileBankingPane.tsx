@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import type { BankConnectionDTO } from '@/api/types';
 import { flattenDictionary } from '@/api/dictionary';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useConfiguration } from '@/features/configuration/useConfiguration';
 import { useUpdateConnection } from '@/features/configuration/useUpdateConnection';
 import { useRemoveConnection } from '@/features/configuration/useRemoveConnection';
@@ -9,7 +11,7 @@ import { useProviders } from '@/features/banking/useProviders';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { EmptyState } from '@/components/EmptyState';
@@ -26,6 +28,10 @@ import {
 import { BankConnectionDialog } from './BankConnectionDialog';
 import { LinkAccountsDialog } from './LinkAccountsDialog';
 import { BankProviderExpenseCategoryMapEditor } from './BankProviderExpenseCategoryMapEditor';
+import { BankProviderContactMapEditor } from './BankProviderContactMapEditor';
+
+const SECTIONS = ['connections', 'expenses', 'contacts'] as const;
+type Section = (typeof SECTIONS)[number];
 
 function ConnectionRow({ connection }: { connection: BankConnectionDTO }) {
   const update = useUpdateConnection();
@@ -109,6 +115,17 @@ function ConnectionRow({ connection }: { connection: BankConnectionDTO }) {
 export function ProfileBankingPane() {
   const config = useConfiguration();
   const [addOpen, setAddOpen] = useState(false);
+  const [params, setParams] = useSearchParams();
+  const raw = params.get('section');
+  const section: Section = SECTIONS.includes(raw as Section) ? (raw as Section) : 'connections';
+  const onSectionChange = (next: string) =>
+    setParams(
+      (prev) => {
+        prev.set('section', next);
+        return prev;
+      },
+      { replace: true },
+    );
 
   if (config.isPending) {
     return (
@@ -133,42 +150,56 @@ export function ProfileBankingPane() {
 
   const c = config.data;
   const expenseCategories = flattenDictionary(c.dictionaries['expense']);
+  const contacts = flattenDictionary(c.dictionaries['contact']);
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Bank connections</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {c.banking.connections.length === 0 ? (
-            <EmptyState message="No connections yet." className="p-0" />
-          ) : (
-            <ul className="divide-y">
-              {c.banking.connections.map((conn) => (
-                <ConnectionRow key={conn.id} connection={conn} />
-              ))}
-            </ul>
-          )}
-          <Button variant="outline" size="sm" onClick={() => setAddOpen(true)}>
-            <Plus className="mr-1 h-4 w-4" />
-            Add connection
-          </Button>
-          <BankConnectionDialog open={addOpen} onOpenChange={setAddOpen} />
-        </CardContent>
-      </Card>
+    // One bounding Card around the whole Banking config, matching the other
+    // Profile tabs (General, Dictionaries, …). Sub-tabs live inside it.
+    <Card>
+      <CardContent className="pt-6">
+        <Tabs value={section} onValueChange={onSectionChange}>
+          <TabsList variant="underline">
+            <TabsTrigger value="connections">Connections</TabsTrigger>
+            <TabsTrigger value="expenses">Expenses</TabsTrigger>
+            <TabsTrigger value="contacts">Contacts</TabsTrigger>
+          </TabsList>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Bank provider category → expense category</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <BankProviderExpenseCategoryMapEditor
-            value={c.banking.expenseCategoryMap}
-            expenseCategories={expenseCategories}
-          />
-        </CardContent>
-      </Card>
-    </div>
+          <TabsContent value="connections" className="space-y-3">
+            <h3 className="text-base font-semibold">Bank connections</h3>
+            {c.banking.connections.length === 0 ? (
+              <EmptyState message="No connections yet." className="p-0" />
+            ) : (
+              <ul className="divide-y">
+                {c.banking.connections.map((conn) => (
+                  <ConnectionRow key={conn.id} connection={conn} />
+                ))}
+              </ul>
+            )}
+            <Button variant="outline" size="sm" onClick={() => setAddOpen(true)}>
+              <Plus className="mr-1 h-4 w-4" />
+              Add connection
+            </Button>
+            <BankConnectionDialog open={addOpen} onOpenChange={setAddOpen} />
+          </TabsContent>
+
+          <TabsContent value="expenses" className="space-y-3">
+            <h3 className="text-base font-semibold">Bank provider category → expense category</h3>
+            <BankProviderExpenseCategoryMapEditor
+              value={c.banking.expenseCategoryMap}
+              expenseCategories={expenseCategories}
+            />
+          </TabsContent>
+
+          <TabsContent value="contacts" className="space-y-3">
+            <h3 className="text-base font-semibold">Bank provider token → contact</h3>
+            <BankProviderContactMapEditor
+              value={c.banking.contactMap}
+              contacts={contacts}
+              contactDict={c.dictionaries['contact']}
+            />
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
   );
 }

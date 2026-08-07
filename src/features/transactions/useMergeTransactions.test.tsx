@@ -46,6 +46,7 @@ const merged = {
   relations: [] as unknown[],
   contactId: null,
   bankProviderCategory: null,
+  bankProviderContact: null,
 };
 
 describe('useMergeTransactions', () => {

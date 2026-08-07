@@ -58,6 +58,7 @@ const base: TransactionResponse = {
   amendmentCount: 0,
   contactId: null,
   bankProviderCategory: null,
+  bankProviderContact: null,
   relations: [],
 };
 

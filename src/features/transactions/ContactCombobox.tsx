@@ -59,6 +59,10 @@ export function ContactCombobox({
   const isArchived = value !== null && !selected;
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);
+  // Flip the menu above the input when there isn't room below (e.g. the picker
+  // sits near the bottom of a dialog), so the list isn't clipped by the dialog
+  // or viewport edge.
+  const [dropUp, setDropUp] = useState(false);
   const wrapRef = useRef<HTMLDivElement | null>(null);
 
   const filtered = useMemo(() => {
@@ -83,6 +87,16 @@ export function ContactCombobox({
   useEffect(() => {
     setActive(0);
   }, [query, open]);
+
+  // On open, decide whether to drop the menu up or down based on available
+  // space below the input. `max-h-60` is 240px; add a little slack.
+  useEffect(() => {
+    if (!open) return;
+    const rect = wrapRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    setDropUp(spaceBelow < 260 && rect.top > spaceBelow);
+  }, [open]);
 
   // Close on outside click.
   useEffect(() => {
@@ -203,7 +217,10 @@ export function ContactCombobox({
         <ul
           id={listId}
           role="listbox"
-          className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
+          className={cn(
+            'absolute z-50 max-h-60 w-full overflow-auto rounded-md border bg-popover p-1 text-popover-foreground shadow-md',
+            dropUp ? 'bottom-full mb-1' : 'top-full mt-1',
+          )}
         >
           <li
             id={`${listId}-none`}
