@@ -24,6 +24,7 @@ import type { BankConnectionDTO, ExternalAccountDTO, UUID } from '@/api/types';
 import { useAccounts } from '@/features/accounts/useAccounts';
 import { accountLabel } from '@/features/accounts/accountLabel';
 import { useProviders } from '@/features/banking/useProviders';
+import { STATEMENT_FILE_ACCEPT, statementFormatForFiles } from '@/features/banking/statementFormat';
 import { useConfiguration } from '@/features/configuration/useConfiguration';
 import { useExternalAccounts } from '@/features/configuration/useExternalAccounts';
 import { useExternalAccountsFromFile } from '@/features/configuration/useExternalAccountsFromFile';
@@ -88,6 +89,10 @@ export function LinkAccountsDialog({ open, onOpenChange, connection }: LinkAccou
   const pull = useExternalAccounts(connection.id);
   const fromFile = useExternalAccountsFromFile();
 
+  // Client-side error when the picked statement files don't resolve to a single
+  // known format (mixed .csv/.xlsx, or an unrecognized extension).
+  const [fileFormatError, setFileFormatError] = useState<string | null>(null);
+
   // Fetch the live listing whenever the dialog opens (lazy query) — pull only.
   const { refetch: pullRefetch } = pull;
   useEffect(() => {
@@ -101,7 +106,15 @@ export function LinkAccountsDialog({ open, onOpenChange, connection }: LinkAccou
         rows: fromFile.data,
         loading: fromFile.isPending,
         error: fromFile.error,
-        onPickFiles: (files) => fromFile.mutate({ connId: connection.id, format: 'csv', files }),
+        onPickFiles: (files) => {
+          const resolved = statementFormatForFiles(files);
+          if ('error' in resolved) {
+            setFileFormatError(resolved.error);
+            return;
+          }
+          setFileFormatError(null);
+          fromFile.mutate({ connId: connection.id, format: resolved.format, files });
+        },
       }
     : {
         rows: pull.data,
@@ -166,12 +179,17 @@ export function LinkAccountsDialog({ open, onOpenChange, connection }: LinkAccou
               id="statement-files"
               type="file"
               multiple
-              accept=".csv,text/csv"
+              accept={STATEMENT_FILE_ACCEPT}
               onChange={(e) => {
                 const files = Array.from(e.target.files ?? []);
                 if (files.length > 0) source.onPickFiles?.(files);
               }}
             />
+            {fileFormatError && (
+              <p role="alert" className="text-xs text-destructive">
+                {fileFormatError}
+              </p>
+            )}
             {!loading && !error && !rows && (
               <p className="text-xs text-muted-foreground">
                 Upload your statement(s) to list accounts.

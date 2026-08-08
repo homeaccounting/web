@@ -512,4 +512,25 @@ describe('LinkAccountsDialog (file provider)', () => {
     });
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
+
+  it('sends format=xlsx when an .xlsx statement is uploaded', async () => {
+    const user = userEvent.setup();
+    let format = '';
+    server.use(
+      http.post(externalAccountsFromFileUrl, ({ request }) => {
+        format = new URL(request.url).searchParams.get('format') ?? '';
+        return HttpResponse.json(externalAccountsFromFileFixture);
+      }),
+    );
+    renderWithProviders(<Wrapper conn={fileConnection} />, { initialPath: '/' });
+
+    const fileInput = await screen.findByLabelText(/statement files/i);
+    const file = new File(['PK\x03\x04'], 'stmts_9.xlsx', {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
+    await user.upload(fileInput, file);
+
+    await screen.findByRole('combobox', { name: /UA903052992990004149123456789/ });
+    expect(format).toBe('xlsx');
+  });
 });

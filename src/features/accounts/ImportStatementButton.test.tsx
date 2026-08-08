@@ -74,6 +74,12 @@ function makeCsvFile(name = 'statement.csv'): File {
   return new File(['date,amount\n2026-07-01,100'], name, { type: 'text/csv' });
 }
 
+function makeXlsxFile(name = 'statement.xlsx'): File {
+  return new File(['PK\x03\x04'], name, {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+}
+
 // Capture every file part sent to the import endpoint across all POSTs so a
 // test can assert the whole batch arrived in a SINGLE request.
 function captureImportRequests() {
@@ -250,6 +256,40 @@ describe('import statement button', () => {
     expect(capture.lastFileNames).toEqual(['jan.csv', 'feb.csv']);
     expect(capture.calledPath).toBe('conn-privatbank');
     expect(capture.format).toBe('csv');
+  });
+
+  it('uploads an XLSX file with format=xlsx', async () => {
+    const user = userEvent.setup();
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    useConfigHandler(configWith([privatbankConnection]));
+    useProvidersHandler();
+    const capture = captureImportRequests();
+
+    renderWithProviders(ui(), { initialPath: '/' });
+    await screen.findByRole('button', { name: /import statement/i });
+    const fileInput = screen.getByTestId('import-statement-file-input');
+    await user.upload(fileInput, makeXlsxFile('stmts_42.xlsx'));
+
+    await waitFor(() => expect(toast.success).toHaveBeenCalled());
+    expect(capture.calls).toBe(1);
+    expect(capture.lastFileNames).toEqual(['stmts_42.xlsx']);
+    expect(capture.format).toBe('xlsx');
+  });
+
+  it('rejects a mixed csv+xlsx selection without sending a request', async () => {
+    const user = userEvent.setup();
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    useConfigHandler(configWith([privatbankConnection]));
+    useProvidersHandler();
+    const capture = captureImportRequests();
+
+    renderWithProviders(ui(), { initialPath: '/' });
+    await screen.findByRole('button', { name: /import statement/i });
+    const fileInput = screen.getByTestId('import-statement-file-input');
+    await user.upload(fileInput, [makeCsvFile('a.csv'), makeXlsxFile('b.xlsx')]);
+
+    await waitFor(() => expect(toast.error).toHaveBeenCalled());
+    expect(capture.calls).toBe(0);
   });
 
   it('renders a destructive alert on an error response', async () => {

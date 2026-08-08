@@ -11,6 +11,7 @@ import { useImportStatement } from '@/features/banking/useImportStatement';
 import { useProviders } from '@/features/banking/useProviders';
 import { formatSummary, summarize } from '@/features/banking/importSummary';
 import { matchAccountConnection } from '@/features/banking/matchAccountConnection';
+import { STATEMENT_FILE_ACCEPT, statementFormatForFiles } from '@/features/banking/statementFormat';
 
 interface ImportStatementButtonProps {
   selectedAccount: AccountResponse | undefined;
@@ -46,10 +47,16 @@ export function ImportStatementButton({ selectedAccount }: ImportStatementButton
     // Reset the input so the same files can be re-selected later.
     e.target.value = '';
     if (files.length === 0 || !matched) return;
+    const resolved = statementFormatForFiles(files);
+    if ('error' in resolved) {
+      toast.error(resolved.error);
+      return;
+    }
     importStatement.mutate(
       // All selected files go in one request so the backend concatenates them
       // into a single batch (cross-file transfers pair). One file is just N=1.
-      { connId: matched.id, format: 'csv', files },
+      // Format (csv/xlsx) is derived from the picked file's extension.
+      { connId: matched.id, format: resolved.format, files },
       {
         onSuccess: (result) => toast.success(formatSummary(summarize(result))),
         onError: (err) => {
@@ -84,7 +91,7 @@ export function ImportStatementButton({ selectedAccount }: ImportStatementButton
       <input
         ref={fileInputRef}
         type="file"
-        accept=".csv,text/csv"
+        accept={STATEMENT_FILE_ACCEPT}
         multiple
         data-testid="import-statement-file-input"
         className="hidden"
