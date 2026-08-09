@@ -18,6 +18,7 @@ import { useConfiguration } from '@/features/configuration/useConfiguration';
 import { useCreateDictionaryEntry } from '@/features/configuration/useCreateDictionaryEntry';
 import { useUpdateBanking } from '@/features/configuration/useUpdateBanking';
 import { ContactCombobox } from './ContactCombobox';
+import { CategoryCombobox } from './CategoryCombobox';
 import { IncomeExpenseForm, type IncomeExpenseFormApi } from './IncomeExpenseForm';
 import { TransferForm, type TransferFormApi } from './TransferForm';
 import {
@@ -82,6 +83,14 @@ export function EditTransactionDialog({ open, onOpenChange, tx }: EditTransactio
   const updateBanking = useUpdateBanking();
   const createContact = useCreateDictionaryEntry();
   const contacts = flattenDictionary(config?.dictionaries.contact);
+  // Inline "map to category" for an imported counterparty category signal
+  // (tracker#55). Income has no MCC/label, so income counterparties would
+  // otherwise land on the income default; this curates the per-direction
+  // provider-category → category map for future imports. The map is chosen by
+  // the transaction's direction (income vs expense), exactly as resolveCategory
+  // does on the backend.
+  const expenseCategories = flattenDictionary(config?.dictionaries.expense);
+  const incomeCategories = flattenDictionary(config?.dictionaries.income);
 
   let body: React.ReactNode;
   if (currentTx.status !== 'Completed') {
@@ -138,21 +147,76 @@ export function EditTransactionDialog({ open, onOpenChange, tx }: EditTransactio
             <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
               Import details
             </p>
-            {currentTx.bankProviderCategory && (
-              <p className="text-xs text-muted-foreground">
-                {currentTx.bankProviderCategory.kind === 'mcc' ? 'MCC' : 'Category'}{' '}
-                <span
-                  className="select-all font-mono"
-                  title={
-                    currentTx.bankProviderCategory.kind === 'mcc'
-                      ? 'Merchant category code from the bank'
-                      : "Provider's own category label"
-                  }
-                >
-                  {currentTx.bankProviderCategory.value}
-                </span>
-              </p>
-            )}
+            {currentTx.bankProviderCategory &&
+              (() => {
+                const sig = currentTx.bankProviderCategory;
+                // MCC / label are read-only provenance — they resolve through
+                // the expense category map editor in Profile → Banking. Only the
+                // counterparty signal gets an inline mapper here (tracker#55).
+                if (sig.kind !== 'counterparty') {
+                  return (
+                    <p className="text-xs text-muted-foreground">
+                      {sig.kind === 'mcc' ? 'MCC' : 'Category'}{' '}
+                      <span
+                        className="select-all font-mono"
+                        title={
+                          sig.kind === 'mcc'
+                            ? 'Merchant category code from the bank'
+                            : "Provider's own category label"
+                        }
+                      >
+                        {sig.value}
+                      </span>
+                    </p>
+                  );
+                }
+                const token = sig.value;
+                const map = income
+                  ? config?.banking.incomeCategoryMap
+                  : config?.banking.expenseCategoryMap;
+                const categories = income ? incomeCategories : expenseCategories;
+                // Key form shared with the backend map keys (tracker#55,
+                // renderBankProviderCategoryKey): `"counterparty:<token>"`.
+                const key = `counterparty:${token}`;
+                const readOnly = (suffix?: string) => (
+                  <p className="text-xs text-muted-foreground">
+                    Counterparty category{' '}
+                    <span className="select-all font-mono" title="Counterparty token from the bank">
+                      {token}
+                    </span>
+                    {suffix}
+                  </p>
+                );
+                // Config not yet loaded: show the token, no mapper (can't merge
+                // into an unknown map).
+                if (!map) return readOnly();
+                const mappedId = map[key];
+                if (mappedId) {
+                  const name = categories.find((x) => x.id === mappedId)?.name;
+                  return readOnly(` → ${name ?? 'mapped category'}`);
+                }
+                const mapTo = (id: UUID) =>
+                  updateBanking.mutate(
+                    income
+                      ? { incomeCategoryMap: { ...map, [key]: id } }
+                      : { expenseCategoryMap: { ...map, [key]: id } },
+                  );
+                return (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span>Counterparty category</span>
+                    <span className="select-all font-mono">{token}</span>
+                    <div className="w-56">
+                      <CategoryCombobox
+                        options={categories}
+                        value=""
+                        onChange={(id) => mapTo(id)}
+                        placeholder="Map to category…"
+                        aria-label="Map to category"
+                      />
+                    </div>
+                  </div>
+                );
+              })()}
             {currentTx.bankProviderContact &&
               (() => {
                 const token = currentTx.bankProviderContact;

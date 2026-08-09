@@ -8,7 +8,7 @@ import { AuthProvider } from '@/auth/AuthContext';
 import { renderWithProviders } from '@/test/utils';
 import { toast } from '@/lib/toast';
 import type { DictionaryEntryResponse } from '@/api/types';
-import { BankProviderExpenseCategoryMapEditor } from './BankProviderExpenseCategoryMapEditor';
+import { BankProviderCategoryMapEditor } from './BankProviderCategoryMapEditor';
 
 vi.mock('@/lib/toast', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
@@ -22,16 +22,27 @@ const expenseCategories: DictionaryEntryResponse[] = [
   { id: RESTAURANTS, name: 'Restaurants' },
 ];
 
-function setupEditor(value: Record<string, string> = {}) {
+const SALARY = '33333333-3333-3333-3333-333333333333';
+const GIFTS = '44444444-4444-4444-4444-444444444444';
+const incomeCategories: DictionaryEntryResponse[] = [
+  { id: SALARY, name: 'Salary' },
+  { id: GIFTS, name: 'Gifts' },
+];
+
+function setupEditor(
+  value: Record<string, string> = {},
+  direction: 'income' | 'expense' = 'expense',
+  categories: DictionaryEntryResponse[] = expenseCategories,
+) {
   saveSession({ token: 't', userId: 'u', email: 'e@x', expiresAt: 9e15 });
   renderWithProviders(
     <AuthProvider>
-      <BankProviderExpenseCategoryMapEditor value={value} expenseCategories={expenseCategories} />
+      <BankProviderCategoryMapEditor value={value} categories={categories} direction={direction} />
     </AuthProvider>,
   );
 }
 
-describe('BankProviderExpenseCategoryMapEditor', () => {
+describe('BankProviderCategoryMapEditor (expense)', () => {
   it('renders one row per existing mapping, split by kind (mcc numeric, label text)', () => {
     setupEditor({ 'mcc:5411': GROCERIES, 'label:eating_out': RESTAURANTS });
     expect(screen.getByDisplayValue('5411')).toBeInTheDocument();
@@ -84,6 +95,33 @@ describe('BankProviderExpenseCategoryMapEditor', () => {
       expect(body).toEqual({
         expenseCategoryMap: { 'label:eating_out': RESTAURANTS },
       }),
+    );
+  });
+
+  it('add a COUNTERPARTY row → switch kind → type token + pick category → Save PUTs the counterparty key', async () => {
+    let body: unknown = null;
+    server.use(
+      http.put(`${apiBase}/api/users/me/configuration/banking`, async ({ request }) => {
+        body = await request.json();
+        return HttpResponse.json({}, { status: 200 });
+      }),
+    );
+    setupEditor();
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole('button', { name: /add mapping/i }));
+    await user.click(screen.getByRole('combobox', { name: /kind, row 1/i }));
+    await user.click(await screen.findByRole('option', { name: /counterparty/i }));
+    await user.type(
+      screen.getByRole('textbox', { name: /counterparty token, row 1/i }),
+      '12345678',
+    );
+    await user.click(screen.getByRole('combobox', { name: /category, row 1/i }));
+    await user.click(await screen.findByRole('option', { name: 'Groceries' }));
+    await user.click(screen.getByRole('button', { name: /^save mapping$/i }));
+
+    await waitFor(() =>
+      expect(body).toEqual({ expenseCategoryMap: { 'counterparty:12345678': GROCERIES } }),
     );
   });
 
@@ -188,6 +226,72 @@ describe('BankProviderExpenseCategoryMapEditor', () => {
     await user.click(screen.getByRole('button', { name: /^save mapping$/i }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/duplicate/i);
+    expect(called).toBe(0);
+  });
+});
+
+describe('BankProviderCategoryMapEditor (income)', () => {
+  it('renders an existing counterparty→income mapping row', () => {
+    setupEditor({ 'counterparty:12345678': SALARY }, 'income', incomeCategories);
+    expect(screen.getByDisplayValue('12345678')).toBeInTheDocument();
+    // Income offers no kind selector — counterparty is the only signal.
+    expect(screen.queryByRole('combobox', { name: /kind, row 1/i })).not.toBeInTheDocument();
+  });
+
+  it('add row → type counterparty token + pick income category → Save PUTs incomeCategoryMap', async () => {
+    let body: unknown = null;
+    server.use(
+      http.put(`${apiBase}/api/users/me/configuration/banking`, async ({ request }) => {
+        body = await request.json();
+        return HttpResponse.json({}, { status: 200 });
+      }),
+    );
+    setupEditor({}, 'income', incomeCategories);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole('button', { name: /add mapping/i }));
+    await user.type(
+      screen.getByRole('textbox', { name: /counterparty token, row 1/i }),
+      '12345678',
+    );
+    await user.click(screen.getByRole('combobox', { name: /category, row 1/i }));
+    await user.click(await screen.findByRole('option', { name: 'Salary' }));
+    await user.click(screen.getByRole('button', { name: /^save mapping$/i }));
+
+    await waitFor(() =>
+      expect(body).toEqual({ incomeCategoryMap: { 'counterparty:12345678': SALARY } }),
+    );
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith('Updated.'));
+  });
+
+  it('the income category dropdown offers only income categories', async () => {
+    setupEditor({}, 'income', incomeCategories);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /add mapping/i }));
+    await user.click(screen.getByRole('combobox', { name: /category, row 1/i }));
+    expect(await screen.findByRole('option', { name: 'Salary' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Gifts' })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'Groceries' })).not.toBeInTheDocument();
+  });
+
+  it('blank counterparty token blocks save with a message and no request', async () => {
+    let called = 0;
+    server.use(
+      http.put(`${apiBase}/api/users/me/configuration/banking`, () => {
+        called += 1;
+        return HttpResponse.json({}, { status: 200 });
+      }),
+    );
+    setupEditor({}, 'income', incomeCategories);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole('button', { name: /add mapping/i }));
+    // leave token blank
+    await user.click(screen.getByRole('combobox', { name: /category, row 1/i }));
+    await user.click(await screen.findByRole('option', { name: 'Salary' }));
+    await user.click(screen.getByRole('button', { name: /^save mapping$/i }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/counterparty token is required/i);
     expect(called).toBe(0);
   });
 });

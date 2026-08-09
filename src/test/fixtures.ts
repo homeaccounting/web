@@ -118,6 +118,7 @@ export const configurationFixture: ConfigurationResponse = {
   },
   banking: {
     expenseCategoryMap: {},
+    incomeCategoryMap: {},
     contactMap: {},
     connections: [],
   },

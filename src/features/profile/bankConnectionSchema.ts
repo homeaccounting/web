@@ -42,10 +42,11 @@ export function makeBankConnectionFormSchema(providers: BankProviderDTO[], isEdi
   });
 }
 
-// One entry of the unified provider-category → category map (tracker#51/#52).
-// A key is either an ISO-18245 MCC (`ByMcc`) or a provider's own label
-// (`ByLabel`); both live in the same map. `value` is the 4-digit code for an
-// mcc row or the free-text label for a label row. Mirrors backend
+// One entry of the unified provider-category → category map (tracker#51/#52/#55).
+// A key is an ISO-18245 MCC (`ByMcc`), a provider's own label (`ByLabel`), or a
+// universal counterparty token (`ByCounterparty` — EDRPOU/IBAN/stable
+// descriptor). `value` is the 4-digit code for an mcc row, the free-text label
+// for a label row, or the trimmed token for a counterparty row. Mirrors backend
 // `Domain.Core.Types.BankProviderCategory`.
 export const bankProviderCategoryRowSchema = z.discriminatedUnion('kind', [
   z.object({
@@ -57,6 +58,12 @@ export const bankProviderCategoryRowSchema = z.discriminatedUnion('kind', [
     kind: z.literal('label'),
     // Backend `mkByLabel` trims and rejects blank — mirror that here.
     value: z.string().trim().min(1, 'Label is required'),
+    categoryId: z.string().uuid('Pick a category'),
+  }),
+  z.object({
+    kind: z.literal('counterparty'),
+    // Backend `mkByCounterparty` trims and rejects blank — mirror that here.
+    value: z.string().trim().min(1, 'Counterparty token is required'),
     categoryId: z.string().uuid('Pick a category'),
   }),
 ]);
@@ -75,7 +82,8 @@ export function parseBankProviderCategoryKey(key: string): BankProviderCategory 
   if (idx === -1) return null;
   const prefix = key.slice(0, idx);
   const value = key.slice(idx + 1);
-  if (prefix === 'mcc' || prefix === 'label') return { kind: prefix, value };
+  if (prefix === 'mcc' || prefix === 'label' || prefix === 'counterparty')
+    return { kind: prefix, value };
   return null;
 }
 

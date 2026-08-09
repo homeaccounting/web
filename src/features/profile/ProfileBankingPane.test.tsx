@@ -120,12 +120,21 @@ describe('ProfileBankingPane', () => {
     await waitFor(() => expect(screen.getByText('Monobank')).toBeInTheDocument());
   });
 
-  it('renders Connections / Expenses / Contacts sub-tabs', async () => {
+  it('renders Connections / Expenses / Income / Contacts sub-tabs', async () => {
     render();
     await screen.findByText('Monobank');
     expect(screen.getByRole('tab', { name: /connections/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /expenses/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /income/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /contacts/i })).toBeInTheDocument();
+  });
+
+  it('?section=income renders the income category map editor (counterparty → income)', async () => {
+    render('/?section=income');
+    expect(await screen.findByText(/counterparty → income category/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /add mapping/i })).toBeInTheDocument();
+    // Connections list is on another sub-tab now.
+    expect(screen.queryByText('Monobank')).not.toBeInTheDocument();
   });
 
   it('defaults to the Connections section (no ?section) and hides the contact editor', async () => {

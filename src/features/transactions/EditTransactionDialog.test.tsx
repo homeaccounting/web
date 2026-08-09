@@ -361,3 +361,111 @@ describe('EditTransactionDialog', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(/fallback message/i);
   });
 });
+
+// tracker#55: a counterparty category signal (income has no MCC/label) gets an
+// inline "Map to category" mapper, picking the income/expense map by direction —
+// mirroring the contact mapper.
+describe('EditTransactionDialog — provider counterparty → category (tracker#55)', () => {
+  const expenseCatId = '00000000-0000-0000-0000-0000000000e1';
+
+  const categoryConfig = (opts: {
+    incomeCategoryMap?: Record<string, string>;
+    expenseCategoryMap?: Record<string, string>;
+  }) => ({
+    baseCurrency: 'USD',
+    defaultCurrency: 'USD',
+    dictionaries: {
+      income: { roots: [{ id: categoryId, name: 'Salary', type: 'item', children: [] }] },
+      expense: { roots: [{ id: expenseCatId, name: 'Food', type: 'item', children: [] }] },
+      label: { roots: [] },
+      contact: { roots: [{ id: contactAcme, name: 'Acme', type: 'item', children: [] }] },
+    },
+    defaults: { incomeCategory: null, expenseCategory: null, account: null, subtypeAccounts: {} },
+    banking: {
+      expenseCategoryMap: opts.expenseCategoryMap ?? {},
+      incomeCategoryMap: opts.incomeCategoryMap ?? {},
+      contactMap: {},
+    },
+  });
+
+  const expenseTx: TransactionResponse = {
+    ...baseTx,
+    sourceAccountId: accountId,
+    targetAccountId: 'ext',
+    transactionType: 'expense',
+    allocations: {
+      incomes: [],
+      expenses: [{ categoryId: expenseCatId, amount: { amount: 10, currency: 'USD' } }],
+    },
+  };
+
+  it('unmapped counterparty on an INCOME txn → mapper writes the merged incomeCategoryMap', async () => {
+    server.use(
+      http.get(`${apiBase}/api/users/me/configuration`, () =>
+        HttpResponse.json(categoryConfig({})),
+      ),
+    );
+    let body: unknown = null;
+    server.use(
+      http.put(`${apiBase}/api/users/me/configuration/banking`, async ({ request }) => {
+        body = await request.json();
+        return HttpResponse.json({}, { status: 200 });
+      }),
+    );
+    renderDialog({
+      tx: { ...baseTx, bankProviderCategory: { kind: 'counterparty', value: '12345678' } },
+    });
+    const user = userEvent.setup();
+
+    const combobox = await screen.findByRole('combobox', { name: /map to category/i });
+    await user.click(combobox);
+    await user.click(await screen.findByRole('option', { name: 'Salary' }));
+
+    await vi.waitFor(() =>
+      expect(body).toEqual({ incomeCategoryMap: { 'counterparty:12345678': categoryId } }),
+    );
+  });
+
+  it('already-mapped counterparty → read-only "→ category" line, no mapper', async () => {
+    server.use(
+      http.get(`${apiBase}/api/users/me/configuration`, () =>
+        HttpResponse.json(
+          categoryConfig({ incomeCategoryMap: { 'counterparty:12345678': categoryId } }),
+        ),
+      ),
+    );
+    renderDialog({
+      tx: { ...baseTx, bankProviderCategory: { kind: 'counterparty', value: '12345678' } },
+    });
+
+    expect(await screen.findByText(/→ Salary/)).toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: /map to category/i })).toBeNull();
+  });
+
+  it('unmapped counterparty on an EXPENSE txn → mapper writes the merged expenseCategoryMap', async () => {
+    server.use(
+      http.get(`${apiBase}/api/users/me/configuration`, () =>
+        HttpResponse.json(categoryConfig({})),
+      ),
+    );
+    let body: unknown = null;
+    server.use(
+      http.put(`${apiBase}/api/users/me/configuration/banking`, async ({ request }) => {
+        body = await request.json();
+        return HttpResponse.json({}, { status: 200 });
+      }),
+    );
+    renderDialog({
+      tx: { ...expenseTx, bankProviderCategory: { kind: 'counterparty', value: '99999999' } },
+    });
+    const user = userEvent.setup();
+
+    const combobox = await screen.findByRole('combobox', { name: /map to category/i });
+    await user.click(combobox);
+    await user.click(await screen.findByRole('option', { name: 'Food' }));
+
+    await vi.waitFor(() =>
+      expect(body).toEqual({ expenseCategoryMap: { 'counterparty:99999999': expenseCatId } }),
+    );
+  });
+});

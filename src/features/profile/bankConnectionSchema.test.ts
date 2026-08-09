@@ -139,6 +139,22 @@ describe('provider-category key helpers', () => {
     });
   });
 
+  it('renders + parses the counterparty kind (tracker#55)', () => {
+    expect(renderBankProviderCategoryKey({ kind: 'counterparty', value: '12345678' })).toBe(
+      'counterparty:12345678',
+    );
+    expect(parseBankProviderCategoryKey('counterparty:12345678')).toEqual({
+      kind: 'counterparty',
+      value: '12345678',
+    });
+  });
+
+  it('splits on the first colon only, so counterparty IBAN tokens round-trip', () => {
+    const key = renderBankProviderCategoryKey({ kind: 'counterparty', value: 'UA:12:34' });
+    expect(key).toBe('counterparty:UA:12:34');
+    expect(parseBankProviderCategoryKey(key)).toEqual({ kind: 'counterparty', value: 'UA:12:34' });
+  });
+
   it('splits on the first colon only, so labels containing colons round-trip', () => {
     const key = renderBankProviderCategoryKey({ kind: 'label', value: 'a:b:c' });
     expect(key).toBe('label:a:b:c');
@@ -196,6 +212,26 @@ describe('bankProviderCategoryRowSchema', () => {
     expect(
       bankProviderCategoryRowSchema.safeParse({ kind: 'mcc', value: '5411', categoryId: 'x' })
         .success,
+    ).toBe(false);
+  });
+
+  it('counterparty row: accepts a non-blank token and trims it (tracker#55)', () => {
+    const result = bankProviderCategoryRowSchema.safeParse({
+      kind: 'counterparty',
+      value: '  12345678  ',
+      categoryId: validUuid,
+    });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.value).toBe('12345678');
+  });
+
+  it('counterparty row: rejects a blank token', () => {
+    expect(
+      bankProviderCategoryRowSchema.safeParse({
+        kind: 'counterparty',
+        value: '   ',
+        categoryId: validUuid,
+      }).success,
     ).toBe(false);
   });
 });

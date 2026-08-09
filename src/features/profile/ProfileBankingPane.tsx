@@ -27,10 +27,10 @@ import {
 } from '@/components/ui/alert-dialog';
 import { BankConnectionDialog } from './BankConnectionDialog';
 import { LinkAccountsDialog } from './LinkAccountsDialog';
-import { BankProviderExpenseCategoryMapEditor } from './BankProviderExpenseCategoryMapEditor';
+import { BankProviderCategoryMapEditor } from './BankProviderCategoryMapEditor';
 import { BankProviderContactMapEditor } from './BankProviderContactMapEditor';
 
-const SECTIONS = ['connections', 'expenses', 'contacts'] as const;
+const SECTIONS = ['connections', 'expenses', 'income', 'contacts'] as const;
 type Section = (typeof SECTIONS)[number];
 
 function ConnectionRow({ connection }: { connection: BankConnectionDTO }) {
@@ -150,6 +150,7 @@ export function ProfileBankingPane() {
 
   const c = config.data;
   const expenseCategories = flattenDictionary(c.dictionaries['expense']);
+  const incomeCategories = flattenDictionary(c.dictionaries['income']);
   const contacts = flattenDictionary(c.dictionaries['contact']);
 
   return (
@@ -161,6 +162,7 @@ export function ProfileBankingPane() {
           <TabsList variant="underline">
             <TabsTrigger value="connections">Connections</TabsTrigger>
             <TabsTrigger value="expenses">Expenses</TabsTrigger>
+            <TabsTrigger value="income">Income</TabsTrigger>
             <TabsTrigger value="contacts">Contacts</TabsTrigger>
           </TabsList>
 
@@ -184,9 +186,21 @@ export function ProfileBankingPane() {
 
           <TabsContent value="expenses" className="space-y-3">
             <h3 className="text-base font-semibold">Bank provider category → expense category</h3>
-            <BankProviderExpenseCategoryMapEditor
+            <BankProviderCategoryMapEditor
+              direction="expense"
               value={c.banking.expenseCategoryMap}
-              expenseCategories={expenseCategories}
+              categories={expenseCategories}
+            />
+          </TabsContent>
+
+          <TabsContent value="income" className="space-y-3">
+            <h3 className="text-base font-semibold">
+              Bank provider counterparty → income category
+            </h3>
+            <BankProviderCategoryMapEditor
+              direction="income"
+              value={c.banking.incomeCategoryMap}
+              categories={incomeCategories}
             />
           </TabsContent>
 

@@ -25,7 +25,7 @@ interface BankProviderContactMapEditorProps {
 }
 
 // Editor for the provider-token → contact map (tracker#54). Simpler sibling of
-// BankProviderExpenseCategoryMapEditor: a key is one bare token (no mcc/label
+// BankProviderCategoryMapEditor: a key is one bare token (no mcc/label
 // tag), a value is a contact dictionary entry, and the map starts empty (no
 // seed). The contact picker is a creatable ContactCombobox — a new contact can
 // be added inline.

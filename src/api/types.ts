@@ -450,10 +450,12 @@ export interface TransactionResponse {
 
 // A provider's category signal for a transaction, tagged by kind. `mcc` values
 // are the 4-digit zero-padded code; `label` values are the provider's own
-// free-text token. Mirrors backend `Domain.Core.Types.BankProviderCategory`
-// (`{ "kind": "mcc" | "label", "value": <string> }`).
+// free-text token; `counterparty` values are a universal counterparty token
+// (EDRPOU / IBAN / stable descriptor — the same signal used for
+// `bankProviderContact`). Mirrors backend `Domain.Core.Types.BankProviderCategory`
+// (`{ "kind": "mcc" | "label" | "counterparty", "value": <string> }`, tracker#55).
 export interface BankProviderCategory {
-  kind: 'mcc' | 'label';
+  kind: 'mcc' | 'label' | 'counterparty';
   value: string;
 }
 
@@ -567,10 +569,15 @@ export interface SetAccountMapRequest {
   accountMap: Record<string, UUID>;
 }
 export interface UpdateBankingRequest {
-  // Keys are tagged provider-category strings (`"mcc:0742"` / `"label:…"`).
-  // Present replaces the whole map; absent means no change. Mirrors backend
-  // Web/API/ConfigurationAPI.hs `UpdateBankingRequest.expenseCategoryMap`.
+  // Keys are tagged provider-category strings (`"mcc:0742"` / `"label:…"` /
+  // `"counterparty:…"`). Present replaces the whole map; absent means no change.
+  // Mirrors backend Web/API/ConfigurationAPI.hs `UpdateBankingRequest.expenseCategoryMap`.
   expenseCategoryMap?: Record<string, UUID>;
+  // Present replaces the whole income category map (set-semantics); absent = no
+  // change. Keys are tagged provider-category strings (in practice only
+  // `"counterparty:…"` — income carries no MCC/label). Mirrors backend
+  // Web/API/ConfigurationAPI.hs:566 `UpdateBankingRequest.incomeCategoryMap` (tracker#55).
+  incomeCategoryMap?: Record<string, UUID>;
   // Present replaces the whole contact map (set-semantics); absent = no change.
   // Keys are bare trimmed provider tokens. Mirrors server-infra
   // Web/API/ConfigurationAPI.hs:565 `UpdateBankingRequest.contactMap`.
@@ -625,6 +632,11 @@ export interface BankingConfigurationDTO {
   // (universal MCC defaults ∪ each provider's label defaults). Mirrors backend
   // Web/API/ConfigurationAPI.hs `BankingConfigurationDTO.expenseCategoryMap`.
   expenseCategoryMap: Record<string, UUID>;
+  // User-editable provider-category → income-category map. Keys are tagged
+  // strings (in practice only `"counterparty:…"` — income carries no MCC/label).
+  // Starts empty (no seed; a counterparty token is user-specific). Mirrors
+  // backend Web/API/ConfigurationAPI.hs:314 `BankingConfigurationDTO.incomeCategoryMap` (tracker#55).
+  incomeCategoryMap: Record<string, UUID>;
   // User-editable provider-token → contact map. Keys are bare trimmed provider
   // counterparty tokens (no mcc:/label: tag). Starts empty (no seed). Mirrors
   // server-infra Web/API/ConfigurationAPI.hs:314 `BankingConfigurationDTO.contactMap`.
