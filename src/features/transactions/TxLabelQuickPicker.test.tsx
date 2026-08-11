@@ -105,6 +105,43 @@ describe('TxLabelQuickPicker', () => {
     );
   });
 
+  it('re-seeds from an external value change when no local commit is in flight', async () => {
+    // An external update (another client edited the row, an unrelated refetch)
+    // arrives while the picker is idle — no toggle pending. The in-flight guard
+    // must NOT suppress this: the picker should reflect the new server value.
+    const user = userEvent.setup();
+    function ExternalHarness() {
+      const [value, setValue] = useState<UUID[]>([]);
+      return (
+        <>
+          <button type="button" onClick={() => setValue(['l1'])}>
+            external update
+          </button>
+          <ContextMenu>
+            <ContextMenuTrigger>
+              <div data-testid="target">row</div>
+            </ContextMenuTrigger>
+            <ContextMenuContent>
+              <TxLabelQuickPicker
+                options={baseOptions}
+                value={value}
+                onCommit={() => Promise.resolve()}
+                onCreate={() => Promise.resolve(null)}
+              />
+            </ContextMenuContent>
+          </ContextMenu>
+        </>
+      );
+    }
+    render(<ExternalHarness />);
+    // External change lands before the submenu is opened (picker idle, pending=0).
+    await user.click(screen.getByRole('button', { name: /external update/i }));
+    await openSubmenu(user);
+    await vi.waitFor(() =>
+      expect(screen.getByRole('option', { name: 'Trip' })).toHaveAttribute('aria-selected', 'true'),
+    );
+  });
+
   it('composes a create followed by a toggle into cumulative commits', async () => {
     const user = userEvent.setup();
     const commits: UUID[][] = [];

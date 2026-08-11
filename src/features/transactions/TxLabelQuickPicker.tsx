@@ -44,13 +44,26 @@ export function TxLabelQuickPicker({
   selectedRef.current = selected;
   // Serializes label PUTs; each toggle chains onto the previous one.
   const commitChain = useRef<Promise<unknown>>(Promise.resolve());
+  // Outstanding local commits. Incremented when a toggle enqueues a PUT and
+  // decremented when that PUT drains. The re-seed effect below consults this to
+  // tell the user's own in-flight edits (must NOT be re-seeded away) apart from
+  // genuine external updates (must be re-seeded).
+  const pendingRef = useRef(0);
 
   // Re-seed from the server-confirmed value when its *contents* change (e.g. a
   // PUT settles, an unrelated edit invalidates the list, or the picker re-opens
   // on another row). Guarding on content — not array identity — avoids a flicker
   // that would otherwise uncheck an in-flight optimistic toggle when an unrelated
   // refetch hands back a new-but-equal array reference.
+  //
+  // Skip re-seeding while local commits are outstanding: mid-sequence a settled
+  // PUT flips the live cache row to an intermediate set, and re-seeding from it
+  // would erase later toggles still in flight (e.g. a 3-toggle T→W→X sequence
+  // where PUT#1=[T] settles before X is clicked would otherwise drop W). Re-seed
+  // is for reconciling OTHER clients' changes, not the user's own pending edits;
+  // once the chain drains, the final settled value re-seeds normally.
   useEffect(() => {
+    if (pendingRef.current > 0) return;
     const cur = selectedRef.current;
     const sameContent = value.length === cur.length && value.every((id) => cur.includes(id));
     if (!sameContent) {
@@ -59,25 +72,35 @@ export function TxLabelQuickPicker({
     }
   }, [value]);
 
-  // Add `id` to the selection and commit it. Shared by a toggle-on and a create
-  // so both flow through the SAME serialized chain (no separate PUT for creates).
-  // Chain the PUT so it runs after any in-flight one (ordered application). On
-  // failure, undo just this add relative to the latest state; the leading catch
-  // keeps a prior failure from breaking the chain so later toggles still fire.
-  const append = (id: UUID) => {
-    const cur = selectedRef.current;
-    if (cur.includes(id)) return;
-    const next = [...cur, id];
+  // Enqueue a full-array PUT for `next` onto the serialized chain, tracking it in
+  // `pendingRef` for its whole lifetime. The leading catch keeps a prior failure
+  // from breaking the chain so later toggles still fire; `revert` undoes just
+  // this change relative to the LATEST state on failure; the finally decrements
+  // pending whether the PUT succeeded or failed. Increment/decrement are paired
+  // here so no call path can leak a pending count.
+  const enqueueCommit = (next: UUID[], revert: (latest: UUID[]) => UUID[]) => {
     selectedRef.current = next;
     setSelected(next);
+    pendingRef.current += 1;
     commitChain.current = commitChain.current
       .catch(() => {})
       .then(() => onCommit(next))
       .catch(() => {
-        const reverted = selectedRef.current.filter((x) => x !== id);
+        const reverted = revert(selectedRef.current);
         selectedRef.current = reverted;
         setSelected(reverted);
+      })
+      .finally(() => {
+        pendingRef.current -= 1;
       });
+  };
+
+  // Add `id` to the selection and commit it. Shared by a toggle-on and a create
+  // so both flow through the SAME serialized chain (no separate PUT for creates).
+  const append = (id: UUID) => {
+    const cur = selectedRef.current;
+    if (cur.includes(id)) return;
+    enqueueCommit([...cur, id], (latest) => latest.filter((x) => x !== id));
   };
 
   const toggle = (id: UUID) => {
@@ -86,18 +109,10 @@ export function TxLabelQuickPicker({
       append(id);
       return;
     }
-    const next = cur.filter((x) => x !== id);
-    selectedRef.current = next;
-    setSelected(next);
-    commitChain.current = commitChain.current
-      .catch(() => {})
-      .then(() => onCommit(next))
-      .catch(() => {
-        const latest = selectedRef.current;
-        const reverted = latest.includes(id) ? latest : [...latest, id];
-        selectedRef.current = reverted;
-        setSelected(reverted);
-      });
+    enqueueCommit(
+      cur.filter((x) => x !== id),
+      (latest) => (latest.includes(id) ? latest : [...latest, id]),
+    );
   };
 
   // Create-then-assign in one gesture: the returned id is appended through the

@@ -106,6 +106,12 @@ export interface AccountListResponse {
   totalCount: number;
 }
 
+// GET /api/sync/version — per-user counter that strictly increases whenever
+// any writer mutates transactions/accounts the user can see. tracker#45.
+export interface SyncVersionResponse {
+  version: number;
+}
+
 // Request DTOs for POST /api/accounts. Mirror backend Web/Types.hs:138-204.
 
 // Single source of truth for the closed enum values that mirror backend

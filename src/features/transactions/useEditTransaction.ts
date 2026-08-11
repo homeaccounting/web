@@ -16,7 +16,7 @@ export function useEditTransaction() {
   const { tokenRef, signOut } = useAuth();
   const queryClient = useQueryClient();
   return useMutation<TransactionResponse | null, Error, EditTransactionVars>({
-    mutationFn: async ({ id, accountIds, diff, onSubCallApplied }) => {
+    mutationFn: async ({ id, diff, onSubCallApplied }) => {
       const client = new ApiClient({
         baseUrl,
         getToken: () => tokenRef.current,
@@ -27,9 +27,7 @@ export function useEditTransaction() {
 
       const apply = (resp: TransactionResponse) => {
         last = resp;
-        for (const acc of accountIds) {
-          patchCachedTx(queryClient, acc, resp);
-        }
+        patchCachedTx(queryClient, resp);
         onSubCallApplied();
       };
 
@@ -55,8 +53,15 @@ export function useEditTransaction() {
   });
 }
 
-function patchCachedTx(queryClient: QueryClient, accountId: UUID, next: TransactionResponse) {
-  queryClient.setQueryData<TransactionResponse[] | undefined>(['transactions', accountId], (list) =>
-    list?.map((t) => (t.id === next.id ? next : t)),
+// Every live transactions-list query is keyed ['transactions', accountId | 'all', from, to]
+// (see useWindowedTransactions / useAllAccountsWindowedTransactions) — never the bare
+// ['transactions', accountId] pair. setQueriesData with a ['transactions'] prefix filter
+// matches ALL of them (v5 partial-key match), so the edited row is patched wherever it is
+// currently displayed, regardless of account or which window(s) happen to be mounted.
+// `.map` only rewrites the row whose id matches, so applying this across every list is safe.
+function patchCachedTx(queryClient: QueryClient, next: TransactionResponse) {
+  queryClient.setQueriesData<TransactionResponse[] | undefined>(
+    { queryKey: ['transactions'] },
+    (list) => list?.map((t) => (t.id === next.id ? next : t)),
   );
 }

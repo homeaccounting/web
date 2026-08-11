@@ -426,4 +426,7 @@ export const handlers = [
   http.post(`${apiBase}/api/prompt`, () =>
     HttpResponse.json({ kind: 'transactions', succeeded: [transactionFixture], failed: [] }),
   ),
+  // Polled by useDataChangeSignal (tracker#45); a fixed value is enough for
+  // suites that don't specifically exercise the polling/invalidation behavior.
+  http.get(`${apiBase}/api/sync/version`, () => HttpResponse.json({ version: 1 })),
 ];

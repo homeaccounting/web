@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { ApiClient, baseUrl } from '@/api/client';
 import { transactionsApi } from '@/api/transactions';
 import type { TransactionResponse } from '@/api/types';
@@ -26,6 +26,11 @@ export function useWindowedTransactions(
   return useQuery({
     queryKey: ['transactions', accountId, fromDate, toDate],
     enabled: !!session && !!accountId,
+    // Keep the previous window's rows on screen while a new period/account
+    // selection's query is still loading, instead of flashing to the loading
+    // skeleton — smooths period/scope switches. Purely a display nicety; the
+    // paging loop below and its settle timing are unchanged.
+    placeholderData: keepPreviousData,
     queryFn: async (): Promise<TransactionResponse[]> => {
       const client = new ApiClient({
         baseUrl,
@@ -73,6 +78,9 @@ export function useAllAccountsWindowedTransactions(
   return useQuery({
     queryKey: ['transactions', 'all', fromDate, toDate],
     enabled: !!session && enabled,
+    // See useWindowedTransactions above: smooths period switches by keeping
+    // the previous window's rows visible while the new one loads.
+    placeholderData: keepPreviousData,
     queryFn: async (): Promise<TransactionResponse[]> => {
       const client = new ApiClient({
         baseUrl,

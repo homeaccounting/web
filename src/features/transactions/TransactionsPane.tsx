@@ -46,6 +46,7 @@ import {
 } from './accountScope';
 import { transactionAccountCell, transactionDisplayAmount } from './transactionDisplayAmount';
 import { useScopedTransactions } from './useScopedTransactions';
+import { useConsistentAccountView } from './useConsistentAccountView';
 import { useAccounts } from '@/features/accounts/useAccounts';
 import { accountLabel } from '@/features/accounts/accountLabel';
 import { ScopeHeader } from './ScopeHeader';
@@ -261,12 +262,20 @@ export function TransactionsPane() {
     });
   }, [pathname, scope, periodValue, dayRange.from, dayRange.to, filters]);
 
-  const { data, isLoading, isError, refetch } = useScopedTransactions(
+  const { data, isLoading, isError, isFetching, refetch } = useScopedTransactions(
     scope,
     dayRange.from,
     dayRange.to,
   );
   const { data: account, isLoading: accountLoading } = useAccountById(single ?? undefined);
+  // The header balance comes from the fast ['accounts'] query, while the list
+  // above settles from the (potentially multi-page) transactions query. Gate
+  // the displayed balance on THIS scope's transactions query so, after an
+  // out-of-band change (bank import, sync signal), the balance never displays
+  // ahead of the list — both swap to the new generation together. `single`
+  // (the viewed account id, or null in an all/subset scope) resets the hold
+  // immediately when the viewed account itself changes.
+  const displayBalance = useConsistentAccountView(account?.balance, isFetching, single);
   const { data: configuration } = useConfiguration();
   const labelNameById = useDictionaryEntryNames(configuration);
   // The same id->name map resolves category names for the Category column.
@@ -523,7 +532,7 @@ export function TransactionsPane() {
 
   const header = single ? (
     account ? (
-      <AccountHeader account={account} />
+      <AccountHeader account={account} balance={displayBalance} />
     ) : accountLoading ? (
       <div className="border-b px-4 py-3">
         <Skeleton className="h-8 w-full" />

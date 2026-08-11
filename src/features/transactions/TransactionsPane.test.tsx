@@ -1571,6 +1571,16 @@ describe('TransactionsPane', () => {
       saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
       const user = userEvent.setup();
       const bodies: string[][] = [];
+      // Tracks the last-committed labels so the windowed GET below reflects them,
+      // the way a real backend would. useEditTransaction's optimistic cache patch
+      // now genuinely lands in this row's live windowed query (that's the fix
+      // under test elsewhere); onSettled then invalidates and refetches it. A
+      // GET that always echoed the original (unlabelled) fixture would revert
+      // that patch out from under the second, still-in-flight toggle and drop
+      // the first label from its cumulative PUT — reintroducing the exact
+      // clobbering this test guards against, but via a stale test fixture
+      // rather than the app.
+      let currentLabels: string[] = [];
       server.use(
         // Two labels so we can add both in quick succession.
         http.get(`${apiBase}/api/users/me/configuration`, () =>
@@ -1587,9 +1597,16 @@ describe('TransactionsPane', () => {
             },
           }),
         ),
+        http.get(`${apiBase}/api/transactions`, () =>
+          HttpResponse.json({
+            transactions: [{ ...transactionFixture, labels: currentLabels }],
+            totalCount: 1,
+          }),
+        ),
         http.put(`${apiBase}/api/transactions/:id/labels`, async ({ request }) => {
           const body = (await request.json()) as { labels: string[] };
           bodies.push(body.labels);
+          currentLabels = body.labels;
           return HttpResponse.json({ ...transactionFixture, labels: body.labels });
         }),
       );
@@ -1608,6 +1625,107 @@ describe('TransactionsPane', () => {
       // Each PUT carries the full cumulative set, and they arrive in toggle order
       // (serialized) — not [Work] clobbering [Trip].
       await waitFor(() => expect(bodies).toEqual([[tripLabelId], [tripLabelId, WORK_ID]]));
+    });
+
+    it('keeps a mid-sequence label when an earlier PUT settles before a later toggle', async () => {
+      // Three rapid toggles Trip → Work → Extra, with PUT#1 ([Trip]) settling and
+      // its refetch landing BEFORE the third toggle is clicked. The settled PUT#1
+      // flips the live cache row to the intermediate [Trip]; without an in-flight
+      // guard the picker's re-seed effect would overwrite the still-pending Work
+      // off local state, so the third toggle would compute [Trip, Extra] and drop
+      // Work. The final PUT must carry the cumulative [Trip, Work, Extra].
+      const WORK_ID = '00000000-0000-0000-0000-0000000000b2';
+      const EXTRA_ID = '00000000-0000-0000-0000-0000000000c3';
+      saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+      const user = userEvent.setup();
+      const bodies: string[][] = [];
+      // Only becomes the intermediate/final set once each PUT is allowed to
+      // resolve (see the gates below), so a refetch mid-hold reflects reality.
+      let currentLabels: string[] = [];
+      const getReturns: string[][] = [];
+
+      const deferred = () => {
+        let resolve!: () => void;
+        const promise = new Promise<void>((r) => {
+          resolve = r;
+        });
+        return { promise, resolve };
+      };
+      const gate1 = deferred(); // holds PUT#1's response
+      const gate2 = deferred(); // holds PUT#2's response
+      let putCount = 0;
+
+      server.use(
+        http.get(`${apiBase}/api/users/me/configuration`, () =>
+          HttpResponse.json({
+            ...configurationFixture,
+            dictionaries: {
+              ...configurationFixture.dictionaries,
+              label: {
+                roots: [
+                  ...(configurationFixture.dictionaries.label?.roots ?? []), // Trip
+                  { id: WORK_ID, name: 'Work', type: 'item' as const, children: [] },
+                  { id: EXTRA_ID, name: 'Extra', type: 'item' as const, children: [] },
+                ],
+              },
+            },
+          }),
+        ),
+        http.get(`${apiBase}/api/transactions`, () => {
+          getReturns.push([...currentLabels]);
+          return HttpResponse.json({
+            transactions: [{ ...transactionFixture, labels: currentLabels }],
+            totalCount: 1,
+          });
+        }),
+        http.put(`${apiBase}/api/transactions/:id/labels`, async ({ request }) => {
+          const body = (await request.json()) as { labels: string[] };
+          putCount += 1;
+          const n = putCount;
+          bodies.push(body.labels);
+          // Hold PUT#1 and PUT#2 until released; the server-visible current set
+          // only advances once a PUT is actually allowed through, so the refetch
+          // that PUT#1's settle triggers reflects the intermediate [Trip].
+          if (n === 1) await gate1.promise;
+          if (n === 2) await gate2.promise;
+          currentLabels = body.labels;
+          return HttpResponse.json({ ...transactionFixture, labels: body.labels });
+        }),
+      );
+
+      renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
+      const row = (await screen.findByText(transactionFixture.description)).closest('tr')!;
+      await user.pointer({ keys: '[MouseRight]', target: row });
+      await user.hover(await screen.findByRole('menuitem', { name: /^labels$/i }));
+
+      // Toggle Trip, then Work — PUT#1 and PUT#2 both enqueue (PUT#2 chained after
+      // PUT#1). Both handlers are holding.
+      await user.pointer({
+        keys: '[MouseLeft]',
+        target: await screen.findByRole('option', { name: /trip/i }),
+      });
+      await user.pointer({
+        keys: '[MouseLeft]',
+        target: await screen.findByRole('option', { name: /work/i }),
+      });
+      await waitFor(() => expect(bodies).toEqual([[tripLabelId]])); // PUT#1 request reached the server
+
+      // Release PUT#1: it resolves to [Trip], its onSettled invalidation refetches,
+      // and the GET returns the intermediate [Trip]. Wait until that refetch has
+      // landed (a GET observed [Trip]) — this is the exact window the guard covers.
+      gate1.resolve();
+      await waitFor(() => expect(getReturns).toContainEqual([tripLabelId]));
+
+      // Now toggle Extra. With the guard, local state is still [Trip, Work]; the
+      // third PUT must be [Trip, Work, Extra].
+      await user.pointer({
+        keys: '[MouseLeft]',
+        target: await screen.findByRole('option', { name: /extra/i }),
+      });
+      gate2.resolve();
+
+      await waitFor(() => expect(bodies).toHaveLength(3));
+      expect(bodies[2]).toEqual([tripLabelId, WORK_ID, EXTRA_ID]);
     });
 
     it('reverts the local toggle when the PUT fails', async () => {

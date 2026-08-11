@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { server } from '@/test/server';
@@ -9,6 +9,13 @@ import { useEditTransaction } from './useEditTransaction';
 import type { TransactionResponse } from '@/api/types';
 
 const apiBase = 'http://localhost:8080';
+
+// Real windowed keys, matching useWindowedTransactions / useAllAccountsWindowedTransactions —
+// NOT the phantom 2-element ['transactions', accountId] key that no live query ever reads.
+const from = '2026-01-01';
+const to = '2026-12-31';
+const windowedKey = (accountId: string) => ['transactions', accountId, from, to];
+const allAccountsKey = () => ['transactions', 'all', from, to];
 
 function makeWrapper(client = new QueryClient()) {
   const tokenRef = { current: 't' };
@@ -81,7 +88,7 @@ describe('useEditTransaction', () => {
     );
 
     const client = new QueryClient();
-    client.setQueryData(['transactions', 'a1'], [txResponse()] as TransactionResponse[]);
+    client.setQueryData(windowedKey('a1'), [txResponse()] as TransactionResponse[]);
 
     const onSubCallApplied = vi.fn();
     const { result } = renderHook(() => useEditTransaction(), { wrapper: makeWrapper(client) });
@@ -123,7 +130,7 @@ describe('useEditTransaction', () => {
     );
 
     const client = new QueryClient();
-    client.setQueryData(['transactions', 'a1'], [txResponse()] as TransactionResponse[]);
+    client.setQueryData(windowedKey('a1'), [txResponse()] as TransactionResponse[]);
 
     const { result } = renderHook(() => useEditTransaction(), { wrapper: makeWrapper(client) });
     await expect(
@@ -156,7 +163,7 @@ describe('useEditTransaction', () => {
     );
 
     const client = new QueryClient();
-    client.setQueryData(['transactions', 'a1'], [txResponse()] as TransactionResponse[]);
+    client.setQueryData(windowedKey('a1'), [txResponse()] as TransactionResponse[]);
 
     const { result } = renderHook(() => useEditTransaction(), { wrapper: makeWrapper(client) });
     await result.current.mutateAsync({
@@ -179,7 +186,7 @@ describe('useEditTransaction', () => {
     );
 
     const client = new QueryClient();
-    client.setQueryData(['transactions', 'a1'], [txResponse()] as TransactionResponse[]);
+    client.setQueryData(windowedKey('a1'), [txResponse()] as TransactionResponse[]);
 
     const { result } = renderHook(() => useEditTransaction(), { wrapper: makeWrapper(client) });
     await result.current.mutateAsync({
@@ -205,7 +212,7 @@ describe('useEditTransaction', () => {
     );
 
     const client = new QueryClient();
-    client.setQueryData(['transactions', 'a1'], [txResponse()] as TransactionResponse[]);
+    client.setQueryData(windowedKey('a1'), [txResponse()] as TransactionResponse[]);
 
     const { result } = renderHook(() => useEditTransaction(), { wrapper: makeWrapper(client) });
     await result.current.mutateAsync({
@@ -218,7 +225,7 @@ describe('useEditTransaction', () => {
     expect(contactCalled).toBe(false);
   });
 
-  it('patches the cached row after each successful sub-call', async () => {
+  it('optimistically patches every live windowed query holding the row — per-account AND all-accounts — before onSettled refetches', async () => {
     server.use(
       http.put(`${apiBase}/api/transactions/:id/description`, () =>
         HttpResponse.json(txResponse({ description: 'patched' })),
@@ -226,7 +233,11 @@ describe('useEditTransaction', () => {
     );
 
     const client = new QueryClient();
-    client.setQueryData(['transactions', 'a1'], [txResponse()] as TransactionResponse[]);
+    // Seed BOTH real shapes a live query can hold: the per-account windowed
+    // list and the cross-account 'all' windowed list. Neither is the phantom
+    // ['transactions', accountId] key — no query is ever registered under it.
+    client.setQueryData(windowedKey('a1'), [txResponse()] as TransactionResponse[]);
+    client.setQueryData(allAccountsKey(), [txResponse()] as TransactionResponse[]);
 
     const { result } = renderHook(() => useEditTransaction(), { wrapper: makeWrapper(client) });
     await result.current.mutateAsync({
@@ -236,9 +247,13 @@ describe('useEditTransaction', () => {
       onSubCallApplied: vi.fn(),
     });
 
-    await waitFor(() => {
-      const list = client.getQueryData<TransactionResponse[]>(['transactions', 'a1']);
-      expect(list?.[0]?.description).toBe('patched');
-    });
+    // Asserted synchronously, right after mutateAsync resolves: this is the
+    // in-flight optimistic write landing directly in the cache, not a value
+    // produced by the onSettled invalidation (there is no mounted useQuery
+    // observer here for invalidateQueries to refetch against).
+    const perAccountList = client.getQueryData<TransactionResponse[]>(windowedKey('a1'));
+    expect(perAccountList?.[0]?.description).toBe('patched');
+    const allAccountsList = client.getQueryData<TransactionResponse[]>(allAccountsKey());
+    expect(allAccountsList?.[0]?.description).toBe('patched');
   });
 });
