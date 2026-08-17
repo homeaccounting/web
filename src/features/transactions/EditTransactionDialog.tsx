@@ -11,7 +11,13 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ApiError } from '@/api/client';
-import type { AccountResponse, TransactionResponse, UUID } from '@/api/types';
+import type {
+  AccountResponse,
+  Allocation,
+  Allocations,
+  TransactionResponse,
+  UUID,
+} from '@/api/types';
 import { useAccounts } from '@/features/accounts/useAccounts';
 import { flattenDictionary } from '@/api/dictionary';
 import { useConfiguration } from '@/features/configuration/useConfiguration';
@@ -78,17 +84,20 @@ export function EditTransactionDialog({ open, onOpenChange, tx }: EditTransactio
   const close = useCallback(() => onOpenChange(false), [onOpenChange]);
 
   // Inline "map to contact" for the imported provider token — curates the
-  // global provider-token → contact map (future imports), independent of this
-  // transaction's own contact field (tracker#54).
+  // global provider-token → contact map for future imports (tracker#54) AND
+  // applies the chosen contact to this transaction, since mapping a token the
+  // user is looking at is also a statement about the transaction in front of
+  // them (see the mapTo closures below).
   const updateBanking = useUpdateBanking();
   const createContact = useCreateDictionaryEntry();
   const contacts = flattenDictionary(config?.dictionaries.contact);
   // Inline "map to category" for an imported counterparty category signal
   // (tracker#55). Income has no MCC/label, so income counterparties would
   // otherwise land on the income default; this curates the per-direction
-  // provider-category → category map for future imports. The map is chosen by
-  // the transaction's direction (income vs expense), exactly as resolveCategory
-  // does on the backend.
+  // provider-category → category map for future imports AND applies the chosen
+  // category to this transaction when it is a single-slice import (a multi-slice
+  // split is left untouched). The map is chosen by the transaction's direction
+  // (income vs expense), exactly as resolveCategory does on the backend.
   const expenseCategories = flattenDictionary(config?.dictionaries.expense);
   const incomeCategories = flattenDictionary(config?.dictionaries.income);
 
@@ -195,12 +204,34 @@ export function EditTransactionDialog({ open, onOpenChange, tx }: EditTransactio
                   const name = categories.find((x) => x.id === mappedId)?.name;
                   return readOnly(` → ${name ?? 'mapped category'}`);
                 }
-                const mapTo = (id: UUID) =>
+                const mapTo = (id: UUID) => {
                   updateBanking.mutate(
                     income
                       ? { incomeCategoryMap: { ...map, [key]: id } }
                       : { expenseCategoryMap: { ...map, [key]: id } },
                   );
+                  // Also apply the chosen category to THIS transaction, but only
+                  // when it is a single-slice import — rewriting a multi-slice
+                  // split to one category would silently collapse a deliberate
+                  // allocation, so for those we curate the map only. The total is
+                  // unchanged (only categoryId moves), so this goes through the
+                  // dedicated PATCH /allocations path (diffTransaction re-split).
+                  const alloc = currentTx.allocations;
+                  const singleSlice = alloc.incomes.length + alloc.expenses.length === 1;
+                  if (singleSlice) {
+                    const rebucket = (slices: Allocation[]) =>
+                      slices.map((s) => ({ ...s, categoryId: id }));
+                    const newAllocations: Allocations = income
+                      ? { incomes: rebucket(alloc.incomes), expenses: alloc.expenses }
+                      : { incomes: alloc.incomes, expenses: rebucket(alloc.expenses) };
+                    edit.mutate({
+                      id: currentTx.id,
+                      accountIds,
+                      diff: { allocations: newAllocations },
+                      onSubCallApplied,
+                    });
+                  }
+                };
                 return (
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <span>Counterparty category</span>
@@ -238,8 +269,17 @@ export function EditTransactionDialog({ open, onOpenChange, tx }: EditTransactio
                   const name = contacts.find((x) => x.id === mappedId)?.name;
                   return readOnly(` → ${name ?? 'mapped contact'}`);
                 }
-                const mapTo = (id: UUID) =>
+                const mapTo = (id: UUID) => {
                   updateBanking.mutate({ contactMap: { ...map, [token]: id } });
+                  // Apply the chosen contact to THIS transaction too, via the
+                  // dedicated setContact path (diff.contactId).
+                  edit.mutate({
+                    id: currentTx.id,
+                    accountIds,
+                    diff: { contactId: id },
+                    onSubCallApplied,
+                  });
+                };
                 return (
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <span>Counterparty</span>

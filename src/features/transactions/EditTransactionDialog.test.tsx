@@ -162,6 +162,32 @@ describe('EditTransactionDialog', () => {
     await vi.waitFor(() => expect(body).toEqual({ contactMap: { MagazinREMONTI: contactAcme } }));
   });
 
+  it('mapping a provider-contact also applies the contact to THIS transaction', async () => {
+    server.use(
+      http.get(`${apiBase}/api/users/me/configuration`, () => HttpResponse.json(bankingConfig({}))),
+      http.put(`${apiBase}/api/users/me/configuration/banking`, () =>
+        HttpResponse.json({}, { status: 200 }),
+      ),
+    );
+    let contactCall: unknown = null;
+    server.use(
+      http.put(`${apiBase}/api/transactions/:id/contact`, async ({ request, params }) => {
+        contactCall = { id: params.id, body: await request.json() };
+        return HttpResponse.json({ ...baseTx, contactId: contactAcme });
+      }),
+    );
+    renderDialog({ tx: { ...baseTx, bankProviderContact: 'MagazinREMONTI' } });
+    const user = userEvent.setup();
+
+    const combobox = await screen.findByRole('combobox', { name: /map to contact/i });
+    await user.click(combobox);
+    await user.click(await screen.findByRole('option', { name: 'Acme' }));
+
+    await vi.waitFor(() =>
+      expect(contactCall).toEqual({ id: 'tx-1', body: { contactId: contactAcme } }),
+    );
+  });
+
   it('already-mapped token → read-only "→ contact" line, no mapper', async () => {
     server.use(
       http.get(`${apiBase}/api/users/me/configuration`, () =>
@@ -424,6 +450,140 @@ describe('EditTransactionDialog — provider counterparty → category (tracker#
     await vi.waitFor(() =>
       expect(body).toEqual({ incomeCategoryMap: { 'counterparty:12345678': categoryId } }),
     );
+  });
+
+  it('mapping a counterparty category also applies it to THIS income transaction', async () => {
+    const startCatId = '00000000-0000-0000-0000-0000000000a1';
+    server.use(
+      http.get(`${apiBase}/api/users/me/configuration`, () =>
+        HttpResponse.json(categoryConfig({})),
+      ),
+      http.put(`${apiBase}/api/users/me/configuration/banking`, () =>
+        HttpResponse.json({}, { status: 200 }),
+      ),
+    );
+    let allocCall: unknown = null;
+    server.use(
+      http.patch(`${apiBase}/api/transactions/:id/allocations`, async ({ request }) => {
+        allocCall = await request.json();
+        return HttpResponse.json({ ...baseTx });
+      }),
+    );
+    renderDialog({
+      tx: {
+        ...baseTx,
+        allocations: {
+          incomes: [{ categoryId: startCatId, amount: { amount: 10, currency: 'USD' } }],
+          expenses: [],
+        },
+        bankProviderCategory: { kind: 'counterparty', value: '12345678' },
+      },
+    });
+    const user = userEvent.setup();
+
+    const combobox = await screen.findByRole('combobox', { name: /map to category/i });
+    await user.click(combobox);
+    await user.click(await screen.findByRole('option', { name: 'Salary' }));
+
+    // The income slice is rebucketed to the mapped category; amount/comment untouched.
+    await vi.waitFor(() =>
+      expect(allocCall).toEqual({
+        newAllocations: {
+          incomes: [{ categoryId, amount: { amount: 10, currency: 'USD' } }],
+          expenses: [],
+        },
+      }),
+    );
+  });
+
+  it('mapping a counterparty category also applies it to THIS expense transaction', async () => {
+    const startCatId = '00000000-0000-0000-0000-0000000000a2';
+    server.use(
+      http.get(`${apiBase}/api/users/me/configuration`, () =>
+        HttpResponse.json(categoryConfig({})),
+      ),
+      http.put(`${apiBase}/api/users/me/configuration/banking`, () =>
+        HttpResponse.json({}, { status: 200 }),
+      ),
+    );
+    let allocCall: unknown = null;
+    server.use(
+      http.patch(`${apiBase}/api/transactions/:id/allocations`, async ({ request }) => {
+        allocCall = await request.json();
+        return HttpResponse.json({ ...expenseTx });
+      }),
+    );
+    renderDialog({
+      tx: {
+        ...expenseTx,
+        allocations: {
+          incomes: [],
+          expenses: [{ categoryId: startCatId, amount: { amount: 10, currency: 'USD' } }],
+        },
+        bankProviderCategory: { kind: 'counterparty', value: '99999999' },
+      },
+    });
+    const user = userEvent.setup();
+
+    const combobox = await screen.findByRole('combobox', { name: /map to category/i });
+    await user.click(combobox);
+    await user.click(await screen.findByRole('option', { name: 'Food' }));
+
+    await vi.waitFor(() =>
+      expect(allocCall).toEqual({
+        newAllocations: {
+          incomes: [],
+          expenses: [{ categoryId: expenseCatId, amount: { amount: 10, currency: 'USD' } }],
+        },
+      }),
+    );
+  });
+
+  it('mapping a counterparty category on a MULTI-slice txn updates the map but does NOT touch the transaction', async () => {
+    const catA = '00000000-0000-0000-0000-0000000000a3';
+    const catB = '00000000-0000-0000-0000-0000000000a4';
+    server.use(
+      http.get(`${apiBase}/api/users/me/configuration`, () =>
+        HttpResponse.json(categoryConfig({})),
+      ),
+    );
+    let mapBody: unknown = null;
+    let allocCalled = false;
+    server.use(
+      http.put(`${apiBase}/api/users/me/configuration/banking`, async ({ request }) => {
+        mapBody = await request.json();
+        return HttpResponse.json({}, { status: 200 });
+      }),
+      http.patch(`${apiBase}/api/transactions/:id/allocations`, () => {
+        allocCalled = true;
+        return HttpResponse.json({ ...expenseTx });
+      }),
+    );
+    renderDialog({
+      tx: {
+        ...expenseTx,
+        allocations: {
+          incomes: [],
+          expenses: [
+            { categoryId: catA, amount: { amount: 6, currency: 'USD' } },
+            { categoryId: catB, amount: { amount: 4, currency: 'USD' } },
+          ],
+        },
+        bankProviderCategory: { kind: 'counterparty', value: '99999999' },
+      },
+    });
+    const user = userEvent.setup();
+
+    const combobox = await screen.findByRole('combobox', { name: /map to category/i });
+    await user.click(combobox);
+    await user.click(await screen.findByRole('option', { name: 'Food' }));
+
+    // Map is still curated for future imports...
+    await vi.waitFor(() =>
+      expect(mapBody).toEqual({ expenseCategoryMap: { 'counterparty:99999999': expenseCatId } }),
+    );
+    // ...but the multi-slice split is left untouched.
+    expect(allocCalled).toBe(false);
   });
 
   it('already-mapped counterparty → read-only "→ category" line, no mapper', async () => {
