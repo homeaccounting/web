@@ -22,9 +22,13 @@ describe('CategoryChips', () => {
     const { container } = render(<CategoryChips categoryIds={['nope']} nameById={names} />);
     expect(container).toBeEmptyDOMElement();
   });
-  it('renders a chip per slice even when a category id repeats', () => {
+  it('renders a single chip when a category id repeats across slices', () => {
     render(<CategoryChips categoryIds={['c2', 'c2']} nameById={names} />);
-    expect(screen.getAllByText('Food')).toHaveLength(2);
+    expect(screen.getAllByText('Food')).toHaveLength(1);
+  });
+  it('de-duplicates repeats in the tooltip, preserving first-seen order', () => {
+    render(<CategoryChips categoryIds={['c2', 'c1', 'c2']} nameById={names} />);
+    expect(screen.getByTitle('Food, Salary')).toBeInTheDocument();
   });
 
   it('shows the leaf name in the chip but the full path in the tooltip', () => {

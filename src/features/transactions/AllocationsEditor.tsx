@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useFieldArray, useFormContext } from 'react-hook-form';
-import { Check, ChevronDown, ChevronRight, X } from 'lucide-react';
+import { Check, ChevronDown, ChevronRight, FoldVertical, Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { MoneyInput } from '@/components/MoneyInput';
 import { FormField, FormItem, FormControl, FormMessage } from '@/components/ui/form';
 import { CategoryCombobox } from './CategoryCombobox';
+import { collapseSlices } from './allocations';
 import { formatMoney } from '@/lib/format';
 import { roundMoney } from '@/lib/money';
 import { cn } from '@/lib/utils';
@@ -75,19 +77,34 @@ function AllocationSectionRows({
   currency: string;
 }) {
   const { control, watch, setValue } = useFormContext();
-  const { fields, append, remove } = useFieldArray({ control, name: section.name });
+  const { fields, append, remove, replace } = useFieldArray({ control, name: section.name });
 
   const targetMode = Boolean(watch('targetMode'));
   const targetTotalRaw = watch('targetTotal') as number | '' | undefined;
   const incomes = watch('incomes') as Slice[] | undefined;
   const expenses = watch('expenses') as Slice[] | undefined;
   const { hasTarget, remaining } = targetRemaining(targetMode, targetTotalRaw, incomes, expenses);
+  // Add label without its leading "+ " (the icon supplies the plus); used as the
+  // icon button's tooltip and accessible name.
+  const addHint = section.addLabel.replace(/^\+\s*/, '');
   // The section's rows, watched so the Fill button reacts to amount edits. When any
   // row is empty/non-finite, limit Fill to those rows so users fill blanks first;
   // when all rows are finite, Fill appears on every row.
   const sectionRows = (section.name === 'incomes' ? incomes : expenses) ?? [];
   const isFiniteAmount = (a: unknown) => Number.isFinite(typeof a === 'number' ? a : Number(a));
   const hasEmptyRow = sectionRows.some((r) => !isFiniteAmount(r?.amount));
+  // Two rows with the same (non-blank) category can be merged into one; the
+  // "Collapse duplicates" button appears only while such a pair exists.
+  const hasDuplicateCategory = (() => {
+    const seen = new Set<string>();
+    for (const r of sectionRows) {
+      const c = r?.category;
+      if (!c) continue;
+      if (seen.has(c)) return true;
+      seen.add(c);
+    }
+    return false;
+  })();
 
   return (
     <div className="space-y-3">
@@ -193,14 +210,55 @@ function AllocationSectionRows({
           />
         </div>
       ))}
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={() => append({ category: '', amount: NaN, comment: '' })}
-      >
-        {section.addLabel}
-      </Button>
+      {/* Add / collapse are compact icon buttons with tooltips — the same
+          affordance as the pane's "Add account" control — so the label text
+          (minus its leading "+ ") lives in the hint, not on the button. */}
+      <TooltipProvider>
+        <div className="flex flex-wrap items-center gap-1">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label={addHint}
+                className="h-9 w-9 [&_svg]:size-5"
+                onClick={() => append({ category: '', amount: NaN, comment: '' })}
+              >
+                <Plus />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{addHint}</TooltipContent>
+          </Tooltip>
+          {hasDuplicateCategory && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Collapse duplicates"
+                  className="h-9 w-9 [&_svg]:size-5"
+                  onClick={() =>
+                    replace(
+                      collapseSlices(
+                        sectionRows.map((r) => ({
+                          category: r?.category ?? '',
+                          amount: r?.amount,
+                          comment: r?.comment ?? '',
+                        })),
+                      ),
+                    )
+                  }
+                >
+                  <FoldVertical />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Collapse duplicates</TooltipContent>
+            </Tooltip>
+          )}
+        </div>
+      </TooltipProvider>
       <SectionError name={section.name} />
     </div>
   );

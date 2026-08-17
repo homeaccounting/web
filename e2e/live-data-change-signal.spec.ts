@@ -51,7 +51,7 @@ test.describe('live data-change signal @local', () => {
     //    (localStorage read + a plain GET; neither invalidates a React Query key).
     const token = await page.evaluate(() => {
       const raw = localStorage.getItem('ha.auth.v1');
-      return raw ? (JSON.parse(raw).token as string) : null;
+      return raw ? (JSON.parse(raw) as { token: string }).token : null;
     });
     expect(token, 'session token present in localStorage').toBeTruthy();
 
@@ -59,11 +59,11 @@ test.describe('live data-change signal @local', () => {
       headers: { Authorization: `Bearer ${token}` },
     });
     expect(accountsRes.ok(), `GET /api/accounts ${accountsRes.status()}`).toBeTruthy();
-    const accounts = (await accountsRes.json()).accounts as Array<{
-      id: string;
-      name: string;
-      currency: string;
-    }>;
+    const accounts = (
+      (await accountsRes.json()) as {
+        accounts: Array<{ id: string; name: string; currency: string }>;
+      }
+    ).accounts;
     const wallet = accounts.find((a) => a.name === 'Wallet')!;
     const savings = accounts.find((a) => a.name === 'Savings')!;
     expect(wallet && savings, 'both accounts resolved').toBeTruthy();

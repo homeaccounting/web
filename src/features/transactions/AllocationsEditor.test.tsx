@@ -47,6 +47,7 @@ function Host({
   });
   return (
     <FormProvider {...form}>
+      <span data-testid="dirty">{String(form.formState.isDirty)}</span>
       <AllocationsEditor sections={sections} currency={currency} lockTarget={lockTarget} />
     </FormProvider>
   );
@@ -92,7 +93,9 @@ describe('AllocationsEditor', () => {
 
   it('appends a blank-comment row when Add is clicked', () => {
     render(<Host sections={[expenseSection]} expenses={[]} />);
-    fireEvent.click(screen.getByRole('button', { name: '+ Add expense category' }));
+    // The Add button is now an icon button; its accessible name is the label
+    // with the leading "+ " dropped (the icon supplies the plus).
+    fireEvent.click(screen.getByRole('button', { name: 'Add expense category' }));
     expect(screen.getByLabelText('Comment')).toHaveValue('');
   });
 
@@ -147,6 +150,66 @@ describe('AllocationsEditor', () => {
     expect(toggle).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByRole('combobox')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /add income category/i })).toBeInTheDocument();
+  });
+
+  it('hides "Collapse duplicates" when every category in the section is unique', () => {
+    render(
+      <Host
+        sections={[expenseSection]}
+        expenses={[
+          { category: C1, amount: 100 },
+          { category: C2, amount: 200 },
+        ]}
+      />,
+    );
+    expect(screen.queryByRole('button', { name: /collapse duplicates/i })).not.toBeInTheDocument();
+  });
+
+  it('shows "Collapse duplicates" when a category repeats in the section', () => {
+    render(
+      <Host
+        sections={[expenseSection]}
+        expenses={[
+          { category: C1, amount: 100 },
+          { category: C1, amount: 50 },
+        ]}
+      />,
+    );
+    expect(screen.getByRole('button', { name: /collapse duplicates/i })).toBeInTheDocument();
+  });
+
+  it('collapses same-category rows on click: summed amount, joined comments, one row', () => {
+    render(
+      <Host
+        sections={[expenseSection]}
+        expenses={[
+          { category: C1, amount: 100, comment: 'milk' },
+          { category: C1, amount: 50, comment: 'bread' },
+        ]}
+      />,
+    );
+    expect(screen.getAllByRole('combobox')).toHaveLength(2);
+    fireEvent.click(screen.getByRole('button', { name: /collapse duplicates/i }));
+    expect(screen.getAllByRole('combobox')).toHaveLength(1);
+    expect(screen.getByRole('spinbutton')).toHaveValue(150);
+    expect(screen.getByLabelText('Comment')).toHaveValue('milk, bread');
+    // With duplicates gone the button disappears.
+    expect(screen.queryByRole('button', { name: /collapse duplicates/i })).not.toBeInTheDocument();
+  });
+
+  it('marks the form dirty after collapsing so an edit can be saved', () => {
+    render(
+      <Host
+        sections={[expenseSection]}
+        expenses={[
+          { category: C1, amount: 100, comment: 'milk' },
+          { category: C1, amount: 50, comment: 'bread' },
+        ]}
+      />,
+    );
+    expect(screen.getByTestId('dirty')).toHaveTextContent('false');
+    fireEvent.click(screen.getByRole('button', { name: /collapse duplicates/i }));
+    expect(screen.getByTestId('dirty')).toHaveTextContent('true');
   });
 
   it('ignores non-finite amounts in the total', () => {

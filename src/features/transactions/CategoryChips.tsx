@@ -5,7 +5,9 @@ import { labelChipClasses } from './labelColors';
 // Renders a transaction's allocation categories as colored chips — the same
 // visual treatment as LabelChips — so a split transaction shows all its
 // categories instead of a "first +N" summary. Order is income slices then
-// expense slices (as produced by `allocationCategoryIds`). Unknown ids
+// expense slices (as produced by `allocationCategoryIds`). A category shared by
+// several slices is shown once (de-duplicated by id, first occurrence kept) so a
+// split with two same-category rows doesn't render the chip twice. Unknown ids
 // (not in the dictionary) are dropped; an all-unknown/empty list renders
 // nothing (transfers/adjustments have no categories).
 export function CategoryChips({
@@ -20,7 +22,7 @@ export function CategoryChips({
   // (the full list is in the wrapper's title). Elsewhere they may wrap.
   nowrap?: boolean;
 }) {
-  const known = categoryIds.filter((id) => nameById.has(id));
+  const known = categoryIds.filter((id, i) => nameById.has(id) && categoryIds.indexOf(id) === i);
   if (known.length === 0) return null;
   const names = known.map((id) => nameById.get(id)!);
   return (
@@ -31,11 +33,9 @@ export function CategoryChips({
         nowrap ? 'flex-nowrap overflow-hidden' : 'inline-flex flex-wrap',
       )}
     >
-      {known.map((id, i) => (
+      {known.map((id) => (
         <span
-          // A category id can repeat across slices (two rows, same category),
-          // so disambiguate the key by position.
-          key={`${id}-${i}`}
+          key={id}
           className={cn('shrink-0 rounded px-1.5 py-0.5 text-xs font-medium', labelChipClasses(id))}
         >
           {entryLeafName(nameById.get(id)!)}
