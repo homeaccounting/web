@@ -196,6 +196,54 @@ describe('TransactionsPane — bulk label/category menu', () => {
     await waitFor(() => expect(toastSuccess).toHaveBeenCalledWith('Updated 2 transactions.'));
   });
 
+  it('bulk-sets a contact on every selected row and shows a success toast', async () => {
+    const user = userEvent.setup();
+    seed([coffee, pastry]);
+    const contactPuts: string[] = [];
+    server.use(
+      http.put(`${apiBase}/api/transactions/:id/contact`, async ({ request, params }) => {
+        contactPuts.push(params.id as string);
+        const body = (await request.json()) as { contactId: string | null };
+        return HttpResponse.json({ ...coffee, id: params.id as string, contactId: body.contactId });
+      }),
+    );
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    await screen.findByText('Coffee');
+    await select(user, 'coffee');
+    await select(user, 'pastry');
+    await rightClick(user, 'Coffee');
+
+    await user.hover(await screen.findByRole('menuitem', { name: /set contact/i }));
+    await user.pointer({
+      keys: '[MouseLeft]',
+      target: await screen.findByRole('option', { name: 'Acme' }),
+    });
+
+    await waitFor(() => expect(contactPuts).toHaveLength(2));
+    expect(new Set(contactPuts)).toEqual(new Set(['t-coffee', 't-pastry']));
+    await waitFor(() => expect(toastSuccess).toHaveBeenCalledWith('Updated 2 transactions.'));
+  });
+
+  it('disables bulk Set contact with a reason when a transfer is selected', async () => {
+    const user = userEvent.setup();
+    const transfer: TransactionResponse = {
+      ...transactionFixture,
+      id: 't-xfer',
+      description: 'Xfer',
+      transactionType: 'transfer',
+    };
+    seed([coffee, transfer]);
+    renderWithProviders(ui(), { initialPath: '/accounts/a1' });
+    await screen.findByText('Coffee');
+    await select(user, 'coffee');
+    await select(user, 'xfer');
+    await rightClick(user, 'Coffee');
+
+    const item = await screen.findByRole('menuitem', { name: /set contact/i });
+    expect(item).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.getByText(/income and expense/i)).toBeInTheDocument();
+  });
+
   it('reports a partial failure toast when one row fails', async () => {
     const user = userEvent.setup();
     seed([coffee, pastry]);

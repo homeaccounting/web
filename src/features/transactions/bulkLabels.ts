@@ -66,3 +66,24 @@ export function bulkCategoryEligibility(rows: TransactionResponse[]): BulkCatego
   }
   return { enabled: true, type: allIncome ? 'income' : 'expense' };
 }
+
+export interface BulkContactEligibility {
+  enabled: boolean;
+  reason?: string;
+}
+
+// Whether "Set contact" is offered for the selection, and if not, why. Contact
+// is a counterparty attribute valid on any Completed income/expense row
+// regardless of allocation shape (splits/refunds keep it), so — unlike category
+// — a mixed income+expense selection is fine and there is no allocation gate.
+// Mirrors the single-row picker's gate in TransactionsPane.tsx:
+//   status === 'Completed' && (isIncome || isExpense).
+export function bulkContactEligibility(rows: TransactionResponse[]): BulkContactEligibility {
+  if (!allCompleted(rows)) {
+    return { enabled: false, reason: 'Only completed transactions can be edited' };
+  }
+  if (rows.some((t) => !isIncome(t.transactionType) && !isExpense(t.transactionType))) {
+    return { enabled: false, reason: 'Contacts apply only to income and expense' };
+  }
+  return { enabled: true };
+}

@@ -6,6 +6,7 @@ import {
   withLabelAdded,
   withLabelRemoved,
   bulkCategoryEligibility,
+  bulkContactEligibility,
 } from './bulkLabels';
 
 // NOTE: Allocation.amount is a Money object ({ amount, currency }), NOT a bare
@@ -107,5 +108,30 @@ describe('bulkCategoryEligibility', () => {
       allocations: { incomes: [slice('c2')], expenses: [] },
     });
     expect(bulkCategoryEligibility([income, income])).toEqual({ enabled: true, type: 'income' });
+  });
+});
+
+describe('bulkContactEligibility', () => {
+  const income = row({
+    transactionType: 'income',
+    allocations: { incomes: [slice('c1')], expenses: [] },
+  });
+  it('enables for completed income/expense, including a mixed selection', () => {
+    expect(bulkContactEligibility([row({})]).enabled).toBe(true); // expense (default)
+    expect(bulkContactEligibility([income]).enabled).toBe(true);
+    expect(bulkContactEligibility([row({}), income]).enabled).toBe(true); // mixed OK
+  });
+  it('disables (status) when any row is not Completed', () => {
+    const r = bulkContactEligibility([row({}), row({ status: 'Pending' })]);
+    expect(r.enabled).toBe(false);
+    expect(r.reason).toMatch(/only completed/i);
+  });
+  it('disables when a non-income/expense row is present', () => {
+    const r = bulkContactEligibility([row({}), row({ transactionType: 'transfer' })]);
+    expect(r.enabled).toBe(false);
+    expect(r.reason).toMatch(/income and expense/i);
+  });
+  it('disables for an empty selection', () => {
+    expect(bulkContactEligibility([]).enabled).toBe(false);
   });
 });

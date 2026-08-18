@@ -18,6 +18,10 @@ const base = {
   onAddLabel: vi.fn(),
   onRemoveLabel: vi.fn(),
   onCreateLabel: () => Promise.resolve(null),
+  contactOptions: [{ id: 'ct1' as UUID, name: 'SILPO' }],
+  contactEligibility: { enabled: true } as import('./bulkLabels').BulkContactEligibility,
+  onSetContact: vi.fn(),
+  onCreateContact: () => Promise.resolve(null),
   canLink: false,
   canMerge: true,
   mergeDisabledReason: undefined as string | undefined,
@@ -68,6 +72,25 @@ describe('BulkTransactionMenu', () => {
     const item = await screen.findByRole('menuitem', { name: /^merge$/i });
     expect(item).toHaveAttribute('aria-disabled', 'true');
     expect(screen.getByText(/two different accounts/i)).toBeInTheDocument();
+  });
+
+  it('renders the contact submenu when contact is eligible', async () => {
+    const user = userEvent.setup();
+    renderMenu({ categoryEligibility: { enabled: true, type: 'expense' } });
+    await open(user);
+    expect(await screen.findByRole('menuitem', { name: /set contact/i })).toBeInTheDocument();
+  });
+
+  it('shows a disabled contact reason when contact is ineligible', async () => {
+    const user = userEvent.setup();
+    renderMenu({
+      categoryEligibility: { enabled: true, type: 'expense' },
+      contactEligibility: { enabled: false, reason: 'Contacts apply only to income and expense' },
+    });
+    await open(user);
+    const item = await screen.findByRole('menuitem', { name: /set contact/i });
+    expect(item).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.getByText(/income and expense/i)).toBeInTheDocument();
   });
 
   it('fires onMerge but hides Link when canLink is false', async () => {

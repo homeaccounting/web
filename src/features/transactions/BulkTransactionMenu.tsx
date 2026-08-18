@@ -1,4 +1,4 @@
-import { Link2, Merge, Tag, Tags } from 'lucide-react';
+import { Link2, Merge, Store, Tag, Tags } from 'lucide-react';
 import {
   ContextMenuItem,
   ContextMenuLabel,
@@ -10,7 +10,8 @@ import {
 import type { DictionaryEntryResponse, TransactionResponse, UUID } from '@/api/types';
 import { MenuSearchList } from './MenuSearchList';
 import { BulkLabelPicker } from './BulkLabelPicker';
-import type { BulkCategoryEligibility } from './bulkLabels';
+import { BulkContactPicker } from './BulkContactPicker';
+import type { BulkCategoryEligibility, BulkContactEligibility } from './bulkLabels';
 
 export interface BulkTransactionMenuProps {
   count: number;
@@ -25,6 +26,10 @@ export interface BulkTransactionMenuProps {
   onAddLabel: (labelId: UUID) => void;
   onRemoveLabel: (labelId: UUID) => void;
   onCreateLabel: (name: string) => Promise<UUID | null>;
+  contactOptions: DictionaryEntryResponse[];
+  contactEligibility: BulkContactEligibility;
+  onSetContact: (contactId: UUID | null) => void; // fan-out + close menu
+  onCreateContact: (name: string) => Promise<UUID | null>;
   canLink: boolean;
   canMerge: boolean;
   mergeDisabledReason?: string;
@@ -49,6 +54,10 @@ export function BulkTransactionMenu({
   onAddLabel,
   onRemoveLabel,
   onCreateLabel,
+  contactOptions,
+  contactEligibility,
+  onSetContact,
+  onCreateContact,
   canLink,
   canMerge,
   mergeDisabledReason,
@@ -109,6 +118,27 @@ export function BulkTransactionMenu({
           <div className="px-2 pb-1 text-xs text-muted-foreground">
             Only completed transactions can be edited
           </div>
+        </>
+      )}
+
+      {contactEligibility.enabled ? (
+        <BulkContactPicker
+          options={contactOptions}
+          onSelect={onSetContact}
+          onCreate={onCreateContact}
+          disabled={isApplying}
+        />
+      ) : (
+        <>
+          <ContextMenuItem disabled>
+            <Store className="mr-2 h-4 w-4" aria-hidden />
+            Set contact
+          </ContextMenuItem>
+          {contactEligibility.reason && (
+            <div className="px-2 pb-1 text-xs text-muted-foreground">
+              {contactEligibility.reason}
+            </div>
+          )}
         </>
       )}
 

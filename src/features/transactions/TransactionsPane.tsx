@@ -93,6 +93,7 @@ import { BulkTransactionMenu } from './BulkTransactionMenu';
 import {
   allCompleted,
   bulkCategoryEligibility,
+  bulkContactEligibility,
   hasSingleNaturalAllocation,
   withLabelAdded,
   withLabelRemoved,
@@ -440,6 +441,20 @@ export function TransactionsPane() {
           id: t.id,
           accountIds: accountsOf(t),
           diff: { allocations: allocationsWithCategory(t.allocations, categoryId) },
+          onSubCallApplied: () => {},
+        }),
+      ),
+    );
+    requestCloseMenu(rowId); // single-select → close the menu
+  };
+
+  const bulkSetContact = (rowId: UUID, contactId: UUID | null) => {
+    void runBulk(
+      selectedRows.map((t) =>
+        edit.mutateAsync({
+          id: t.id,
+          accountIds: accountsOf(t),
+          diff: { contactId },
           onSubCallApplied: () => {},
         }),
       ),
@@ -849,6 +864,10 @@ export function TransactionsPane() {
                       onAddLabel={bulkAddLabel}
                       onRemoveLabel={bulkRemoveLabel}
                       onCreateLabel={(name) => createEntry('label', name)}
+                      contactOptions={contactOptions}
+                      contactEligibility={bulkContactEligibility(selectedRows)}
+                      onSetContact={(id) => bulkSetContact(t.id, id)}
+                      onCreateContact={(name) => createEntry('contact', name)}
                       canLink={canLink}
                       canMerge={canMerge}
                       mergeDisabledReason={mergeDisabledReason}
