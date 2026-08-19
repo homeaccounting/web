@@ -16,8 +16,22 @@ const connectionsUrl = `${apiBase}/api/users/me/configuration/banking/connection
 const providersUrl = `${apiBase}/api/users/me/configuration/banking/providers`;
 
 const providers: BankProviderDTO[] = [
-  { id: 'monobank', displayName: 'Monobank', supportsPull: true, supportsFile: false },
-  { id: 'privatbank', displayName: 'PrivatBank', supportsPull: false, supportsFile: true },
+  {
+    id: 'monobank',
+    displayName: 'Monobank',
+    supportsPull: true,
+    supportsFile: false,
+    countries: ['UA'],
+    inUserCountry: true,
+  },
+  {
+    id: 'privatbank',
+    displayName: 'PrivatBank',
+    supportsPull: false,
+    supportsFile: true,
+    countries: ['UA'],
+    inUserCountry: true,
+  },
 ];
 
 const existingConnection: BankConnectionDTO = {
@@ -205,6 +219,47 @@ describe('BankConnectionDialog', () => {
     renderWithProviders(<Wrapper connection={existingConnection} />, { initialPath: '/' });
     const combobox = await screen.findByRole('combobox', { name: 'Provider' });
     expect(combobox).toBeDisabled();
+  });
+
+  it('renders a flat provider list with no "Other countries" group when all providers are in-country', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<Wrapper />, { initialPath: '/' });
+    const combobox = await screen.findByRole('combobox', { name: 'Provider' });
+    await user.click(combobox);
+    await screen.findByRole('option', { name: 'Monobank' });
+    expect(screen.queryByText('Other countries')).not.toBeInTheDocument();
+  });
+
+  it('groups out-of-country providers under an "Other countries" label showing the country', async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.get(providersUrl, () =>
+        HttpResponse.json([
+          {
+            id: 'monobank',
+            displayName: 'Monobank',
+            supportsPull: true,
+            supportsFile: false,
+            countries: ['UA'],
+            inUserCountry: true,
+          },
+          {
+            id: 'chase',
+            displayName: 'Chase',
+            supportsPull: true,
+            supportsFile: false,
+            countries: ['US'],
+            inUserCountry: false,
+          },
+        ] satisfies BankProviderDTO[]),
+      ),
+    );
+    renderWithProviders(<Wrapper />, { initialPath: '/' });
+    const combobox = await screen.findByRole('combobox', { name: 'Provider' });
+    await user.click(combobox);
+    expect(await screen.findByText('Other countries')).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /united states/i })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Monobank' })).toBeInTheDocument();
   });
 
   it('maps backend fieldErrors.name onto the name input', async () => {

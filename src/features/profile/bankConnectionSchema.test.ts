@@ -14,12 +14,16 @@ const pullProvider: BankProviderDTO = {
   displayName: 'Monobank',
   supportsPull: true,
   supportsFile: false,
+  countries: ['UA'],
+  inUserCountry: true,
 };
 const fileOnlyProvider: BankProviderDTO = {
   id: 'privatbank',
   displayName: 'PrivatBank',
   supportsPull: false,
   supportsFile: true,
+  countries: ['UA'],
+  inUserCountry: true,
 };
 const providers = [pullProvider, fileOnlyProvider];
 

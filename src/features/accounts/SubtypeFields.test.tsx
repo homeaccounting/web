@@ -128,6 +128,46 @@ describe('SubtypeFields — bank account bankName provider select', () => {
     expect(screen.getByTestId('bank-name-value')).toHaveTextContent('Monobank');
   });
 
+  it('renders a flat list with no "Other countries" group when all providers are in-country', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(ui());
+    await user.click(await screen.findByRole('combobox', { name: /bank name/i }));
+    await screen.findByRole('option', { name: /^monobank$/i });
+    expect(screen.queryByText('Other countries')).not.toBeInTheDocument();
+  });
+
+  it('groups out-of-country providers under an "Other countries" label and keeps "Other…" last', async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.get(`${apiBase}/api/users/me/configuration/banking/providers`, () =>
+        HttpResponse.json([
+          {
+            id: 'monobank',
+            displayName: 'Monobank',
+            supportsPull: true,
+            supportsFile: false,
+            countries: ['UA'],
+            inUserCountry: true,
+          },
+          {
+            id: 'chase',
+            displayName: 'Chase',
+            supportsPull: true,
+            supportsFile: false,
+            countries: ['US'],
+            inUserCountry: false,
+          },
+        ]),
+      ),
+    );
+    renderWithProviders(ui());
+    await user.click(await screen.findByRole('combobox', { name: /bank name/i }));
+    expect(await screen.findByText('Other countries')).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /united states/i })).toBeInTheDocument();
+    const options = screen.getAllByRole('option');
+    expect(options[options.length - 1]).toHaveTextContent('Other…');
+  });
+
   it('resolves to the matching provider once a delayed providers response arrives for a pre-filled known value', async () => {
     server.use(
       http.get(`${apiBase}/api/users/me/configuration/banking/providers`, async () => {

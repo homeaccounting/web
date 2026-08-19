@@ -26,8 +26,22 @@ describe('useProviders', () => {
   it('fetches the list of bank providers', async () => {
     saveSession({ token: 't', userId: 'u', email: 'e@x', expiresAt: 9e15 });
     const providers: BankProviderDTO[] = [
-      { id: 'monobank', displayName: 'Monobank', supportsPull: true, supportsFile: false },
-      { id: 'privatbank', displayName: 'PrivatBank', supportsPull: false, supportsFile: true },
+      {
+        id: 'monobank',
+        displayName: 'Monobank',
+        supportsPull: true,
+        supportsFile: false,
+        countries: ['UA'],
+        inUserCountry: true,
+      },
+      {
+        id: 'privatbank',
+        displayName: 'PrivatBank',
+        supportsPull: false,
+        supportsFile: true,
+        countries: ['UA'],
+        inUserCountry: true,
+      },
     ];
     server.use(
       http.get(`${apiBase}/api/users/me/configuration/banking/providers`, () =>

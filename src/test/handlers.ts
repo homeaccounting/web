@@ -14,6 +14,7 @@ import {
   externalAccountsFixture,
   externalAccountsFromFileFixture,
   incomeVsExpenseFixture,
+  localizationOptionsFixture,
   netWorthFixture,
   profileFixture,
   spendingByCategoryFixture,
@@ -269,6 +270,17 @@ export const handlers = [
     () => new HttpResponse(null, { status: 204 }),
   ),
   http.put(
+    `${apiBase}/api/users/me/configuration/country`,
+    () => new HttpResponse(null, { status: 204 }),
+  ),
+  http.put(
+    `${apiBase}/api/users/me/configuration/language`,
+    () => new HttpResponse(null, { status: 204 }),
+  ),
+  http.get(`${apiBase}/api/users/me/configuration/localization-options`, () =>
+    HttpResponse.json(localizationOptionsFixture),
+  ),
+  http.put(
     `${apiBase}/api/users/me/configuration/default-currency`,
     () => new HttpResponse(null, { status: 204 }),
   ),
@@ -322,8 +334,22 @@ export const handlers = [
   ),
   http.get(`${apiBase}/api/users/me/configuration/banking/providers`, () =>
     HttpResponse.json([
-      { id: 'monobank', displayName: 'Monobank', supportsPull: true, supportsFile: false },
-      { id: 'privatbank', displayName: 'PrivatBank', supportsPull: false, supportsFile: true },
+      {
+        id: 'monobank',
+        displayName: 'Monobank',
+        supportsPull: true,
+        supportsFile: false,
+        countries: ['UA'],
+        inUserCountry: true,
+      },
+      {
+        id: 'privatbank',
+        displayName: 'PrivatBank',
+        supportsPull: false,
+        supportsFile: true,
+        countries: ['UA'],
+        inUserCountry: true,
+      },
     ] satisfies BankProviderDTO[]),
   ),
   http.put(`${apiBase}/api/users/me/configuration/banking`, async ({ request }) => {

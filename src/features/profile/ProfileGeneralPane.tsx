@@ -2,8 +2,12 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useConfiguration } from '@/features/configuration/useConfiguration';
+import { useLocalizationOptions } from '@/features/configuration/useLocalizationOptions';
+import { countryName, languageName } from '@/features/configuration/localizationLabels';
 import { useSetDefaultCurrency } from './useSetDefaultCurrency';
 import { useSetBaseCurrency } from './useSetBaseCurrency';
+import { useSetLanguage } from './useSetLanguage';
+import { useSetCountry } from './useSetCountry';
 import { SUPPORTED_CURRENCIES, type SupportedCurrency } from '@/api/types';
 import { currencySchema, type CurrencyFormValues } from './currencySchema';
 import {
@@ -39,7 +43,93 @@ export function ProfileGeneralPane() {
     <div className="space-y-6">
       <UserIdCard />
       <CurrenciesSection />
+      <LocalizationSection />
     </div>
+  );
+}
+
+function LocalizationSection() {
+  const config = useConfiguration();
+  const options = useLocalizationOptions();
+  const setCountry = useSetCountry();
+  const setLanguage = useSetLanguage();
+
+  // The configuration is the source of truth for the current selections; until
+  // it resolves there is nothing to show. Mirror CurrenciesSection's guard.
+  if (config.isPending) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-10 w-64" />
+        <Skeleton className="h-10 w-64" />
+      </div>
+    );
+  }
+  if (config.isError || !config.data) {
+    return null;
+  }
+
+  const c = config.data;
+  const countries = options.data?.countries ?? [];
+  const languages = options.data?.languages ?? [];
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Region &amp; language</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+            <label id="country-label" htmlFor="country" className="w-40 text-sm font-medium">
+              Country
+            </label>
+            <Select
+              value={c.country ?? ''}
+              onValueChange={(code) => setCountry.mutate({ country: code })}
+            >
+              <SelectTrigger id="country" className="w-56" aria-label="Country">
+                <SelectValue placeholder="Not set" />
+              </SelectTrigger>
+              <SelectContent>
+                {countries.map((code) => (
+                  <SelectItem key={code} value={code}>
+                    {countryName(code)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Sets regional defaults such as currency and language.
+          </p>
+        </div>
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+            <label id="language-label" htmlFor="language" className="w-40 text-sm font-medium">
+              Language
+            </label>
+            <Select
+              value={c.language}
+              onValueChange={(code) => setLanguage.mutate({ language: code })}
+            >
+              <SelectTrigger id="language" className="w-56" aria-label="Language">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {languages.map((code) => (
+                  <SelectItem key={code} value={code}>
+                    {languageName(code)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            The language used across the app and in notifications.
+          </p>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -160,9 +250,13 @@ function CurrencyRow({
   isPending,
   error,
 }: CurrencyRowProps) {
+  // `values` (not `defaultValues`) so the row re-syncs when `current` changes
+  // underneath it — e.g. a country-preset cascade updates the default currency
+  // via a different control. `defaultValues` only applies once at mount, which
+  // left the select showing the stale currency until a reload.
   const form = useForm<CurrencyFormValues>({
     resolver: zodResolver(currencySchema),
-    defaultValues: { currency: current as SupportedCurrency },
+    values: { currency: current as SupportedCurrency },
   });
   const selected = form.watch('currency');
   const dirty = selected !== current;

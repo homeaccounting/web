@@ -5,6 +5,7 @@ import type {
   ConfigurationResponse,
   ExternalAccountDTO,
   IncomeVsExpenseResponse,
+  LocalizationOptionsResponse,
   NetWorthResponse,
   SpendingByCategoryResponse,
   TelegramLinkCodeResponse,
@@ -98,6 +99,8 @@ export const salaryCategoryId = '00000000-0000-0000-0000-00000005a1a0';
 export const configurationFixture: ConfigurationResponse = {
   baseCurrency: 'USD',
   defaultCurrency: 'USD',
+  language: 'en',
+  country: null,
   baseCurrencyEditable: true,
   bankingFeatureEnabled: false,
   dictionaries: {
@@ -122,6 +125,11 @@ export const configurationFixture: ConfigurationResponse = {
     contactMap: {},
     connections: [],
   },
+};
+
+export const localizationOptionsFixture: LocalizationOptionsResponse = {
+  languages: ['en', 'uk'],
+  countries: ['US', 'UA', 'DE'],
 };
 
 export const spendingByCategoryFixture: SpendingByCategoryResponse = {

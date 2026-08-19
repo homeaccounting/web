@@ -38,8 +38,22 @@ const monobankConnection: BankConnectionDTO = {
 };
 
 const providers: BankProviderDTO[] = [
-  { id: 'monobank', displayName: 'Monobank', supportsPull: true, supportsFile: false },
-  { id: 'privatbank', displayName: 'PrivatBank', supportsPull: false, supportsFile: true },
+  {
+    id: 'monobank',
+    displayName: 'Monobank',
+    supportsPull: true,
+    supportsFile: false,
+    countries: ['UA'],
+    inUserCountry: true,
+  },
+  {
+    id: 'privatbank',
+    displayName: 'PrivatBank',
+    supportsPull: false,
+    supportsFile: true,
+    countries: ['UA'],
+    inUserCountry: true,
+  },
 ];
 
 function configWith(connections: BankConnectionDTO[], enabled = true): ConfigurationResponse {

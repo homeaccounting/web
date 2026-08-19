@@ -6,10 +6,13 @@ import type {
   BankConnectionDTO,
   BankingConfigurationDTO,
   BankProviderDTO,
+  ChangeCountryRequest,
   ChangeCurrencyRequest,
+  ChangeLanguageRequest,
   ChangeTokenRequest,
   ConfigurationResponse,
   DictionaryResponse,
+  LocalizationOptionsResponse,
   MoveEntryRequest,
   RenameEntryRequest,
   SetAccountMapRequest,
@@ -26,6 +29,12 @@ export const configurationApi = (client: ApiClient) => ({
     client.put<void>('/api/users/me/configuration/base-currency', body),
   setDefaultCurrency: (body: ChangeCurrencyRequest) =>
     client.put<void>('/api/users/me/configuration/default-currency', body),
+  setCountry: (body: ChangeCountryRequest) =>
+    client.put<void>('/api/users/me/configuration/country', body),
+  setLanguage: (body: ChangeLanguageRequest) =>
+    client.put<void>('/api/users/me/configuration/language', body),
+  getLocalizationOptions: (): Promise<LocalizationOptionsResponse> =>
+    client.get<LocalizationOptionsResponse>('/api/users/me/configuration/localization-options'),
   listDictionary: (dictId: string) =>
     client.get<DictionaryResponse>(`/api/users/me/configuration/dictionaries/${dictId}`),
   addEntry: (dictId: string, body: AddEntryRequest) =>

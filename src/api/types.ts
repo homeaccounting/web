@@ -630,6 +630,9 @@ export interface BankProviderDTO {
   displayName: string;
   supportsPull: boolean;
   supportsFile: boolean;
+  // Backend Web/API/ConfigurationAPI.hs BankProviderDTO (countries/inUserCountry, tracker#47).
+  countries: string[];
+  inUserCountry: boolean;
 }
 
 export interface BankingConfigurationDTO {
@@ -677,11 +680,27 @@ export interface ConfigurationResponse {
   defaults: ConfigurationDefaultsDTO;
   banking: BankingConfigurationDTO;
   bankingFeatureEnabled: boolean;
+  // Backend Web/API/ConfigurationAPI.hs ConfigurationResponse (language ~449, country ~451).
+  language: string;
+  country: string | null;
   // Backend Web.API.ConfigurationAPI.ConfigurationResponse adds these:
   // booksClosedThrough has been present on the backend since the books-close
   // slice landed; baseCurrencyEditable is added in the issue-#16 backend PR.
   booksClosedThrough?: ISO8601 | null;
   baseCurrencyEditable: boolean;
+}
+
+// Mirrors backend Web/API/ConfigurationAPI.hs LocalizationOptionsResponse (~555).
+export interface LocalizationOptionsResponse {
+  languages: string[];
+  countries: string[];
+}
+// Mirrors backend ChangeCountryRequest / ChangeLanguageRequest (~543/533).
+export interface ChangeCountryRequest {
+  country: string;
+}
+export interface ChangeLanguageRequest {
+  language: string;
 }
 
 // Mirrors backend Web/API/UserAPI.hs:122-130.

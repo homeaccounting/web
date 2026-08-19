@@ -30,6 +30,41 @@ describe('configurationApi', () => {
     );
   });
 
+  it('PUTs country', async () => {
+    await configurationApi(mkClient()).setCountry({ country: 'UA' });
+    expect(fetch).toHaveBeenCalledWith(
+      'http://test/api/users/me/configuration/country',
+      expect.objectContaining({ method: 'PUT', body: '{"country":"UA"}' }),
+    );
+  });
+
+  it('PUTs language', async () => {
+    await configurationApi(mkClient()).setLanguage({ language: 'uk' });
+    expect(fetch).toHaveBeenCalledWith(
+      'http://test/api/users/me/configuration/language',
+      expect.objectContaining({ method: 'PUT', body: '{"language":"uk"}' }),
+    );
+  });
+
+  it('GETs localization options', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ languages: ['en', 'uk'], countries: ['US', 'UA'] }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }),
+      ),
+    );
+    const result = await configurationApi(mkClient()).getLocalizationOptions();
+    expect(fetch).toHaveBeenCalledWith(
+      'http://test/api/users/me/configuration/localization-options',
+      expect.objectContaining({ method: 'GET' }),
+    );
+    expect(result.languages).toEqual(['en', 'uk']);
+    expect(result.countries).toEqual(['US', 'UA']);
+  });
+
   it('GETs a single dictionary', async () => {
     vi.stubGlobal(
       'fetch',

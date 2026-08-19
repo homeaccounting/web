@@ -13,13 +13,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from '@/components/ui/select';
+import { Select, SelectTrigger, SelectValue, SelectContent } from '@/components/ui/select';
+import { renderProviderOptions } from '@/features/banking/renderProviderOptions';
 import { ApiError } from '@/api/client';
 import type { BankConnectionDTO } from '@/api/types';
 import { useAddConnection } from '@/features/configuration/useAddConnection';
@@ -188,11 +183,7 @@ export function BankConnectionDialog({
                         <SelectValue placeholder="Select a provider…" />
                       </SelectTrigger>
                       <SelectContent>
-                        {providerList.map((p) => (
-                          <SelectItem key={p.id} value={p.id}>
-                            {p.displayName}
-                          </SelectItem>
-                        ))}
+                        {renderProviderOptions(providerList, (p) => p.id)}
                       </SelectContent>
                     </Select>
                   </FormControl>

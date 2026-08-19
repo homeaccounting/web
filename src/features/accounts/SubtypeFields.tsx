@@ -12,6 +12,7 @@ import {
 import { DatePicker } from '@/components/DatePicker';
 import { ASSET_TYPES, CARD_NETWORKS } from '@/api/types';
 import { useProviders } from '@/features/banking/useProviders';
+import { renderProviderOptions } from '@/features/banking/renderProviderOptions';
 import type { CreateAccountFormValues } from './schema';
 import { ASSET_TYPE_LABELS, CARD_NETWORK_LABELS } from './labels';
 
@@ -85,11 +86,7 @@ function BankNameField({ control }: { control: Control<CreateAccountFormValues> 
                   <SelectValue placeholder="Select…" />
                 </SelectTrigger>
                 <SelectContent>
-                  {providers.map((p) => (
-                    <SelectItem key={p.id} value={p.displayName}>
-                      {p.displayName}
-                    </SelectItem>
-                  ))}
+                  {renderProviderOptions(providers, (p) => p.displayName)}
                   <SelectItem value={CUSTOM_BANK_VALUE}>Other…</SelectItem>
                 </SelectContent>
               </Select>

@@ -25,12 +25,42 @@ function setup() {
 
 const defaultCombo = () => screen.getByRole('combobox', { name: 'Default currency' });
 const baseCombo = () => screen.getByRole('combobox', { name: 'Base currency' });
+const countryCombo = () => screen.getByRole('combobox', { name: 'Country' });
+const languageCombo = () => screen.getByRole('combobox', { name: 'Language' });
 
 describe('ProfileGeneralPane', () => {
   it('renders both selects with current currencies', async () => {
     setup();
     await waitFor(() => expect(defaultCombo()).toHaveTextContent('USD'));
     expect(baseCombo()).toHaveTextContent('USD');
+  });
+
+  it('reflects a country-cascaded default-currency change without a reload', async () => {
+    // Changing country applies a regional preset that can change the default
+    // currency server-side; useSetCountry refetches config. The Default currency
+    // row must follow the refetched value, not stay stuck on its mount-time value.
+    let countryChanged = false;
+    server.use(
+      http.put(`${apiBase}/api/users/me/configuration/country`, () => {
+        countryChanged = true;
+        return new HttpResponse(null, { status: 204 });
+      }),
+      http.get(`${apiBase}/api/users/me/configuration`, () =>
+        HttpResponse.json(
+          countryChanged
+            ? { ...configurationFixture, country: 'UA', defaultCurrency: 'UAH' }
+            : configurationFixture,
+        ),
+      ),
+    );
+    setup();
+    const user = userEvent.setup();
+    await waitFor(() => expect(defaultCombo()).toHaveTextContent('USD'));
+
+    await user.click(countryCombo());
+    await user.click(await screen.findByRole('option', { name: 'Ukraine' }));
+
+    await waitFor(() => expect(defaultCombo()).toHaveTextContent('UAH'));
   });
 
   it('saves default currency and shows success status', async () => {
@@ -122,6 +152,68 @@ describe('ProfileGeneralPane', () => {
       expect(screen.getByText(/couldn.t load configuration/i)).toBeInTheDocument(),
     );
     expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
+  });
+
+  describe('LocalizationSection', () => {
+    it('renders Country and Language selects with options from useLocalizationOptions', async () => {
+      setup();
+      const user = userEvent.setup();
+      await waitFor(() => expect(countryCombo()).toBeInTheDocument());
+      expect(languageCombo()).toBeInTheDocument();
+
+      // Language reflects the current configuration (en -> English).
+      expect(languageCombo()).toHaveTextContent('English');
+      // Country is null in the fixture -> placeholder.
+      expect(countryCombo()).toHaveTextContent(/not set/i);
+
+      await user.click(countryCombo());
+      expect(await screen.findByRole('option', { name: 'Ukraine' })).toBeInTheDocument();
+      expect(screen.getByRole('option', { name: 'United States' })).toBeInTheDocument();
+      // Close the country listbox before opening the language one.
+      await user.keyboard('{Escape}');
+
+      await user.click(languageCombo());
+      expect(await screen.findByRole('option', { name: 'English' })).toBeInTheDocument();
+      expect(screen.getByRole('option', { name: 'Ukrainian' })).toBeInTheDocument();
+    });
+
+    it('selecting a language fires PUT …/language immediately (no dialog)', async () => {
+      let body: unknown = null;
+      server.use(
+        http.put(`${apiBase}/api/users/me/configuration/language`, async ({ request }) => {
+          body = await request.json();
+          return new HttpResponse(null, { status: 204 });
+        }),
+      );
+      setup();
+      const user = userEvent.setup();
+      await waitFor(() => expect(languageCombo()).toBeInTheDocument());
+
+      await user.click(languageCombo());
+      await user.click(await screen.findByRole('option', { name: 'Ukrainian' }));
+
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+      await waitFor(() => expect(body).toEqual({ language: 'uk' }));
+    });
+
+    it('selecting a country fires PUT …/country immediately (no dialog)', async () => {
+      let body: unknown = null;
+      server.use(
+        http.put(`${apiBase}/api/users/me/configuration/country`, async ({ request }) => {
+          body = await request.json();
+          return new HttpResponse(null, { status: 204 });
+        }),
+      );
+      setup();
+      const user = userEvent.setup();
+      await waitFor(() => expect(countryCombo()).toBeInTheDocument());
+
+      await user.click(countryCombo());
+      await user.click(await screen.findByRole('option', { name: 'Ukraine' }));
+
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+      await waitFor(() => expect(body).toEqual({ country: 'UA' }));
+    });
   });
 
   it('shows inline error from a 400 response', async () => {
