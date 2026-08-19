@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { skipOnboarding } from './support/onboarding';
 
 // End-to-end coverage for the "transactions as canonical, account-scoped by
 // URL" feature: /transactions is the single list page, an `accounts=` query
@@ -17,6 +18,7 @@ async function register(page: Page) {
   await page.getByLabel(/email/i).fill(email);
   await page.getByLabel(/password/i).fill(password);
   await page.getByRole('button', { name: /^create account$/i }).click();
+  await skipOnboarding(page);
   await expect(page.getByText(/no accounts yet/i)).toBeVisible();
 }
 

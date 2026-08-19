@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { skipOnboarding } from './support/onboarding';
 
 // Requires a live backend (VITE_API_BASE_URL); @local, not run in CI.
 // Regression for the "Other" filter bug: "Other" is seeded into BOTH the
@@ -13,6 +14,7 @@ test.describe('filter by a category name shared across dictionaries @local', () 
     await page.getByLabel(/email/i).fill(email);
     await page.getByLabel(/password/i).fill(password);
     await page.getByRole('button', { name: /^create account$/i }).click();
+    await skipOnboarding(page);
     await expect(page.getByText(/no accounts yet/i)).toBeVisible();
 
     await page.getByRole('button', { name: /add account/i }).click();

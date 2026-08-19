@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { skipOnboarding } from './support/onboarding';
 
 // End-to-end coverage for tracker#44: merging an existing income + expense pair
 // on two DIFFERENT accounts into a single Transfer. Reuses the selection-driven
@@ -13,6 +14,7 @@ async function register(page: Page) {
   await page.getByLabel(/email/i).fill(email);
   await page.getByLabel(/password/i).fill('longenough');
   await page.getByRole('button', { name: /^create account$/i }).click();
+  await skipOnboarding(page);
   await expect(page.getByText(/no accounts yet/i)).toBeVisible();
 }
 

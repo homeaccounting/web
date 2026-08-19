@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { skipOnboarding } from './support/onboarding';
 
 // End-to-end coverage for the selection-driven Link/Merge UX (tracker#30 + the
 // selection redesign): a checkbox column drives a floating action bar. Merging
@@ -14,6 +15,7 @@ async function setupWallet(page: Page) {
   await page.getByLabel(/email/i).fill(email);
   await page.getByLabel(/password/i).fill(password);
   await page.getByRole('button', { name: /^create account$/i }).click();
+  await skipOnboarding(page);
   await expect(page.getByText(/no accounts yet/i)).toBeVisible();
 
   await page.getByRole('button', { name: /add account/i }).click();

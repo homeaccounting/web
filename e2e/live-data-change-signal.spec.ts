@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { skipOnboarding } from './support/onboarding';
 
 // tracker#45 — the "data changed" signal. An OUT-OF-BAND write (made without the
 // open tab's involvement — here a direct backend HTTP call, standing in for the
@@ -22,6 +23,7 @@ test.describe('live data-change signal @local', () => {
     await page.getByLabel(/email/i).fill(email);
     await page.getByLabel(/password/i).fill(password);
     await page.getByRole('button', { name: /^create account$/i }).click();
+    await skipOnboarding(page);
     await expect(page.getByText(/no accounts yet/i)).toBeVisible();
 
     const createAccount = async (name: string, initial: string) => {

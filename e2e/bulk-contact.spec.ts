@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { skipOnboarding } from './support/onboarding';
 
 // End-to-end coverage for bulk "Set contact" on a multi-selection: right-clicking
 // a selected row opens the BULK context menu, and "Set contact" assigns a single
@@ -14,6 +15,7 @@ async function setupWallet(page: Page) {
   await page.getByLabel(/email/i).fill(email);
   await page.getByLabel(/password/i).fill(password);
   await page.getByRole('button', { name: /^create account$/i }).click();
+  await skipOnboarding(page);
   await expect(page.getByText(/no accounts yet/i)).toBeVisible();
 
   await page.getByRole('button', { name: /add account/i }).click();

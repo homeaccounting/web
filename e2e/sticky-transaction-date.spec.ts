@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { skipOnboarding } from './support/onboarding';
 import { format, subMonths } from 'date-fns';
 
 // The sticky default-date feature: after submitting a transaction dated to a
@@ -19,6 +20,7 @@ test.describe('sticky transaction date @local', () => {
     await page.getByLabel(/email/i).fill(email);
     await page.getByLabel(/password/i).fill(password);
     await page.getByRole('button', { name: /^create account$/i }).click();
+    await skipOnboarding(page);
     await expect(page.getByText(/no accounts yet/i)).toBeVisible();
 
     await page.getByRole('button', { name: /add account/i }).click();

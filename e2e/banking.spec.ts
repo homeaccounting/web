@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { skipOnboarding } from './support/onboarding';
 
 // SKIPPED: this smoke test requires a backend running with the banking feature
 // ENABLED (configuration `bankingFeatureEnabled: true`). Unlike the unit/component
@@ -21,6 +22,7 @@ test.describe('banking @local', () => {
     await page.getByLabel(/email/i).fill(email);
     await page.getByLabel(/password/i).fill(password);
     await page.getByRole('button', { name: /^create account$/i }).click();
+    await skipOnboarding(page);
     await expect(page.getByText(/no accounts yet/i)).toBeVisible();
 
     // Go straight to the Banking tab. The tab/route is only reachable when the
@@ -77,6 +79,7 @@ test.describe('banking @local', () => {
     await page.getByLabel(/email/i).fill(email);
     await page.getByLabel(/password/i).fill(password);
     await page.getByRole('button', { name: /^create account$/i }).click();
+    await skipOnboarding(page);
     await expect(page.getByText(/no accounts yet/i)).toBeVisible();
 
     // Create a local account to receive the imported transactions. Its currency

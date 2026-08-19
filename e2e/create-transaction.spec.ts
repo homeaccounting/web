@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { skipOnboarding } from './support/onboarding';
 
 test.describe('create transaction @local', () => {
   test('add expense → appears in transactions table', async ({ page }) => {
@@ -10,6 +11,7 @@ test.describe('create transaction @local', () => {
     await page.getByLabel(/email/i).fill(email);
     await page.getByLabel(/password/i).fill(password);
     await page.getByRole('button', { name: /^create account$/i }).click();
+    await skipOnboarding(page);
     await expect(page.getByText(/no accounts yet/i)).toBeVisible();
 
     // 2. Create an account "Wallet" (USD, balance 100).

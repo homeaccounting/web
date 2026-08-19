@@ -1,6 +1,7 @@
 // Requires a live backend (VITE_API_BASE_URL); @local, not run in CI.
 // UNVERIFIED in the authoring environment — review selectors before first local run.
 import { test, expect } from '@playwright/test';
+import { skipOnboarding } from './support/onboarding';
 
 test.describe('create multi-allocation transaction @local', () => {
   test('add a 2-category expense → split row appears in transactions table', async ({ page }) => {
@@ -12,6 +13,7 @@ test.describe('create multi-allocation transaction @local', () => {
     await page.getByLabel(/email/i).fill(email);
     await page.getByLabel(/password/i).fill(password);
     await page.getByRole('button', { name: /^create account$/i }).click();
+    await skipOnboarding(page);
     await expect(page.getByText(/no accounts yet/i)).toBeVisible();
 
     // 2. Create an account "Wallet" (USD, balance 100).

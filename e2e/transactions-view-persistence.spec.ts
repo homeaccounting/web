@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { skipOnboarding } from './support/onboarding';
 
 // End-to-end coverage for the transactions "view persistence" feature: the
 // selected account's period + filters survive a reload (localStorage lastView)
@@ -14,6 +15,7 @@ async function register(page: Page) {
   await page.getByLabel(/email/i).fill(email);
   await page.getByLabel(/password/i).fill(password);
   await page.getByRole('button', { name: /^create account$/i }).click();
+  await skipOnboarding(page);
   await expect(page.getByText(/no accounts yet/i)).toBeVisible();
 }
 

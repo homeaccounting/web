@@ -1,6 +1,7 @@
 // Requires a live backend (VITE_API_BASE_URL); @local, not run in CI.
 // Verification spec for: list category dedup + edit-dialog "Collapse duplicates".
 import { test, expect } from '@playwright/test';
+import { skipOnboarding } from './support/onboarding';
 
 test.describe('allocation dedup + collapse @local', () => {
   test('duplicate-category split: one chip in list, collapses in edit dialog', async ({ page }) => {
@@ -12,6 +13,7 @@ test.describe('allocation dedup + collapse @local', () => {
     await page.getByLabel(/email/i).fill(email);
     await page.getByLabel(/password/i).fill(password);
     await page.getByRole('button', { name: /^create account$/i }).click();
+    await skipOnboarding(page);
     await expect(page.getByText(/no accounts yet/i)).toBeVisible();
 
     await page.getByRole('button', { name: /add account/i }).click();

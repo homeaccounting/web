@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { skipOnboarding } from './support/onboarding';
 
 // Issue #46: the create expense/transfer dialogs must block a debit that exceeds
 // the source account's available balance (balance + overdraft limit) before it
@@ -15,6 +16,7 @@ test.describe('create transaction balance validation @local', () => {
     await page.getByLabel(/email/i).fill(email);
     await page.getByLabel(/password/i).fill(password);
     await page.getByRole('button', { name: /^create account$/i }).click();
+    await skipOnboarding(page);
     await expect(page.getByText(/no accounts yet/i)).toBeVisible();
 
     // 2. Create an account "Wallet" (USD, balance 100). Regular accounts default

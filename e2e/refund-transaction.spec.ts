@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { skipOnboarding } from './support/onboarding';
 
 // End-to-end coverage for tracker#33: refunding a completed expense creates an
 // Income (contra) transaction linked by a `Refund` relation, and the linkage
@@ -13,6 +14,7 @@ async function setupWallet(page: import('@playwright/test').Page) {
   await page.getByLabel(/email/i).fill(email);
   await page.getByLabel(/password/i).fill(password);
   await page.getByRole('button', { name: /^create account$/i }).click();
+  await skipOnboarding(page);
   await expect(page.getByText(/no accounts yet/i)).toBeVisible();
 
   await page.getByRole('button', { name: /add account/i }).click();

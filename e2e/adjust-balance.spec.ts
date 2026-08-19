@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { skipOnboarding } from './support/onboarding';
 
 // Exercises the "adjust balance consistency" feature:
 //  - with no accounts, all four control-bar action buttons are disabled
@@ -17,6 +18,7 @@ test.describe('adjust balance consistency @local', () => {
     await page.getByLabel(/email/i).fill(email);
     await page.getByLabel(/password/i).fill(password);
     await page.getByRole('button', { name: /^create account$/i }).click();
+    await skipOnboarding(page);
     await expect(page.getByText(/no accounts yet/i)).toBeVisible();
 
     // 2. With no accounts, all four control-bar buttons are disabled.

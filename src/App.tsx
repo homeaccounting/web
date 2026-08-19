@@ -8,6 +8,8 @@ import OAuthCallbackPage from '@/pages/OAuthCallbackPage';
 import NotFoundPage from '@/pages/NotFoundPage';
 import ProfilePage from '@/pages/ProfilePage';
 import ReportsPage from '@/pages/ReportsPage';
+import OnboardingPage from '@/pages/OnboardingPage';
+import { OnboardingGate } from '@/features/onboarding/OnboardingGate';
 
 export default function App() {
   return (
@@ -16,8 +18,23 @@ export default function App() {
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/auth/oauth/:provider/callback" element={<OAuthCallbackPage />} />
       <Route element={<ProtectedRoute />}>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/transactions" element={<HomePage />} />
+        <Route
+          path="/"
+          element={
+            <OnboardingGate>
+              <HomePage />
+            </OnboardingGate>
+          }
+        />
+        <Route
+          path="/transactions"
+          element={
+            <OnboardingGate>
+              <HomePage />
+            </OnboardingGate>
+          }
+        />
+        <Route path="/onboarding" element={<OnboardingPage />} />
         {/* Legacy account-scoped URLs redirect to the canonical /transactions route. */}
         <Route path="/accounts" element={<Navigate to="/transactions" replace />} />
         <Route path="/accounts/:id" element={<AccountRedirect />} />

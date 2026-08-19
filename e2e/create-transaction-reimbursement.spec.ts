@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { skipOnboarding } from './support/onboarding';
 
 // Requires a live backend (VITE_API_BASE_URL); @local, not run in CI.
 // Exercises the contra-expense / "compensation" case: a single Income
@@ -16,6 +17,7 @@ test.describe('create reimbursement (contra-expense) income @local', () => {
     await page.getByLabel(/email/i).fill(email);
     await page.getByLabel(/password/i).fill(password);
     await page.getByRole('button', { name: /^create account$/i }).click();
+    await skipOnboarding(page);
     await expect(page.getByText(/no accounts yet/i)).toBeVisible();
 
     // 2. Create account "Wallet" (USD, balance 100).

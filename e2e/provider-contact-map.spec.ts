@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { skipOnboarding } from './support/onboarding';
 
 // tracker#54 — provider-token → contact map on Profile → Banking → Contacts,
 // plus create-and-map inline. Runs against a real banking-enabled backend
@@ -16,6 +17,7 @@ test.describe('provider-contact map @local', () => {
     await page.getByLabel(/email/i).fill(email);
     await page.getByLabel(/password/i).fill(password);
     await page.getByRole('button', { name: /^create account$/i }).click();
+    await skipOnboarding(page);
     await expect(page.getByText(/no accounts yet/i)).toBeVisible();
 
     // Go straight to the Contacts section of the Banking tab.
@@ -64,6 +66,7 @@ test.describe('provider-contact map @local', () => {
     await page.getByLabel(/email/i).fill(email);
     await page.getByLabel(/password/i).fill(password);
     await page.getByRole('button', { name: /^create account$/i }).click();
+    await skipOnboarding(page);
     await expect(page.getByText(/no accounts yet/i)).toBeVisible();
 
     // Default section is Connections.
