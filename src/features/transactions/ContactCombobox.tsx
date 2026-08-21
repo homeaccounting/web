@@ -1,4 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -37,13 +38,15 @@ export function ContactCombobox({
   value,
   onChange,
   onCreate,
-  placeholder = 'Select a contact…',
+  placeholder,
   name,
   id,
   'aria-label': ariaLabel,
   'aria-invalid': ariaInvalid,
   'aria-describedby': ariaDescribedby,
 }: ContactComboboxProps) {
+  const { t } = useTranslation('transactions');
+  const resolvedPlaceholder = placeholder ?? t('pickers.selectContact');
   const generatedId = useId();
   const inputId = id ?? generatedId;
   const listId = `${inputId}-list`;
@@ -156,7 +159,7 @@ export function ContactCombobox({
         aria-label={ariaLabel}
         className="flex h-10 w-full items-center rounded-md border border-input bg-muted px-3 text-sm text-muted-foreground"
       >
-        Archived contact
+        {t('pickers.archivedContact')}
       </div>
     );
   }
@@ -175,7 +178,7 @@ export function ContactCombobox({
           aria-activedescendant={activeDescendant}
           aria-invalid={ariaInvalid}
           aria-describedby={ariaDescribedby}
-          placeholder={placeholder}
+          placeholder={resolvedPlaceholder}
           value={inputValue}
           onFocus={() => setOpen(true)}
           onChange={(e) => {
@@ -238,7 +241,7 @@ export function ContactCombobox({
               active === 0 && 'bg-accent text-accent-foreground',
             )}
           >
-            — none —
+            {t('pickers.none')}
           </li>
           {filtered.map((opt, i) => {
             const rowIndex = i + 1;
@@ -278,7 +281,7 @@ export function ContactCombobox({
                 active === createIndex && 'bg-accent text-accent-foreground',
               )}
             >
-              Create ‘{trimmedQuery}’
+              {t('pickers.create', { name: trimmedQuery })}
             </li>
           )}
         </ul>

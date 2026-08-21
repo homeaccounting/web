@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import type { AccountResponse, DictionaryEntryResponse, UUID } from '@/api/types';
@@ -33,16 +34,17 @@ export function TransactionFilterBar({
   onFiltersChange,
   onClear,
 }: TransactionFilterBarProps) {
+  const { t } = useTranslation('transactions');
   // Sentinel-first options so "All categories" deselects the field (spec §5).
   const categoryOpts = useMemo(
-    () => [{ id: '', name: 'All categories' }, ...categoryOptions],
-    [categoryOptions],
+    () => [{ id: '', name: t('list.allCategories') }, ...categoryOptions],
+    [categoryOptions, t],
   );
   // Same sentinel-first pattern for contacts; the committed value is the
   // contact's id ('' clears the filter), matching by id (not name).
   const contactOpts = useMemo(
-    () => [{ id: '', name: 'Any contact' }, ...contactOptions],
-    [contactOptions],
+    () => [{ id: '', name: t('list.anyContact') }, ...contactOptions],
+    [contactOptions, t],
   );
 
   return (
@@ -56,7 +58,7 @@ export function TransactionFilterBar({
         />
       </div>
       <Input
-        placeholder="Description…"
+        placeholder={t('list.descriptionPlaceholder')}
         value={filters.description}
         onChange={(e) => onFiltersChange({ ...filters, description: e.target.value })}
         className="h-10 w-72"
@@ -73,7 +75,7 @@ export function TransactionFilterBar({
         <CategoryCombobox
           options={categoryOpts}
           value={filters.category}
-          placeholder="All categories"
+          placeholder={t('list.allCategories')}
           onChange={(category) => onFiltersChange({ ...filters, category })}
         />
       </div>
@@ -81,8 +83,8 @@ export function TransactionFilterBar({
         <CategoryCombobox
           options={contactOpts}
           value={filters.contactId}
-          placeholder="Any contact"
-          aria-label="Contact"
+          placeholder={t('list.anyContact')}
+          aria-label={t('list.contact')}
           onChange={(contactId) => onFiltersChange({ ...filters, contactId })}
         />
       </div>
@@ -91,13 +93,13 @@ export function TransactionFilterBar({
           type="checkbox"
           checked={filters.showCancelledFailed}
           onChange={(e) => onFiltersChange({ ...filters, showCancelledFailed: e.target.checked })}
-          aria-label="Cancelled & failed"
+          aria-label={t('list.cancelledFailed')}
           className="h-4 w-4 accent-primary"
         />
-        Cancelled &amp; failed
+        {t('list.cancelledFailed')}
       </label>
       <Button variant="ghost" size="sm" onClick={onClear}>
-        Clear
+        {t('list.clear')}
       </Button>
     </div>
   );

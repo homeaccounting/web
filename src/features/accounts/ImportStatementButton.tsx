@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Upload } from 'lucide-react';
 import { ApiError } from '@/api/client';
 import type { AccountResponse } from '@/api/types';
@@ -18,6 +19,7 @@ interface ImportStatementButtonProps {
 }
 
 export function ImportStatementButton({ selectedAccount }: ImportStatementButtonProps) {
+  const { t } = useTranslation('accounts');
   const { data: config } = useConfiguration();
   const { data: providers } = useProviders();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -60,8 +62,7 @@ export function ImportStatementButton({ selectedAccount }: ImportStatementButton
       {
         onSuccess: (result) => toast.success(formatSummary(summarize(result))),
         onError: (err) => {
-          const message =
-            err instanceof ApiError ? err.message : 'Couldn’t import this statement. Try again.';
+          const message = err instanceof ApiError ? err.message : t('importButton.error');
           toast.error(message);
         },
       },
@@ -76,7 +77,7 @@ export function ImportStatementButton({ selectedAccount }: ImportStatementButton
             <Button
               size="icon"
               variant="ghost"
-              aria-label="Import statement"
+              aria-label={t('importButton.label')}
               disabled={importStatement.isPending}
               onClick={onClick}
               className="h-9 w-9"
@@ -84,7 +85,7 @@ export function ImportStatementButton({ selectedAccount }: ImportStatementButton
               <Upload className={cn('h-5 w-5', importStatement.isPending && 'animate-pulse')} />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Import statement</TooltipContent>
+          <TooltipContent>{t('importButton.label')}</TooltipContent>
         </Tooltip>
       </TooltipProvider>
 

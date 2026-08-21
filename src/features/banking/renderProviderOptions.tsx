@@ -1,4 +1,5 @@
 import { SelectGroup, SelectItem, SelectLabel } from '@/components/ui/select';
+import i18n from '@/lib/i18n';
 import type { BankProviderDTO } from '@/api/types';
 import { countryName } from '@/features/configuration/localizationLabels';
 import { partitionProvidersByCountry } from './partitionProvidersByCountry';
@@ -38,7 +39,7 @@ export function renderProviderOptions(
         </SelectGroup>
       )}
       <SelectGroup>
-        <SelectLabel>Other countries</SelectLabel>
+        <SelectLabel>{i18n.t('banking:providerOptions.otherCountries')}</SelectLabel>
         {otherCountries.map((p) => (
           <SelectItem key={p.id} value={getValue(p)}>
             {p.countries?.[0] ? `${p.displayName} — ${countryName(p.countries[0])}` : p.displayName}

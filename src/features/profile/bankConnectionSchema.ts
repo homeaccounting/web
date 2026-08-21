@@ -2,10 +2,10 @@ import { z } from 'zod';
 import type { BankProviderCategory, BankProviderDTO } from '@/api/types';
 
 export const bankConnectionFormSchema = z.object({
-  name: z.string().trim().min(1, 'Name is required').max(80),
+  name: z.string().trim().min(1, 'profile:validation.nameRequired').max(80),
   // Data-driven (tracker#38 pluggable providers): any provider id returned by
   // GET .../banking/providers, not a hardcoded literal.
-  provider: z.string().min(1, 'Provider is required'),
+  provider: z.string().min(1, 'profile:validation.providerRequired'),
   // Write-only. Required on create when the chosen provider supports pull
   // (poll-based sync needs a credential up front); on edit, blank means "keep
   // existing". File-only providers never need a token — see
@@ -37,7 +37,11 @@ export function makeBankConnectionFormSchema(providers: BankProviderDTO[], isEdi
     // monobank-only behavior.
     const supportsPull = provider?.supportsPull ?? true;
     if (supportsPull && (v.token ?? '').trim() === '') {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['token'], message: 'Token is required' });
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['token'],
+        message: 'profile:validation.tokenRequired',
+      });
     }
   });
 }
@@ -51,20 +55,20 @@ export function makeBankConnectionFormSchema(providers: BankProviderDTO[], isEdi
 export const bankProviderCategoryRowSchema = z.discriminatedUnion('kind', [
   z.object({
     kind: z.literal('mcc'),
-    value: z.string().regex(/^\d{4}$/, 'MCC must be 4 digits'),
-    categoryId: z.string().uuid('Pick a category'),
+    value: z.string().regex(/^\d{4}$/, 'profile:validation.mccDigits'),
+    categoryId: z.string().uuid('profile:validation.pickCategory'),
   }),
   z.object({
     kind: z.literal('label'),
     // Backend `mkByLabel` trims and rejects blank — mirror that here.
-    value: z.string().trim().min(1, 'Label is required'),
-    categoryId: z.string().uuid('Pick a category'),
+    value: z.string().trim().min(1, 'profile:validation.labelRequired'),
+    categoryId: z.string().uuid('profile:validation.pickCategory'),
   }),
   z.object({
     kind: z.literal('counterparty'),
     // Backend `mkByCounterparty` trims and rejects blank — mirror that here.
-    value: z.string().trim().min(1, 'Counterparty token is required'),
-    categoryId: z.string().uuid('Pick a category'),
+    value: z.string().trim().min(1, 'profile:validation.counterpartyRequired'),
+    categoryId: z.string().uuid('profile:validation.pickCategory'),
   }),
 ]);
 export type BankProviderCategoryRow = z.infer<typeof bankProviderCategoryRowSchema>;
@@ -92,7 +96,7 @@ export function parseBankProviderCategoryKey(key: string): BankProviderCategory 
 // `mkBankProviderContact` trims and rejects blank — mirror that here). `contactId`
 // is a contact dictionary-entry id.
 export const bankProviderContactRowSchema = z.object({
-  token: z.string().trim().min(1, 'Token is required'),
-  contactId: z.string().uuid('Pick a contact'),
+  token: z.string().trim().min(1, 'profile:validation.tokenRequired'),
+  contactId: z.string().uuid('profile:validation.pickContact'),
 });
 export type BankProviderContactRow = z.infer<typeof bankProviderContactRowSchema>;

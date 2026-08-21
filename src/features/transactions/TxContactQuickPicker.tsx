@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Store } from 'lucide-react';
 import {
   ContextMenuItem,
@@ -28,24 +29,25 @@ export function TxContactQuickPicker({
   onCreate,
   createHint,
 }: TxContactQuickPickerProps) {
+  const { t } = useTranslation('transactions');
   return (
     <ContextMenuSub>
       <ContextMenuSubTrigger>
         <Store className="mr-2 h-4 w-4" aria-hidden />
-        Contact
+        {t('pickers.contact')}
       </ContextMenuSubTrigger>
       {/* p-0: MenuSearchList supplies its own padding. Radix SubContent already
           prevents open-auto-focus, so MenuSearchList's mount effect takes focus. */}
       <ContextMenuSubContent className="p-0">
         <div className="p-1">
-          <ContextMenuItem onSelect={() => onSelect(null)}>— none —</ContextMenuItem>
+          <ContextMenuItem onSelect={() => onSelect(null)}>{t('pickers.none')}</ContextMenuItem>
         </div>
         <MenuSearchList
           options={options}
           isSelected={(id) => id === value}
           onPick={onSelect}
-          searchAriaLabel="Search contacts"
-          placeholder="Search contacts…"
+          searchAriaLabel={t('pickers.searchContacts')}
+          placeholder={t('pickers.searchContactsPlaceholder')}
           createHint={createHint}
           onCreate={async (name) => {
             const id = await onCreate(name);

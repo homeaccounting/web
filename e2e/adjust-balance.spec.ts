@@ -78,7 +78,7 @@ test.describe('adjust balance consistency @local', () => {
 
     // 7. Open the Savings account and confirm the adjustment landed there.
     await page.getByRole('link', { name: /savings/i }).click();
-    await expect(page.getByRole('cell', { name: 'Reconcile savings' })).toBeVisible({
+    await expect(page.getByRole('cell', { name: 'Reconcile savings', exact: true })).toBeVisible({
       timeout: 10000,
     });
   });

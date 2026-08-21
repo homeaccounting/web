@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ApiClient, ApiError, baseUrl } from '@/api/client';
@@ -20,6 +21,7 @@ import { ProviderRow } from './ProviderRow';
 import { passwordSchema, type PasswordFormValues } from './passwordSchema';
 
 export function ProfileAuthPane() {
+  const { t } = useTranslation('profile');
   const profile = useUserProfile();
   const { tokenRef, signOut } = useAuth();
   const changePassword = useChangePassword();
@@ -50,10 +52,10 @@ export function ProfileAuthPane() {
     return (
       <div className="space-y-2">
         <Alert variant="destructive" role="alert">
-          <AlertDescription>Couldn&rsquo;t load profile.</AlertDescription>
+          <AlertDescription>{t('errors.loadProfile')}</AlertDescription>
         </Alert>
         <Button variant="outline" size="sm" onClick={() => void profile.refetch()}>
-          Retry
+          {t('common:retry')}
         </Button>
       </div>
     );
@@ -64,7 +66,7 @@ export function ProfileAuthPane() {
 
   const credentialCount = (p.hasPassword ? 1 : 0) + p.oauthIdentities.length + (tg ? 1 : 0);
   const disableUnlinkReason =
-    credentialCount <= 1 ? 'You need at least one way to sign in.' : undefined;
+    credentialCount <= 1 ? t('auth.atLeastOneCredential') : undefined;
 
   const onLinkGoogle = async () => {
     const { redirectUrl, state } = await authApi(client).initiateOAuth('google');
@@ -79,7 +81,7 @@ export function ProfileAuthPane() {
       {
         onSuccess: () => {
           form.reset();
-          toast.success('Password changed.');
+          toast.success(t('auth.passwordChanged'));
         },
         onError: (err) => {
           if (err instanceof ApiError && err.fieldErrors) {
@@ -98,42 +100,42 @@ export function ProfileAuthPane() {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Password</CardTitle>
+          <CardTitle>{t('auth.passwordTitle')}</CardTitle>
         </CardHeader>
         <CardContent>
           {p.hasPassword ? (
             <form className="space-y-3" onSubmit={(e) => void form.handleSubmit(submitPassword)(e)}>
               <Input
                 type="password"
-                placeholder="Current password"
+                placeholder={t('auth.currentPassword')}
                 {...form.register('currentPassword')}
-                aria-label="Current password"
+                aria-label={t('auth.currentPassword')}
               />
               {form.formState.errors.currentPassword && (
                 <p className="text-sm text-destructive">
-                  {form.formState.errors.currentPassword.message}
+                  {t(String(form.formState.errors.currentPassword.message))}
                 </p>
               )}
               <Input
                 type="password"
-                placeholder="New password"
+                placeholder={t('auth.newPassword')}
                 {...form.register('newPassword')}
-                aria-label="New password"
+                aria-label={t('auth.newPassword')}
               />
               {form.formState.errors.newPassword && (
                 <p className="text-sm text-destructive">
-                  {form.formState.errors.newPassword.message}
+                  {t(String(form.formState.errors.newPassword.message))}
                 </p>
               )}
               <Input
                 type="password"
-                placeholder="Confirm new password"
+                placeholder={t('auth.confirmPassword')}
                 {...form.register('confirmPassword')}
-                aria-label="Confirm new password"
+                aria-label={t('auth.confirmPassword')}
               />
               {form.formState.errors.confirmPassword && (
                 <p className="text-sm text-destructive">
-                  {form.formState.errors.confirmPassword.message}
+                  {t(String(form.formState.errors.confirmPassword.message))}
                 </p>
               )}
               {changePassword.error instanceof ApiError && !changePassword.error.fieldErrors && (
@@ -142,20 +144,17 @@ export function ProfileAuthPane() {
                 </Alert>
               )}
               <Button type="submit" disabled={!form.formState.isDirty || changePassword.isPending}>
-                Change password
+                {t('auth.changePassword')}
               </Button>
             </form>
           ) : (
-            <p className="text-sm text-muted-foreground">
-              Your account uses OAuth sign-in. Setting an initial password isn&rsquo;t available
-              yet.
-            </p>
+            <p className="text-sm text-muted-foreground">{t('auth.oauthOnly')}</p>
           )}
         </CardContent>
       </Card>
       <Card>
         <CardHeader>
-          <CardTitle>Linked accounts</CardTitle>
+          <CardTitle>{t('auth.linkedAccountsTitle')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <ProviderRow

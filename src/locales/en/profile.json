@@ -1,0 +1,221 @@
+{
+  "page": {
+    "title": "Profile"
+  },
+  "tabs": {
+    "general": "General",
+    "dictionaries": "Dictionaries",
+    "defaults": "Defaults",
+    "auth": "Auth",
+    "banking": "Banking"
+  },
+  "saving": "Saving…",
+  "updated": "Updated.",
+  "selectPlaceholder": "Select…",
+  "errors": {
+    "loadConfiguration": "Couldn’t load configuration.",
+    "loadProfile": "Couldn’t load profile.",
+    "loadBankConnections": "Couldn’t load bank connections.",
+    "generic": "Something went wrong. Please try again."
+  },
+  "userId": {
+    "title": "Your sharing ID",
+    "copy": "Copy",
+    "copyUserId": "Copy user ID",
+    "copied": "Copied",
+    "description": "Share this ID with someone to let them add you to an account."
+  },
+  "currencies": {
+    "title": "Currencies",
+    "defaultCurrency": "Default currency",
+    "defaultCurrencyDescription": "Used when creating new accounts and transactions.",
+    "baseCurrency": "Base currency",
+    "baseCurrencyDescriptionEditable": "Re-bases the External account that anchors your reporting.",
+    "baseCurrencyDescriptionLocked": "Base currency is locked because your books already contain transactions.",
+    "confirmTitle": "Change base currency",
+    "confirmDescription": "Change base currency from {{from}} to {{to}}? This re-bases the External account that anchors your reporting. This cannot be undone from the UI.",
+    "confirmAction": "Change base currency"
+  },
+  "localization": {
+    "title": "Region & language",
+    "country": "Country",
+    "countryNotSet": "Not set",
+    "countryDescription": "Sets regional defaults such as currency and language.",
+    "language": "Language",
+    "languageDescription": "The language used across the app and in notifications."
+  },
+  "country": {
+    "cascade": {
+      "defaultCurrency": "default currency to {{value}}",
+      "baseCurrency": "base currency to {{value}}",
+      "language": "language to {{value}}",
+      "summary": "Updated {{changes}} to match your country."
+    }
+  },
+  "defaults": {
+    "categoriesTitle": "Default categories",
+    "incomeCategory": "Default income category",
+    "expenseCategory": "Default expense category",
+    "accountsTitle": "Default accounts",
+    "defaultAccount": "Default account",
+    "subtypeDefaultAccount": "{{subtype}} default account",
+    "none": "— none —"
+  },
+  "dictionaries": {
+    "tabs": {
+      "expense": "Expense",
+      "income": "Income",
+      "contact": "Contact",
+      "label": "Label"
+    },
+    "title": {
+      "expense": "Expense",
+      "income": "Income",
+      "contact": "Contact",
+      "label": "Labels"
+    },
+    "add": {
+      "expense": "Add expense category",
+      "income": "Add income category",
+      "contact": "Add contact",
+      "label": "Add label"
+    },
+    "empty": "No entries yet.",
+    "rename": "Rename {{name}}",
+    "move": "Move {{name}}",
+    "delete": "Delete {{name}}",
+    "topLevel": "Top level",
+    "entryType": "Entry type",
+    "item": "Item",
+    "group": "Group",
+    "groupBadge": "group",
+    "parentGroup": "Parent group",
+    "deleteTitle": "Delete {{name}}?",
+    "deleteDescription": "Transactions tagged with it will not be deleted."
+  },
+  "auth": {
+    "passwordTitle": "Password",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm new password",
+    "changePassword": "Change password",
+    "passwordChanged": "Password changed.",
+    "oauthOnly": "Your account uses OAuth sign-in. Setting an initial password isn’t available yet.",
+    "linkedAccountsTitle": "Linked accounts",
+    "atLeastOneCredential": "You need at least one way to sign in."
+  },
+  "provider": {
+    "linkedAs": "Linked as {{subtitle}}",
+    "notLinked": "Not linked",
+    "unlink": "Unlink",
+    "link": "Link {{provider}}",
+    "unlinkTitle": "Unlink {{provider}}?",
+    "unlinkDescription": "You won’t be able to sign in with {{provider}} until you link it again."
+  },
+  "banking": {
+    "tabs": {
+      "connections": "Connections",
+      "expenses": "Expenses",
+      "income": "Income",
+      "contacts": "Contacts"
+    },
+    "connectionsHeading": "Bank connections",
+    "noConnections": "No connections yet.",
+    "addConnection": "Add connection",
+    "expensesHeading": "Bank provider category → expense category",
+    "incomeHeading": "Bank provider counterparty → income category",
+    "contactsHeading": "Bank provider token → contact",
+    "mapped": "{{count}} mapped",
+    "enableConnection": "Enable {{name}}",
+    "linkAccounts": "Link accounts",
+    "edit": "Edit",
+    "remove": "Remove",
+    "removeTitle": "Remove {{name}}?",
+    "removeDescription": "This removes the bank connection. Imported transactions are not deleted."
+  },
+  "connectionDialog": {
+    "editTitle": "Edit bank connection",
+    "addTitle": "Add bank connection",
+    "editDescription": "Update this connection. Leave the token blank to keep the current one.",
+    "addDescription": "Connect a bank to import transactions automatically.",
+    "name": "Name",
+    "provider": "Provider",
+    "providerPlaceholder": "Select a provider…",
+    "providersUnavailable": "No bank providers available. Try again later.",
+    "token": "Token",
+    "tokenKept": "•••• kept",
+    "enabled": "Enabled"
+  },
+  "linkAccounts": {
+    "title": "Link accounts",
+    "description": "Map each external bank account to one of your local accounts.",
+    "statementFiles": "Statement files",
+    "uploadPrompt": "Upload your statement(s) to list accounts.",
+    "rateLimited": "{{provider}} is rate-limited. Try again in a moment.",
+    "providerFallback": "The provider",
+    "loadError": "Couldn’t load external accounts. Please try again.",
+    "tryAgain": "Try again",
+    "notImported": "— not imported —",
+    "noCurrencyAccount": "No {{currency}} account — create one to import this card."
+  },
+  "categoryEditor": {
+    "kind": {
+      "mcc": "MCC",
+      "label": "Label",
+      "counterparty": "Counterparty"
+    },
+    "heading": {
+      "income": "Bank provider category to income category mapping",
+      "expense": "Bank provider category to expense category mapping"
+    },
+    "kindLabel": "Kind, row {{row}}",
+    "valueLabel": {
+      "mcc": "MCC code, row {{row}}",
+      "counterparty": "Counterparty token, row {{row}}",
+      "label": "Bank provider label, row {{row}}"
+    },
+    "categoryPlaceholder": {
+      "income": "Income category",
+      "expense": "Expense category"
+    },
+    "categoryLabelRow": {
+      "income": "Income category, row {{row}}",
+      "expense": "Expense category, row {{row}}"
+    },
+    "mccPlaceholder": "MCC",
+    "counterpartyPlaceholder": "EDRPOU / IBAN",
+    "labelPlaceholder": "Bank provider label"
+  },
+  "contactEditor": {
+    "heading": "Bank provider token to contact mapping",
+    "futureImports": "Mappings apply to future imports.",
+    "tokenPlaceholder": "Provider counterparty token",
+    "tokenLabel": "Provider token, row {{row}}",
+    "contactPlaceholder": "Contact",
+    "contactLabel": "Contact, row {{row}}",
+    "createError": "Could not create contact."
+  },
+  "mapEditor": {
+    "noMappings": "No mappings yet.",
+    "rowFallback": "row {{row}}",
+    "removeMapping": "Remove mapping {{label}}",
+    "addMapping": "Add mapping",
+    "saveMapping": "Save mapping",
+    "invalidMapping": "Invalid mapping",
+    "duplicateMapping": "Duplicate mapping: {{key}}"
+  },
+  "validation": {
+    "nameRequired": "Name is required",
+    "nameTooLong": "Too long",
+    "providerRequired": "Provider is required",
+    "tokenRequired": "Token is required",
+    "currentPasswordRequired": "Current password is required",
+    "passwordMinLength": "At least 8 characters",
+    "passwordsMismatch": "Passwords do not match",
+    "mccDigits": "MCC must be 4 digits",
+    "pickCategory": "Pick a category",
+    "labelRequired": "Label is required",
+    "counterpartyRequired": "Counterparty token is required",
+    "pickContact": "Pick a contact"
+  }
+}

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { format, isValid, parse } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -74,7 +75,7 @@ export function DatePicker({
   value,
   onChange,
   withTime = false,
-  placeholder = 'Pick a date',
+  placeholder,
   minDate,
   maxDate,
   id,
@@ -85,6 +86,7 @@ export function DatePicker({
   'aria-describedby': ariaDescribedby,
   className,
 }: DatePickerProps) {
+  const { t } = useTranslation('common');
   const [open, setOpen] = useState(false);
   // The editable text. Decoupled from `value` while the user types; committed
   // (parsed + validated) on blur/Enter, and re-synced whenever `value` changes
@@ -145,7 +147,7 @@ export function DatePicker({
           aria-label={ariaLabel}
           aria-invalid={ariaInvalid}
           aria-describedby={ariaDescribedby}
-          placeholder={placeholder}
+          placeholder={placeholder ?? t('datePicker.placeholder')}
           value={text}
           className="pr-10"
           onChange={(e) => setText(e.target.value)}
@@ -165,7 +167,11 @@ export function DatePicker({
             type="button"
             variant="ghost"
             size="icon"
-            aria-label={ariaLabel ? `${ariaLabel} calendar` : 'Open calendar'}
+            aria-label={
+              ariaLabel
+                ? t('datePicker.calendarFor', { label: ariaLabel })
+                : t('datePicker.openCalendar')
+            }
             className="absolute right-0 top-0 h-full w-10 text-muted-foreground"
           >
             <CalendarIcon className="h-4 w-4" aria-hidden />
@@ -192,12 +198,12 @@ export function DatePicker({
               htmlFor={id ? `${id}-time` : undefined}
               className="text-sm text-muted-foreground"
             >
-              Time
+              {t('datePicker.time')}
             </label>
             <Input
               id={id ? `${id}-time` : undefined}
               type="time"
-              aria-label="Time"
+              aria-label={t('datePicker.time')}
               className="h-9 w-32"
               value={time}
               onChange={(e) => emit(day, e.target.value)}

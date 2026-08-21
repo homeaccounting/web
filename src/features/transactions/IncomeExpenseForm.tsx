@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useForm, FormProvider, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { z } from 'zod';
@@ -21,7 +22,7 @@ import { AllocationsEditor, type AllocationSection } from './AllocationsEditor';
 import { dropEmptySlices } from './allocations';
 import { DatePicker } from '@/components/DatePicker';
 import { RequiredMarker } from '@/components/RequiredMarker';
-import { TRANSACTION_KIND_LABELS, type TransactionKind } from './labels';
+import { transactionKindLabel, type TransactionKind } from './labels';
 import { accountLabelParts } from '@/features/accounts/accountLabel';
 
 export interface IncomeExpenseFormApi {
@@ -80,6 +81,7 @@ export function IncomeExpenseForm({
   onCancel,
   onReady,
 }: IncomeExpenseFormProps) {
+  const { t } = useTranslation('transactions');
   const resolver = useMemo<Resolver<IncomeExpenseFormValues>>(() => {
     const schema = makeIncomeExpenseFormSchema(enforceBalance ? accounts : null, kind, {
       // A locked target is a ceiling (partial allowed), not an exact target
@@ -136,24 +138,31 @@ export function IncomeExpenseForm({
       ? [
           {
             name: 'incomes',
-            title: 'Income categories',
-            addLabel: '+ Add income category',
+            title: t('form.incomeCategoriesTitle'),
+            addLabel: t('form.addIncomeCategory'),
             categories,
           },
           {
             name: 'expenses',
-            title: 'Reimbursements (reduces an expense)',
-            addLabel: '+ Add reimbursement',
+            title: t('form.reimbursementsTitle'),
+            addLabel: t('form.addReimbursement'),
             categories: reimbursementCategories,
             collapsible: true,
           },
         ]
-      : [{ name: 'expenses', title: 'Expense categories', addLabel: '+ Add category', categories }];
+      : [
+          {
+            name: 'expenses',
+            title: t('form.expenseCategoriesTitle'),
+            addLabel: t('form.addCategory'),
+            categories,
+          },
+        ];
 
   return (
     <FormProvider {...form}>
       <form
-        aria-label={`${TRANSACTION_KIND_LABELS[kind].title} form`}
+        aria-label={t('form.formAria', { title: transactionKindLabel(kind, 'title') })}
         onSubmit={(e) => {
           void submit(e);
         }}
@@ -169,12 +178,12 @@ export function IncomeExpenseForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>
-                  Account
+                  {t('form.account')}
                   <RequiredMarker />
                 </FormLabel>
                 <FormControl>
                   <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger aria-label="Account">
+                    <SelectTrigger aria-label={t('form.account')}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -214,7 +223,7 @@ export function IncomeExpenseForm({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>
-                    Date <RequiredMarker />
+                    {t('form.date')} <RequiredMarker />
                   </FormLabel>
                   <FormControl>
                     <DatePicker
@@ -235,7 +244,7 @@ export function IncomeExpenseForm({
               name="contactId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Contact</FormLabel>
+                  <FormLabel>{t('form.contact')}</FormLabel>
                   <FormControl>
                     <ContactCombobox
                       options={contacts}
@@ -258,7 +267,7 @@ export function IncomeExpenseForm({
             name="description"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Description</FormLabel>
+                <FormLabel>{t('form.description')}</FormLabel>
                 <FormControl>
                   <Input {...field} />
                 </FormControl>
@@ -272,7 +281,7 @@ export function IncomeExpenseForm({
             name="labels"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Labels</FormLabel>
+                <FormLabel>{t('form.labels')}</FormLabel>
                 <FormControl>
                   <LabelMultiSelect
                     options={labels}
@@ -288,14 +297,14 @@ export function IncomeExpenseForm({
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
+            {t('common:cancel')}
           </Button>
           <Button type="submit" disabled={isSubmitting || (isEdit && !isDirty)}>
             {isSubmitting
-              ? 'Saving…'
+              ? t('form.saving')
               : isEdit
-                ? TRANSACTION_KIND_LABELS[kind].editSubmit
-                : TRANSACTION_KIND_LABELS[kind].submit}
+                ? transactionKindLabel(kind, 'editSubmit')
+                : transactionKindLabel(kind, 'submit')}
           </Button>
         </DialogFooter>
       </form>

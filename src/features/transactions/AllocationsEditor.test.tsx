@@ -1,9 +1,18 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { useForm, FormProvider } from 'react-hook-form';
 import type { DictionaryEntryResponse } from '@/api/types';
 import { formatMoney } from '@/lib/format';
 import { AllocationsEditor, type AllocationSection } from './AllocationsEditor';
+
+// AllocationsEditor now formats money via useFormat()→useConfiguration; with no
+// country signal the formatter falls back to the international default (matching
+// the `formatMoney` used in these assertions). Stub the config hook so the
+// editor renders without an AuthProvider/QueryClient wrapper.
+vi.mock('@/features/configuration/useConfiguration', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/features/configuration/useConfiguration')>()),
+  useConfiguration: () => ({ data: undefined }),
+}));
 
 const C1 = '00000000-0000-0000-0000-000000000001';
 const C2 = '00000000-0000-0000-0000-000000000002';

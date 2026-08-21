@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogContent,
@@ -15,7 +16,7 @@ import { flattenDictionary } from '@/api/dictionary';
 import { useConfiguration } from '@/features/configuration/useConfiguration';
 import { useCreateDictionaryEntry } from '@/features/configuration/useCreateDictionaryEntry';
 import { nowDateTimeInput } from '@/lib/dates';
-import { formatMoney } from '@/lib/format';
+import { useFormat } from '@/lib/useFormat';
 import { IncomeExpenseForm, type IncomeExpenseFormApi } from './IncomeExpenseForm';
 import { useRefundSummary, type RefundSummary } from './useRefundSummary';
 import { useRefundTransaction } from './useRefundTransaction';
@@ -32,6 +33,7 @@ export function RefundTransactionDialog({
   onOpenChange,
   original,
 }: RefundTransactionDialogProps) {
+  const { t } = useTranslation('transactions');
   // The remaining-refundable data drives the seed amounts and the caps, so the
   // form can only render once the whole prior-refund fan-out has resolved.
   const summary = useRefundSummary(original, open);
@@ -40,16 +42,12 @@ export function RefundTransactionDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Refund transaction</DialogTitle>
-          <DialogDescription>
-            Record a refund as an income transaction linked back to the original expense.
-          </DialogDescription>
+          <DialogTitle>{t('resolve.refundTitle')}</DialogTitle>
+          <DialogDescription>{t('resolve.refundDescription')}</DialogDescription>
         </DialogHeader>
         {summary.isError && (
           <Alert variant="destructive" role="alert">
-            <AlertDescription>
-              Couldn&apos;t load prior refunds for this transaction. Please try again.
-            </AlertDescription>
+            <AlertDescription>{t('resolve.refundLoadError')}</AlertDescription>
           </Alert>
         )}
         {summary.isLoading && (
@@ -79,6 +77,8 @@ function RefundForm({
   summary: RefundSummary;
   onOpenChange: (open: boolean) => void;
 }) {
+  const { t } = useTranslation('transactions');
+  const { formatMoney } = useFormat();
   const { data: accounts } = useAccounts();
   const { data: config } = useConfiguration();
   const refund = useRefundTransaction(original.id);
@@ -114,14 +114,14 @@ function RefundForm({
           comment: '',
         }))
         .filter((row) => row.amount > 0),
-      description: `Refund: ${original.description}`,
+      description: t('resolve.refundPrefix', { description: original.description }),
       date: nowDateTimeInput(),
       labels: [],
       contactId: null,
       targetMode: true,
       targetTotal: remainingTotal,
     }),
-    [original, remainingByCategory, remainingTotal],
+    [original, remainingByCategory, remainingTotal, t],
   );
 
   // Memoized so the form resolver doesn't rebuild every render (the resolver
@@ -156,9 +156,7 @@ function RefundForm({
   const showBanner =
     refund.isError && !(refund.error instanceof ApiError && refund.error.fieldErrors);
   const bannerMessage =
-    refund.error instanceof ApiError
-      ? refund.error.message
-      : 'Something went wrong. Please try again.';
+    refund.error instanceof ApiError ? refund.error.message : t('resolve.genericError');
 
   return (
     <>
@@ -169,9 +167,11 @@ function RefundForm({
       )}
       {refundedTotal > 0 && (
         <p className="text-sm text-muted-foreground">
-          {formatMoney(refundedTotal, original.sourceCurrency)} of{' '}
-          {formatMoney(originalTotal, original.sourceCurrency)} already refunded ·{' '}
-          {formatMoney(remainingTotal, original.sourceCurrency)} left
+          {t('resolve.refundedSummary', {
+            refunded: formatMoney(refundedTotal, original.sourceCurrency),
+            original: formatMoney(originalTotal, original.sourceCurrency),
+            remaining: formatMoney(remainingTotal, original.sourceCurrency),
+          })}
         </p>
       )}
       {accounts && accounts.length > 0 && (

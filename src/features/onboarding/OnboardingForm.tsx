@@ -1,4 +1,8 @@
-import { type ReactNode } from 'react';
+import { type ReactNode, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import { detectBrowserLanguage } from '@/lib/browserLanguage';
+import { hasChosenLanguage, markLanguageChosen } from '@/lib/languageChoice';
+import { DEFAULT_LANGUAGE } from '@/locales';
 import { useConfiguration } from '@/features/configuration/useConfiguration';
 import { useLocalizationOptions } from '@/features/configuration/useLocalizationOptions';
 import { countryName, languageName } from '@/features/configuration/localizationLabels';
@@ -27,12 +31,33 @@ import { toast } from '@/lib/toast';
 // the Settings surface, base currency has NO confirmation dialog — there is
 // nothing to re-base on a brand-new, transaction-less account.
 export function OnboardingForm() {
+  const { t } = useTranslation('onboarding');
   const config = useConfiguration();
   const options = useLocalizationOptions();
   const setCountry = useSetCountry();
   const setLanguage = useSetLanguage();
   const setDefaultCurrency = useSetDefaultCurrency();
   const setBaseCurrency = useSetBaseCurrency();
+
+  // First-run: seed the language from the browser once, for a user who hasn't
+  // chosen anything yet (country still unset). Persisting it makes the pick
+  // authoritative (LanguageSync keeps it, the selector reflects it) — a soft
+  // default the user can still change below. No-op when the browser language
+  // already matches or isn't supported.
+  const seededLanguage = useRef(false);
+  useEffect(() => {
+    if (seededLanguage.current) return;
+    const data = config.data;
+    // Only for a brand-new user who hasn't engaged: no country, no explicit
+    // choice, and the language still the untouched default (a non-default value
+    // means it was already chosen or previously seeded — don't overwrite it).
+    if (!data || data.country != null || hasChosenLanguage()) return;
+    if (data.language !== DEFAULT_LANGUAGE) return;
+    const browserLanguage = detectBrowserLanguage();
+    if (browserLanguage === DEFAULT_LANGUAGE) return;
+    seededLanguage.current = true;
+    setLanguage.mutate({ language: browserLanguage });
+  }, [config.data, setLanguage]);
 
   if (config.isPending) {
     return (
@@ -48,10 +73,10 @@ export function OnboardingForm() {
     return (
       <div className="space-y-2">
         <Alert variant="destructive" role="alert">
-          <AlertDescription>Couldn&rsquo;t load configuration.</AlertDescription>
+          <AlertDescription>{t('errors.loadConfiguration')}</AlertDescription>
         </Alert>
         <Button variant="outline" size="sm" onClick={() => void config.refetch()}>
-          Retry
+          {t('common:retry')}
         </Button>
       </div>
     );
@@ -79,16 +104,16 @@ export function OnboardingForm() {
     <div className="space-y-5">
       <Field
         id="country"
-        label="Country"
-        help="Sets regional defaults such as currency and language."
+        label={t('fields.country.label')}
+        help={t('fields.country.help')}
       >
         <Select
           disabled={busy}
           value={c.country ?? ''}
           onValueChange={(code) => setCountry.mutate({ country: code })}
         >
-          <SelectTrigger id="country" aria-label="Country">
-            <SelectValue placeholder="Select your country" />
+          <SelectTrigger id="country" aria-label={t('fields.country.label')}>
+            <SelectValue placeholder={t('fields.country.placeholder')} />
           </SelectTrigger>
           <SelectContent>
             {countries.map((code) => (
@@ -102,8 +127,8 @@ export function OnboardingForm() {
 
       <Field
         id="defaultCurrency"
-        label="Default currency"
-        help="Used when creating new accounts and transactions."
+        label={t('fields.defaultCurrency.label')}
+        help={t('fields.defaultCurrency.help')}
       >
         <Select
           disabled={busy}
@@ -111,11 +136,11 @@ export function OnboardingForm() {
           onValueChange={(v) =>
             setDefaultCurrency.mutate(
               { currency: v },
-              { onSuccess: () => toast.success('Updated.') },
+              { onSuccess: () => toast.success(t('updated')) },
             )
           }
         >
-          <SelectTrigger id="defaultCurrency" aria-label="Default currency">
+          <SelectTrigger id="defaultCurrency" aria-label={t('fields.defaultCurrency.label')}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -130,15 +155,18 @@ export function OnboardingForm() {
 
       <Field
         id="language"
-        label="Language"
-        help="The language used across the app and in notifications."
+        label={t('fields.language.label')}
+        help={t('fields.language.help')}
       >
         <Select
           disabled={busy}
           value={c.language}
-          onValueChange={(code) => setLanguage.mutate({ language: code })}
+          onValueChange={(code) => {
+            markLanguageChosen();
+            setLanguage.mutate({ language: code });
+          }}
         >
-          <SelectTrigger id="language" aria-label="Language">
+          <SelectTrigger id="language" aria-label={t('fields.language.label')}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -153,17 +181,17 @@ export function OnboardingForm() {
 
       <Field
         id="baseCurrency"
-        label="Base currency"
-        help="Anchors your reporting across all accounts."
+        label={t('fields.baseCurrency.label')}
+        help={t('fields.baseCurrency.help')}
       >
         <Select
           disabled={!c.baseCurrencyEditable || busy}
           value={c.baseCurrency}
           onValueChange={(v) =>
-            setBaseCurrency.mutate({ currency: v }, { onSuccess: () => toast.success('Updated.') })
+            setBaseCurrency.mutate({ currency: v }, { onSuccess: () => toast.success(t('updated')) })
           }
         >
-          <SelectTrigger id="baseCurrency" aria-label="Base currency">
+          <SelectTrigger id="baseCurrency" aria-label={t('fields.baseCurrency.label')}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

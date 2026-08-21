@@ -1,4 +1,5 @@
 import type { TransactionResponse, UUID } from '@/api/types';
+import i18n from '@/lib/i18n';
 import { isIncome, isExpense } from './transactionType';
 
 // Shared status gate for bulk label & category, mirroring the single-row
@@ -51,18 +52,18 @@ export function hasSingleNaturalAllocation(t: TransactionResponse): boolean {
 // (when enabled) selects the income/expense dictionary.
 export function bulkCategoryEligibility(rows: TransactionResponse[]): BulkCategoryEligibility {
   if (!allCompleted(rows)) {
-    return { enabled: false, reason: 'Only completed transactions can be edited' };
+    return { enabled: false, reason: i18n.t('transactions:bulk.onlyCompletedEditable') };
   }
   if (rows.some((t) => !isIncome(t.transactionType) && !isExpense(t.transactionType))) {
-    return { enabled: false, reason: 'These transactions have no category' };
+    return { enabled: false, reason: i18n.t('transactions:bulk.noCategoryType') };
   }
   const allIncome = rows.every((t) => isIncome(t.transactionType));
   const allExpense = rows.every((t) => isExpense(t.transactionType));
   if (!allIncome && !allExpense) {
-    return { enabled: false, reason: 'Select transactions of one type to set a category' };
+    return { enabled: false, reason: i18n.t('transactions:bulk.selectOneType') };
   }
   if (rows.some((t) => !hasSingleNaturalAllocation(t))) {
-    return { enabled: false, reason: "Can't set a category on split or refund transactions" };
+    return { enabled: false, reason: i18n.t('transactions:bulk.noSplitRefundCategory') };
   }
   return { enabled: true, type: allIncome ? 'income' : 'expense' };
 }
@@ -80,10 +81,10 @@ export interface BulkContactEligibility {
 //   status === 'Completed' && (isIncome || isExpense).
 export function bulkContactEligibility(rows: TransactionResponse[]): BulkContactEligibility {
   if (!allCompleted(rows)) {
-    return { enabled: false, reason: 'Only completed transactions can be edited' };
+    return { enabled: false, reason: i18n.t('transactions:bulk.onlyCompletedEditable') };
   }
   if (rows.some((t) => !isIncome(t.transactionType) && !isExpense(t.transactionType))) {
-    return { enabled: false, reason: 'Contacts apply only to income and expense' };
+    return { enabled: false, reason: i18n.t('transactions:bulk.contactsIncomeExpenseOnly') };
   }
   return { enabled: true };
 }

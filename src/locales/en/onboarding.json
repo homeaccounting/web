@@ -1,0 +1,33 @@
+{
+  "loading": "Loading",
+  "updated": "Updated.",
+  "errors": {
+    "loadConfiguration": "Couldn’t load configuration."
+  },
+  "fields": {
+    "country": {
+      "label": "Country",
+      "help": "Sets regional defaults such as currency and language.",
+      "placeholder": "Select your country"
+    },
+    "defaultCurrency": {
+      "label": "Default currency",
+      "help": "Used when creating new accounts and transactions."
+    },
+    "language": {
+      "label": "Language",
+      "help": "The language used across the app and in notifications."
+    },
+    "baseCurrency": {
+      "label": "Base currency",
+      "help": "Anchors your reporting across all accounts."
+    }
+  },
+  "page": {
+    "title": "Let’s set up the basics",
+    "intro": "Pick your country and we’ll set sensible currency and language defaults. Adjust anything below.",
+    "later": "You can change any of this later in Settings.",
+    "skip": "Skip for now",
+    "getStarted": "Get started"
+  }
+}

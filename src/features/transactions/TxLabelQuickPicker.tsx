@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Tags } from 'lucide-react';
 import {
   ContextMenuSub,
@@ -39,6 +40,7 @@ export function TxLabelQuickPicker({
   onCreate,
   createHint,
 }: TxLabelQuickPickerProps) {
+  const { t } = useTranslation('transactions');
   const [selected, setSelected] = useState<UUID[]>(value);
   const selectedRef = useRef<UUID[]>(value);
   selectedRef.current = selected;
@@ -126,7 +128,7 @@ export function TxLabelQuickPicker({
     <ContextMenuSub>
       <ContextMenuSubTrigger>
         <Tags className="mr-2 h-4 w-4" aria-hidden />
-        Labels
+        {t('pickers.labels')}
       </ContextMenuSubTrigger>
       {/* p-0: MenuSearchList supplies its own padding. Radix SubContent already
           prevents open-auto-focus, so MenuSearchList's mount effect takes focus. */}
@@ -135,8 +137,8 @@ export function TxLabelQuickPicker({
           options={options}
           isSelected={(id) => selected.includes(id)}
           onPick={toggle}
-          searchAriaLabel="Search labels"
-          placeholder="Search labels…"
+          searchAriaLabel={t('pickers.searchLabels')}
+          placeholder={t('pickers.searchLabelsPlaceholder')}
           createHint={createHint}
           onCreate={handleCreate}
         />

@@ -1,5 +1,6 @@
 import { type ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useOnboardingStatus } from './useOnboardingStatus';
 
@@ -10,6 +11,7 @@ import { useOnboardingStatus } from './useOnboardingStatus';
 // before being yanked to onboarding). So hold on a neutral loader while pending,
 // then decide. Does NOT wrap /onboarding itself, so there is no redirect loop.
 export function OnboardingGate({ children }: { children: ReactNode }) {
+  const { t } = useTranslation('onboarding');
   const { needsOnboarding, isPending } = useOnboardingStatus();
   if (needsOnboarding) return <Navigate to="/onboarding" replace />;
   if (isPending) {
@@ -17,7 +19,7 @@ export function OnboardingGate({ children }: { children: ReactNode }) {
       <div
         className="flex min-h-screen items-center justify-center p-4"
         role="status"
-        aria-label="Loading"
+        aria-label={t('loading')}
       >
         <Skeleton className="h-12 w-48" />
       </div>

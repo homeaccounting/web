@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -39,6 +40,7 @@ export function BankConnectionDialog({
   onOpenChange,
   connection,
 }: BankConnectionDialogProps) {
+  const { t } = useTranslation('profile');
   const isEdit = connection !== undefined;
 
   const providersQuery = useProviders();
@@ -118,19 +120,17 @@ export function BankConnectionDialog({
   const showBanner =
     mutationError != null && !(mutationError instanceof ApiError && mutationError.fieldErrors);
   const bannerMessage =
-    mutationError instanceof ApiError
-      ? mutationError.message
-      : 'Something went wrong. Please try again.';
+    mutationError instanceof ApiError ? mutationError.message : t('errors.generic');
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{isEdit ? 'Edit bank connection' : 'Add bank connection'}</DialogTitle>
+          <DialogTitle>
+            {isEdit ? t('connectionDialog.editTitle') : t('connectionDialog.addTitle')}
+          </DialogTitle>
           <DialogDescription>
-            {isEdit
-              ? 'Update this connection. Leave the token blank to keep the current one.'
-              : 'Connect a bank to import transactions automatically.'}
+            {isEdit ? t('connectionDialog.editDescription') : t('connectionDialog.addDescription')}
           </DialogDescription>
         </DialogHeader>
 
@@ -153,7 +153,7 @@ export function BankConnectionDialog({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>
-                    Name
+                    {t('connectionDialog.name')}
                     <RequiredMarker />
                   </FormLabel>
                   <FormControl>
@@ -170,7 +170,7 @@ export function BankConnectionDialog({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>
-                    Provider
+                    {t('connectionDialog.provider')}
                     <RequiredMarker />
                   </FormLabel>
                   <FormControl>
@@ -179,8 +179,8 @@ export function BankConnectionDialog({
                         populated from the real list so it can show the
                         connection's display name rather than a raw id. */}
                     <Select value={field.value} onValueChange={field.onChange} disabled={isEdit}>
-                      <SelectTrigger aria-label="Provider">
-                        <SelectValue placeholder="Select a provider…" />
+                      <SelectTrigger aria-label={t('connectionDialog.provider')}>
+                        <SelectValue placeholder={t('connectionDialog.providerPlaceholder')} />
                       </SelectTrigger>
                       <SelectContent>
                         {renderProviderOptions(providerList, (p) => p.id)}
@@ -189,7 +189,7 @@ export function BankConnectionDialog({
                   </FormControl>
                   {providersUnavailable && (
                     <p className="text-sm text-muted-foreground">
-                      No bank providers available. Try again later.
+                      {t('connectionDialog.providersUnavailable')}
                     </p>
                   )}
                   <FormMessage />
@@ -203,7 +203,7 @@ export function BankConnectionDialog({
                 name="token"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Token</FormLabel>
+                    <FormLabel>{t('connectionDialog.token')}</FormLabel>
                     <FormControl>
                       <Input
                         type="password"
@@ -212,7 +212,7 @@ export function BankConnectionDialog({
                         onBlur={field.onBlur}
                         value={field.value ?? ''}
                         onChange={field.onChange}
-                        placeholder={isEdit ? '•••• kept' : undefined}
+                        placeholder={isEdit ? t('connectionDialog.tokenKept') : undefined}
                       />
                     </FormControl>
                     <FormMessage />
@@ -226,10 +226,10 @@ export function BankConnectionDialog({
               name="enabled"
               render={({ field }) => (
                 <FormItem className="flex items-center justify-between">
-                  <FormLabel>Enabled</FormLabel>
+                  <FormLabel>{t('connectionDialog.enabled')}</FormLabel>
                   <FormControl>
                     <Switch
-                      aria-label="Enabled"
+                      aria-label={t('connectionDialog.enabled')}
                       checked={field.value}
                       onCheckedChange={field.onChange}
                     />
@@ -241,10 +241,10 @@ export function BankConnectionDialog({
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Cancel
+                {t('common:cancel')}
               </Button>
               <Button type="submit" disabled={isSubmitting || providersUnavailable}>
-                {isSubmitting ? 'Saving…' : 'OK'}
+                {isSubmitting ? t('saving') : t('common:ok')}
               </Button>
             </DialogFooter>
           </form>

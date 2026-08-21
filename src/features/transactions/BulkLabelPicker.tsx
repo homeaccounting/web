@@ -1,4 +1,5 @@
 import { Tags } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import {
   ContextMenuSub,
   ContextMenuSubContent,
@@ -31,6 +32,7 @@ export function BulkLabelPicker({
   createHint,
   disabled,
 }: BulkLabelPickerProps) {
+  const { t } = useTranslation('transactions');
   const pick = (labelId: UUID) => {
     if (disabled) return;
     if (labelState(rows, labelId) === 'all') onRemove(labelId);
@@ -45,7 +47,7 @@ export function BulkLabelPicker({
     <ContextMenuSub>
       <ContextMenuSubTrigger disabled={disabled}>
         <Tags className="mr-2 h-4 w-4" aria-hidden />
-        Set labels
+        {t('bulk.setLabels')}
       </ContextMenuSubTrigger>
       {/* p-0: MenuSearchList supplies its own padding. */}
       <ContextMenuSubContent className="p-0">
@@ -54,8 +56,8 @@ export function BulkLabelPicker({
           isSelected={(id) => labelState(rows, id) === 'all'}
           indeterminate={(id) => labelState(rows, id) === 'some'}
           onPick={pick}
-          searchAriaLabel="Search labels"
-          placeholder="Search labels…"
+          searchAriaLabel={t('pickers.searchLabels')}
+          placeholder={t('pickers.searchLabelsPlaceholder')}
           createHint={createHint}
           onCreate={handleCreate}
         />

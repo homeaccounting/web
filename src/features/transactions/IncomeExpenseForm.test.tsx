@@ -6,6 +6,15 @@ import type { AccountResponse, DictionaryEntryResponse } from '@/api/types';
 import { IncomeExpenseForm, type IncomeExpenseFormApi } from './IncomeExpenseForm';
 import type { IncomeExpenseFormValues } from './schema';
 
+// The embedded AllocationsEditor now formats money via
+// useFormat()→useConfiguration; with no country signal it falls back to the
+// international default, so rendered strings are unchanged. Stub the config hook
+// so the form renders without an AuthProvider around renderWithProviders.
+vi.mock('@/features/configuration/useConfiguration', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/features/configuration/useConfiguration')>()),
+  useConfiguration: () => ({ data: undefined }),
+}));
+
 const A1 = '00000000-0000-0000-0000-000000000001';
 const A2 = '00000000-0000-0000-0000-000000000002';
 const C1 = '00000000-0000-0000-0000-000000000003';

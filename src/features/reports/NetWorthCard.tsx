@@ -1,14 +1,17 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/EmptyState';
-import { formatMoney } from '@/lib/format';
+import { useFormat } from '@/lib/useFormat';
 import { useAccounts } from '@/features/accounts/useAccounts';
 import { useNetWorth } from './useReports';
 
 export function NetWorthCard() {
+  const { t } = useTranslation('reports');
+  const { formatMoney } = useFormat();
   const { data, isLoading, isError, refetch } = useNetWorth();
   const { data: accountsData } = useAccounts();
 
@@ -22,23 +25,23 @@ export function NetWorthCard() {
   return (
     <Card>
       <CardHeader className="flex-row items-baseline justify-between space-y-0">
-        <CardTitle>Net worth</CardTitle>
-        <span className="text-xs text-muted-foreground">current</span>
+        <CardTitle>{t('netWorth.title')}</CardTitle>
+        <span className="text-xs text-muted-foreground">{t('netWorth.current')}</span>
       </CardHeader>
       <CardContent>
         {isLoading && <Skeleton className="h-24 w-full" />}
         {isError && (
           <div className="space-y-2">
             <Alert variant="destructive" role="alert">
-              <AlertDescription>Couldn&rsquo;t load net worth.</AlertDescription>
+              <AlertDescription>{t('netWorth.loadError')}</AlertDescription>
             </Alert>
             <Button variant="outline" size="sm" onClick={() => void refetch()}>
-              Retry
+              {t('common:retry')}
             </Button>
           </div>
         )}
         {data && data.accounts.length === 0 && (
-          <EmptyState message="No accounts yet." className="p-0" />
+          <EmptyState message={t('netWorth.empty')} className="p-0" />
         )}
         {data && data.accounts.length > 0 && (
           <>
@@ -66,7 +69,7 @@ export function NetWorthCard() {
               })}
             </ul>
             <div className="mt-3 flex items-baseline justify-between border-t pt-3 font-semibold">
-              <span>Total</span>
+              <span>{t('netWorth.total')}</span>
               <span className="tabular-nums">
                 {formatMoney(data.total.amount, data.total.currency)}
               </span>

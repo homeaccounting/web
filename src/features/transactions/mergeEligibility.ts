@@ -1,6 +1,7 @@
 import type { Allocations, TransactionResponse, UUID } from '@/api/types';
 import { TRANSACTION_TYPE } from '@/api/types';
 import { roundMoney } from '@/lib/money';
+import i18n from '@/lib/i18n';
 
 // The account whose balance the categorised leg touches: an income credits the
 // target account, an expense debits the source account. Mirrors `accountIdOf`
@@ -65,18 +66,10 @@ export type MergeEligibility =
 
 // User-facing explanation per ineligibility reason. Shared by the merge dialog
 // (inline alert) and the selection action bar (disabled-Merge tooltip).
-export const MERGE_INELIGIBILITY_MESSAGE: Record<MergeIneligibility, string> = {
-  'too-few': 'Select at least two transactions to merge.',
-  'not-completed': 'Only completed transactions can be merged.',
-  'unsupported-kind': 'Only income or expense transactions can be merged.',
-  'mixed-kinds': 'All transactions must be the same kind — all income or all expense.',
-  'different-accounts': 'All transactions must be on the same account.',
-  'different-currencies': 'All transactions must use the same currency.',
-  'conflicting-contacts':
-    'The selection has two different contacts. They must share one contact, or leave it unset.',
-  'transfer-same-account': 'A transfer needs two different accounts.',
-  'transfer-legs-mismatch': 'Amount, currency, and dates (within 24h) must match.',
-};
+// Resolved at CALL TIME against the current language.
+export function mergeIneligibilityMessage(reason: MergeIneligibility): string {
+  return i18n.t(`transactions:merge.ineligibility.${reason}`);
+}
 
 const nonEmptyContacts = (txs: TransactionResponse[]): UUID[] => [
   ...new Set(txs.map((t) => t.contactId).filter((c): c is UUID => c != null)),

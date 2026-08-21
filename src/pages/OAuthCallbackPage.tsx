@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ApiClient, ApiError, baseUrl } from '@/api/client';
@@ -18,6 +19,10 @@ export default function OAuthCallbackPage() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const { signIn, tokenRef } = useAuth();
+  const { t } = useTranslation('pages');
+  // Holds either an i18n KEY (our own messages) or a raw server message; both
+  // resolve through `t` at render — a non-key server string falls back to
+  // itself — so the alert tracks live language switches.
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -26,7 +31,7 @@ export default function OAuthCallbackPage() {
       const state = params.get('state');
 
       if (!code || !state) {
-        setError('Missing code or state in OAuth callback.');
+        setError('oauth.missingParams');
         return;
       }
 
@@ -42,7 +47,7 @@ export default function OAuthCallbackPage() {
       const expected = takeOAuthState();
 
       if (!expected || expected !== state) {
-        setError('OAuth state mismatch — please try again.');
+        setError('oauth.stateMismatch');
         return;
       }
 
@@ -70,7 +75,7 @@ export default function OAuthCallbackPage() {
         const returnTo = linking ? takeLinkReturnTo() : null;
         navigate(returnTo ?? '/', { replace: true });
       } catch (err) {
-        setError(err instanceof ApiError ? err.message : 'OAuth failed.');
+        setError(err instanceof ApiError ? err.message : 'oauth.failed');
       }
     })();
   }, [navigate, params, provider, signIn, tokenRef]);
@@ -79,7 +84,7 @@ export default function OAuthCallbackPage() {
     return (
       <div className="flex min-h-screen items-center justify-center p-4">
         <Alert role="alert" variant="destructive" className="max-w-md">
-          <AlertDescription>{error}</AlertDescription>
+          <AlertDescription>{t(error)}</AlertDescription>
         </Alert>
       </div>
     );

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useConfiguration } from '@/features/configuration/useConfiguration';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -7,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DictionaryList } from './DictionaryList';
 
 export function ProfileDictionariesPane() {
+  const { t } = useTranslation('profile');
   const config = useConfiguration();
   if (config.isPending) {
     return (
@@ -20,10 +22,10 @@ export function ProfileDictionariesPane() {
     return (
       <div className="space-y-2">
         <Alert variant="destructive" role="alert">
-          <AlertDescription>Couldn&rsquo;t load configuration.</AlertDescription>
+          <AlertDescription>{t('errors.loadConfiguration')}</AlertDescription>
         </Alert>
         <Button variant="outline" size="sm" onClick={() => void config.refetch()}>
-          Retry
+          {t('common:retry')}
         </Button>
       </div>
     );
@@ -34,41 +36,41 @@ export function ProfileDictionariesPane() {
       <CardContent className="pt-6">
         <Tabs defaultValue="expense">
           <TabsList variant="underline">
-            <TabsTrigger value="expense">Expense</TabsTrigger>
-            <TabsTrigger value="income">Income</TabsTrigger>
-            <TabsTrigger value="contact">Contact</TabsTrigger>
-            <TabsTrigger value="label">Label</TabsTrigger>
+            <TabsTrigger value="expense">{t('dictionaries.tabs.expense')}</TabsTrigger>
+            <TabsTrigger value="income">{t('dictionaries.tabs.income')}</TabsTrigger>
+            <TabsTrigger value="contact">{t('dictionaries.tabs.contact')}</TabsTrigger>
+            <TabsTrigger value="label">{t('dictionaries.tabs.label')}</TabsTrigger>
           </TabsList>
           <TabsContent value="expense">
             <DictionaryList
               dictId="expense"
-              title="Expense"
+              title={t('dictionaries.title.expense')}
               dict={c.dictionaries['expense']}
-              addLabel="Add expense category"
+              addLabel={t('dictionaries.add.expense')}
             />
           </TabsContent>
           <TabsContent value="income">
             <DictionaryList
               dictId="income"
-              title="Income"
+              title={t('dictionaries.title.income')}
               dict={c.dictionaries['income']}
-              addLabel="Add income category"
+              addLabel={t('dictionaries.add.income')}
             />
           </TabsContent>
           <TabsContent value="contact">
             <DictionaryList
               dictId="contact"
-              title="Contact"
+              title={t('dictionaries.title.contact')}
               dict={c.dictionaries['contact']}
-              addLabel="Add contact"
+              addLabel={t('dictionaries.add.contact')}
             />
           </TabsContent>
           <TabsContent value="label">
             <DictionaryList
               dictId="label"
-              title="Labels"
+              title={t('dictionaries.title.label')}
               dict={c.dictionaries['label']}
-              addLabel="Add label"
+              addLabel={t('dictionaries.add.label')}
             />
           </TabsContent>
         </Tabs>

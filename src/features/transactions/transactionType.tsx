@@ -7,6 +7,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { TRANSACTION_TYPE, type TransactionTypeText } from '@/api/types';
+import i18n from '@/lib/i18n';
 import type { TransactionKind } from './labels';
 
 // Predicates on the backend `transactionType` discriminator. Prefer these over
@@ -34,26 +35,39 @@ export interface TransactionTypeMeta {
 // Maps the backend `transactionType` discriminator to a leading icon + color
 // for the list row. Unknown values (the open `(string & {})` arm of
 // TransactionTypeText) fall back to a neutral dot labelled with the raw value.
+// Labels resolve at CALL TIME against the current language.
 export function transactionTypeMeta(type: TransactionTypeText): TransactionTypeMeta {
   switch (type) {
     case TRANSACTION_TYPE.income:
       return {
         Icon: ArrowDownToLine,
         colorClass: 'text-positive',
-        label: 'Income',
+        label: i18n.t('transactions:type.income'),
       };
     case TRANSACTION_TYPE.expense:
-      return { Icon: ArrowUpFromLine, colorClass: 'text-negative', label: 'Expense' };
+      return {
+        Icon: ArrowUpFromLine,
+        colorClass: 'text-negative',
+        label: i18n.t('transactions:type.expense'),
+      };
     case TRANSACTION_TYPE.transfer:
       return {
         Icon: ArrowLeftRight,
         colorClass: 'text-info',
-        label: 'Transfer',
+        label: i18n.t('transactions:type.transfer'),
       };
     case TRANSACTION_TYPE.adjustment:
-      return { Icon: Scale, colorClass: 'text-muted-foreground', label: 'Adjustment' };
+      return {
+        Icon: Scale,
+        colorClass: 'text-muted-foreground',
+        label: i18n.t('transactions:type.adjustment'),
+      };
     default:
-      return { Icon: Circle, colorClass: 'text-muted-foreground', label: type || 'Unknown' };
+      return {
+        Icon: Circle,
+        colorClass: 'text-muted-foreground',
+        label: type || i18n.t('transactions:type.unknown'),
+      };
   }
 }
 

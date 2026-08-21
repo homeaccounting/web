@@ -1,17 +1,20 @@
 import { Link, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { BrandLogo } from './BrandLogo';
 import { UserMenu } from './UserMenu';
 
 // Top-level areas, shown as peer nav tabs. The default area ("Accounts") covers
 // the accounts + transactions screen, which also lives under /accounts/:id, so
-// its active match is broader than an exact path.
-const NAV_TABS: { to: string; label: string; isActive: (pathname: string) => boolean }[] = [
-  { to: '/', label: 'Accounts', isActive: (p) => p === '/' || p.startsWith('/accounts') },
-  { to: '/reports', label: 'Reports', isActive: (p) => p.startsWith('/reports') },
+// its active match is broader than an exact path. `labelKey` resolves against
+// the `common` namespace at render time.
+const NAV_TABS: { to: string; labelKey: string; isActive: (pathname: string) => boolean }[] = [
+  { to: '/', labelKey: 'nav.accounts', isActive: (p) => p === '/' || p.startsWith('/accounts') },
+  { to: '/reports', labelKey: 'nav.reports', isActive: (p) => p.startsWith('/reports') },
 ];
 
 export function Header() {
+  const { t } = useTranslation('common');
   const { pathname } = useLocation();
   return (
     <header className="flex items-center justify-between border-b px-6 py-3">
@@ -34,7 +37,7 @@ export function Header() {
                     : 'border-transparent text-muted-foreground hover:text-foreground',
                 )}
               >
-                {tab.label}
+                {t(tab.labelKey)}
               </Link>
             );
           })}

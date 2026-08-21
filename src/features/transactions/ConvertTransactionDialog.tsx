@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogContent,
@@ -27,7 +28,7 @@ import {
 } from './convertTransaction';
 import type { TransactionEditDiff } from './diffTransaction';
 import { useEditTransaction } from './useEditTransaction';
-import { TRANSACTION_KIND_LABELS, type TransactionKind } from './labels';
+import { transactionKindLabel, type TransactionKind } from './labels';
 import { mapIncomeExpenseFieldError, mapTransferFieldError } from './amendmentFieldErrors';
 
 export interface ConvertTransactionDialogProps {
@@ -69,8 +70,9 @@ export function ConvertTransactionDialog({
   const { data: accounts } = useAccounts();
   const { data: config } = useConfiguration();
   const { data: profile } = useUserProfile();
+  const { t } = useTranslation('transactions');
 
-  const title = TRANSACTION_KIND_LABELS[targetKind].convertTitle;
+  const title = transactionKindLabel(targetKind, 'convertTitle');
   const close = useCallback(() => onOpenChange(false), [onOpenChange]);
 
   let body: React.ReactNode;
@@ -101,7 +103,7 @@ export function ConvertTransactionDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>Change this transaction&apos;s type.</DialogDescription>
+          <DialogDescription>{t('form.convertDescription')}</DialogDescription>
         </DialogHeader>
         {body}
       </DialogContent>
@@ -267,10 +269,11 @@ function ConvertTransferBody({
 }
 
 function ErrorBanner({ edit }: { edit: ReturnType<typeof useEditTransaction> }) {
+  const { t } = useTranslation('transactions');
   const show = edit.isError && !(edit.error instanceof ApiError && edit.error.fieldErrors);
   if (!show) return null;
   const message =
-    edit.error instanceof ApiError ? edit.error.message : 'Something went wrong. Please try again.';
+    edit.error instanceof ApiError ? edit.error.message : t('form.genericError');
   return (
     <Alert variant="destructive" role="alert">
       <AlertDescription>{message}</AlertDescription>

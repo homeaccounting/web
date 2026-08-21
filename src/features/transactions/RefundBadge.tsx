@@ -1,5 +1,6 @@
+import { useTranslation } from 'react-i18next';
 import { Badge } from '@/components/ui/badge';
-import { formatMoney } from '@/lib/format';
+import { useFormat } from '@/lib/useFormat';
 import { roundMoney } from '@/lib/money';
 import type { RefundStat } from './refundIndex';
 
@@ -24,8 +25,12 @@ type RefundBadgeProps =
  * computed by the parent — this component only renders.
  */
 export function RefundBadge(props: RefundBadgeProps) {
+  const { t } = useTranslation('transactions');
+  const { formatMoney } = useFormat();
   if (props.mode === 'refund') {
-    const text = props.originalDescription ? `refund of ${props.originalDescription}` : 'refund';
+    const text = props.originalDescription
+      ? t('resolve.refundOf', { description: props.originalDescription })
+      : t('resolve.refund');
     return (
       <Badge variant="muted" className="ml-2">
         {text}
@@ -37,11 +42,11 @@ export function RefundBadge(props: RefundBadgeProps) {
   // (no bespoke epsilon — roundMoney is the codebase's money-equality primitive).
   const full = roundMoney(props.refundStat.total) >= roundMoney(props.originalTotal);
   const text = full
-    ? 'refunded in full'
-    : `partially refunded (${formatMoney(props.refundStat.total, props.currency)} of ${formatMoney(
-        props.originalTotal,
-        props.currency,
-      )})`;
+    ? t('resolve.refundedInFull')
+    : t('resolve.partiallyRefunded', {
+        refunded: formatMoney(props.refundStat.total, props.currency),
+        original: formatMoney(props.originalTotal, props.currency),
+      });
   return (
     <Badge variant="muted" className="ml-2">
       {text}

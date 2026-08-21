@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
   Archive,
@@ -38,9 +39,9 @@ import { AccountContextMenu } from './AccountContextMenu';
 import { useReopenAccount } from './useAccountStatus';
 import { SyncNowButton } from './SyncNowButton';
 import { ImportStatementButton } from './ImportStatementButton';
-import { formatAccountBalance } from './format';
+import { useFormat } from '@/lib/useFormat';
 import type { AccountRole } from '@/api/types';
-import { canManage, canModify, ROLE_LABELS } from './roles';
+import { canManage, canModify, roleLabel } from './roles';
 
 // Small inline badge for shared (non-owner) rows; mirrors the RoleBadge in
 // ManageAccessDialog.tsx but is scoped locally since the two components
@@ -48,7 +49,7 @@ import { canManage, canModify, ROLE_LABELS } from './roles';
 // AccountRole (not GrantableRole) because canManage() doesn't narrow at the
 // call site below — the runtime guard still ensures 'owner' never reaches it.
 function SharedRoleBadge({ role }: { role: AccountRole }) {
-  return <Badge variant="status">{ROLE_LABELS[role]}</Badge>;
+  return <Badge variant="status">{roleLabel(role)}</Badge>;
 }
 
 // Collapse toggle for a (sub)group header. Shared by the top-level subtype
@@ -77,6 +78,8 @@ function GroupHeader({
 }
 
 export function AccountsPane() {
+  const { t } = useTranslation('accounts');
+  const { formatMoney } = useFormat();
   const { data, isLoading, isError, refetch } = useAccounts();
   const [searchParams] = useSearchParams();
   const scope = parseAccountScope(searchParams, data);
@@ -104,9 +107,7 @@ export function AccountsPane() {
       { id: account.id },
       {
         onError: (err) =>
-          toast.error(
-            err instanceof ApiError ? err.message : 'Couldn’t reopen this account. Try again.',
-          ),
+          toast.error(err instanceof ApiError ? err.message : t('pane.reopenError')),
       },
     );
   };
@@ -180,7 +181,7 @@ export function AccountsPane() {
             )}
             {!canManage(a.role) && <SharedRoleBadge role={a.role} />}
           </span>
-          <span className="tabular-nums">{formatAccountBalance(a)}</span>
+          <span className="tabular-nums">{formatMoney(a.balance, a.currency)}</span>
         </Link>
       </AccountContextMenu>
     );
@@ -189,7 +190,7 @@ export function AccountsPane() {
   return (
     <>
       <div className="flex items-center justify-between border-b px-4 py-2.5">
-        <span className="text-sm font-medium">Accounts</span>
+        <span className="text-sm font-medium">{t('pane.title')}</span>
         <TooltipProvider>
           <div className="flex items-center gap-1">
             <Tooltip>
@@ -197,7 +198,7 @@ export function AccountsPane() {
                 <Button
                   size="icon"
                   variant="ghost"
-                  aria-label="Edit account"
+                  aria-label={t('pane.editAccount')}
                   disabled={accountActionsDisabled || !canManageSelected}
                   onClick={() => selectedAccount && setEditingAccount(selectedAccount)}
                   className="h-9 w-9"
@@ -206,7 +207,7 @@ export function AccountsPane() {
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                {selectedAccount && !canManageSelected ? 'Owner only' : 'Edit account'}
+                {selectedAccount && !canManageSelected ? t('pane.ownerOnly') : t('pane.editAccount')}
               </TooltipContent>
             </Tooltip>
             <Tooltip>
@@ -214,7 +215,7 @@ export function AccountsPane() {
                 <Button
                   size="icon"
                   variant="ghost"
-                  aria-label={selectedIsClosed ? 'Reopen account' : 'Close account'}
+                  aria-label={selectedIsClosed ? t('pane.reopenAccount') : t('pane.closeAccount')}
                   disabled={
                     accountActionsDisabled || !canManageSelected || reopenMutation.isPending
                   }
@@ -231,10 +232,10 @@ export function AccountsPane() {
               </TooltipTrigger>
               <TooltipContent>
                 {selectedAccount && !canManageSelected
-                  ? 'Owner only'
+                  ? t('pane.ownerOnly')
                   : selectedIsClosed
-                    ? 'Reopen account'
-                    : 'Close account'}
+                    ? t('pane.reopenAccount')
+                    : t('pane.closeAccount')}
               </TooltipContent>
             </Tooltip>
             {/* Sync/import both write transactions, so they're Editor+ only;
@@ -246,7 +247,7 @@ export function AccountsPane() {
                 <Button
                   size="icon"
                   variant="ghost"
-                  aria-label="Manage access"
+                  aria-label={t('pane.manageAccess')}
                   disabled={!canManageSelected}
                   onClick={() => selectedAccount && setManagingAccount(selectedAccount)}
                   className="h-9 w-9"
@@ -254,21 +255,21 @@ export function AccountsPane() {
                   <Users />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Manage access</TooltipContent>
+              <TooltipContent>{t('pane.manageAccess')}</TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   size="icon"
                   variant="ghost"
-                  aria-label="Add account"
+                  aria-label={t('pane.addAccount')}
                   onClick={() => setCreating(true)}
                   className="h-9 w-9"
                 >
                   <Plus />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Add account</TooltipContent>
+              <TooltipContent>{t('pane.addAccount')}</TooltipContent>
             </Tooltip>
           </div>
         </TooltipProvider>
@@ -285,16 +286,16 @@ export function AccountsPane() {
       {isError && (
         <div className="space-y-2 p-3">
           <Alert variant="destructive" role="alert">
-            <AlertDescription>Couldn&rsquo;t load accounts.</AlertDescription>
+            <AlertDescription>{t('pane.loadError')}</AlertDescription>
           </Alert>
           <Button variant="outline" size="sm" onClick={() => void refetch()}>
-            Retry
+            {t('common:retry')}
           </Button>
         </div>
       )}
 
       {!isLoading && !isError && (!data || data.length === 0) && (
-        <EmptyState message="No accounts yet." className="p-3" />
+        <EmptyState message={t('pane.empty')} className="p-3" />
       )}
 
       {!isLoading && !isError && data && data.length > 0 && (
@@ -311,7 +312,7 @@ export function AccountsPane() {
             )}
           >
             <Layers className="h-4 w-4 text-muted-foreground" aria-hidden />
-            All accounts
+            {t('pane.allAccounts')}
           </Link>
           <div className="my-2 border-t" />
           {openGroups.map((group) => {
@@ -356,7 +357,9 @@ export function AccountsPane() {
                 onClick={() => setShowClosed((v) => !v)}
                 className="mt-2 px-2 text-xs text-muted-foreground hover:underline"
               >
-                {showClosed ? 'Hide closed' : `Show closed (${closedAccounts.length})`}
+                {showClosed
+                  ? t('pane.hideClosed')
+                  : t('pane.showClosed', { count: closedAccounts.length })}
               </button>
               {showClosed && (
                 <ul className="mt-1 space-y-0.5 border-t pt-2">

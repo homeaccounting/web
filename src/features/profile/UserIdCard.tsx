@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Check, Copy } from 'lucide-react';
 import { useAuth } from '@/auth/useAuth';
 import { Button } from '@/components/ui/button';
@@ -7,6 +8,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { toast } from '@/lib/toast';
 
 export function UserIdCard() {
+  const { t } = useTranslation('profile');
   const { session } = useAuth();
   const [copied, setCopied] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout>>();
@@ -20,7 +22,7 @@ export function UserIdCard() {
   const onCopy = () => {
     void navigator.clipboard.writeText(userId);
     setCopied(true);
-    toast.success('Copied');
+    toast.success(t('userId.copied'));
     clearTimeout(timer.current);
     timer.current = setTimeout(() => setCopied(false), 1500);
   };
@@ -28,7 +30,7 @@ export function UserIdCard() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Your sharing ID</CardTitle>
+        <CardTitle>{t('userId.title')}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="flex items-center gap-3">
@@ -42,19 +44,17 @@ export function UserIdCard() {
                   type="button"
                   variant="outline"
                   size="icon"
-                  aria-label="Copy"
+                  aria-label={t('userId.copy')}
                   onClick={onCopy}
                 >
                   {copied ? <Check /> : <Copy />}
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Copy user ID</TooltipContent>
+              <TooltipContent>{t('userId.copyUserId')}</TooltipContent>
             </Tooltip>
           </TooltipProvider>
         </div>
-        <p className="text-sm text-muted-foreground">
-          Share this ID with someone to let them add you to an account.
-        </p>
+        <p className="text-sm text-muted-foreground">{t('userId.description')}</p>
       </CardContent>
     </Card>
   );

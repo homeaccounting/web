@@ -1,6 +1,6 @@
 import type { AccountResponse } from '@/api/types';
 import { formatAccountSubtypeLabel } from '@/features/accounts/format';
-import { formatMoney } from '@/lib/format';
+import { useFormat } from '@/lib/useFormat';
 
 export interface AccountHeaderProps {
   account: AccountResponse;
@@ -11,6 +11,7 @@ export interface AccountHeaderProps {
 }
 
 export function AccountHeader({ account, balance }: AccountHeaderProps) {
+  const { formatMoney } = useFormat();
   return (
     <div className="flex items-center justify-between border-b px-4 py-2.5">
       <div>

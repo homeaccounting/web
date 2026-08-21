@@ -1,4 +1,5 @@
 import { useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import {
   Dialog,
@@ -25,6 +26,7 @@ export interface CreateAccountDialogProps {
 }
 
 export function CreateAccountDialog({ open, onOpenChange }: CreateAccountDialogProps) {
+  const { t } = useTranslation('accounts');
   const navigate = useNavigate();
   const { data: config } = useConfiguration();
   const defaultCurrency: SupportedCurrency = (SUPPORTED_CURRENCIES as readonly string[]).includes(
@@ -63,18 +65,14 @@ export function CreateAccountDialog({ open, onOpenChange }: CreateAccountDialogP
   const showBanner =
     create.isError && !(create.error instanceof ApiError && create.error.fieldErrors);
   const bannerMessage =
-    create.error instanceof ApiError
-      ? create.error.message
-      : 'Something went wrong. Please try again.';
+    create.error instanceof ApiError ? create.error.message : t('errors.generic');
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create account</DialogTitle>
-          <DialogDescription>
-            Add a new account to track balances and transactions.
-          </DialogDescription>
+          <DialogTitle>{t('createDialog.title')}</DialogTitle>
+          <DialogDescription>{t('createDialog.description')}</DialogDescription>
         </DialogHeader>
 
         {showBanner && (

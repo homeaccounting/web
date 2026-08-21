@@ -3,6 +3,7 @@
 import * as React from 'react';
 import * as LabelPrimitive from '@radix-ui/react-label';
 import { Slot } from '@radix-ui/react-slot';
+import { useTranslation } from 'react-i18next';
 import {
   Controller,
   FormProvider,
@@ -142,7 +143,13 @@ const FormMessage = React.forwardRef<
   React.HTMLAttributes<HTMLParagraphElement>
 >(({ className, children, ...props }, ref) => {
   const { error, formMessageId } = useFormField();
-  const body = error ? String(error?.message ?? '') : children;
+  const { t } = useTranslation();
+  // Validation messages are stored as i18n KEYS (e.g. 'accounts:validation.foo')
+  // so they resolve at render, tracking live language switches. A plain
+  // (non-key) zod message falls back to itself, so built-in messages are
+  // unchanged. Translating here (not at schema-build time) is the single point
+  // that keeps every form namespace live-correct.
+  const body = error ? t(String(error?.message ?? '')) : children;
 
   if (!body) {
     return null;

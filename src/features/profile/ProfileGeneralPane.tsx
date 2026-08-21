@@ -1,9 +1,11 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useConfiguration } from '@/features/configuration/useConfiguration';
 import { useLocalizationOptions } from '@/features/configuration/useLocalizationOptions';
 import { countryName, languageName } from '@/features/configuration/localizationLabels';
+import { markLanguageChosen } from '@/lib/languageChoice';
 import { useSetDefaultCurrency } from './useSetDefaultCurrency';
 import { useSetBaseCurrency } from './useSetBaseCurrency';
 import { useSetLanguage } from './useSetLanguage';
@@ -49,6 +51,7 @@ export function ProfileGeneralPane() {
 }
 
 function LocalizationSection() {
+  const { t } = useTranslation('profile');
   const config = useConfiguration();
   const options = useLocalizationOptions();
   const setCountry = useSetCountry();
@@ -75,20 +78,20 @@ function LocalizationSection() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Region &amp; language</CardTitle>
+        <CardTitle>{t('localization.title')}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-2">
           <div className="flex items-center gap-3">
             <label id="country-label" htmlFor="country" className="w-40 text-sm font-medium">
-              Country
+              {t('localization.country')}
             </label>
             <Select
               value={c.country ?? ''}
               onValueChange={(code) => setCountry.mutate({ country: code })}
             >
-              <SelectTrigger id="country" className="w-56" aria-label="Country">
-                <SelectValue placeholder="Not set" />
+              <SelectTrigger id="country" className="w-56" aria-label={t('localization.country')}>
+                <SelectValue placeholder={t('localization.countryNotSet')} />
               </SelectTrigger>
               <SelectContent>
                 {countries.map((code) => (
@@ -99,20 +102,21 @@ function LocalizationSection() {
               </SelectContent>
             </Select>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Sets regional defaults such as currency and language.
-          </p>
+          <p className="text-sm text-muted-foreground">{t('localization.countryDescription')}</p>
         </div>
         <div className="space-y-2">
           <div className="flex items-center gap-3">
             <label id="language-label" htmlFor="language" className="w-40 text-sm font-medium">
-              Language
+              {t('localization.language')}
             </label>
             <Select
               value={c.language}
-              onValueChange={(code) => setLanguage.mutate({ language: code })}
+              onValueChange={(code) => {
+                markLanguageChosen();
+                setLanguage.mutate({ language: code });
+              }}
             >
-              <SelectTrigger id="language" className="w-56" aria-label="Language">
+              <SelectTrigger id="language" className="w-56" aria-label={t('localization.language')}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -124,9 +128,7 @@ function LocalizationSection() {
               </SelectContent>
             </Select>
           </div>
-          <p className="text-sm text-muted-foreground">
-            The language used across the app and in notifications.
-          </p>
+          <p className="text-sm text-muted-foreground">{t('localization.languageDescription')}</p>
         </div>
       </CardContent>
     </Card>
@@ -134,6 +136,7 @@ function LocalizationSection() {
 }
 
 function CurrenciesSection() {
+  const { t } = useTranslation('profile');
   const config = useConfiguration();
   const setDefault = useSetDefaultCurrency();
   const setBase = useSetBaseCurrency();
@@ -151,10 +154,10 @@ function CurrenciesSection() {
     return (
       <div className="space-y-2">
         <Alert variant="destructive" role="alert">
-          <AlertDescription>Couldn&rsquo;t load configuration.</AlertDescription>
+          <AlertDescription>{t('errors.loadConfiguration')}</AlertDescription>
         </Alert>
         <Button variant="outline" size="sm" onClick={() => void config.refetch()}>
-          Retry
+          {t('common:retry')}
         </Button>
       </div>
     );
@@ -165,27 +168,27 @@ function CurrenciesSection() {
     <>
       <Card>
         <CardHeader>
-          <CardTitle>Currencies</CardTitle>
+          <CardTitle>{t('currencies.title')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           <CurrencyRow
             id="defaultCurrency"
-            label="Default currency"
-            description="Used when creating new accounts and transactions."
+            label={t('currencies.defaultCurrency')}
+            description={t('currencies.defaultCurrencyDescription')}
             current={c.defaultCurrency}
             onSubmit={(values) =>
-              setDefault.mutate(values, { onSuccess: () => toast.success('Updated.') })
+              setDefault.mutate(values, { onSuccess: () => toast.success(t('updated')) })
             }
             isPending={setDefault.isPending}
             error={setDefault.error}
           />
           <CurrencyRow
             id="baseCurrency"
-            label="Base currency"
+            label={t('currencies.baseCurrency')}
             description={
               c.baseCurrencyEditable
-                ? 'Re-bases the External account that anchors your reporting.'
-                : 'Base currency is locked because your books already contain transactions.'
+                ? t('currencies.baseCurrencyDescriptionEditable')
+                : t('currencies.baseCurrencyDescriptionLocked')
             }
             current={c.baseCurrency}
             disabled={!c.baseCurrencyEditable}
@@ -201,26 +204,28 @@ function CurrenciesSection() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Change base currency</AlertDialogTitle>
+            <AlertDialogTitle>{t('currencies.confirmTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Change base currency from {c.baseCurrency} to {confirmingBase}? This re-bases the
-              External account that anchors your reporting. This cannot be undone from the UI.
+              {t('currencies.confirmDescription', {
+                from: c.baseCurrency,
+                to: confirmingBase,
+              })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('common:cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 if (confirmingBase) {
                   setBase.mutate(
                     { currency: confirmingBase },
-                    { onSuccess: () => toast.success('Updated.') },
+                    { onSuccess: () => toast.success(t('updated')) },
                   );
                 }
                 setConfirmingBase(null);
               }}
             >
-              Change base currency
+              {t('currencies.confirmAction')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -250,6 +255,7 @@ function CurrencyRow({
   isPending,
   error,
 }: CurrencyRowProps) {
+  const { t } = useTranslation('profile');
   // `values` (not `defaultValues`) so the row re-syncs when `current` changes
   // underneath it — e.g. a country-preset cascade updates the default currency
   // via a different control. `defaultValues` only applies once at mount, which
@@ -291,7 +297,7 @@ function CurrencyRow({
         </Select>
         {!disabled && (
           <Button type="submit" disabled={!dirty || isPending}>
-            {isPending ? 'Saving…' : 'Save'}
+            {isPending ? t('saving') : t('common:save')}
           </Button>
         )}
       </div>

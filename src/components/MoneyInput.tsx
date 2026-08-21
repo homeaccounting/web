@@ -1,4 +1,5 @@
 import type { Ref } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
@@ -36,12 +37,13 @@ export function MoneyInput({
   name,
   onBlur,
   inputRef,
-  'aria-label': ariaLabel = 'Amount',
+  'aria-label': ariaLabel,
   'aria-invalid': ariaInvalid,
   'aria-describedby': ariaDescribedby,
   className,
   inputClassName,
 }: MoneyInputProps) {
+  const { t } = useTranslation('common');
   const display =
     value === undefined || value === null || (typeof value === 'number' && Number.isNaN(value))
       ? ''
@@ -56,7 +58,7 @@ export function MoneyInput({
         name={name}
         ref={inputRef}
         onBlur={onBlur}
-        aria-label={ariaLabel}
+        aria-label={ariaLabel ?? t('moneyInput.amount')}
         aria-invalid={ariaInvalid}
         aria-describedby={ariaDescribedby}
         placeholder={placeholder}
@@ -74,7 +76,7 @@ export function MoneyInput({
       />
       <div
         data-testid="currency-badge"
-        aria-label="Currency"
+        aria-label={t('moneyInput.currency')}
         className="inline-flex h-10 shrink-0 items-center rounded-md border bg-muted px-3 text-sm tabular-nums text-muted-foreground"
       >
         {currency || '—'}

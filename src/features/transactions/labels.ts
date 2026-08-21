@@ -1,31 +1,26 @@
-export const TRANSACTION_KIND_LABELS = {
-  income: {
-    title: 'Add income',
-    submit: 'OK',
-    aria: 'Add income',
-    editTitle: 'Edit income',
-    editSubmit: 'OK',
-    copyTitle: 'Copy income',
-    convertTitle: 'Convert to income',
-  },
-  expense: {
-    title: 'Add expense',
-    submit: 'OK',
-    aria: 'Add expense',
-    editTitle: 'Edit expense',
-    editSubmit: 'OK',
-    copyTitle: 'Copy expense',
-    convertTitle: 'Convert to expense',
-  },
-  transfer: {
-    title: 'Add transfer',
-    submit: 'OK',
-    aria: 'Add transfer',
-    editTitle: 'Edit transfer',
-    editSubmit: 'OK',
-    copyTitle: 'Copy transfer',
-    convertTitle: 'Convert to transfer',
-  },
-} as const;
+import i18n from '@/lib/i18n';
 
-export type TransactionKind = keyof typeof TRANSACTION_KIND_LABELS;
+// The three editable transaction kinds. Kept as a value so consumers can key
+// display strings and iterate; the display strings themselves live in the
+// `transactions` i18n catalog (kind.<kind>.<slot>) and resolve at CALL TIME.
+export const TRANSACTION_KINDS = ['income', 'expense', 'transfer'] as const;
+
+export type TransactionKind = (typeof TRANSACTION_KINDS)[number];
+
+// The per-kind display slots. Preserved exactly from the former
+// TRANSACTION_KIND_LABELS const so no call site loses a string.
+export type TransactionKindSlot =
+  | 'title'
+  | 'submit'
+  | 'aria'
+  | 'editTitle'
+  | 'editSubmit'
+  | 'copyTitle'
+  | 'convertTitle';
+
+// Resolve a kind's display string at call time against the current language.
+// Non-hook callers use this directly; components re-render on language change
+// via their own useTranslation subscription, so the read here stays fresh.
+export function transactionKindLabel(kind: TransactionKind, slot: TransactionKindSlot): string {
+  return i18n.t(`transactions:kind.${kind}.${slot}`);
+}

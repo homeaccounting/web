@@ -2,6 +2,15 @@ import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { RelationBadge } from './RelationBadge';
 
+// RelationBadge now formats money via useFormat()→useConfiguration; with no
+// country signal the formatter falls back to the international default, so the
+// rendered strings are unchanged. Stub the config hook so the badge can render
+// without an AuthProvider/QueryClient wrapper.
+vi.mock('@/features/configuration/useConfiguration', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/features/configuration/useConfiguration')>()),
+  useConfiguration: () => ({ data: undefined }),
+}));
+
 describe('RelationBadge', () => {
   describe('refund origin mode', () => {
     it('renders a partial-refund label when the refunded total is below the original', () => {

@@ -1,0 +1,39 @@
+{
+  "auth": {
+    "email": "Email",
+    "password": "Password"
+  },
+  "login": {
+    "title": "Sign in",
+    "submit": "Sign in",
+    "google": "Sign in with Google",
+    "newHere": "New here?",
+    "createAccount": "Create an account",
+    "failed": "Login failed",
+    "googleFailed": "Google sign-in failed"
+  },
+  "register": {
+    "title": "Create an account",
+    "submit": "Create account",
+    "google": "Sign up with Google",
+    "alreadyRegistered": "Already registered?",
+    "signIn": "Sign in",
+    "failed": "Registration failed",
+    "googleFailed": "Google sign-up failed"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "body": "The page you’re looking for doesn’t exist.",
+    "goHome": "Go back home"
+  },
+  "oauth": {
+    "missingParams": "Missing code or state in OAuth callback.",
+    "stateMismatch": "OAuth state mismatch — please try again.",
+    "failed": "OAuth failed."
+  },
+  "validation": {
+    "emailInvalid": "Invalid email",
+    "passwordRequired": "Password is required",
+    "passwordMinLength": "Password must be at least 8 characters"
+  }
+}

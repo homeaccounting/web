@@ -35,6 +35,46 @@ test.describe('onboarding @local', () => {
     await expect(page.getByText(/no accounts yet/i)).toBeVisible();
   });
 
+  test('a second registration in the same browser still gets onboarding (no cache bleed)', async ({
+    page,
+  }) => {
+    test.setTimeout(120000);
+    const password = 'longenough';
+
+    // User A: register and complete onboarding by setting a country, so A's
+    // config (country) and transactions state are cached in this browser.
+    const userA = `e2e-onb-a-${Date.now()}@example.com`;
+    await page.goto('register');
+    await page.getByLabel(/email/i).fill(userA);
+    await page.getByLabel(/password/i).fill(password);
+    await page.getByRole('button', { name: /^create account$/i }).click();
+    await expect(page).toHaveURL(/\/onboarding/, { timeout: 20000 });
+    await page.getByRole('combobox', { name: 'Country' }).click();
+    await page.getByRole('option', { name: 'United States' }).click();
+    await expect(page.getByRole('combobox', { name: 'Country' })).toContainText('United States', {
+      timeout: 20000,
+    });
+    await page.getByRole('button', { name: /get started/i }).click();
+    await expect(page).toHaveURL(/\/transactions/);
+
+    // Sign out (session changes, cache must be cleared).
+    await page.getByRole('button', { name: /open user menu/i }).click();
+    await page.getByRole('menuitem', { name: /sign out/i }).click();
+    await expect(page).toHaveURL(/\/login/, { timeout: 20000 });
+
+    // User B: register in the SAME browser via CLIENT-SIDE navigation (no full
+    // reload — a reload would reset the query cache and hide the bug). B is
+    // brand-new (no country) and must still be nudged to onboarding — A's cached
+    // config must not leak through the shared query cache.
+    const userB = `e2e-onb-b-${Date.now()}@example.com`;
+    await page.getByRole('link', { name: /create an account/i }).click();
+    await expect(page).toHaveURL(/\/register/, { timeout: 20000 });
+    await page.getByLabel(/email/i).fill(userB);
+    await page.getByLabel(/password/i).fill(password);
+    await page.getByRole('button', { name: /^create account$/i }).click();
+    await expect(page).toHaveURL(/\/onboarding/, { timeout: 20000 });
+  });
+
   test('Skip for now enters the app without setting a country', async ({ page }) => {
     test.setTimeout(120000);
     const email = `e2e-onb-skip-${Date.now()}@example.com`;

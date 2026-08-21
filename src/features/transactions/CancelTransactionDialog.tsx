@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { ApiError } from '@/api/client';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
@@ -26,14 +27,13 @@ export function CancelTransactionDialog({
   onOpenChange,
   transaction,
 }: CancelTransactionDialogProps) {
+  const { t } = useTranslation('transactions');
   const cancel = useCancelTransaction();
   const accountIds = [...new Set([transaction.sourceAccountId, transaction.targetAccountId])];
 
   const showBanner = cancel.isError;
   const bannerMessage =
-    cancel.error instanceof ApiError
-      ? cancel.error.message
-      : 'Something went wrong. Please try again.';
+    cancel.error instanceof ApiError ? cancel.error.message : t('resolve.genericError');
 
   const onConfirm = async () => {
     try {
@@ -55,11 +55,8 @@ export function CancelTransactionDialog({
     >
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Cancel this transaction?</AlertDialogTitle>
-          <AlertDialogDescription>
-            It will be excluded from the account balance and hidden from the default transactions
-            list. This can&apos;t be undone here.
-          </AlertDialogDescription>
+          <AlertDialogTitle>{t('resolve.cancelTitle')}</AlertDialogTitle>
+          <AlertDialogDescription>{t('resolve.cancelDescription')}</AlertDialogDescription>
         </AlertDialogHeader>
         {showBanner && (
           <Alert variant="destructive" role="alert">
@@ -68,14 +65,14 @@ export function CancelTransactionDialog({
         )}
         <AlertDialogFooter>
           <Button variant="outline" disabled={cancel.isPending} onClick={() => onOpenChange(false)}>
-            Keep
+            {t('resolve.keep')}
           </Button>
           <Button
             variant="destructive"
             disabled={cancel.isPending}
             onClick={() => void onConfirm()}
           >
-            OK
+            {t('common:ok')}
           </Button>
         </AlertDialogFooter>
       </AlertDialogContent>

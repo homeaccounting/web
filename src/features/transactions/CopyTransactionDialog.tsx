@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogContent,
@@ -30,7 +31,7 @@ import {
 import { useCreateIncome } from './useCreateIncome';
 import { useCreateExpense } from './useCreateExpense';
 import { useCreateTransfer } from './useCreateTransfer';
-import { TRANSACTION_KIND_LABELS, type TransactionKind } from './labels';
+import { transactionKindLabel, type TransactionKind } from './labels';
 import { isAdjustment, isTransfer, transactionKind } from './transactionType';
 
 export interface CopyTransactionDialogProps {
@@ -42,6 +43,7 @@ export interface CopyTransactionDialogProps {
 type Configuration = ReturnType<typeof useConfiguration>['data'];
 
 export function CopyTransactionDialog({ open, onOpenChange, tx }: CopyTransactionDialogProps) {
+  const { t } = useTranslation('transactions');
   const { data: accounts } = useAccounts();
   const { data: config } = useConfiguration();
 
@@ -50,7 +52,9 @@ export function CopyTransactionDialog({ open, onOpenChange, tx }: CopyTransactio
   const adjustment = isAdjustment(tx.transactionType);
   const kind: TransactionKind = transactionKind(tx.transactionType);
 
-  const title = adjustment ? 'Copy transaction' : TRANSACTION_KIND_LABELS[kind].copyTitle;
+  const title = adjustment
+    ? t('form.copyAdjustmentTitle')
+    : transactionKindLabel(kind, 'copyTitle');
   const close = useCallback(() => onOpenChange(false), [onOpenChange]);
 
   let body: React.ReactNode;
@@ -79,7 +83,7 @@ export function CopyTransactionDialog({ open, onOpenChange, tx }: CopyTransactio
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>Create a new transaction from an existing one.</DialogDescription>
+          <DialogDescription>{t('form.copyDescription')}</DialogDescription>
         </DialogHeader>
         {body}
       </DialogContent>
@@ -100,6 +104,7 @@ function CopyIncomeExpenseBody({
   config: Configuration;
   onClose: () => void;
 }) {
+  const { t } = useTranslation('transactions');
   // Both hooks are instantiated unconditionally (hooks can't be conditional);
   // only the one matching `kind` is invoked on submit.
   const createIncome = useCreateIncome();
@@ -151,7 +156,7 @@ function CopyIncomeExpenseBody({
   const bannerMessage =
     create.error instanceof ApiError
       ? create.error.message
-      : 'Something went wrong. Please try again.';
+      : t('form.genericError');
 
   return (
     <>
@@ -194,6 +199,7 @@ function CopyTransferBody({
   config: Configuration;
   onClose: () => void;
 }) {
+  const { t } = useTranslation('transactions');
   const create = useCreateTransfer();
   const labels = flattenDictionary(config?.dictionaries.label);
 
@@ -228,7 +234,7 @@ function CopyTransferBody({
   const bannerMessage =
     create.error instanceof ApiError
       ? create.error.message
-      : 'Something went wrong. Please try again.';
+      : t('form.genericError');
 
   return (
     <>
@@ -252,17 +258,15 @@ function CopyTransferBody({
 }
 
 function AdjustmentNotice({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation('transactions');
   return (
     <div className="space-y-3">
       <Alert role="alert">
-        <AlertDescription>
-          Balance adjustments can&apos;t be copied. Use &quot;Adjust balance&quot; to record a new
-          adjustment.
-        </AlertDescription>
+        <AlertDescription>{t('form.adjustmentCopyNotice')}</AlertDescription>
       </Alert>
       <div className="flex justify-end">
         <Button type="button" variant="outline" onClick={onClose}>
-          OK
+          {t('common:ok')}
         </Button>
       </div>
     </div>

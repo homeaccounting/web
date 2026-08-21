@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import type { BankConnectionDTO } from '@/api/types';
@@ -34,6 +35,7 @@ const SECTIONS = ['connections', 'expenses', 'income', 'contacts'] as const;
 type Section = (typeof SECTIONS)[number];
 
 function ConnectionRow({ connection }: { connection: BankConnectionDTO }) {
+  const { t } = useTranslation('profile');
   const update = useUpdateConnection();
   const remove = useRemoveConnection();
   const { data: providers } = useProviders();
@@ -57,7 +59,9 @@ function ConnectionRow({ connection }: { connection: BankConnectionDTO }) {
         <span className="font-medium">{connection.name}</span>
         <Badge variant="muted">{connection.provider}</Badge>
         <span className="text-sm text-muted-foreground">•••• {connection.tokenHint}</span>
-        <span className="text-sm text-muted-foreground">{mappedCount} mapped</span>
+        <span className="text-sm text-muted-foreground">
+          {t('banking.mapped', { count: mappedCount })}
+        </span>
         <div className="ml-auto flex items-center gap-2">
           <Switch
             checked={connection.enabled}
@@ -65,18 +69,18 @@ function ConnectionRow({ connection }: { connection: BankConnectionDTO }) {
             onCheckedChange={(next) =>
               update.mutate({ id: connection.id, body: { enabled: next } })
             }
-            aria-label={`Enable ${connection.name}`}
+            aria-label={t('banking.enableConnection', { name: connection.name })}
           />
           {(supportsPull || supportsFile) && (
             <Button variant="outline" size="sm" onClick={() => setLinkOpen(true)}>
-              Link accounts
+              {t('banking.linkAccounts')}
             </Button>
           )}
           <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
-            Edit
+            {t('banking.edit')}
           </Button>
           <Button variant="outline" size="sm" onClick={() => setConfirmRemove(true)}>
-            Remove
+            {t('banking.remove')}
           </Button>
         </div>
       </div>
@@ -90,20 +94,18 @@ function ConnectionRow({ connection }: { connection: BankConnectionDTO }) {
       <AlertDialog open={confirmRemove} onOpenChange={setConfirmRemove}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove {connection.name}?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This removes the bank connection. Imported transactions are not deleted.
-            </AlertDialogDescription>
+            <AlertDialogTitle>{t('banking.removeTitle', { name: connection.name })}</AlertDialogTitle>
+            <AlertDialogDescription>{t('banking.removeDescription')}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('common:cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 remove.mutate(connection.id);
                 setConfirmRemove(false);
               }}
             >
-              Remove
+              {t('banking.remove')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -113,6 +115,7 @@ function ConnectionRow({ connection }: { connection: BankConnectionDTO }) {
 }
 
 export function ProfileBankingPane() {
+  const { t } = useTranslation('profile');
   const config = useConfiguration();
   const [addOpen, setAddOpen] = useState(false);
   const [params, setParams] = useSearchParams();
@@ -139,10 +142,10 @@ export function ProfileBankingPane() {
     return (
       <div className="space-y-2">
         <Alert variant="destructive" role="alert">
-          <AlertDescription>Couldn&rsquo;t load bank connections.</AlertDescription>
+          <AlertDescription>{t('errors.loadBankConnections')}</AlertDescription>
         </Alert>
         <Button variant="outline" size="sm" onClick={() => void config.refetch()}>
-          Retry
+          {t('common:retry')}
         </Button>
       </div>
     );
@@ -160,16 +163,16 @@ export function ProfileBankingPane() {
       <CardContent className="pt-6">
         <Tabs value={section} onValueChange={onSectionChange}>
           <TabsList variant="underline">
-            <TabsTrigger value="connections">Connections</TabsTrigger>
-            <TabsTrigger value="expenses">Expenses</TabsTrigger>
-            <TabsTrigger value="income">Income</TabsTrigger>
-            <TabsTrigger value="contacts">Contacts</TabsTrigger>
+            <TabsTrigger value="connections">{t('banking.tabs.connections')}</TabsTrigger>
+            <TabsTrigger value="expenses">{t('banking.tabs.expenses')}</TabsTrigger>
+            <TabsTrigger value="income">{t('banking.tabs.income')}</TabsTrigger>
+            <TabsTrigger value="contacts">{t('banking.tabs.contacts')}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="connections" className="space-y-3">
-            <h3 className="text-base font-semibold">Bank connections</h3>
+            <h3 className="text-base font-semibold">{t('banking.connectionsHeading')}</h3>
             {c.banking.connections.length === 0 ? (
-              <EmptyState message="No connections yet." className="p-0" />
+              <EmptyState message={t('banking.noConnections')} className="p-0" />
             ) : (
               <ul className="divide-y">
                 {c.banking.connections.map((conn) => (
@@ -179,13 +182,13 @@ export function ProfileBankingPane() {
             )}
             <Button variant="outline" size="sm" onClick={() => setAddOpen(true)}>
               <Plus className="mr-1 h-4 w-4" />
-              Add connection
+              {t('banking.addConnection')}
             </Button>
             <BankConnectionDialog open={addOpen} onOpenChange={setAddOpen} />
           </TabsContent>
 
           <TabsContent value="expenses" className="space-y-3">
-            <h3 className="text-base font-semibold">Bank provider category → expense category</h3>
+            <h3 className="text-base font-semibold">{t('banking.expensesHeading')}</h3>
             <BankProviderCategoryMapEditor
               direction="expense"
               value={c.banking.expenseCategoryMap}
@@ -194,9 +197,7 @@ export function ProfileBankingPane() {
           </TabsContent>
 
           <TabsContent value="income" className="space-y-3">
-            <h3 className="text-base font-semibold">
-              Bank provider counterparty → income category
-            </h3>
+            <h3 className="text-base font-semibold">{t('banking.incomeHeading')}</h3>
             <BankProviderCategoryMapEditor
               direction="income"
               value={c.banking.incomeCategoryMap}
@@ -205,7 +206,7 @@ export function ProfileBankingPane() {
           </TabsContent>
 
           <TabsContent value="contacts" className="space-y-3">
-            <h3 className="text-base font-semibold">Bank provider token → contact</h3>
+            <h3 className="text-base font-semibold">{t('banking.contactsHeading')}</h3>
             <BankProviderContactMapEditor
               value={c.banking.contactMap}
               contacts={contacts}

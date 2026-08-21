@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   Dialog,
@@ -35,7 +36,7 @@ import {
 } from './schema';
 import { diffIncomeExpense, diffTransfer } from './diffTransaction';
 import { useEditTransaction } from './useEditTransaction';
-import { TRANSACTION_KIND_LABELS, type TransactionKind } from './labels';
+import { transactionKindLabel, type TransactionKind } from './labels';
 import { isAdjustment, isIncome, isTransfer, transactionKind } from './transactionType';
 import { mapIncomeExpenseFieldError, mapTransferFieldError } from './amendmentFieldErrors';
 
@@ -46,6 +47,7 @@ export interface EditTransactionDialogProps {
 }
 
 export function EditTransactionDialog({ open, onOpenChange, tx }: EditTransactionDialogProps) {
+  const { t } = useTranslation('transactions');
   const queryClient = useQueryClient();
   const edit = useEditTransaction();
   const { data: accounts } = useAccounts();
@@ -80,7 +82,7 @@ export function EditTransactionDialog({ open, onOpenChange, tx }: EditTransactio
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queryClient, tx, editEpoch]);
 
-  const title = adjustment ? 'Balance adjustment' : TRANSACTION_KIND_LABELS[kind].editTitle;
+  const title = adjustment ? t('form.adjustmentTitle') : transactionKindLabel(kind, 'editTitle');
   const close = useCallback(() => onOpenChange(false), [onOpenChange]);
 
   // Inline "map to contact" for the imported provider token — curates the
@@ -146,7 +148,7 @@ export function EditTransactionDialog({ open, onOpenChange, tx }: EditTransactio
       <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>Update transaction details.</DialogDescription>
+          <DialogDescription>{t('form.editDescription')}</DialogDescription>
         </DialogHeader>
         {body}
         {/* Import provenance is secondary metadata — keep it below the form,
@@ -154,7 +156,7 @@ export function EditTransactionDialog({ open, onOpenChange, tx }: EditTransactio
         {(currentTx.bankProviderCategory || currentTx.bankProviderContact) && (
           <div className="mt-2 space-y-1 border-t pt-3">
             <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-              Import details
+              {t('form.importDetails')}
             </p>
             {currentTx.bankProviderCategory &&
               (() => {
@@ -165,13 +167,13 @@ export function EditTransactionDialog({ open, onOpenChange, tx }: EditTransactio
                 if (sig.kind !== 'counterparty') {
                   return (
                     <p className="text-xs text-muted-foreground">
-                      {sig.kind === 'mcc' ? 'MCC' : 'Category'}{' '}
+                      {sig.kind === 'mcc' ? t('form.mcc') : t('form.category')}{' '}
                       <span
                         className="select-all font-mono"
                         title={
                           sig.kind === 'mcc'
-                            ? 'Merchant category code from the bank'
-                            : "Provider's own category label"
+                            ? t('form.mccTitle')
+                            : t('form.providerCategoryTitle')
                         }
                       >
                         {sig.value}
@@ -189,8 +191,8 @@ export function EditTransactionDialog({ open, onOpenChange, tx }: EditTransactio
                 const key = `counterparty:${token}`;
                 const readOnly = (suffix?: string) => (
                   <p className="text-xs text-muted-foreground">
-                    Counterparty category{' '}
-                    <span className="select-all font-mono" title="Counterparty token from the bank">
+                    {t('form.counterpartyCategory')}{' '}
+                    <span className="select-all font-mono" title={t('form.counterpartyTokenTitle')}>
                       {token}
                     </span>
                     {suffix}
@@ -202,7 +204,7 @@ export function EditTransactionDialog({ open, onOpenChange, tx }: EditTransactio
                 const mappedId = map[key];
                 if (mappedId) {
                   const name = categories.find((x) => x.id === mappedId)?.name;
-                  return readOnly(` → ${name ?? 'mapped category'}`);
+                  return readOnly(` → ${name ?? t('form.mappedCategory')}`);
                 }
                 const mapTo = (id: UUID) => {
                   updateBanking.mutate(
@@ -234,15 +236,15 @@ export function EditTransactionDialog({ open, onOpenChange, tx }: EditTransactio
                 };
                 return (
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span>Counterparty category</span>
+                    <span>{t('form.counterpartyCategory')}</span>
                     <span className="select-all font-mono">{token}</span>
                     <div className="w-56">
                       <CategoryCombobox
                         options={categories}
                         value=""
                         onChange={(id) => mapTo(id)}
-                        placeholder="Map to category…"
-                        aria-label="Map to category"
+                        placeholder={t('form.mapToCategoryPlaceholder')}
+                        aria-label={t('form.mapToCategoryAria')}
                       />
                     </div>
                   </div>
@@ -254,8 +256,8 @@ export function EditTransactionDialog({ open, onOpenChange, tx }: EditTransactio
                 const map = config?.banking.contactMap;
                 const readOnly = (suffix?: string) => (
                   <p className="text-xs text-muted-foreground">
-                    Counterparty{' '}
-                    <span className="select-all font-mono" title="Counterparty token from the bank">
+                    {t('form.counterparty')}{' '}
+                    <span className="select-all font-mono" title={t('form.counterpartyTokenTitle')}>
                       {token}
                     </span>
                     {suffix}
@@ -267,7 +269,7 @@ export function EditTransactionDialog({ open, onOpenChange, tx }: EditTransactio
                 const mappedId = map[token];
                 if (mappedId) {
                   const name = contacts.find((x) => x.id === mappedId)?.name;
-                  return readOnly(` → ${name ?? 'mapped contact'}`);
+                  return readOnly(` → ${name ?? t('form.mappedContact')}`);
                 }
                 const mapTo = (id: UUID) => {
                   updateBanking.mutate({ contactMap: { ...map, [token]: id } });
@@ -282,7 +284,7 @@ export function EditTransactionDialog({ open, onOpenChange, tx }: EditTransactio
                 };
                 return (
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span>Counterparty</span>
+                    <span>{t('form.counterparty')}</span>
                     <span className="select-all font-mono">{token}</span>
                     <div className="w-56">
                       <ContactCombobox
@@ -299,8 +301,8 @@ export function EditTransactionDialog({ open, onOpenChange, tx }: EditTransactio
                           });
                           mapTo(r.id);
                         }}
-                        placeholder="Map to contact…"
-                        aria-label="Map to contact"
+                        placeholder={t('form.mapToContactPlaceholder')}
+                        aria-label={t('form.mapToContactAria')}
                       />
                     </div>
                   </div>
@@ -314,14 +316,15 @@ export function EditTransactionDialog({ open, onOpenChange, tx }: EditTransactio
 }
 
 function ReadOnlyNotice({ status, onClose }: { status: string; onClose: () => void }) {
+  const { t } = useTranslation('transactions');
   return (
     <div className="space-y-3">
       <Alert role="alert">
-        <AlertDescription>This transaction is {status} and cannot be edited.</AlertDescription>
+        <AlertDescription>{t('form.readOnlyNotice', { status: t(`status.${status}`) })}</AlertDescription>
       </Alert>
       <div className="flex justify-end">
         <Button type="button" variant="outline" onClick={onClose}>
-          OK
+          {t('common:ok')}
         </Button>
       </div>
     </div>
@@ -359,6 +362,7 @@ function EditIncomeExpenseBody({
   onSubCallApplied: () => void;
   onClose: () => void;
 }) {
+  const { t } = useTranslation('transactions');
   const seedCurrency = kind === 'income' ? tx.targetCurrency : tx.sourceCurrency;
   const filteredAccounts = useMemo(
     () => accounts.filter((a) => a.currency === seedCurrency),
@@ -412,7 +416,7 @@ function EditIncomeExpenseBody({
   const showBanner =
     edit.isError && (!(edit.error instanceof ApiError && edit.error.fieldErrors) || unmappedError);
   const bannerMessage =
-    edit.error instanceof ApiError ? edit.error.message : 'Something went wrong. Please try again.';
+    edit.error instanceof ApiError ? edit.error.message : t('form.genericError');
 
   return (
     <>
@@ -461,6 +465,7 @@ function EditTransferBody({
   onSubCallApplied: () => void;
   onClose: () => void;
 }) {
+  const { t } = useTranslation('transactions');
   const labels = flattenDictionary(config?.dictionaries.label);
 
   const defaultValues = useMemo(() => toTransferFormValues(tx, accounts), [tx, accounts]);
@@ -489,7 +494,7 @@ function EditTransferBody({
 
   const showBanner = edit.isError && !(edit.error instanceof ApiError && edit.error.fieldErrors);
   const bannerMessage =
-    edit.error instanceof ApiError ? edit.error.message : 'Something went wrong. Please try again.';
+    edit.error instanceof ApiError ? edit.error.message : t('form.genericError');
 
   return (
     <>

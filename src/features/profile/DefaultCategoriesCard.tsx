@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { DictionaryEntryResponse, UUID, UpdateDefaultsRequest } from '@/api/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,6 +34,7 @@ function CategoryRow({
   options: DictionaryEntryResponse[];
   onChange: (v: string) => void;
 }) {
+  const { t } = useTranslation('profile');
   return (
     <div className="flex items-center gap-3">
       <label htmlFor={id} className="w-44 text-sm font-medium">
@@ -40,7 +42,7 @@ function CategoryRow({
       </label>
       <Select value={value || undefined} onValueChange={onChange}>
         <SelectTrigger id={id} className="w-56" aria-label={label}>
-          <SelectValue placeholder="Select…" />
+          <SelectValue placeholder={t('selectPlaceholder')} />
         </SelectTrigger>
         <SelectContent>
           {options.map((o) => (
@@ -60,6 +62,7 @@ export function DefaultCategoriesCard({
   incomeCategories,
   expenseCategories,
 }: Props) {
+  const { t } = useTranslation('profile');
   const update = useUpdateDefaults();
   const [income, setIncome] = useState<string>(incomeCurrent ?? '');
   const [expense, setExpense] = useState<string>(expenseCurrent ?? '');
@@ -69,31 +72,31 @@ export function DefaultCategoriesCard({
     const body: UpdateDefaultsRequest = {};
     if (income && income !== incomeCurrent) body.incomeCategory = income;
     if (expense && expense !== expenseCurrent) body.expenseCategory = expense;
-    update.mutate(body, { onSuccess: () => toast.success('Updated.') });
+    update.mutate(body, { onSuccess: () => toast.success(t('updated')) });
   };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Default categories</CardTitle>
+        <CardTitle>{t('defaults.categoriesTitle')}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <CategoryRow
           id="default-income-category"
-          label="Default income category"
+          label={t('defaults.incomeCategory')}
           value={income}
           options={incomeCategories}
           onChange={setIncome}
         />
         <CategoryRow
           id="default-expense-category"
-          label="Default expense category"
+          label={t('defaults.expenseCategory')}
           value={expense}
           options={expenseCategories}
           onChange={setExpense}
         />
         <Button type="button" onClick={save} disabled={!dirty || update.isPending}>
-          {update.isPending ? 'Saving…' : 'Save'}
+          {update.isPending ? t('saving') : t('common:save')}
         </Button>
         {update.error && (
           <Alert variant="destructive" role="alert">

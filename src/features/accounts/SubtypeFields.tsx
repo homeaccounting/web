@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useFormContext, useWatch, type Control } from 'react-hook-form';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -14,7 +15,7 @@ import { ASSET_TYPES, CARD_NETWORKS } from '@/api/types';
 import { useProviders } from '@/features/banking/useProviders';
 import { renderProviderOptions } from '@/features/banking/renderProviderOptions';
 import type { CreateAccountFormValues } from './schema';
-import { ASSET_TYPE_LABELS, CARD_NETWORK_LABELS } from './labels';
+import { assetTypeLabel, cardNetworkLabel } from './labels';
 
 // Radix `SelectItem` cannot use an empty-string value, so "Other…" (custom
 // bank name entry) gets its own sentinel — same idiom as AccountSelect's
@@ -25,6 +26,7 @@ const CUSTOM_BANK_VALUE = '__custom__';
 // to a plain text Input when the provider list is empty/unavailable (loading,
 // errored, or genuinely empty) — see useProviders().
 function BankNameField({ control }: { control: Control<CreateAccountFormValues> }) {
+  const { t } = useTranslation('accounts');
   const { data } = useProviders();
   const providers = data ?? [];
   // Sticky "custom mode" flag: once set, the custom Input stays visible even
@@ -50,7 +52,7 @@ function BankNameField({ control }: { control: Control<CreateAccountFormValues> 
         if (providers.length === 0) {
           return (
             <FormItem>
-              <FormLabel>Bank name</FormLabel>
+              <FormLabel>{t('subtypeFields.bankName')}</FormLabel>
               <FormControl>
                 <Input {...field} value={field.value ?? ''} />
               </FormControl>
@@ -68,7 +70,7 @@ function BankNameField({ control }: { control: Control<CreateAccountFormValues> 
 
         return (
           <FormItem>
-            <FormLabel>Bank name</FormLabel>
+            <FormLabel>{t('subtypeFields.bankName')}</FormLabel>
             <FormControl>
               <Select
                 onValueChange={(value) => {
@@ -82,18 +84,18 @@ function BankNameField({ control }: { control: Control<CreateAccountFormValues> 
                 }}
                 value={selectValue}
               >
-                <SelectTrigger aria-label="Bank name">
-                  <SelectValue placeholder="Select…" />
+                <SelectTrigger aria-label={t('subtypeFields.bankName')}>
+                  <SelectValue placeholder={t('subtypeFields.selectPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
                   {renderProviderOptions(providers, (p) => p.displayName)}
-                  <SelectItem value={CUSTOM_BANK_VALUE}>Other…</SelectItem>
+                  <SelectItem value={CUSTOM_BANK_VALUE}>{t('subtypeFields.otherOption')}</SelectItem>
                 </SelectContent>
               </Select>
             </FormControl>
             {isCustom && (
               <Input
-                aria-label="Custom bank name"
+                aria-label={t('subtypeFields.customBankName')}
                 name={field.name}
                 onBlur={field.onBlur}
                 value={bankName}
@@ -109,6 +111,7 @@ function BankNameField({ control }: { control: Control<CreateAccountFormValues> 
 }
 
 export function SubtypeFields() {
+  const { t } = useTranslation('accounts');
   const { control, watch } = useFormContext<CreateAccountFormValues>();
   const kind = watch('subtype.type');
 
@@ -119,7 +122,7 @@ export function SubtypeFields() {
         name="subtype.storageLocation"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Storage location</FormLabel>
+            <FormLabel>{t('subtypeFields.storageLocation')}</FormLabel>
             <FormControl>
               <Input {...field} value={field.value ?? ''} />
             </FormControl>
@@ -138,7 +141,7 @@ export function SubtypeFields() {
           name="subtype.accountNumber"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Account number</FormLabel>
+              <FormLabel>{t('subtypeFields.accountNumber')}</FormLabel>
               <FormControl>
                 <Input {...field} value={field.value ?? ''} />
               </FormControl>
@@ -151,16 +154,16 @@ export function SubtypeFields() {
           name="subtype.cardNetwork"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Card network</FormLabel>
+              <FormLabel>{t('subtypeFields.cardNetwork')}</FormLabel>
               <FormControl>
                 <Select onValueChange={field.onChange} value={field.value ?? ''}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select…" />
+                    <SelectValue placeholder={t('subtypeFields.selectPlaceholder')} />
                   </SelectTrigger>
                   <SelectContent>
                     {CARD_NETWORKS.map((kind) => (
                       <SelectItem key={kind} value={kind}>
-                        {CARD_NETWORK_LABELS[kind]}
+                        {cardNetworkLabel(kind)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -181,7 +184,7 @@ export function SubtypeFields() {
           name="subtype.provider"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Provider</FormLabel>
+              <FormLabel>{t('subtypeFields.provider')}</FormLabel>
               <FormControl>
                 <Input {...field} value={field.value ?? ''} />
               </FormControl>
@@ -194,7 +197,7 @@ export function SubtypeFields() {
           name="subtype.accountIdentifier"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Account identifier</FormLabel>
+              <FormLabel>{t('subtypeFields.accountIdentifier')}</FormLabel>
               <FormControl>
                 <Input {...field} value={field.value ?? ''} />
               </FormControl>
@@ -213,16 +216,16 @@ export function SubtypeFields() {
           name="subtype.assetType"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Asset type</FormLabel>
+              <FormLabel>{t('subtypeFields.assetType')}</FormLabel>
               <FormControl>
                 <Select onValueChange={field.onChange} value={field.value ?? ''}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select…" />
+                    <SelectValue placeholder={t('subtypeFields.selectPlaceholder')} />
                   </SelectTrigger>
                   <SelectContent>
                     {ASSET_TYPES.map((kind) => (
                       <SelectItem key={kind} value={kind}>
-                        {ASSET_TYPE_LABELS[kind]}
+                        {assetTypeLabel(kind)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -237,7 +240,7 @@ export function SubtypeFields() {
           name="subtype.description"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Description</FormLabel>
+              <FormLabel>{t('subtypeFields.description')}</FormLabel>
               <FormControl>
                 <Input {...field} value={field.value ?? ''} />
               </FormControl>
@@ -256,7 +259,7 @@ export function SubtypeFields() {
           name="subtype.lender"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Lender</FormLabel>
+              <FormLabel>{t('subtypeFields.lender')}</FormLabel>
               <FormControl>
                 <Input {...field} value={field.value ?? ''} />
               </FormControl>
@@ -269,7 +272,7 @@ export function SubtypeFields() {
           name="subtype.interestRate"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Interest rate (% APR)</FormLabel>
+              <FormLabel>{t('subtypeFields.interestRate')}</FormLabel>
               <FormControl>
                 <Input type="number" step="0.01" {...field} value={field.value ?? ''} />
               </FormControl>
@@ -282,7 +285,7 @@ export function SubtypeFields() {
           name="subtype.dueDate"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Due date (YYYY-MM-DD)</FormLabel>
+              <FormLabel>{t('subtypeFields.dueDate')}</FormLabel>
               <FormControl>
                 <DatePicker
                   value={field.value ?? ''}

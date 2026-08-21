@@ -1,0 +1,221 @@
+{
+  "page": {
+    "title": "Профіль"
+  },
+  "tabs": {
+    "general": "Загальні",
+    "dictionaries": "Довідники",
+    "defaults": "За замовчуванням",
+    "auth": "Автентифікація",
+    "banking": "Банк"
+  },
+  "saving": "Збереження…",
+  "updated": "Оновлено.",
+  "selectPlaceholder": "Виберіть…",
+  "errors": {
+    "loadConfiguration": "Не вдалося завантажити конфігурацію.",
+    "loadProfile": "Не вдалося завантажити профіль.",
+    "loadBankConnections": "Не вдалося завантажити банківські підключення.",
+    "generic": "Щось пішло не так. Спробуйте ще раз."
+  },
+  "userId": {
+    "title": "Ваш ID для спільного доступу",
+    "copy": "Копіювати",
+    "copyUserId": "Копіювати ID користувача",
+    "copied": "Скопійовано",
+    "description": "Поділіться цим ID, щоб вас додали до рахунку."
+  },
+  "currencies": {
+    "title": "Валюти",
+    "defaultCurrency": "Валюта за замовчуванням",
+    "defaultCurrencyDescription": "Використовується під час створення нових рахунків і транзакцій.",
+    "baseCurrency": "Базова валюта",
+    "baseCurrencyDescriptionEditable": "Змінює базу зовнішнього рахунку, на якому ґрунтується ваша звітність.",
+    "baseCurrencyDescriptionLocked": "Базову валюту заблоковано, оскільки у ваших книгах уже є транзакції.",
+    "confirmTitle": "Змінити базову валюту",
+    "confirmDescription": "Змінити базову валюту з {{from}} на {{to}}? Це змінить базу зовнішнього рахунку, на якому ґрунтується ваша звітність. Цю дію не можна скасувати через інтерфейс.",
+    "confirmAction": "Змінити базову валюту"
+  },
+  "localization": {
+    "title": "Регіон і мова",
+    "country": "Країна",
+    "countryNotSet": "Не вибрано",
+    "countryDescription": "Визначає регіональні налаштування за замовчуванням, як-от валюту та мову.",
+    "language": "Мова",
+    "languageDescription": "Мова, що використовується в застосунку та в сповіщеннях."
+  },
+  "country": {
+    "cascade": {
+      "defaultCurrency": "валюту за замовчуванням на {{value}}",
+      "baseCurrency": "базову валюту на {{value}}",
+      "language": "мову на {{value}}",
+      "summary": "Оновлено {{changes}} відповідно до вашої країни."
+    }
+  },
+  "defaults": {
+    "categoriesTitle": "Категорії за замовчуванням",
+    "incomeCategory": "Категорія доходу за замовчуванням",
+    "expenseCategory": "Категорія витрат за замовчуванням",
+    "accountsTitle": "Рахунки за замовчуванням",
+    "defaultAccount": "Рахунок за замовчуванням",
+    "subtypeDefaultAccount": "Рахунок за замовчуванням ({{subtype}})",
+    "none": "— немає —"
+  },
+  "dictionaries": {
+    "tabs": {
+      "expense": "Витрати",
+      "income": "Доходи",
+      "contact": "Контакт",
+      "label": "Мітка"
+    },
+    "title": {
+      "expense": "Витрати",
+      "income": "Доходи",
+      "contact": "Контакт",
+      "label": "Мітки"
+    },
+    "add": {
+      "expense": "Додати категорію витрат",
+      "income": "Додати категорію доходів",
+      "contact": "Додати контакт",
+      "label": "Додати мітку"
+    },
+    "empty": "Записів ще немає.",
+    "rename": "Перейменувати {{name}}",
+    "move": "Перемістити {{name}}",
+    "delete": "Видалити {{name}}",
+    "topLevel": "Верхній рівень",
+    "entryType": "Тип запису",
+    "item": "Елемент",
+    "group": "Група",
+    "groupBadge": "група",
+    "parentGroup": "Батьківська група",
+    "deleteTitle": "Видалити {{name}}?",
+    "deleteDescription": "Транзакції, позначені нею, не буде видалено."
+  },
+  "auth": {
+    "passwordTitle": "Пароль",
+    "currentPassword": "Поточний пароль",
+    "newPassword": "Новий пароль",
+    "confirmPassword": "Підтвердьте новий пароль",
+    "changePassword": "Змінити пароль",
+    "passwordChanged": "Пароль змінено.",
+    "oauthOnly": "Ваш обліковий запис використовує вхід через OAuth. Встановлення початкового пароля поки що недоступне.",
+    "linkedAccountsTitle": "Прив’язані облікові записи",
+    "atLeastOneCredential": "Вам потрібен щонайменше один спосіб входу."
+  },
+  "provider": {
+    "linkedAs": "Прив’язано як {{subtitle}}",
+    "notLinked": "Не прив’язано",
+    "unlink": "Відв’язати",
+    "link": "Прив’язати {{provider}}",
+    "unlinkTitle": "Відв’язати {{provider}}?",
+    "unlinkDescription": "Ви не зможете входити через {{provider}}, доки не прив’яжете його знову."
+  },
+  "banking": {
+    "tabs": {
+      "connections": "Підключення",
+      "expenses": "Витрати",
+      "income": "Доходи",
+      "contacts": "Контакти"
+    },
+    "connectionsHeading": "Банківські підключення",
+    "noConnections": "Підключень ще немає.",
+    "addConnection": "Додати підключення",
+    "expensesHeading": "Категорія провайдера банку → категорія витрат",
+    "incomeHeading": "Контрагент провайдера банку → категорія доходу",
+    "contactsHeading": "Токен провайдера банку → контакт",
+    "mapped": "зіставлено: {{count}}",
+    "enableConnection": "Увімкнути {{name}}",
+    "linkAccounts": "Прив’язати рахунки",
+    "edit": "Редагувати",
+    "remove": "Видалити",
+    "removeTitle": "Видалити {{name}}?",
+    "removeDescription": "Це видалить банківське підключення. Імпортовані транзакції не буде видалено."
+  },
+  "connectionDialog": {
+    "editTitle": "Редагувати банківське підключення",
+    "addTitle": "Додати банківське підключення",
+    "editDescription": "Оновіть це підключення. Залиште токен порожнім, щоб зберегти поточний.",
+    "addDescription": "Підключіть банк для автоматичного імпорту транзакцій.",
+    "name": "Назва",
+    "provider": "Провайдер",
+    "providerPlaceholder": "Виберіть провайдера…",
+    "providersUnavailable": "Немає доступних банківських провайдерів. Спробуйте пізніше.",
+    "token": "Токен",
+    "tokenKept": "•••• збережено",
+    "enabled": "Увімкнено"
+  },
+  "linkAccounts": {
+    "title": "Прив’язати рахунки",
+    "description": "Зіставте кожен зовнішній банківський рахунок з одним із ваших локальних рахунків.",
+    "statementFiles": "Файли виписок",
+    "uploadPrompt": "Завантажте виписку(и), щоб побачити список рахунків.",
+    "rateLimited": "{{provider}} обмежує частоту запитів. Спробуйте за мить.",
+    "providerFallback": "Провайдер",
+    "loadError": "Не вдалося завантажити зовнішні рахунки. Спробуйте ще раз.",
+    "tryAgain": "Спробувати ще раз",
+    "notImported": "— не імпортовано —",
+    "noCurrencyAccount": "Немає рахунку в {{currency}} — створіть його, щоб імпортувати цю картку."
+  },
+  "categoryEditor": {
+    "kind": {
+      "mcc": "MCC",
+      "label": "Мітка",
+      "counterparty": "Контрагент"
+    },
+    "heading": {
+      "income": "Зіставлення категорії провайдера банку з категорією доходу",
+      "expense": "Зіставлення категорії провайдера банку з категорією витрат"
+    },
+    "kindLabel": "Тип, рядок {{row}}",
+    "valueLabel": {
+      "mcc": "Код MCC, рядок {{row}}",
+      "counterparty": "Токен контрагента, рядок {{row}}",
+      "label": "Мітка провайдера банку, рядок {{row}}"
+    },
+    "categoryPlaceholder": {
+      "income": "Категорія доходу",
+      "expense": "Категорія витрат"
+    },
+    "categoryLabelRow": {
+      "income": "Категорія доходу, рядок {{row}}",
+      "expense": "Категорія витрат, рядок {{row}}"
+    },
+    "mccPlaceholder": "MCC",
+    "counterpartyPlaceholder": "ЄДРПОУ / IBAN",
+    "labelPlaceholder": "Мітка провайдера банку"
+  },
+  "contactEditor": {
+    "heading": "Зіставлення токена провайдера банку з контактом",
+    "futureImports": "Зіставлення застосовуються до майбутніх імпортів.",
+    "tokenPlaceholder": "Токен контрагента провайдера",
+    "tokenLabel": "Токен провайдера, рядок {{row}}",
+    "contactPlaceholder": "Контакт",
+    "contactLabel": "Контакт, рядок {{row}}",
+    "createError": "Не вдалося створити контакт."
+  },
+  "mapEditor": {
+    "noMappings": "Зіставлень ще немає.",
+    "rowFallback": "рядок {{row}}",
+    "removeMapping": "Видалити зіставлення {{label}}",
+    "addMapping": "Додати зіставлення",
+    "saveMapping": "Зберегти зіставлення",
+    "invalidMapping": "Некоректне зіставлення",
+    "duplicateMapping": "Дубльоване зіставлення: {{key}}"
+  },
+  "validation": {
+    "nameRequired": "Вкажіть назву",
+    "nameTooLong": "Занадто довго",
+    "providerRequired": "Виберіть провайдера",
+    "tokenRequired": "Вкажіть токен",
+    "currentPasswordRequired": "Вкажіть поточний пароль",
+    "passwordMinLength": "Щонайменше 8 символів",
+    "passwordsMismatch": "Паролі не збігаються",
+    "mccDigits": "MCC має містити 4 цифри",
+    "pickCategory": "Виберіть категорію",
+    "labelRequired": "Вкажіть мітку",
+    "counterpartyRequired": "Вкажіть токен контрагента",
+    "pickContact": "Виберіть контакт"
+  }
+}

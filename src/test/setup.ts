@@ -1,4 +1,8 @@
 import '@testing-library/jest-dom/vitest';
+// Initialize the i18next singleton for the whole suite so components that call
+// useTranslation resolve real catalog strings (default language 'en') even when
+// a test renders them without going through main.tsx / an I18nextProvider.
+import '@/lib/i18n';
 import { afterAll, afterEach, beforeAll } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import { server } from './server';

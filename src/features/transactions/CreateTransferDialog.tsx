@@ -1,4 +1,5 @@
 import { useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogContent,
@@ -16,7 +17,7 @@ import { defaultTransactionDate, writeStickyDay } from '@/lib/stickyDate';
 import { TransferForm, type TransferFormApi } from './TransferForm';
 import { useCreateTransfer } from './useCreateTransfer';
 import { toTransferRequest, type TransferFormValues } from './schema';
-import { TRANSACTION_KIND_LABELS } from './labels';
+import { transactionKindLabel } from './labels';
 
 export interface CreateTransferDialogProps {
   open: boolean;
@@ -29,6 +30,7 @@ export function CreateTransferDialog({
   onOpenChange,
   selectedAccountId,
 }: CreateTransferDialogProps) {
+  const { t } = useTranslation('transactions');
   const { data: accounts } = useAccounts();
   const { data: config } = useConfiguration();
   const create = useCreateTransfer();
@@ -81,7 +83,7 @@ export function CreateTransferDialog({
   const bannerMessage =
     create.error instanceof ApiError
       ? create.error.message
-      : 'Something went wrong. Please try again.';
+      : t('form.genericError');
 
   const hasEnoughAccounts = accounts && accounts.length >= 2;
 
@@ -89,8 +91,8 @@ export function CreateTransferDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="lg">
         <DialogHeader>
-          <DialogTitle>{TRANSACTION_KIND_LABELS.transfer.title}</DialogTitle>
-          <DialogDescription>Transfer funds between two of your accounts.</DialogDescription>
+          <DialogTitle>{transactionKindLabel('transfer', 'title')}</DialogTitle>
+          <DialogDescription>{t('form.transferDescription')}</DialogDescription>
         </DialogHeader>
         {showBanner && (
           <Alert variant="destructive" role="alert">
@@ -112,7 +114,7 @@ export function CreateTransferDialog({
         )}
         {!hasEnoughAccounts && (
           <div className="p-2 text-sm text-muted-foreground">
-            Create at least two accounts first to make a transfer.
+            {t('form.noAccountsTransfer')}
           </div>
         )}
       </DialogContent>

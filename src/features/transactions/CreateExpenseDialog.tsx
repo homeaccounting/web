@@ -1,4 +1,5 @@
 import { useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogContent,
@@ -17,7 +18,7 @@ import { defaultTransactionDate, writeStickyDay } from '@/lib/stickyDate';
 import { IncomeExpenseForm, type IncomeExpenseFormApi } from './IncomeExpenseForm';
 import { useCreateExpense } from './useCreateExpense';
 import { toExpenseRequest, type IncomeExpenseFormValues } from './schema';
-import { TRANSACTION_KIND_LABELS } from './labels';
+import { transactionKindLabel } from './labels';
 
 export interface CreateExpenseDialogProps {
   open: boolean;
@@ -30,6 +31,7 @@ export function CreateExpenseDialog({
   onOpenChange,
   selectedAccountId,
 }: CreateExpenseDialogProps) {
+  const { t } = useTranslation('transactions');
   const { data: accounts } = useAccounts();
   const { data: config } = useConfiguration();
   const create = useCreateExpense();
@@ -85,16 +87,14 @@ export function CreateExpenseDialog({
   const bannerMessage =
     create.error instanceof ApiError
       ? create.error.message
-      : 'Something went wrong. Please try again.';
+      : t('form.genericError');
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="lg">
         <DialogHeader>
-          <DialogTitle>{TRANSACTION_KIND_LABELS.expense.title}</DialogTitle>
-          <DialogDescription>
-            Record an expense transaction from one of your accounts.
-          </DialogDescription>
+          <DialogTitle>{transactionKindLabel('expense', 'title')}</DialogTitle>
+          <DialogDescription>{t('form.expenseDescription')}</DialogDescription>
         </DialogHeader>
         {showBanner && (
           <Alert variant="destructive" role="alert">
@@ -124,7 +124,7 @@ export function CreateExpenseDialog({
         )}
         {(!accounts || accounts.length === 0) && (
           <div className="p-2 text-sm text-muted-foreground">
-            Create an account first to record an expense.
+            {t('form.noAccountsExpense')}
           </div>
         )}
       </DialogContent>

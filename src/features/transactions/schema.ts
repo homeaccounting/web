@@ -11,9 +11,15 @@ import { normalizeComment, sliceArraysFromTx } from './allocations';
 import { dateInputToWire, wireToDateInput } from '@/lib/dates';
 import { formatMoney } from '@/lib/format';
 import { roundMoney } from '@/lib/money';
+import i18n from '@/lib/i18n';
 
 const uuid = z.string().uuid();
-const positiveAmount = z.coerce.number().positive('Amount must be positive');
+// Static validation messages are stored as i18n KEYS; `FormMessage` translates
+// them at render (live language switch). Dynamic messages that embed a formatted
+// money value are resolved via `i18n.t(...)` at validation time (inside the
+// refinement callbacks below) because `FormMessage` cannot pass interpolation
+// values — those i18n.t calls run per validation, never at module load.
+const positiveAmount = z.coerce.number().positive('transactions:validation.amountPositive');
 // Optional: an empty description is allowed. The backend accepts an empty
 // `description` (Web/Types.hs `description :: Text` with no non-empty validation),
 // consistent with the adjust-balance field.
@@ -23,13 +29,15 @@ const description = z.string().max(500);
 // ('YYYY-MM-DDTHH:MM', from the time-enabled DatePicker). Empty/malformed is
 // rejected — the create dialogs pre-fill the current datetime, so the field is
 // never blank unless the user clears it. Mirrors adjustBalanceSchema's date.
-const requiredIsoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/, 'Date is required');
+const requiredIsoDate = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/, 'transactions:validation.dateRequired');
 
 // One allocation row in the form. The total of a transaction is the sum of all
 // slice amounts across both buckets; there is no separate top-level amount.
 const sliceSchema = z.object({
   category: uuid,
-  amount: z.coerce.number().positive('Amount must be positive'),
+  amount: z.coerce.number().positive('transactions:validation.amountPositive'),
   comment: z.string().max(500).optional(),
 });
 
@@ -80,7 +88,7 @@ export const transferFormSchema = z
     labels: z.array(uuid).default([]),
   })
   .refine((v) => v.sourceAccountId !== v.targetAccountId, {
-    message: 'Source and target accounts must differ',
+    message: 'transactions:validation.accountsMustDiffer',
     path: ['targetAccountId'],
   });
 export type TransferFormValues = z.infer<typeof transferFormSchema>;
@@ -100,7 +108,9 @@ function balanceIssue(
   if (!acc || acc.overdraftLimit === null || !Number.isFinite(amount)) return null;
   const available = acc.balance + acc.overdraftLimit;
   if (amount <= available) return null;
-  return `Exceeds available balance (${formatMoney(available, acc.currency)})`;
+  return i18n.t('transactions:validation.exceedsBalance', {
+    amount: formatMoney(available, acc.currency),
+  });
 }
 
 // Kind-aware refinement shared by create AND edit. Pass `accounts: null` when
@@ -120,13 +130,13 @@ function refineAllocations(
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['expenses'],
-        message: 'Add at least one category',
+        message: 'transactions:validation.addCategory',
       });
     if (kind === 'expense' && v.incomes.length > 0)
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['incomes'],
-        message: 'An expense cannot carry income categories',
+        message: 'transactions:validation.expenseNoIncome',
       });
     if (kind === 'expense' && accounts) {
       // Expense debits `accountId`; the debited total is the sum of expense
@@ -146,7 +156,7 @@ function refineAllocations(
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['targetTotal'],
-          message: 'Enter a target total',
+          message: 'transactions:validation.enterTargetTotal',
         });
       } else {
         const sum = roundMoney(
@@ -163,7 +173,9 @@ function refineAllocations(
             ctx.addIssue({
               code: z.ZodIssueCode.custom,
               path: ['expenses'],
-              message: `Allocations are ${formatMoney(-diff, v.currency)} over the target`,
+              message: i18n.t('transactions:validation.overTarget', {
+                amount: formatMoney(-diff, v.currency),
+              }),
             });
           }
         } else if (Math.abs(diff) >= 0.005) {
@@ -172,8 +184,12 @@ function refineAllocations(
             path: ['expenses'],
             message:
               diff > 0
-                ? `Allocations are ${formatMoney(diff, v.currency)} short of the target`
-                : `Allocations are ${formatMoney(-diff, v.currency)} over the target`,
+                ? i18n.t('transactions:validation.shortOfTarget', {
+                    amount: formatMoney(diff, v.currency),
+                  })
+                : i18n.t('transactions:validation.overTarget', {
+                    amount: formatMoney(-diff, v.currency),
+                  }),
           });
         }
       }
@@ -213,7 +229,9 @@ export function refundAllocationCaps(
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['expenses', index, 'amount'],
-          message: `Refund for a category can't exceed ${formatMoney(cap, v.currency)} left to refund`,
+          message: i18n.t('transactions:validation.refundCategoryCap', {
+            amount: formatMoney(cap, v.currency),
+          }),
         });
       }
     });
@@ -221,7 +239,9 @@ export function refundAllocationCaps(
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['expenses'],
-        message: `Refund can't exceed ${formatMoney(remainingTotal, v.currency)} left on this transaction`,
+        message: i18n.t('transactions:validation.refundTotalCap', {
+          amount: formatMoney(remainingTotal, v.currency),
+        }),
       });
     }
   };

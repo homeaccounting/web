@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { DatePicker } from '@/components/DatePicker';
 import {
   Select,
@@ -6,12 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  PERIOD_PRESET_LABELS,
-  type DayRange,
-  type PeriodPreset,
-  type PeriodValue,
-} from '@/lib/period';
+import { type DayRange, type PeriodPreset, type PeriodValue } from '@/lib/period';
 
 export interface PeriodSelectorProps {
   value: PeriodValue;
@@ -28,19 +24,20 @@ export function PeriodSelector({
   onPresetChange,
   onRangeChange,
 }: PeriodSelectorProps) {
+  const { t } = useTranslation('common');
   return (
     <div className="flex flex-wrap items-center gap-2 text-sm">
       <Select value={value} onValueChange={(v) => onPresetChange(v as PeriodValue)}>
-        <SelectTrigger aria-label="Period" className="w-40">
+        <SelectTrigger aria-label={t('period.label')} className="w-40">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
           {presets.map((p) => (
             <SelectItem key={p} value={p}>
-              {PERIOD_PRESET_LABELS[p]}
+              {t(`period.presets.${p}`)}
             </SelectItem>
           ))}
-          <SelectItem value="custom">Custom…</SelectItem>
+          <SelectItem value="custom">{t('period.custom')}</SelectItem>
         </SelectContent>
       </Select>
       {value === 'custom' && (
@@ -50,26 +47,26 @@ export function PeriodSelector({
               input + the calendar button), so a wrapping <label> would
               ambiguously name both. */}
           <div className="flex items-center gap-1">
-            <label htmlFor="period-from">From</label>
+            <label htmlFor="period-from">{t('period.from')}</label>
             <DatePicker
               id="period-from"
               value={range.from}
               onChange={(from) => onRangeChange({ ...range, from })}
-              aria-label="From"
+              aria-label={t('period.from')}
               maxDate={range.to}
-              placeholder="From"
+              placeholder={t('period.from')}
               className="w-auto"
             />
           </div>
           <div className="flex items-center gap-1">
-            <label htmlFor="period-to">To</label>
+            <label htmlFor="period-to">{t('period.to')}</label>
             <DatePicker
               id="period-to"
               value={range.to}
               onChange={(to) => onRangeChange({ ...range, to })}
-              aria-label="To"
+              aria-label={t('period.to')}
               minDate={range.from}
-              placeholder="To"
+              placeholder={t('period.to')}
               className="w-auto"
             />
           </div>

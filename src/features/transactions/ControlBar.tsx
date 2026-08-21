@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { ArrowDownToLine, ArrowLeftRight, ArrowUpFromLine, Scale } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
@@ -15,8 +16,6 @@ export interface ControlBarProps {
   selectedAccount?: AccountResponse;
 }
 
-const NO_ACCOUNTS_HINT = 'Create an account first';
-
 function IconAction({
   label,
   icon,
@@ -28,6 +27,7 @@ function IconAction({
   disabled: boolean;
   onClick: () => void;
 }) {
+  const { t } = useTranslation('transactions');
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -42,12 +42,13 @@ function IconAction({
           {icon}
         </Button>
       </TooltipTrigger>
-      <TooltipContent>{disabled ? NO_ACCOUNTS_HINT : label}</TooltipContent>
+      <TooltipContent>{disabled ? t('list.noAccountsHint') : label}</TooltipContent>
     </Tooltip>
   );
 }
 
 export function ControlBar({ selectedAccountId, selectedAccount }: ControlBarProps) {
+  const { t } = useTranslation('transactions');
   const { data: accounts } = useAccounts();
   const hasAccounts = (accounts?.length ?? 0) > 0;
   const [openIncome, setOpenIncome] = useState(false);
@@ -57,29 +58,29 @@ export function ControlBar({ selectedAccountId, selectedAccount }: ControlBarPro
   return (
     <>
       <div className="flex items-center justify-between border-b px-4 py-2.5">
-        <span className="text-sm font-medium">Transactions</span>
+        <span className="text-sm font-medium">{t('list.transactions')}</span>
         <TooltipProvider>
           <div className="flex items-center gap-1">
             <IconAction
-              label="Add expense"
+              label={t('kind.expense.title')}
               icon={<ArrowUpFromLine />}
               disabled={!hasAccounts}
               onClick={() => setOpenExpense(true)}
             />
             <IconAction
-              label="Add income"
+              label={t('kind.income.title')}
               icon={<ArrowDownToLine />}
               disabled={!hasAccounts}
               onClick={() => setOpenIncome(true)}
             />
             <IconAction
-              label="Add transfer"
+              label={t('kind.transfer.title')}
               icon={<ArrowLeftRight />}
               disabled={!hasAccounts}
               onClick={() => setOpenTransfer(true)}
             />
             <IconAction
-              label="Adjust balance"
+              label={t('list.adjustBalance')}
               icon={<Scale />}
               disabled={!hasAccounts}
               onClick={() => setAdjusting(true)}

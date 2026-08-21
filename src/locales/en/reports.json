@@ -1,0 +1,26 @@
+{
+  "title": "Reports",
+  "tabs": {
+    "cashFlow": "Cash flow",
+    "netWorth": "Net worth"
+  },
+  "incomeVsExpense": {
+    "title": "Income vs. expense",
+    "income": "Income",
+    "expense": "Expense",
+    "net": "Net",
+    "loadError": "Couldn’t load income vs. expense."
+  },
+  "spendingByCategory": {
+    "title": "Spending by category",
+    "loadError": "Couldn’t load spending by category.",
+    "empty": "No spending in this period."
+  },
+  "netWorth": {
+    "title": "Net worth",
+    "current": "current",
+    "loadError": "Couldn’t load net worth.",
+    "empty": "No accounts yet.",
+    "total": "Total"
+  }
+}

@@ -67,7 +67,7 @@ test.describe('create multi-allocation transaction @local', () => {
     //    both "Groceries" and "Transport".
     await expenseDialog.getByRole('button', { name: /^ok$/i }).click();
     await expect(expenseDialog).toBeHidden();
-    await expect(page.getByRole('cell', { name: 'Split coffee' })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('cell', { name: 'Split coffee', exact: true })).toBeVisible({ timeout: 10000 });
     const categoryCell = page
       .getByRole('cell', { name: /groceries/i })
       .filter({ hasText: /transport/i });

@@ -54,7 +54,7 @@ test.describe('allocation dedup + collapse @local', () => {
     // SURFACE 1 — list: the row's category cell shows ONE "Groceries" chip, not two.
     const row = page.getByRole('button', { name: /^Select DupCat Expense/ });
     await expect(row).toBeVisible({ timeout: 10000 });
-    await expect(page.getByRole('cell', { name: 'Groceries' })).toHaveCount(1);
+    await expect(page.getByRole('cell', { name: 'Groceries', exact: true })).toHaveCount(1);
     await expect(page.getByText('Groceries', { exact: true })).toHaveCount(1);
 
     // SURFACE 2 — edit dialog: two rows + a "Collapse duplicates" button.

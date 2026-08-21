@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { ApiError } from '@/api/client';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
@@ -22,13 +23,12 @@ export interface CloseAccountDialogProps {
 // the dialog open — the app has no global toast — mirroring CancelTransactionDialog.
 // Closing is reversible via Reopen, so the copy reassures rather than warns.
 export function CloseAccountDialog({ open, onOpenChange, account }: CloseAccountDialogProps) {
+  const { t } = useTranslation('accounts');
   const close = useCloseAccount();
 
   const showBanner = close.isError;
   const bannerMessage =
-    close.error instanceof ApiError
-      ? close.error.message
-      : 'Something went wrong. Please try again.';
+    close.error instanceof ApiError ? close.error.message : t('errors.generic');
 
   const onConfirm = async () => {
     try {
@@ -50,10 +50,9 @@ export function CloseAccountDialog({ open, onOpenChange, account }: CloseAccount
     >
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Close this account?</AlertDialogTitle>
+          <AlertDialogTitle>{t('closeDialog.title')}</AlertDialogTitle>
           <AlertDialogDescription>
-            &ldquo;{account.name}&rdquo; will be hidden from your accounts list. You can reopen it
-            later from &ldquo;Show closed&rdquo;.
+            {t('closeDialog.description', { name: account.name })}
           </AlertDialogDescription>
         </AlertDialogHeader>
         {showBanner && (
@@ -63,10 +62,10 @@ export function CloseAccountDialog({ open, onOpenChange, account }: CloseAccount
         )}
         <AlertDialogFooter>
           <Button variant="outline" disabled={close.isPending} onClick={() => onOpenChange(false)}>
-            Cancel
+            {t('common:cancel')}
           </Button>
           <Button variant="default" disabled={close.isPending} onClick={() => void onConfirm()}>
-            OK
+            {t('common:ok')}
           </Button>
         </AlertDialogFooter>
       </AlertDialogContent>

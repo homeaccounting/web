@@ -1,4 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -29,13 +30,15 @@ export function CategoryCombobox({
   options,
   value,
   onChange,
-  placeholder = 'Select a category…',
+  placeholder,
   name,
   id,
   'aria-label': ariaLabel,
   'aria-invalid': ariaInvalid,
   'aria-describedby': ariaDescribedby,
 }: CategoryComboboxProps) {
+  const { t } = useTranslation('transactions');
+  const resolvedPlaceholder = placeholder ?? t('pickers.selectCategory');
   const generatedId = useId();
   const inputId = id ?? generatedId;
   const listId = `${inputId}-list`;
@@ -94,7 +97,7 @@ export function CategoryCombobox({
         aria-label={ariaLabel}
         className="flex h-10 w-full items-center rounded-md border border-input bg-muted px-3 text-sm text-muted-foreground"
       >
-        Archived category
+        {t('pickers.archivedCategory')}
       </div>
     );
   }
@@ -115,7 +118,7 @@ export function CategoryCombobox({
           }
           aria-invalid={ariaInvalid}
           aria-describedby={ariaDescribedby}
-          placeholder={placeholder}
+          placeholder={resolvedPlaceholder}
           value={inputValue}
           onFocus={() => setOpen(true)}
           onChange={(e) => {
@@ -160,7 +163,7 @@ export function CategoryCombobox({
           className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
         >
           {filtered.length === 0 && (
-            <li className="px-2 py-1.5 text-sm text-muted-foreground">No matches</li>
+            <li className="px-2 py-1.5 text-sm text-muted-foreground">{t('pickers.noMatches')}</li>
           )}
           {filtered.map((opt, i) => (
             <li

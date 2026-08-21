@@ -35,7 +35,7 @@ test.describe('convert transaction @local', () => {
     await expenseDialog.getByRole('button', { name: /^ok$/i }).click();
     await expect(expenseDialog).toBeHidden();
 
-    const coffeeCell = page.getByRole('cell', { name: 'Coffee' });
+    const coffeeCell = page.getByRole('cell', { name: 'Coffee', exact: true });
     await expect(coffeeCell).toBeVisible({ timeout: 10000 });
     // The single transaction row carries a type icon (role=img, name=kind). It
     // starts life as an expense.
@@ -63,6 +63,6 @@ test.describe('convert transaction @local', () => {
     //    income: its type icon flips and the expense icon is gone.
     await expect(page.getByRole('img', { name: 'Income' })).toBeVisible({ timeout: 10000 });
     await expect(page.getByRole('img', { name: 'Expense' })).toBeHidden();
-    await expect(page.getByRole('cell', { name: 'Coffee' })).toBeVisible();
+    await expect(page.getByRole('cell', { name: 'Coffee', exact: true })).toBeVisible();
   });
 });

@@ -1,7 +1,9 @@
 import { Link2Off } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { formatMoney } from '@/lib/format';
+import { useFormat } from '@/lib/useFormat';
 import { roundMoney } from '@/lib/money';
 import type { RelationStat } from './relationIndex';
 
@@ -39,26 +41,34 @@ type RelationBadgeProps = (
   onUnlink?: () => void;
 };
 
-function badgeText(props: RelationBadgeProps): string {
+function badgeText(
+  props: RelationBadgeProps,
+  t: TFunction,
+  formatMoney: (amount: number, currency: string) => string,
+): string {
   if (props.kind === 'refund' && props.mode === 'origin') {
     // Full when the refunded total meets or exceeds the original at cent precision
     // (no bespoke epsilon — roundMoney is the codebase's money-equality primitive).
     const full = roundMoney(props.refundStat.total) >= roundMoney(props.originalTotal);
     return full
-      ? 'refunded in full'
-      : `partially refunded (${formatMoney(props.refundStat.total, props.currency)} of ${formatMoney(
-          props.originalTotal,
-          props.currency,
-        )})`;
+      ? t('resolve.refundedInFull')
+      : t('resolve.partiallyRefunded', {
+          refunded: formatMoney(props.refundStat.total, props.currency),
+          original: formatMoney(props.originalTotal, props.currency),
+        });
   }
 
   if (props.kind === 'refund') {
-    return props.description ? `refund of ${props.description}` : 'refund';
+    return props.description
+      ? t('resolve.refundOf', { description: props.description })
+      : t('resolve.refund');
   }
 
   // associated / counterpart
-  const base = props.description ? `associated with ${props.description}` : 'associated';
-  return props.counterpartCancelled ? `${base} (cancelled)` : base;
+  const base = props.description
+    ? t('resolve.associatedWith', { description: props.description })
+    : t('resolve.associated');
+  return props.counterpartCancelled ? t('resolve.associatedCancelled', { base }) : base;
 }
 
 /**
@@ -70,7 +80,9 @@ function badgeText(props: RelationBadgeProps): string {
  * pixel-identical).
  */
 export function RelationBadge(props: RelationBadgeProps) {
-  const text = badgeText(props);
+  const { t } = useTranslation('transactions');
+  const { formatMoney } = useFormat();
+  const text = badgeText(props, t, formatMoney);
   return (
     <Badge variant="muted" className="ml-2">
       {text}
@@ -79,7 +91,7 @@ export function RelationBadge(props: RelationBadgeProps) {
           type="button"
           size="icon"
           variant="ghost"
-          aria-label="Unlink"
+          aria-label={t('resolve.unlink')}
           className="-mr-1 ml-1 h-4 w-4"
           onClick={(e) => {
             e.stopPropagation();

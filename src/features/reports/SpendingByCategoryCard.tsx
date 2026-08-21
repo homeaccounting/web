@@ -1,10 +1,11 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/EmptyState';
-import { formatMoney } from '@/lib/format';
+import { useFormat } from '@/lib/useFormat';
 import type { ReportRange } from '@/api/reports';
 import {
   useConfiguration,
@@ -14,6 +15,8 @@ import { BreakdownBar } from './BreakdownBar';
 import { useSpendingByCategory } from './useReports';
 
 export function SpendingByCategoryCard({ range }: { range: ReportRange }) {
+  const { t } = useTranslation('reports');
+  const { formatMoney } = useFormat();
   const { data, isLoading, isError, refetch } = useSpendingByCategory(range);
   const { data: config } = useConfiguration();
   const nameById = useDictionaryEntryNames(config);
@@ -27,27 +30,27 @@ export function SpendingByCategoryCard({ range }: { range: ReportRange }) {
       amount: formatMoney(c.total.amount, c.total.currency),
       fraction: max > 0 ? c.total.amount / max : 0,
     }));
-  }, [data, nameById]);
+  }, [data, nameById, formatMoney]);
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Spending by category</CardTitle>
+        <CardTitle>{t('spendingByCategory.title')}</CardTitle>
       </CardHeader>
       <CardContent>
         {isLoading && <Skeleton className="h-24 w-full" />}
         {isError && (
           <div className="space-y-2">
             <Alert variant="destructive" role="alert">
-              <AlertDescription>Couldn&rsquo;t load spending by category.</AlertDescription>
+              <AlertDescription>{t('spendingByCategory.loadError')}</AlertDescription>
             </Alert>
             <Button variant="outline" size="sm" onClick={() => void refetch()}>
-              Retry
+              {t('common:retry')}
             </Button>
           </div>
         )}
         {data && rows.length === 0 && (
-          <EmptyState message="No spending in this period." className="p-0" />
+          <EmptyState message={t('spendingByCategory.empty')} className="p-0" />
         )}
         {rows.length > 0 && (
           <div className="flex flex-col">

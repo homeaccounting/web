@@ -42,7 +42,7 @@ async function seedExpense(
   await dialog.getByLabel(/description/i).fill(description);
   await dialog.getByRole('button', { name: /^ok$/i }).click();
   await expect(dialog).toBeHidden();
-  await expect(page.getByRole('cell', { name: description })).toBeVisible({ timeout: 10000 });
+  await expect(page.getByRole('cell', { name: description, exact: true })).toBeVisible({ timeout: 10000 });
   // The action guard only shows "Refund" once the transaction is Completed.
   await expect(page.getByRole('img', { name: 'Expense' })).toBeVisible({ timeout: 10000 });
 }
@@ -53,7 +53,7 @@ test.describe('refund transaction @local', () => {
     await seedExpense(page, { amount: '9.99', description: 'Coffee' });
 
     // Right-click the expense row → Refund.
-    await page.getByRole('cell', { name: 'Coffee' }).click({ button: 'right' });
+    await page.getByRole('cell', { name: 'Coffee', exact: true }).click({ button: 'right' });
     await page.getByRole('menuitem', { name: /^refund$/i }).click();
 
     // The refund dialog opens pre-seeded with the original's Food slice (9.99)
@@ -65,7 +65,7 @@ test.describe('refund transaction @local', () => {
     await expect(refundDialog).toBeHidden();
 
     // A new Income transaction "Refund: Coffee" is posted...
-    await expect(page.getByRole('cell', { name: /Refund: Coffee/i })).toBeVisible({
+    await expect(page.getByRole('cell', { name: 'Refund: Coffee', exact: true })).toBeVisible({
       timeout: 10000,
     });
     await expect(page.getByRole('img', { name: 'Income' })).toBeVisible();
@@ -78,7 +78,7 @@ test.describe('refund transaction @local', () => {
     await setupWallet(page);
     await seedExpense(page, { amount: '10', description: 'Lunch' });
 
-    await page.getByRole('cell', { name: 'Lunch' }).click({ button: 'right' });
+    await page.getByRole('cell', { name: 'Lunch', exact: true }).click({ button: 'right' });
     await page.getByRole('menuitem', { name: /^refund$/i }).click();
 
     const refundDialog = page.getByRole('dialog', { name: /refund transaction/i });
@@ -89,7 +89,7 @@ test.describe('refund transaction @local', () => {
     await refundDialog.getByRole('button', { name: /^ok$/i }).click();
     await expect(refundDialog).toBeHidden();
 
-    await expect(page.getByRole('cell', { name: /Refund: Lunch/i })).toBeVisible({
+    await expect(page.getByRole('cell', { name: 'Refund: Lunch', exact: true })).toBeVisible({
       timeout: 10000,
     });
     // The original expense now shows a partial-refund badge referencing both amounts.

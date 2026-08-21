@@ -1,0 +1,20 @@
+{
+  "summary": {
+    "imported_one": "Імпортовано {{count}} транзакцію",
+    "imported_few": "Імпортовано {{count}} транзакції",
+    "imported_many": "Імпортовано {{count}} транзакцій",
+    "imported_other": "Імпортовано {{count}} транзакції",
+    "skipped": "{{count}} пропущено",
+    "failed": "{{count}} з помилкою",
+    "unresolved_one": "{{count}} рядок потребує уваги",
+    "unresolved_few": "{{count}} рядки потребують уваги",
+    "unresolved_many": "{{count}} рядків потребують уваги",
+    "unresolved_other": "{{count}} рядка потребують уваги"
+  },
+  "statement": {
+    "mixedOrUnknownFormat": "Виберіть файли виписок одного типу (.csv або .xlsx)."
+  },
+  "providerOptions": {
+    "otherCountries": "Інші країни"
+  }
+}

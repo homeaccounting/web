@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Tag } from 'lucide-react';
 import {
   ContextMenuSub,
@@ -17,11 +18,12 @@ export interface TxCategoryQuickPickerProps {
 // rebuilds allocations and fires the PATCH). The menu closes on
 // Escape/outside-click — Radix ContextMenu's root open state is uncontrolled.
 export function TxCategoryQuickPicker({ options, value, onSelect }: TxCategoryQuickPickerProps) {
+  const { t } = useTranslation('transactions');
   return (
     <ContextMenuSub>
       <ContextMenuSubTrigger>
         <Tag className="mr-2 h-4 w-4" aria-hidden />
-        Category
+        {t('pickers.category')}
       </ContextMenuSubTrigger>
       {/* p-0: MenuSearchList supplies its own padding. Radix SubContent already
           prevents open-auto-focus, so MenuSearchList's mount effect takes focus. */}
@@ -30,8 +32,8 @@ export function TxCategoryQuickPicker({ options, value, onSelect }: TxCategoryQu
           options={options}
           isSelected={(id) => id === value}
           onPick={onSelect}
-          searchAriaLabel="Search categories"
-          placeholder="Search categories…"
+          searchAriaLabel={t('pickers.searchCategories')}
+          placeholder={t('pickers.searchCategoriesPlaceholder')}
         />
       </ContextMenuSubContent>
     </ContextMenuSub>

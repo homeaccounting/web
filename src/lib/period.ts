@@ -11,13 +11,10 @@ export const PERIOD_PRESETS: readonly PeriodPreset[] = [
   'all-time',
 ] as const;
 
-export const PERIOD_PRESET_LABELS: Record<PeriodPreset, string> = {
-  'this-month': 'This month',
-  'last-month': 'Last month',
-  'this-year': 'This year',
-  'last-year': 'Last year',
-  'all-time': 'All time',
-};
+// Preset display labels are NOT held here: this module is i18n-free (pure
+// preset definitions). PeriodSelector resolves each preset id to a label at
+// render via `t('period.presets.' + id)` (common namespace), so labels track
+// live language switches instead of freezing at module load.
 
 // 'YYYY-MM-DD' day strings — the shape DatePicker and the API converters use.
 export interface DayRange {

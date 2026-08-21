@@ -50,7 +50,7 @@ const subtypeSchema = z.discriminatedUnion('type', [
 ]);
 
 const baseAccountFields = {
-  name: z.string().trim().min(1, 'Name is required').max(120),
+  name: z.string().trim().min(1, 'accounts:validation.nameRequired').max(120),
   overdraftLimit: z
     .union([z.coerce.number().nonnegative(), z.literal('').transform(() => undefined)])
     .optional(),
@@ -69,13 +69,13 @@ export const createAccountFormSchema = z
         ctx.addIssue({
           path: ['overdraftLimit'],
           code: z.ZodIssueCode.custom,
-          message: 'Overdraft limit is required when initial balance is negative.',
+          message: 'accounts:validation.overdraftRequired',
         });
       } else if (Math.abs(v.initialBalance) > v.overdraftLimit) {
         ctx.addIssue({
           path: ['overdraftLimit'],
           code: z.ZodIssueCode.custom,
-          message: 'Overdraft limit must be at least |initial balance|.',
+          message: 'accounts:validation.overdraftMin',
         });
       }
     }

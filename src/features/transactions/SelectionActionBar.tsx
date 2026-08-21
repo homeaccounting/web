@@ -1,4 +1,5 @@
 import { Link2, Merge, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -30,17 +31,18 @@ export function SelectionActionBar({
   onMerge,
   onClear,
 }: SelectionActionBarProps) {
+  const { t } = useTranslation('transactions');
   if (count === 0) return null;
   const showMerge = count >= 2;
   return (
     <div
       role="region"
-      aria-label="Selection actions"
+      aria-label={t('list.selectionActions')}
       className="fixed inset-x-0 bottom-6 z-40 mx-auto flex w-fit items-center gap-3 rounded-xl bg-foreground px-3 py-2 pl-4 text-sm text-background shadow-lg"
     >
-      <span className="font-medium tabular-nums">{count} selected</span>
+      <span className="font-medium tabular-nums">{t('list.selected', { count })}</span>
 
-      {count === 1 && <span className="text-background/70">Select 2 to link or merge</span>}
+      {count === 1 && <span className="text-background/70">{t('list.selectHint')}</span>}
 
       {canLink && (
         <Button
@@ -48,10 +50,10 @@ export function SelectionActionBar({
           variant="secondary"
           onClick={onLink}
           className="h-8"
-          aria-label="Link selected transactions"
+          aria-label={t('list.linkAria')}
         >
           <Link2 className="mr-1.5 h-4 w-4" aria-hidden />
-          Link
+          {t('list.link')}
         </Button>
       )}
 
@@ -68,10 +70,10 @@ export function SelectionActionBar({
                   onClick={onMerge}
                   disabled={!canMerge}
                   className="h-8"
-                  aria-label="Merge selected transactions"
+                  aria-label={t('list.mergeAria')}
                 >
                   <Merge className="mr-1.5 h-4 w-4" aria-hidden />
-                  Merge
+                  {t('list.merge')}
                 </Button>
               </span>
             </TooltipTrigger>
@@ -86,7 +88,7 @@ export function SelectionActionBar({
         size="icon"
         variant="ghost"
         onClick={onClear}
-        aria-label="Clear selection"
+        aria-label={t('list.clearSelection')}
         className="h-8 w-8 text-background hover:bg-background/15 hover:text-background"
       >
         <X className="h-4 w-4" aria-hidden />

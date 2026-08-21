@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { RefreshCw } from 'lucide-react';
 import { ApiError } from '@/api/client';
 import type { AccountResponse } from '@/api/types';
@@ -26,6 +27,7 @@ interface SyncNowButtonProps {
 }
 
 export function SyncNowButton({ selectedAccount }: SyncNowButtonProps) {
+  const { t } = useTranslation('accounts');
   const { data: config } = useConfiguration();
   const { data: providers } = useProviders();
 
@@ -56,8 +58,7 @@ export function SyncNowButton({ selectedAccount }: SyncNowButtonProps) {
           // Defensively surface 422 CONNECTION_DISABLED / 404 / FEATURE_DISABLED
           // and any other ApiError; the gating already prevents most of these,
           // but a mid-session toggle could race.
-          const message =
-            err instanceof ApiError ? err.message : 'Couldn’t sync this account. Try again.';
+          const message = err instanceof ApiError ? err.message : t('syncButton.error');
           toast.error(message);
         },
       },
@@ -71,7 +72,7 @@ export function SyncNowButton({ selectedAccount }: SyncNowButtonProps) {
           <Button
             size="icon"
             variant="ghost"
-            aria-label="Sync now"
+            aria-label={t('syncButton.label')}
             disabled={importConnection.isPending}
             onClick={onClick}
             className="h-9 w-9"
@@ -79,7 +80,7 @@ export function SyncNowButton({ selectedAccount }: SyncNowButtonProps) {
             <RefreshCw className={cn('h-5 w-5', importConnection.isPending && 'animate-spin')} />
           </Button>
         </TooltipTrigger>
-        <TooltipContent>Sync now</TooltipContent>
+        <TooltipContent>{t('syncButton.label')}</TooltipContent>
       </Tooltip>
     </TooltipProvider>
   );

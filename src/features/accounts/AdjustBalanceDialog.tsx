@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useForm, FormProvider, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -30,7 +31,7 @@ import {
   toAdjustBalanceRequest,
   type AdjustBalanceFormValues,
 } from './adjustBalanceSchema';
-import { formatAccountBalance } from './format';
+import { useFormat } from '@/lib/useFormat';
 import { useAccounts } from './useAccounts';
 import { useAdjustBalance } from './useAdjustBalance';
 
@@ -45,6 +46,7 @@ export function AdjustBalanceDialog({
   onOpenChange,
   selectedAccountId,
 }: AdjustBalanceDialogProps) {
+  const { t } = useTranslation('accounts');
   const { data: accounts } = useAccounts();
   const hasAccounts = !!accounts && accounts.length > 0;
 
@@ -52,10 +54,8 @@ export function AdjustBalanceDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Adjust balance</DialogTitle>
-          <DialogDescription>
-            Record a balance adjustment as a synthetic transaction.
-          </DialogDescription>
+          <DialogTitle>{t('adjustDialog.title')}</DialogTitle>
+          <DialogDescription>{t('adjustDialog.description')}</DialogDescription>
         </DialogHeader>
         {hasAccounts ? (
           <AdjustBalanceForm
@@ -65,7 +65,7 @@ export function AdjustBalanceDialog({
           />
         ) : (
           <div className="p-2 text-sm text-muted-foreground">
-            Create an account first to adjust a balance.
+            {t('adjustDialog.noAccounts')}
           </div>
         )}
       </DialogContent>
@@ -80,6 +80,8 @@ interface AdjustBalanceFormProps {
 }
 
 function AdjustBalanceForm({ accounts, selectedAccountId, onClose }: AdjustBalanceFormProps) {
+  const { t } = useTranslation('accounts');
+  const { formatMoney } = useFormat();
   const defaultAccount = accounts.find((a) => a.id === selectedAccountId) ?? accounts[0]!;
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
 
@@ -116,9 +118,7 @@ function AdjustBalanceForm({ accounts, selectedAccountId, onClose }: AdjustBalan
   const showBanner =
     adjust.isError && !(adjust.error instanceof ApiError && adjust.error.fieldErrors);
   const bannerMessage =
-    adjust.error instanceof ApiError
-      ? adjust.error.message
-      : 'Something went wrong. Please try again.';
+    adjust.error instanceof ApiError ? adjust.error.message : t('errors.generic');
 
   const onSubmit = form.handleSubmit(async (values) => {
     try {
@@ -155,12 +155,12 @@ function AdjustBalanceForm({ accounts, selectedAccountId, onClose }: AdjustBalan
             render={({ field }) => (
               <FormItem>
                 <FormLabel>
-                  Account
+                  {t('adjustDialog.account')}
                   <RequiredMarker />
                 </FormLabel>
                 <FormControl>
                   <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger aria-label="Account">
+                    <SelectTrigger aria-label={t('adjustDialog.account')}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -178,7 +178,8 @@ function AdjustBalanceForm({ accounts, selectedAccountId, onClose }: AdjustBalan
           />
 
           <div className="text-sm text-muted-foreground">
-            Current balance: <span className="tabular-nums">{formatAccountBalance(selected)}</span>{' '}
+            {t('adjustDialog.currentBalanceLabel')}{' '}
+            <span className="tabular-nums">{formatMoney(selected.balance, selected.currency)}</span>{' '}
             ({selected.currency})
           </div>
 
@@ -195,7 +196,7 @@ function AdjustBalanceForm({ accounts, selectedAccountId, onClose }: AdjustBalan
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>
-                    Target balance
+                    {t('adjustDialog.targetBalance')}
                     <RequiredMarker />
                   </FormLabel>
                   <FormControl>
@@ -219,7 +220,7 @@ function AdjustBalanceForm({ accounts, selectedAccountId, onClose }: AdjustBalan
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>
-                    Date
+                    {t('adjustDialog.date')}
                     <RequiredMarker />
                   </FormLabel>
                   <FormControl>
@@ -243,7 +244,7 @@ function AdjustBalanceForm({ accounts, selectedAccountId, onClose }: AdjustBalan
             name="description"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Description</FormLabel>
+                <FormLabel>{t('adjustDialog.description')}</FormLabel>
                 <FormControl>
                   <Input {...field} />
                 </FormControl>
@@ -254,10 +255,10 @@ function AdjustBalanceForm({ accounts, selectedAccountId, onClose }: AdjustBalan
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
+              {t('common:cancel')}
             </Button>
             <Button type="submit" disabled={adjust.isPending}>
-              {adjust.isPending ? 'Saving…' : 'OK'}
+              {adjust.isPending ? t('form.saving') : t('common:ok')}
             </Button>
           </div>
         </form>

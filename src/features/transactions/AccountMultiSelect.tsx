@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Check, ChevronDown, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -36,6 +37,7 @@ export function AccountMultiSelect({
   'aria-describedby': ariaDescribedby,
   containerClassName,
 }: AccountMultiSelectProps) {
+  const { t } = useTranslation('transactions');
   const generatedId = useId();
   const inputId = id ?? generatedId;
   const listId = `${inputId}-list`;
@@ -99,7 +101,7 @@ export function AccountMultiSelect({
             {label(entry)}
             <button
               type="button"
-              aria-label={`Remove ${label(entry)}`}
+              aria-label={t('pickers.remove', { name: label(entry) })}
               onClick={() => remove(entry.id)}
               className="rounded-sm text-muted-foreground hover:text-foreground"
             >
@@ -119,7 +121,7 @@ export function AccountMultiSelect({
           }
           aria-invalid={ariaInvalid}
           aria-describedby={ariaDescribedby}
-          placeholder={selected.length === 0 ? 'All accounts' : ''}
+          placeholder={selected.length === 0 ? t('pickers.allAccounts') : ''}
           value={query}
           onFocus={() => setOpen(true)}
           onChange={(e) => {
@@ -169,7 +171,7 @@ export function AccountMultiSelect({
           className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
         >
           {filtered.length === 0 && (
-            <li className="px-2 py-1.5 text-sm text-muted-foreground">No matches</li>
+            <li className="px-2 py-1.5 text-sm text-muted-foreground">{t('pickers.noMatches')}</li>
           )}
           {filtered.map((opt, i) => {
             const checked = value.includes(opt.id);

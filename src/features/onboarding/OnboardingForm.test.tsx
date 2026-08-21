@@ -45,6 +45,25 @@ describe('OnboardingForm', () => {
     await waitFor(() => expect(received).toEqual({ country: 'US' }));
   });
 
+  it('seeds the language from the browser for a fresh user (country unset)', async () => {
+    const original = Object.getOwnPropertyDescriptor(navigator, 'languages');
+    Object.defineProperty(navigator, 'languages', { value: ['uk-UA', 'en'], configurable: true });
+    try {
+      let received: unknown = null;
+      server.use(
+        http.put(`${apiBase}/api/users/me/configuration/language`, async ({ request }) => {
+          received = await request.json();
+          return new HttpResponse(null, { status: 204 });
+        }),
+      );
+      // configurationFixture is a fresh user: country null, language 'en'.
+      renderForm();
+      await waitFor(() => expect(received).toEqual({ language: 'uk' }));
+    } finally {
+      if (original) Object.defineProperty(navigator, 'languages', original);
+    }
+  });
+
   it('reflects a preset-shifted currency from the refetched config', async () => {
     renderForm();
     await waitFor(() =>

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Check, Minus, Plus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -41,6 +42,7 @@ export function MenuSearchList({
   onCreate,
   createHint,
 }: MenuSearchListProps) {
+  const { t } = useTranslation('transactions');
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -128,13 +130,13 @@ export function MenuSearchList({
             }}
             className="w-full truncate rounded-sm px-2 py-1 text-left text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground"
           >
-            Use: {hint}
+            {t('pickers.useHint', { hint })}
           </button>
         </div>
       )}
       <ul role="listbox" aria-label={searchAriaLabel} className="max-h-60 overflow-auto p-1">
         {filtered.length === 0 && !createName && (
-          <li className="px-2 py-1.5 text-sm text-muted-foreground">No matches</li>
+          <li className="px-2 py-1.5 text-sm text-muted-foreground">{t('pickers.noMatches')}</li>
         )}
         {filtered.map((opt, i) => {
           const checked = isSelected(opt.id);
@@ -179,7 +181,7 @@ export function MenuSearchList({
             )}
           >
             <Plus aria-hidden className="h-4 w-4 shrink-0" />
-            <span className="truncate">Create ‘{createName}’</span>
+            <span className="truncate">{t('pickers.create', { name: createName })}</span>
           </li>
         )}
       </ul>

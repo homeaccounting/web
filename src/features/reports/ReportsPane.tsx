@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { PageContainer } from '@/components/PageContainer';
 import { PageHeader } from '@/components/PageHeader';
@@ -17,6 +18,7 @@ import {
 } from './reportsUrl';
 
 export function ReportsPane() {
+  const { t } = useTranslation('reports');
   const [searchParams, setSearchParams] = useSearchParams();
   const lastView = useMemo(() => readReportsLastView(), []);
   const { tab, periodValue, dayRange } = parseReportsParams(
@@ -52,11 +54,11 @@ export function ReportsPane() {
 
   return (
     <PageContainer className="flex flex-col gap-4">
-      <PageHeader title="Reports" />
+      <PageHeader title={t('title')} />
       <Tabs value={tab} onValueChange={onTabChange}>
         <TabsList variant="underline">
-          <TabsTrigger value="cash-flow">Cash flow</TabsTrigger>
-          <TabsTrigger value="net-worth">Net worth</TabsTrigger>
+          <TabsTrigger value="cash-flow">{t('tabs.cashFlow')}</TabsTrigger>
+          <TabsTrigger value="net-worth">{t('tabs.netWorth')}</TabsTrigger>
         </TabsList>
         <TabsContent value="cash-flow" className="flex flex-col gap-4">
           <div className="flex justify-end">

@@ -1,0 +1,136 @@
+{
+  "subtype": {
+    "cash": "Cash",
+    "bankAccount": "Bank account",
+    "eWallet": "E-wallet",
+    "asset": "Asset",
+    "loan": "Loan",
+    "unknown": "Account"
+  },
+  "cardNetwork": {
+    "visa": "Visa",
+    "mastercard": "Mastercard",
+    "amex": "Amex"
+  },
+  "assetType": {
+    "property": "Property",
+    "vehicle": "Vehicle",
+    "stocks": "Stocks",
+    "retirementFund": "Retirement fund"
+  },
+  "role": {
+    "owner": "Owner",
+    "editor": "Editor",
+    "viewer": "Viewer"
+  },
+  "group": {
+    "other": "Other",
+    "sharedWithMe": "Shared with me"
+  },
+  "pane": {
+    "title": "Accounts",
+    "allAccounts": "All accounts",
+    "editAccount": "Edit account",
+    "ownerOnly": "Owner only",
+    "reopenAccount": "Reopen account",
+    "closeAccount": "Close account",
+    "manageAccess": "Manage access",
+    "addAccount": "Add account",
+    "loadError": "Couldn’t load accounts.",
+    "empty": "No accounts yet.",
+    "hideClosed": "Hide closed",
+    "showClosed": "Show closed ({{count}})",
+    "reopenError": "Couldn’t reopen this account. Try again."
+  },
+  "contextMenu": {
+    "edit": "Edit",
+    "access": "Access",
+    "reopen": "Reopen",
+    "close": "Close"
+  },
+  "form": {
+    "name": "Name",
+    "initialBalance": "Initial balance",
+    "currency": "Currency",
+    "currencyLocked": "Cannot be changed after creation",
+    "moreOptions": "More options",
+    "hide": "Hide",
+    "overdraftLimit": "Overdraft limit",
+    "accountType": "Account type",
+    "saving": "Saving…"
+  },
+  "subtypeFields": {
+    "bankName": "Bank name",
+    "selectPlaceholder": "Select…",
+    "otherOption": "Other…",
+    "customBankName": "Custom bank name",
+    "storageLocation": "Storage location",
+    "accountNumber": "Account number",
+    "cardNetwork": "Card network",
+    "provider": "Provider",
+    "accountIdentifier": "Account identifier",
+    "assetType": "Asset type",
+    "description": "Description",
+    "lender": "Lender",
+    "interestRate": "Interest rate (% APR)",
+    "dueDate": "Due date (YYYY-MM-DD)"
+  },
+  "createDialog": {
+    "title": "Create account",
+    "description": "Add a new account to track balances and transactions."
+  },
+  "editDialog": {
+    "title": "Edit account",
+    "description": "Update account details."
+  },
+  "closeDialog": {
+    "title": "Close this account?",
+    "description": "“{{name}}” will be hidden from your accounts list. You can reopen it later from “Show closed”."
+  },
+  "adjustDialog": {
+    "title": "Adjust balance",
+    "description": "Record a balance adjustment as a synthetic transaction.",
+    "noAccounts": "Create an account first to adjust a balance.",
+    "account": "Account",
+    "currentBalanceLabel": "Current balance:",
+    "targetBalance": "Target balance",
+    "date": "Date",
+    "description": "Description"
+  },
+  "manageDialog": {
+    "title": "Manage access",
+    "description": "Share “{{name}}” with other people, or revoke their access.",
+    "userId": "User ID",
+    "userIdPlaceholder": "00000000-0000-0000-0000-000000000000",
+    "role": "Role",
+    "sharing": "Sharing…",
+    "share": "Share",
+    "peopleWithAccess": "People with access",
+    "loadError": "Couldn’t load access.",
+    "revoke": "Revoke",
+    "revokeAria": "Revoke {{label}}",
+    "revokeTitle": "Revoke access?",
+    "revokeDescription": "{{label}} will lose access to \"{{name}}\".",
+    "noUserFound": "No user found with that ID.",
+    "selfShare": "You can't share an account with yourself."
+  },
+  "importButton": {
+    "label": "Import statement",
+    "error": "Couldn’t import this statement. Try again."
+  },
+  "syncButton": {
+    "label": "Sync now",
+    "error": "Couldn’t sync this account. Try again."
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again."
+  },
+  "validation": {
+    "nameRequired": "Name is required",
+    "overdraftRequired": "Overdraft limit is required when initial balance is negative.",
+    "overdraftMin": "Overdraft limit must be at least |initial balance|.",
+    "dateRequired": "Date is required",
+    "dateFuture": "Date cannot be in the future.",
+    "userIdInvalid": "Enter a valid user ID"
+  }
+}

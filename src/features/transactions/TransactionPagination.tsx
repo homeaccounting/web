@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -39,6 +40,7 @@ export function TransactionPagination({
   onPageIndexChange,
   onPageSizeChange,
 }: TransactionPaginationProps) {
+  const { t } = useTranslation('transactions');
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
   const clamped = Math.min(pageIndex, pageCount - 1);
   const start = total === 0 ? 0 : clamped * pageSize + 1;
@@ -46,20 +48,18 @@ export function TransactionPagination({
 
   return (
     <div className="flex items-center justify-between border-t px-4 py-2 text-sm text-muted-foreground">
-      <span>
-        Showing {start}–{end} of {total}
-      </span>
+      <span>{t('list.showing', { start, end, total })}</span>
       <div className="flex items-center gap-3">
         {/* A plain <span>, not a <label>: the Select's own aria-label (not
         htmlFor/id, which Radix's Select.Root doesn't forward to the trigger)
         supplies the accessible name — see SelectTrigger below. */}
         <span className="flex items-center gap-1">
-          Rows
+          {t('list.rows')}
           <Select
             value={String(pageSize)}
             onValueChange={(value) => onPageSizeChange(Number(value))}
           >
-            <SelectTrigger aria-label="Rows per page" className="h-auto w-auto py-0.5">
+            <SelectTrigger aria-label={t('list.rowsPerPage')} className="h-auto w-auto py-0.5">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -77,7 +77,7 @@ export function TransactionPagination({
           disabled={clamped <= 0}
           onClick={() => onPageIndexChange(clamped - 1)}
         >
-          ‹ Prev
+          {t('list.prev')}
         </Button>
         <Button
           variant="outline"
@@ -85,7 +85,7 @@ export function TransactionPagination({
           disabled={clamped >= pageCount - 1}
           onClick={() => onPageIndexChange(clamped + 1)}
         >
-          Next ›
+          {t('list.next')}
         </Button>
       </div>
     </div>

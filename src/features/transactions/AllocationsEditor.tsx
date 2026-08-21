@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useFieldArray, useFormContext } from 'react-hook-form';
 import { Check, ChevronDown, ChevronRight, FoldVertical, Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -9,7 +10,7 @@ import { MoneyInput } from '@/components/MoneyInput';
 import { FormField, FormItem, FormControl, FormMessage } from '@/components/ui/form';
 import { CategoryCombobox } from './CategoryCombobox';
 import { collapseSlices } from './allocations';
-import { formatMoney } from '@/lib/format';
+import { useFormat } from '@/lib/useFormat';
 import { roundMoney } from '@/lib/money';
 import { cn } from '@/lib/utils';
 import type { DictionaryEntryResponse } from '@/api/types';
@@ -76,6 +77,8 @@ function AllocationSectionRows({
   section: AllocationSection;
   currency: string;
 }) {
+  const { t } = useTranslation('transactions');
+  const { formatMoney } = useFormat();
   const { control, watch, setValue } = useFormContext();
   const { fields, append, remove, replace } = useFieldArray({ control, name: section.name });
 
@@ -122,7 +125,7 @@ function AllocationSectionRows({
                       value={(f.value as string) ?? ''}
                       onChange={f.onChange}
                       name={f.name}
-                      aria-label="Category"
+                      aria-label={t('pickers.category')}
                     />
                   </FormControl>
                   <FormMessage />
@@ -137,7 +140,7 @@ function AllocationSectionRows({
                   <FormControl>
                     <MoneyInput
                       currency={currency}
-                      placeholder="Amount"
+                      placeholder={t('common:moneyInput.amount')}
                       value={f.value as number | string}
                       onChange={f.onChange}
                       name={f.name}
@@ -172,7 +175,7 @@ function AllocationSectionRows({
                       })
                     }
                   >
-                    Fill {currency ? formatMoney(next, currency) : String(next)}
+                    {t('bulk.fill', { amount: currency ? formatMoney(next, currency) : String(next) })}
                   </Button>
                 );
               })()}
@@ -180,7 +183,7 @@ function AllocationSectionRows({
                 opacity hover, not a full-size icon Button (which dwarfed it). */}
             <button
               type="button"
-              aria-label="Remove row"
+              aria-label={t('bulk.removeRow')}
               onClick={() => remove(i)}
               className="mt-3 shrink-0 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
             >
@@ -195,8 +198,8 @@ function AllocationSectionRows({
                 <FormControl>
                   <Input
                     type="text"
-                    aria-label="Comment"
-                    placeholder="Comment"
+                    aria-label={t('bulk.comment')}
+                    placeholder={t('bulk.comment')}
                     className="h-8 text-sm"
                     name={f.name}
                     ref={f.ref}
@@ -237,7 +240,7 @@ function AllocationSectionRows({
                   type="button"
                   variant="ghost"
                   size="icon"
-                  aria-label="Collapse duplicates"
+                  aria-label={t('bulk.collapseDuplicates')}
                   className="h-9 w-9 [&_svg]:size-5"
                   onClick={() =>
                     replace(
@@ -254,7 +257,7 @@ function AllocationSectionRows({
                   <FoldVertical />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Collapse duplicates</TooltipContent>
+              <TooltipContent>{t('bulk.collapseDuplicates')}</TooltipContent>
             </Tooltip>
           )}
         </div>
@@ -268,13 +271,17 @@ function AllocationSectionRows({
 // attached to the array field itself, not a row. zod's resolver may place them
 // either directly on the array path or on its synthetic `.root`, so read both.
 function SectionError({ name }: { name: 'incomes' | 'expenses' }) {
+  const { t } = useTranslation();
   const {
     formState: { errors },
   } = useFormContext();
   const fieldError = errors[name] as { message?: string; root?: { message?: string } } | undefined;
   const message = fieldError?.message ?? fieldError?.root?.message;
   if (!message) return null;
-  return <p className="text-sm font-medium text-destructive">{message}</p>;
+  // Section-level zod messages are stored as i18n KEYS (schema.ts); translate
+  // at render like FormMessage does. A pre-resolved (non-key) string falls back
+  // to itself, so dynamic balance/target messages render unchanged.
+  return <p className="text-sm font-medium text-destructive">{t(message)}</p>;
 }
 
 function Section({ section, currency }: { section: AllocationSection; currency: string }) {
@@ -310,6 +317,8 @@ function Section({ section, currency }: { section: AllocationSection; currency: 
 }
 
 export function AllocationsEditor({ sections, currency, lockTarget }: AllocationsEditorProps) {
+  const { t } = useTranslation('transactions');
+  const { formatMoney } = useFormat();
   const { control, watch, setValue } = useFormContext();
   const incomes = watch('incomes') as Slice[] | undefined;
   const expenses = watch('expenses') as Slice[] | undefined;
@@ -347,7 +356,7 @@ export function AllocationsEditor({ sections, currency, lockTarget }: Allocation
             the collapsed card stays a single compact line with no wasted space. */}
         {lockTarget ? (
           <div className="flex items-center justify-between text-sm font-medium">
-            <span>Target</span>
+            <span>{t('bulk.target')}</span>
             <span data-testid="allocations-target-readout" className="tabular-nums">
               {money(hasTarget ? target : 0)}
             </span>
@@ -369,11 +378,11 @@ export function AllocationsEditor({ sections, currency, lockTarget }: Allocation
                   }
                 }}
               />
-              Target
+              {t('bulk.target')}
             </label>
             {!targetMode && (
               <div data-testid="allocations-total" className="text-sm font-medium tabular-nums">
-                Total: {money(sum)}
+                {t('bulk.total', { amount: money(sum) })}
               </div>
             )}
           </div>
@@ -394,8 +403,8 @@ export function AllocationsEditor({ sections, currency, lockTarget }: Allocation
                       <Input
                         type="number"
                         step="any"
-                        aria-label="Target total"
-                        placeholder="Target"
+                        aria-label={t('bulk.targetTotal')}
+                        placeholder={t('bulk.target')}
                         name={f.name}
                         ref={f.ref}
                         onBlur={f.onBlur}
@@ -421,7 +430,7 @@ export function AllocationsEditor({ sections, currency, lockTarget }: Allocation
               />
             )}
             <div data-testid="allocations-total" className="text-sm font-medium tabular-nums">
-              Total: {money(sum)}
+              {t('bulk.total', { amount: money(sum) })}
             </div>
           </div>
         )}
@@ -429,7 +438,7 @@ export function AllocationsEditor({ sections, currency, lockTarget }: Allocation
           <div className="space-y-1">
             <div
               role="progressbar"
-              aria-label="Allocated toward target"
+              aria-label={t('bulk.allocatedTowardTarget')}
               aria-valuemin={0}
               aria-valuemax={target}
               aria-valuenow={sum}
@@ -450,12 +459,12 @@ export function AllocationsEditor({ sections, currency, lockTarget }: Allocation
               {balanced ? (
                 <>
                   <Check className="h-3.5 w-3.5" aria-hidden />
-                  Balanced
+                  {t('bulk.balanced')}
                 </>
               ) : remaining > 0 ? (
-                `${money(remaining)} left`
+                t('bulk.leftAmount', { amount: money(remaining) })
               ) : (
-                `${money(-remaining)} over`
+                t('bulk.overAmount', { amount: money(-remaining) })
               )}
             </div>
           </div>

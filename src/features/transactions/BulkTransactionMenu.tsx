@@ -1,4 +1,5 @@
 import { Link2, Merge, Store, Tag, Tags } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import {
   ContextMenuItem,
   ContextMenuLabel,
@@ -64,25 +65,26 @@ export function BulkTransactionMenu({
   onLink,
   onMerge,
 }: BulkTransactionMenuProps) {
+  const { t } = useTranslation('transactions');
   const categoryOptions =
     categoryEligibility.type === 'income' ? incomeCategoryEntries : expenseCategoryEntries;
   return (
     <>
-      <ContextMenuLabel>{count} selected</ContextMenuLabel>
+      <ContextMenuLabel>{t('list.selected', { count })}</ContextMenuLabel>
 
       {categoryEligibility.enabled ? (
         <ContextMenuSub>
           <ContextMenuSubTrigger disabled={isApplying}>
             <Tag className="mr-2 h-4 w-4" aria-hidden />
-            Set category
+            {t('bulk.setCategory')}
           </ContextMenuSubTrigger>
           <ContextMenuSubContent className="p-0">
             <MenuSearchList
               options={categoryOptions}
               isSelected={() => false}
               onPick={(id) => onSetCategory(id)}
-              searchAriaLabel="Search categories"
-              placeholder="Search categories…"
+              searchAriaLabel={t('pickers.searchCategories')}
+              placeholder={t('pickers.searchCategoriesPlaceholder')}
             />
           </ContextMenuSubContent>
         </ContextMenuSub>
@@ -90,7 +92,7 @@ export function BulkTransactionMenu({
         <>
           <ContextMenuItem disabled>
             <Tag className="mr-2 h-4 w-4" aria-hidden />
-            Set category
+            {t('bulk.setCategory')}
           </ContextMenuItem>
           {categoryEligibility.reason && (
             <div className="px-2 pb-1 text-xs text-muted-foreground">
@@ -113,10 +115,10 @@ export function BulkTransactionMenu({
         <>
           <ContextMenuItem disabled>
             <Tags className="mr-2 h-4 w-4" aria-hidden />
-            Set labels
+            {t('bulk.setLabels')}
           </ContextMenuItem>
           <div className="px-2 pb-1 text-xs text-muted-foreground">
-            Only completed transactions can be edited
+            {t('bulk.onlyCompletedEditable')}
           </div>
         </>
       )}
@@ -132,7 +134,7 @@ export function BulkTransactionMenu({
         <>
           <ContextMenuItem disabled>
             <Store className="mr-2 h-4 w-4" aria-hidden />
-            Set contact
+            {t('bulk.setContact')}
           </ContextMenuItem>
           {contactEligibility.reason && (
             <div className="px-2 pb-1 text-xs text-muted-foreground">
@@ -147,14 +149,14 @@ export function BulkTransactionMenu({
       {canLink && (
         <ContextMenuItem onSelect={onLink}>
           <Link2 className="mr-2 h-4 w-4" aria-hidden />
-          Link
+          {t('list.link')}
         </ContextMenuItem>
       )}
       {count >= 2 && (
         <>
           <ContextMenuItem onSelect={onMerge} disabled={!canMerge}>
             <Merge className="mr-2 h-4 w-4" aria-hidden />
-            Merge
+            {t('list.merge')}
           </ContextMenuItem>
           {/* Reason as a muted subtitle (matching the disabled category/labels
               items above) rather than appended inline, so a long transfer-merge

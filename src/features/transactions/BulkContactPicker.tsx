@@ -1,4 +1,5 @@
 import { Store } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import {
   ContextMenuItem,
   ContextMenuSub,
@@ -28,6 +29,7 @@ export function BulkContactPicker({
   createHint,
   disabled,
 }: BulkContactPickerProps) {
+  const { t } = useTranslation('transactions');
   const handleCreate = async (name: string) => {
     if (disabled) return;
     const id = await onCreate(name);
@@ -37,19 +39,21 @@ export function BulkContactPicker({
     <ContextMenuSub>
       <ContextMenuSubTrigger disabled={disabled}>
         <Store className="mr-2 h-4 w-4" aria-hidden />
-        Set contact
+        {t('bulk.setContact')}
       </ContextMenuSubTrigger>
       {/* p-0: MenuSearchList supplies its own padding. */}
       <ContextMenuSubContent className="p-0">
         <div className="p-1">
-          <ContextMenuItem onSelect={() => !disabled && onSelect(null)}>— none —</ContextMenuItem>
+          <ContextMenuItem onSelect={() => !disabled && onSelect(null)}>
+            {t('pickers.none')}
+          </ContextMenuItem>
         </div>
         <MenuSearchList
           options={options}
           isSelected={() => false}
           onPick={(id) => !disabled && onSelect(id)}
-          searchAriaLabel="Search contacts"
-          placeholder="Search contacts…"
+          searchAriaLabel={t('pickers.searchContacts')}
+          placeholder={t('pickers.searchContactsPlaceholder')}
           createHint={createHint}
           onCreate={handleCreate}
         />

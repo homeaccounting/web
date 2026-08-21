@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { PageContainer } from '@/components/PageContainer';
@@ -20,6 +21,7 @@ function isStaticTab(value: string | undefined): value is StaticTab {
 }
 
 export default function ProfilePage() {
+  const { t } = useTranslation('profile');
   const { tab } = useParams<{ tab?: string }>();
   const navigate = useNavigate();
   const config = useConfiguration();
@@ -66,14 +68,14 @@ export default function ProfilePage() {
       <Header />
       <main className="flex-1 overflow-y-auto">
         <PageContainer>
-          <PageHeader title="Profile" />
+          <PageHeader title={t('page.title')} />
           <Tabs value={active} onValueChange={(next) => navigate(`/profile/${next}`)}>
             <TabsList>
-              <TabsTrigger value="general">General</TabsTrigger>
-              <TabsTrigger value="dictionaries">Dictionaries</TabsTrigger>
-              <TabsTrigger value="defaults">Defaults</TabsTrigger>
-              <TabsTrigger value="auth">Auth</TabsTrigger>
-              {bankingEnabled && <TabsTrigger value="banking">Banking</TabsTrigger>}
+              <TabsTrigger value="general">{t('tabs.general')}</TabsTrigger>
+              <TabsTrigger value="dictionaries">{t('tabs.dictionaries')}</TabsTrigger>
+              <TabsTrigger value="defaults">{t('tabs.defaults')}</TabsTrigger>
+              <TabsTrigger value="auth">{t('tabs.auth')}</TabsTrigger>
+              {bankingEnabled && <TabsTrigger value="banking">{t('tabs.banking')}</TabsTrigger>}
             </TabsList>
             <TabsContent value="general">
               <ProfileGeneralPane />

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { AccountRole } from '@/api/types';
 import { ACCOUNT_ROLES } from '@/api/types';
-import { GRANTABLE_ROLES, ROLE_LABELS, canManage, canModify } from './roles';
+import { GRANTABLE_ROLES, roleLabel, canManage, canModify } from './roles';
 
 describe('canManage', () => {
   it('is true only for owner', () => {
@@ -19,12 +19,12 @@ describe('canModify', () => {
   });
 });
 
-describe('ROLE_LABELS', () => {
+describe('roleLabel', () => {
   it('has a label for every account role', () => {
     ACCOUNT_ROLES.forEach((role: AccountRole) => {
-      expect(ROLE_LABELS[role]).toBeTruthy();
+      expect(roleLabel(role)).toBeTruthy();
     });
-    expect(ROLE_LABELS).toEqual({ owner: 'Owner', editor: 'Editor', viewer: 'Viewer' });
+    expect(ACCOUNT_ROLES.map(roleLabel)).toEqual(['Owner', 'Editor', 'Viewer']);
   });
 });
 

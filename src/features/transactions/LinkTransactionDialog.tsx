@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogContent,
@@ -12,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { ApiError } from '@/api/client';
 import { TRANSACTION_TYPE, type RelationKind, type TransactionResponse } from '@/api/types';
-import { formatDate, formatMoney } from '@/lib/format';
+import { useFormat } from '@/lib/useFormat';
 import { useLinkRelation } from './useLinkRelation';
 import { useRefundSummary } from './useRefundSummary';
 
@@ -68,17 +69,14 @@ function associationOwner(pair: [TransactionResponse, TransactionResponse]) {
   return { owner, counterpart };
 }
 
-const KIND_LABEL: Record<LinkKind, string> = {
-  refund: 'Refund',
-  associated: 'Association',
-};
-
 export function LinkTransactionDialog({
   open,
   onOpenChange,
   pair,
   onLinked,
 }: LinkTransactionDialogProps) {
+  const { t } = useTranslation('transactions');
+  const { formatDate, formatMoney } = useFormat();
   const pairing = useMemo(() => refundPairing(pair), [pair]);
   const kinds: LinkKind[] = pairing ? ['refund', 'associated'] : ['associated'];
   const [kind, setKind] = useState<LinkKind>(kinds[0] ?? 'associated');
@@ -128,14 +126,14 @@ export function LinkTransactionDialog({
         const first = e.fieldErrors ? Object.values(e.fieldErrors)[0] : undefined;
         setFieldError(first ?? e.message);
       } else {
-        setFieldError('Something went wrong. Please try again.');
+        setFieldError(t('resolve.genericError'));
       }
     }
   };
 
   const rowLabel = (tx: TransactionResponse) => (
     <span className="flex min-w-0 flex-col">
-      <span className="truncate font-medium">{tx.description || '(no description)'}</span>
+      <span className="truncate font-medium">{tx.description || t('resolve.noDescription')}</span>
       <span className="text-xs text-muted-foreground">
         {formatDate(tx.date)} · {formatMoney(tx.sourceAmount, tx.sourceCurrency)}
       </span>
@@ -152,10 +150,8 @@ export function LinkTransactionDialog({
     >
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Link 2 transactions</DialogTitle>
-          <DialogDescription>
-            Create a typed relation between the two selected transactions.
-          </DialogDescription>
+          <DialogTitle>{t('resolve.linkTitle')}</DialogTitle>
+          <DialogDescription>{t('resolve.linkDescription')}</DialogDescription>
         </DialogHeader>
 
         {fieldError && (
@@ -166,13 +162,17 @@ export function LinkTransactionDialog({
 
         {alreadyRelated && (
           <Alert role="alert">
-            <AlertDescription>These transactions are already linked.</AlertDescription>
+            <AlertDescription>{t('resolve.alreadyLinked')}</AlertDescription>
           </Alert>
         )}
 
         <div className="space-y-4">
           {kinds.length > 1 && (
-            <div role="group" aria-label="Relation kind" className="grid grid-cols-2 gap-2">
+            <div
+              role="group"
+              aria-label={t('resolve.relationKindGroup')}
+              className="grid grid-cols-2 gap-2"
+            >
               {kinds.map((k) => (
                 <button
                   key={k}
@@ -187,9 +187,9 @@ export function LinkTransactionDialog({
                     kind === k ? 'border-primary bg-primary/5' : 'border-border',
                   )}
                 >
-                  <span className="font-medium">{KIND_LABEL[k]}</span>
+                  <span className="font-medium">{t(`resolve.linkKind.${k}`)}</span>
                   <span className="block text-xs text-muted-foreground">
-                    {k === 'refund' ? 'Income refunds the expense' : 'General link between the two'}
+                    {t(`resolve.linkKindHint.${k}`)}
                   </span>
                 </button>
               ))}
@@ -207,19 +207,21 @@ export function LinkTransactionDialog({
           {kind === 'refund' && pairing && (
             <div className="text-sm text-muted-foreground">
               {refundSummary.isLoading ? (
-                'Checking refundable amount…'
+                t('resolve.checkingRefundable')
               ) : refundSummary.isError ? (
-                'Couldn’t load prior refunds for this expense.'
+                t('resolve.refundLoadErrorExpense')
               ) : overRefund ? (
                 <span role="alert" className="text-destructive">
-                  This expense is already fully refunded.
+                  {t('resolve.fullyRefunded')}
                 </span>
               ) : (
-                <>
-                  {formatMoney(refundSummary.remainingTotal, pairing.expense.sourceCurrency)} of{' '}
-                  {formatMoney(refundSummary.originalTotal, pairing.expense.sourceCurrency)} left to
-                  refund
-                </>
+                t('resolve.refundLeftSummary', {
+                  remaining: formatMoney(
+                    refundSummary.remainingTotal,
+                    pairing.expense.sourceCurrency,
+                  ),
+                  original: formatMoney(refundSummary.originalTotal, pairing.expense.sourceCurrency),
+                })
               )}
             </div>
           )}
@@ -227,10 +229,10 @@ export function LinkTransactionDialog({
 
         <DialogFooter>
           <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t('common:cancel')}
           </Button>
           <Button type="button" onClick={() => void handleSubmit()} disabled={!canLink}>
-            Link
+            {t('resolve.link')}
           </Button>
         </DialogFooter>
       </DialogContent>

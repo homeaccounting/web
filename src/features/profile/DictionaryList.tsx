@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Pencil, Trash2, Plus } from 'lucide-react';
 import type { DictionaryResponse, EntryRole } from '@/api/types';
 import { flattenDictionaryTree, type FlatDictionaryNode } from '@/api/dictionary';
@@ -57,6 +58,7 @@ interface EditState {
 }
 
 export function DictionaryList({ dictId, title, dict, addLabel }: Props) {
+  const { t } = useTranslation('profile');
   const add = useAddDictionaryEntry();
   const rename = useRenameDictionaryEntry();
   const remove = useRemoveDictionaryEntry();
@@ -114,7 +116,7 @@ export function DictionaryList({ dictId, title, dict, addLabel }: Props) {
       <h3 id={`${dictId}-heading`} className="text-sm font-semibold">
         {title}
       </h3>
-      {nodes.length === 0 && <EmptyState message="No entries yet." className="p-0" />}
+      {nodes.length === 0 && <EmptyState message={t('dictionaries.empty')} className="p-0" />}
       <ul className="divide-y">
         {nodes.map((node) => {
           const display = displayOf(node);
@@ -130,7 +132,7 @@ export function DictionaryList({ dictId, title, dict, addLabel }: Props) {
                   if (ev.key === 'Enter') commitEdit(editing);
                   if (ev.key === 'Escape') setEditing(null);
                 }}
-                aria-label={`Rename ${display}`}
+                aria-label={t('dictionaries.rename', { name: display })}
                 className="h-9 text-sm"
               />
               {editing.isItem && (
@@ -143,7 +145,7 @@ export function DictionaryList({ dictId, title, dict, addLabel }: Props) {
                 >
                   <SelectTrigger
                     className="h-9 w-auto"
-                    aria-label={`Move ${display}`}
+                    aria-label={t('dictionaries.move', { name: display })}
                     onKeyDown={(ev) => {
                       if (ev.key === 'Escape') setEditing(null);
                     }}
@@ -151,7 +153,7 @@ export function DictionaryList({ dictId, title, dict, addLabel }: Props) {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={ROOT}>Top level</SelectItem>
+                    <SelectItem value={ROOT}>{t('dictionaries.topLevel')}</SelectItem>
                     {groups.map((g) => (
                       <SelectItem key={g.id} value={g.id}>
                         {g.name}
@@ -166,14 +168,16 @@ export function DictionaryList({ dictId, title, dict, addLabel }: Props) {
               <span className="flex items-center gap-2">
                 <span>{display}</span>
                 {node.type === 'group' && (
-                  <span className="text-xs text-muted-foreground">group</span>
+                  <span className="text-xs text-muted-foreground">
+                    {t('dictionaries.groupBadge')}
+                  </span>
                 )}
               </span>
               <div className="flex gap-1">
                 <Button
                   variant="ghost"
                   size="icon"
-                  aria-label={`Rename ${display}`}
+                  aria-label={t('dictionaries.rename', { name: display })}
                   onClick={() =>
                     setEditing({
                       id: node.id,
@@ -190,7 +194,7 @@ export function DictionaryList({ dictId, title, dict, addLabel }: Props) {
                 <Button
                   variant="ghost"
                   size="icon"
-                  aria-label={`Delete ${display}`}
+                  aria-label={t('dictionaries.delete', { name: display })}
                   onClick={() => setDeleting(node)}
                 >
                   <Trash2 className="h-4 w-4" />
@@ -219,12 +223,12 @@ export function DictionaryList({ dictId, title, dict, addLabel }: Props) {
             value={adding.type}
             onValueChange={(value) => setAdding({ ...adding, type: value as EntryRole })}
           >
-            <SelectTrigger className="h-9 w-auto" aria-label="Entry type">
+            <SelectTrigger className="h-9 w-auto" aria-label={t('dictionaries.entryType')}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="item">Item</SelectItem>
-              <SelectItem value="group">Group</SelectItem>
+              <SelectItem value="item">{t('dictionaries.item')}</SelectItem>
+              <SelectItem value="group">{t('dictionaries.group')}</SelectItem>
             </SelectContent>
           </Select>
           <Select
@@ -232,11 +236,11 @@ export function DictionaryList({ dictId, title, dict, addLabel }: Props) {
             disabled={adding.type === 'group'}
             onValueChange={(value) => setAdding({ ...adding, parentId: value })}
           >
-            <SelectTrigger className="h-9 w-auto" aria-label="Parent group">
+            <SelectTrigger className="h-9 w-auto" aria-label={t('dictionaries.parentGroup')}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={ROOT}>Top level</SelectItem>
+              <SelectItem value={ROOT}>{t('dictionaries.topLevel')}</SelectItem>
               {groups.map((g) => (
                 <SelectItem key={g.id} value={g.id}>
                   {g.name}
@@ -263,13 +267,13 @@ export function DictionaryList({ dictId, title, dict, addLabel }: Props) {
       <AlertDialog open={deleting !== null} onOpenChange={(open) => !open && setDeleting(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete {deleting ? displayOf(deleting) : ''}?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Transactions tagged with it will not be deleted.
-            </AlertDialogDescription>
+            <AlertDialogTitle>
+              {t('dictionaries.deleteTitle', { name: deleting ? displayOf(deleting) : '' })}
+            </AlertDialogTitle>
+            <AlertDialogDescription>{t('dictionaries.deleteDescription')}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('common:cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 if (deleting) {
@@ -278,7 +282,7 @@ export function DictionaryList({ dictId, title, dict, addLabel }: Props) {
                 setDeleting(null);
               }}
             >
-              Delete
+              {t('common:delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -24,6 +25,7 @@ interface Props {
 }
 
 export function ProviderRow({ provider, status, onLink, onUnlink, disableUnlinkReason }: Props) {
+  const { t } = useTranslation('profile');
   const [confirming, setConfirming] = useState(false);
   const [pending, setPending] = useState(false);
 
@@ -42,7 +44,7 @@ export function ProviderRow({ provider, status, onLink, onUnlink, disableUnlinkR
       <div>
         <p className="text-sm font-medium">{provider}</p>
         <p className="text-sm text-muted-foreground">
-          {status.linked ? `Linked as ${status.subtitle}` : 'Not linked'}
+          {status.linked ? t('provider.linkedAs', { subtitle: status.subtitle }) : t('provider.notLinked')}
         </p>
       </div>
       {status.linked ? (
@@ -53,21 +55,21 @@ export function ProviderRow({ provider, status, onLink, onUnlink, disableUnlinkR
           title={disableUnlinkReason}
           aria-disabled={!!disableUnlinkReason}
         >
-          Unlink
+          {t('provider.unlink')}
         </Button>
       ) : (
-        <Button onClick={onLink}>Link {provider}</Button>
+        <Button onClick={onLink}>{t('provider.link', { provider })}</Button>
       )}
       <AlertDialog open={confirming} onOpenChange={(open) => !open && setConfirming(false)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Unlink {provider}?</AlertDialogTitle>
+            <AlertDialogTitle>{t('provider.unlinkTitle', { provider })}</AlertDialogTitle>
             <AlertDialogDescription>
-              You won&rsquo;t be able to sign in with {provider} until you link it again.
+              {t('provider.unlinkDescription', { provider })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={pending}>{t('common:cancel')}</AlertDialogCancel>
             <AlertDialogAction
               disabled={pending}
               onClick={(e) => {
@@ -75,7 +77,7 @@ export function ProviderRow({ provider, status, onLink, onUnlink, disableUnlinkR
                 void handleConfirm();
               }}
             >
-              Unlink
+              {t('provider.unlink')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

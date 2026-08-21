@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ApiClient, baseUrl } from '@/api/client';
 import { configurationApi } from '@/api/configuration';
@@ -10,6 +11,7 @@ import { toast } from '@/lib/toast';
 // configuration and, if any of those derived values changed, surface a toast so
 // the user knows their setup was adjusted on their behalf.
 export function useSetCountry() {
+  const { t } = useTranslation('profile');
   const { tokenRef, signOut } = useAuth();
   const queryClient = useQueryClient();
   return useMutation<void, Error, ChangeCountryRequest>({
@@ -41,16 +43,16 @@ export function useSetCountry() {
       if (prev && next) {
         const changes: string[] = [];
         if (next.defaultCurrency !== prev.defaultCurrency) {
-          changes.push(`default currency to ${next.defaultCurrency}`);
+          changes.push(t('country.cascade.defaultCurrency', { value: next.defaultCurrency }));
         }
         if (next.baseCurrency !== prev.baseCurrency) {
-          changes.push(`base currency to ${next.baseCurrency}`);
+          changes.push(t('country.cascade.baseCurrency', { value: next.baseCurrency }));
         }
         if (next.language !== prev.language) {
-          changes.push(`language to ${next.language}`);
+          changes.push(t('country.cascade.language', { value: next.language }));
         }
         if (changes.length > 0) {
-          toast.success(`Updated ${changes.join(', ')} to match your country.`);
+          toast.success(t('country.cascade.summary', { changes: changes.join(', ') }));
         }
       }
     },

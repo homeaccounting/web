@@ -1,0 +1,49 @@
+{
+  "save": "Зберегти",
+  "cancel": "Скасувати",
+  "ok": "OK",
+  "delete": "Видалити",
+  "retry": "Повторити",
+  "close": "Закрити",
+  "nav": {
+    "accounts": "Рахунки",
+    "reports": "Звіти"
+  },
+  "userMenu": {
+    "open": "Відкрити меню користувача",
+    "accountFallback": "Обліковий запис",
+    "profile": "Профіль",
+    "signOut": "Вийти"
+  },
+  "period": {
+    "label": "Період",
+    "custom": "Вручну…",
+    "from": "Від",
+    "to": "До",
+    "presets": {
+      "this-month": "Цей місяць",
+      "last-month": "Минулий місяць",
+      "this-year": "Цей рік",
+      "last-year": "Минулий рік",
+      "all-time": "Увесь час"
+    }
+  },
+  "telegram": {
+    "title": "Прив'язати Telegram",
+    "linkedAs": "Telegram прив'язано як @{{handle}}",
+    "generating": "Створення посилання…",
+    "open": "Відкрити Telegram",
+    "expiresAt": "Посилання діє до {{time}}",
+    "confirmLinked": "Я прив'язав(ла)"
+  },
+  "datePicker": {
+    "placeholder": "Оберіть дату",
+    "openCalendar": "Відкрити календар",
+    "calendarFor": "{{label}} — календар",
+    "time": "Час"
+  },
+  "moneyInput": {
+    "amount": "Сума",
+    "currency": "Валюта"
+  }
+}

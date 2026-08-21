@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type {
   AccountResponse,
   UUID,
@@ -8,7 +9,7 @@ import type {
 } from '@/api/types';
 import { ACCOUNT_SUBTYPE_TYPES } from '@/api/types';
 import { subtypeTypeToKind, isSelectableDefaultAccount } from '@/api/defaults';
-import { ACCOUNT_SUBTYPE_LABELS } from '@/features/accounts/labels';
+import { accountSubtypeLabel } from '@/features/accounts/labels';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -23,6 +24,7 @@ interface Props {
 }
 
 export function DefaultAccountsCard({ accounts, accountCurrent, subtypeCurrent }: Props) {
+  const { t } = useTranslation('profile');
   const update = useUpdateDefaults();
   const selectable = accounts.filter(isSelectableDefaultAccount);
 
@@ -45,22 +47,22 @@ export function DefaultAccountsCard({ accounts, accountCurrent, subtypeCurrent }
     }
     const body: UpdateDefaultsRequest = { subtypeAccounts };
     if (account && account !== accountCurrent) body.account = account;
-    update.mutate(body, { onSuccess: () => toast.success('Updated.') });
+    update.mutate(body, { onSuccess: () => toast.success(t('updated')) });
   };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Default accounts</CardTitle>
+        <CardTitle>{t('defaults.accountsTitle')}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-center gap-3">
           <label htmlFor="default-account" className="w-44 text-sm font-medium">
-            Default account
+            {t('defaults.defaultAccount')}
           </label>
           <AccountSelect
             id="default-account"
-            label="Default account"
+            label={t('defaults.defaultAccount')}
             value={account}
             accounts={selectable}
             includeNone={false}
@@ -71,11 +73,11 @@ export function DefaultAccountsCard({ accounts, accountCurrent, subtypeCurrent }
           {ACCOUNT_SUBTYPE_TYPES.map((k) => (
             <div key={k} className="flex items-center gap-3">
               <label htmlFor={`default-${k}`} className="w-44 text-sm font-medium">
-                {ACCOUNT_SUBTYPE_LABELS[k]} default account
+                {t('defaults.subtypeDefaultAccount', { subtype: accountSubtypeLabel(k) })}
               </label>
               <AccountSelect
                 id={`default-${k}`}
-                label={`${ACCOUNT_SUBTYPE_LABELS[k]} default account`}
+                label={t('defaults.subtypeDefaultAccount', { subtype: accountSubtypeLabel(k) })}
                 value={rows[k]}
                 includeNone
                 accounts={selectable.filter((a) => a.subtype?.type === k)}
@@ -85,7 +87,7 @@ export function DefaultAccountsCard({ accounts, accountCurrent, subtypeCurrent }
           ))}
         </div>
         <Button type="button" onClick={save} disabled={!dirty || update.isPending}>
-          {update.isPending ? 'Saving…' : 'Save'}
+          {update.isPending ? t('saving') : t('common:save')}
         </Button>
         {update.error && (
           <Alert variant="destructive" role="alert">

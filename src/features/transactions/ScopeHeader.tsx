@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import type { AccountResponse } from '@/api/types';
 import type { AccountScope } from './accountScope';
 import { accountLabel } from '@/features/accounts/accountLabel';
@@ -13,6 +14,7 @@ export function ScopeHeader({
   scope: AccountScope;
   accounts: AccountResponse[];
 }) {
+  const { t } = useTranslation('transactions');
   const labels =
     scope.kind === 'all'
       ? []
@@ -20,7 +22,10 @@ export function ScopeHeader({
           .map((id) => accounts.find((a) => a.id === id))
           .filter((a): a is AccountResponse => !!a)
           .map((a) => accountLabel(a, accounts));
-  const title = scope.kind === 'all' ? 'All accounts' : `${scope.ids.length} accounts`;
+  const title =
+    scope.kind === 'all'
+      ? t('list.allAccounts')
+      : t('list.accountsCount', { count: scope.ids.length });
   return (
     <div className="border-b px-4 py-2.5">
       <h2 className="text-lg font-semibold" title={labels.join(', ') || undefined}>

@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   Dialog,
@@ -26,6 +27,7 @@ export interface EditAccountDialogProps {
 }
 
 export function EditAccountDialog({ open, onOpenChange, account }: EditAccountDialogProps) {
+  const { t } = useTranslation('accounts');
   const queryClient = useQueryClient();
   const edit = useEditAccount(account.id);
   // Re-derives the diff baseline each time a sub-call applies. Bumping this
@@ -61,8 +63,8 @@ export function EditAccountDialog({ open, onOpenChange, account }: EditAccountDi
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Edit account</DialogTitle>
-          <DialogDescription>Update account details.</DialogDescription>
+          <DialogTitle>{t('editDialog.title')}</DialogTitle>
+          <DialogDescription>{t('editDialog.description')}</DialogDescription>
         </DialogHeader>
         <EditAccountForm
           account={currentAccount}
@@ -86,6 +88,7 @@ function EditAccountForm({
   onSubCallApplied: () => void;
   onClose: () => void;
 }) {
+  const { t } = useTranslation('accounts');
   // Defaults seed RHF on initial mount (subsequent recomputations don't
   // re-seed the form). The dialog deliberately keeps the inner form mounted
   // across sub-call boundaries so in-flight user edits to fields that
@@ -107,7 +110,7 @@ function EditAccountForm({
   // fieldErrors).
   const showBanner = edit.isError && !(edit.error instanceof ApiError && edit.error.fieldErrors);
   const bannerMessage =
-    edit.error instanceof ApiError ? edit.error.message : 'Something went wrong. Please try again.';
+    edit.error instanceof ApiError ? edit.error.message : t('errors.generic');
 
   const handleSubmit = async (values: CreateAccountFormValues | EditAccountFormValues) => {
     // mode='edit' guarantees `values` is EditAccountFormValues at runtime,

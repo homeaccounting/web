@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogContent,
@@ -13,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { ApiError } from '@/api/client';
 import { cn } from '@/lib/utils';
 import type { TransactionResponse, UUID } from '@/api/types';
-import { formatDate, formatMoney } from '@/lib/format';
+import { useFormat } from '@/lib/useFormat';
 import { useAccounts } from '@/features/accounts/useAccounts';
 import { accountLabel } from '@/features/accounts/accountLabel';
 import { useMergeTransactions } from './useMergeTransactions';
@@ -25,7 +26,7 @@ import {
   mergeCurrency,
   mergeLegAmount,
   transferPairOf,
-  MERGE_INELIGIBILITY_MESSAGE,
+  mergeIneligibilityMessage,
 } from './mergeEligibility';
 
 export interface MergeTransactionsDialogProps {
@@ -54,6 +55,8 @@ export function MergeTransactionsDialog({
   selected,
   onMerged,
 }: MergeTransactionsDialogProps) {
+  const { t } = useTranslation('transactions');
+  const { formatDate, formatMoney } = useFormat();
   const [survivorId, setSurvivorId] = useState<UUID | undefined>(() => mostRecentId(selected));
   const [fieldError, setFieldError] = useState<string | null>(null);
 
@@ -117,7 +120,7 @@ export function MergeTransactionsDialog({
         const first = e.fieldErrors ? Object.values(e.fieldErrors)[0] : undefined;
         setFieldError(first ?? e.message);
       } else {
-        setFieldError('Something went wrong. Please try again.');
+        setFieldError(t('resolve.genericError'));
       }
     }
   };
@@ -134,26 +137,20 @@ export function MergeTransactionsDialog({
         <DialogHeader>
           {transferPair ? (
             <>
-              <DialogTitle>Merge into transfer</DialogTitle>
-              <DialogDescription>
-                These two are one transfer between your accounts. The income is kept and becomes the
-                transfer (holding its date &amp; description); the expense is cancelled and linked.
-              </DialogDescription>
+              <DialogTitle>{t('resolve.mergeTransferTitle')}</DialogTitle>
+              <DialogDescription>{t('resolve.mergeTransferDescription')}</DialogDescription>
             </>
           ) : (
             <>
-              <DialogTitle>Merge {selected.length} transactions</DialogTitle>
-              <DialogDescription>
-                Pick the one to keep. It holds its date &amp; description and absorbs the
-                others&rsquo; allocations; the rest are cancelled.
-              </DialogDescription>
+              <DialogTitle>{t('resolve.mergeCountTitle', { count: selected.length })}</DialogTitle>
+              <DialogDescription>{t('resolve.mergePickDescription')}</DialogDescription>
             </>
           )}
         </DialogHeader>
 
         {conflict && (
           <Alert variant="destructive" role="alert">
-            <AlertDescription>{MERGE_INELIGIBILITY_MESSAGE[conflict.reason]}</AlertDescription>
+            <AlertDescription>{mergeIneligibilityMessage(conflict.reason)}</AlertDescription>
           </Alert>
         )}
 
@@ -167,19 +164,19 @@ export function MergeTransactionsDialog({
           <div data-testid="transfer-summary" className="space-y-3 text-sm">
             <div className="space-y-2 rounded-md border p-3">
               <div className="flex items-center justify-between gap-3">
-                <span className="text-muted-foreground">From</span>
+                <span className="text-muted-foreground">{t('resolve.from')}</span>
                 <span className="min-w-0 truncate font-medium">
                   {labelFor(mergeAccountId(transferPair.expense))}
                 </span>
               </div>
               <div className="flex items-center justify-between gap-3">
-                <span className="text-muted-foreground">To</span>
+                <span className="text-muted-foreground">{t('resolve.to')}</span>
                 <span className="min-w-0 truncate font-medium">
                   {labelFor(mergeAccountId(transferPair.income))}
                 </span>
               </div>
               <div className="flex items-center justify-between gap-3">
-                <span className="text-muted-foreground">Amount</span>
+                <span className="text-muted-foreground">{t('resolve.amount')}</span>
                 <span className="font-medium tabular-nums">
                   {formatMoney(
                     mergeLegAmount(transferPair.income),
@@ -188,18 +185,16 @@ export function MergeTransactionsDialog({
                 </span>
               </div>
               <div className="flex items-center justify-between gap-3">
-                <span className="text-muted-foreground">Date</span>
+                <span className="text-muted-foreground">{t('resolve.date')}</span>
                 <span className="font-medium">{formatDate(transferPair.income.date)}</span>
               </div>
             </div>
-            <p className="text-muted-foreground">
-              The expense is cancelled and linked to the resulting transfer.
-            </p>
+            <p className="text-muted-foreground">{t('resolve.transferExpenseNote')}</p>
           </div>
         ) : (
           <div className="space-y-4">
             <fieldset className="space-y-2">
-              <legend className="mb-1 text-sm font-medium">Keep</legend>
+              <legend className="mb-1 text-sm font-medium">{t('resolve.keepLegend')}</legend>
               {selected.map((c) => {
                 const isSurvivor = c.id === effectiveSurvivorId;
                 return (
@@ -213,19 +208,21 @@ export function MergeTransactionsDialog({
                     <input
                       type="radio"
                       name="merge-survivor"
-                      aria-label={`Keep ${c.description || 'transaction'}`}
+                      aria-label={t('resolve.keepAria', {
+                        description: c.description || t('resolve.transactionFallback'),
+                      })}
                       checked={isSurvivor}
                       onChange={() => setSurvivorId(c.id)}
                     />
                     <span className="flex min-w-0 flex-col">
                       <span className="truncate font-medium">
-                        {c.description || '(no description)'}
+                        {c.description || t('resolve.noDescription')}
                       </span>
                       <span className="text-xs text-muted-foreground">{formatDate(c.date)}</span>
                     </span>
                     {isSurvivor ? (
                       <Badge variant="default" className="ml-auto">
-                        Survivor
+                        {t('resolve.survivor')}
                       </Badge>
                     ) : (
                       <span className="ml-auto tabular-nums text-muted-foreground">
@@ -239,16 +236,13 @@ export function MergeTransactionsDialog({
 
             <div className="text-sm text-muted-foreground">
               <p>
-                Merged total:{' '}
+                {t('resolve.mergedTotalLabel')}{' '}
                 <span data-testid="merge-total" className="font-medium text-foreground">
                   {formatMoney(total, currency)}
                 </span>
               </p>
               {sources.length > 0 && (
-                <p>
-                  {sources.length} {sources.length === 1 ? 'transaction' : 'transactions'} will be
-                  cancelled.
-                </p>
+                <p>{t('resolve.sourcesCancelled', { count: sources.length })}</p>
               )}
             </div>
           </div>
@@ -256,10 +250,10 @@ export function MergeTransactionsDialog({
 
         <DialogFooter>
           <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t('common:cancel')}
           </Button>
           <Button type="button" onClick={() => void handleSubmit()} disabled={!canMerge}>
-            {transferPair ? 'Make transfer' : 'Merge'}
+            {transferPair ? t('resolve.makeTransfer') : t('resolve.merge')}
           </Button>
         </DialogFooter>
       </DialogContent>

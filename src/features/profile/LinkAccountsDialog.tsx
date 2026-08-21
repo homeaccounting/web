@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogContent,
@@ -59,6 +60,7 @@ interface RowSource {
 }
 
 export function LinkAccountsDialog({ open, onOpenChange, connection }: LinkAccountsDialogProps) {
+  const { t } = useTranslation('profile');
   const { data: providers } = useProviders();
   const provider = providers?.find((p) => p.id === connection.provider);
   const supportsPull = provider?.supportsPull ?? false;
@@ -160,21 +162,19 @@ export function LinkAccountsDialog({ open, onOpenChange, connection }: LinkAccou
 
   const saveError = setAccountMap.error;
   const saveErrorMessage =
-    saveError instanceof ApiError ? saveError.message : 'Something went wrong. Please try again.';
+    saveError instanceof ApiError ? saveError.message : t('errors.generic');
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Link accounts</DialogTitle>
-          <DialogDescription>
-            Map each external bank account to one of your local accounts.
-          </DialogDescription>
+          <DialogTitle>{t('linkAccounts.title')}</DialogTitle>
+          <DialogDescription>{t('linkAccounts.description')}</DialogDescription>
         </DialogHeader>
 
         {isFile && (
           <div className="space-y-1">
-            <Label htmlFor="statement-files">Statement files</Label>
+            <Label htmlFor="statement-files">{t('linkAccounts.statementFiles')}</Label>
             <Input
               id="statement-files"
               type="file"
@@ -191,9 +191,7 @@ export function LinkAccountsDialog({ open, onOpenChange, connection }: LinkAccou
               </p>
             )}
             {!loading && !error && !rows && (
-              <p className="text-xs text-muted-foreground">
-                Upload your statement(s) to list accounts.
-              </p>
+              <p className="text-xs text-muted-foreground">{t('linkAccounts.uploadPrompt')}</p>
             )}
           </div>
         )}
@@ -210,12 +208,14 @@ export function LinkAccountsDialog({ open, onOpenChange, connection }: LinkAccou
             <AlertDescription className="space-y-3">
               <p>
                 {isRateLimited(error)
-                  ? `${provider?.displayName ?? 'The provider'} is rate-limited. Try again in a moment.`
-                  : 'Couldn’t load external accounts. Please try again.'}
+                  ? t('linkAccounts.rateLimited', {
+                      provider: provider?.displayName ?? t('linkAccounts.providerFallback'),
+                    })
+                  : t('linkAccounts.loadError')}
               </p>
               {source.retry && (
                 <Button type="button" variant="outline" size="sm" onClick={source.retry}>
-                  Try again
+                  {t('linkAccounts.tryAgain')}
                 </Button>
               )}
             </AlertDescription>
@@ -272,7 +272,7 @@ export function LinkAccountsDialog({ open, onOpenChange, connection }: LinkAccou
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={NOT_IMPORTED}>— not imported —</SelectItem>
+                      <SelectItem value={NOT_IMPORTED}>{t('linkAccounts.notImported')}</SelectItem>
                       {/* The backend accountMap is many-to-one: sibling cards
                           (e.g. two PrivatBank cards) legitimately share one
                           local account, so a chosen account stays selectable in
@@ -286,7 +286,7 @@ export function LinkAccountsDialog({ open, onOpenChange, connection }: LinkAccou
                   </Select>
                   {options.length === 0 && (
                     <p className="text-xs text-muted-foreground">
-                      No {acc.currency} account — create one to import this card.
+                      {t('linkAccounts.noCurrencyAccount', { currency: acc.currency })}
                     </p>
                   )}
                 </div>
@@ -297,7 +297,7 @@ export function LinkAccountsDialog({ open, onOpenChange, connection }: LinkAccou
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t('common:cancel')}
           </Button>
           <Button
             type="button"
@@ -306,7 +306,7 @@ export function LinkAccountsDialog({ open, onOpenChange, connection }: LinkAccou
             }}
             disabled={loading || error != null || !rows || setAccountMap.isPending}
           >
-            {setAccountMap.isPending ? 'Saving…' : 'OK'}
+            {setAccountMap.isPending ? t('saving') : t('common:ok')}
           </Button>
         </DialogFooter>
       </DialogContent>

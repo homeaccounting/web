@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { flattenDictionary } from '@/api/dictionary';
 import { useConfiguration } from '@/features/configuration/useConfiguration';
 import { useAccounts } from '@/features/accounts/useAccounts';
@@ -8,6 +9,7 @@ import { DefaultCategoriesCard } from './DefaultCategoriesCard';
 import { DefaultAccountsCard } from './DefaultAccountsCard';
 
 export function ProfileDefaultsPane() {
+  const { t } = useTranslation('profile');
   const config = useConfiguration();
   const accounts = useAccounts();
 
@@ -23,10 +25,10 @@ export function ProfileDefaultsPane() {
     return (
       <div className="space-y-2">
         <Alert variant="destructive" role="alert">
-          <AlertDescription>Couldn&rsquo;t load configuration.</AlertDescription>
+          <AlertDescription>{t('errors.loadConfiguration')}</AlertDescription>
         </Alert>
         <Button variant="outline" size="sm" onClick={() => void config.refetch()}>
-          Retry
+          {t('common:retry')}
         </Button>
       </div>
     );

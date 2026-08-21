@@ -1,0 +1,49 @@
+{
+  "save": "Save",
+  "cancel": "Cancel",
+  "ok": "OK",
+  "delete": "Delete",
+  "retry": "Retry",
+  "close": "Close",
+  "nav": {
+    "accounts": "Accounts",
+    "reports": "Reports"
+  },
+  "userMenu": {
+    "open": "Open user menu",
+    "accountFallback": "Account",
+    "profile": "Profile",
+    "signOut": "Sign out"
+  },
+  "period": {
+    "label": "Period",
+    "custom": "Custom…",
+    "from": "From",
+    "to": "To",
+    "presets": {
+      "this-month": "This month",
+      "last-month": "Last month",
+      "this-year": "This year",
+      "last-year": "Last year",
+      "all-time": "All time"
+    }
+  },
+  "telegram": {
+    "title": "Link Telegram",
+    "linkedAs": "Telegram linked as @{{handle}}",
+    "generating": "Generating link…",
+    "open": "Open Telegram",
+    "expiresAt": "Link expires at {{time}}",
+    "confirmLinked": "I've linked it"
+  },
+  "datePicker": {
+    "placeholder": "Pick a date",
+    "openCalendar": "Open calendar",
+    "calendarFor": "{{label}} calendar",
+    "time": "Time"
+  },
+  "moneyInput": {
+    "amount": "Amount",
+    "currency": "Currency"
+  }
+}

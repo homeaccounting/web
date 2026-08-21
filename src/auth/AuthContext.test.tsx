@@ -1,6 +1,7 @@
 import { act, renderHook } from '@testing-library/react';
-import { describe, expect, it, beforeEach } from 'vitest';
+import { describe, expect, it, beforeEach, vi } from 'vitest';
 import type { ReactNode } from 'react';
+import { queryClient } from '@/lib/queryClient';
 import { AuthProvider } from './AuthContext';
 import { useAuth } from './useAuth';
 import { saveSession } from './storage';
@@ -34,5 +35,15 @@ describe('AuthContext', () => {
     act(() => result.current.signIn({ token: 't', userId: 'u', email: null, expiresIn: 60 }));
     act(() => result.current.signOut());
     expect(result.current.session).toBeNull();
+  });
+
+  it('clears the query cache on sign in and sign out (no cross-user cache bleed)', () => {
+    const clearSpy = vi.spyOn(queryClient, 'clear');
+    const { result } = renderHook(() => useAuth(), { wrapper });
+    act(() => result.current.signIn({ token: 't', userId: 'u', email: null, expiresIn: 60 }));
+    expect(clearSpy).toHaveBeenCalledTimes(1);
+    act(() => result.current.signOut());
+    expect(clearSpy).toHaveBeenCalledTimes(2);
+    clearSpy.mockRestore();
   });
 });

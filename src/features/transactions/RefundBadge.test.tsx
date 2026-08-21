@@ -1,6 +1,15 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { RefundBadge } from './RefundBadge';
+
+// RefundBadge now formats money via useFormat()→useConfiguration; with no
+// country signal the formatter falls back to the international default, so the
+// rendered strings are unchanged. Stub the config hook so the badge can render
+// without an AuthProvider/QueryClient wrapper.
+vi.mock('@/features/configuration/useConfiguration', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/features/configuration/useConfiguration')>()),
+  useConfiguration: () => ({ data: undefined }),
+}));
 
 describe('RefundBadge', () => {
   describe('origin mode', () => {

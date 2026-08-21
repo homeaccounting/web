@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, Trash2 } from 'lucide-react';
 import type { DictionaryEntryResponse, DictionaryResponse, UUID } from '@/api/types';
 import { Input } from '@/components/ui/input';
@@ -34,6 +35,7 @@ export function BankProviderContactMapEditor({
   contacts,
   contactDict,
 }: BankProviderContactMapEditorProps) {
+  const { t } = useTranslation('profile');
   const update = useUpdateBanking();
   const createContact = useCreateDictionaryEntry();
   const [rows, setRows] = useState<Row[]>(() =>
@@ -51,7 +53,7 @@ export function BankProviderContactMapEditor({
       const r = await createContact.mutateAsync({ dictId: 'contact', name, dict: contactDict });
       setRow(index, { contactId: r.id });
     } catch {
-      setValidationError('Could not create contact.');
+      setValidationError(t('contactEditor.createError'));
     }
   };
 
@@ -61,16 +63,16 @@ export function BankProviderContactMapEditor({
     for (const row of rows) {
       const parsed = bankProviderContactRowSchema.safeParse(row);
       if (!parsed.success) {
-        setValidationError(parsed.error.issues[0]?.message ?? 'Invalid mapping');
+        setValidationError(parsed.error.issues[0]?.message ?? t('mapEditor.invalidMapping'));
         return;
       }
       if (map[parsed.data.token] !== undefined) {
-        setValidationError(`Duplicate mapping: ${parsed.data.token}`);
+        setValidationError(t('mapEditor.duplicateMapping', { key: parsed.data.token }));
         return;
       }
       map[parsed.data.token] = parsed.data.contactId;
     }
-    update.mutate({ contactMap: map }, { onSuccess: () => toast.success('Updated.') });
+    update.mutate({ contactMap: map }, { onSuccess: () => toast.success(t('updated')) });
   };
 
   const opError = validationError ?? update.error?.message ?? null;
@@ -78,19 +80,19 @@ export function BankProviderContactMapEditor({
   return (
     <section className="space-y-3" aria-labelledby="bank-provider-contact-mapping-heading">
       <h3 id="bank-provider-contact-mapping-heading" className="sr-only">
-        Bank provider token to contact mapping
+        {t('contactEditor.heading')}
       </h3>
-      <p className="text-xs text-muted-foreground">Mappings apply to future imports.</p>
-      {rows.length === 0 && <EmptyState message="No mappings yet." className="p-0" />}
+      <p className="text-xs text-muted-foreground">{t('contactEditor.futureImports')}</p>
+      {rows.length === 0 && <EmptyState message={t('mapEditor.noMappings')} className="p-0" />}
       <ul className="space-y-2">
         {rows.map((row, index) => (
           <li key={index} className="flex items-center gap-2">
             <Input
               value={row.token}
               onChange={(e) => setRow(index, { token: e.target.value })}
-              placeholder="Provider counterparty token"
+              placeholder={t('contactEditor.tokenPlaceholder')}
               className="flex-1 font-mono"
-              aria-label={`Provider token, row ${index + 1}`}
+              aria-label={t('contactEditor.tokenLabel', { row: index + 1 })}
             />
             <div className="flex-1">
               <ContactCombobox
@@ -98,14 +100,16 @@ export function BankProviderContactMapEditor({
                 value={row.contactId || null}
                 onChange={(id) => setRow(index, { contactId: id ?? '' })}
                 onCreate={(name) => createAndSelect(index, name)}
-                placeholder="Contact"
-                aria-label={`Contact, row ${index + 1}`}
+                placeholder={t('contactEditor.contactPlaceholder')}
+                aria-label={t('contactEditor.contactLabel', { row: index + 1 })}
               />
             </div>
             <Button
               variant="ghost"
               size="icon"
-              aria-label={`Remove mapping ${row.token || `row ${index + 1}`}`}
+              aria-label={t('mapEditor.removeMapping', {
+                label: row.token || t('mapEditor.rowFallback', { row: index + 1 }),
+              })}
               onClick={() => removeRow(index)}
             >
               <Trash2 className="h-4 w-4" />
@@ -116,15 +120,20 @@ export function BankProviderContactMapEditor({
       <div className="flex gap-2">
         <Button variant="outline" size="sm" onClick={addRow}>
           <Plus className="mr-1 h-4 w-4" />
-          Add mapping
+          {t('mapEditor.addMapping')}
         </Button>
-        <Button size="sm" onClick={save} disabled={update.isPending} aria-label="Save mapping">
-          {update.isPending ? 'Saving…' : 'Save mapping'}
+        <Button
+          size="sm"
+          onClick={save}
+          disabled={update.isPending}
+          aria-label={t('mapEditor.saveMapping')}
+        >
+          {update.isPending ? t('saving') : t('mapEditor.saveMapping')}
         </Button>
       </div>
       {opError && (
         <Alert variant="destructive" role="alert">
-          <AlertDescription>{opError}</AlertDescription>
+          <AlertDescription>{t(opError)}</AlertDescription>
         </Alert>
       )}
     </section>

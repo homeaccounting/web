@@ -7,7 +7,9 @@ export const adjustBalanceFormSchema = z
     targetBalance: z.coerce.number().finite(),
     description: z.string().trim().max(255),
     // 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:MM' (time-enabled picker).
-    date: z.string().regex(/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/, 'Date is required'),
+    date: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/, 'accounts:validation.dateRequired'),
   })
   .superRefine((v, ctx) => {
     const today = new Date().toISOString().slice(0, 10);
@@ -17,7 +19,7 @@ export const adjustBalanceFormSchema = z
       ctx.addIssue({
         path: ['date'],
         code: z.ZodIssueCode.custom,
-        message: 'Date cannot be in the future.',
+        message: 'accounts:validation.dateFuture',
       });
     }
   });

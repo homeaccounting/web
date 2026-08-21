@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useForm, FormProvider, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { DialogFooter } from '@/components/ui/dialog';
@@ -20,7 +21,7 @@ import {
   type EditAccountFormValues,
 } from './schema';
 import { SubtypeFields } from './SubtypeFields';
-import { ACCOUNT_SUBTYPE_LABELS } from './labels';
+import { accountSubtypeLabel } from './labels';
 import { RequiredMarker } from '@/components/RequiredMarker';
 
 type Values = CreateAccountFormValues | EditAccountFormValues;
@@ -49,6 +50,7 @@ export function AccountForm({
   onCancel,
   onReady,
 }: AccountFormProps) {
+  const { t } = useTranslation('accounts');
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const schema = mode === 'create' ? createAccountFormSchema : editAccountFormSchema;
@@ -100,7 +102,7 @@ export function AccountForm({
           render={({ field }) => (
             <FormItem>
               <FormLabel>
-                Name
+                {t('form.name')}
                 <RequiredMarker />
               </FormLabel>
               <FormControl>
@@ -120,7 +122,7 @@ export function AccountForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>
-                  Initial balance
+                  {t('form.initialBalance')}
                   <RequiredMarker />
                 </FormLabel>
                 <FormControl>
@@ -160,13 +162,13 @@ export function AccountForm({
           render={({ field }) => (
             <FormItem>
               <FormLabel>
-                Currency
+                {t('form.currency')}
                 <RequiredMarker />
               </FormLabel>
               <FormControl>
                 {mode === 'create' ? (
                   <Select onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger aria-label="Currency">
+                    <SelectTrigger aria-label={t('form.currency')}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -179,13 +181,13 @@ export function AccountForm({
                   </Select>
                 ) : (
                   <Input
-                    aria-label="Currency"
+                    aria-label={t('form.currency')}
                     name={field.name}
                     ref={field.ref}
                     onBlur={field.onBlur}
                     value={field.value ?? ''}
                     disabled
-                    title="Cannot be changed after creation"
+                    title={t('form.currencyLocked')}
                   />
                 )}
               </FormControl>
@@ -199,7 +201,7 @@ export function AccountForm({
           onClick={() => setShowAdvanced((v) => !v)}
           className="text-sm text-muted-foreground underline"
         >
-          {showAdvanced ? 'Hide' : 'More options'}
+          {showAdvanced ? t('form.hide') : t('form.moreOptions')}
         </button>
         {showAdvanced && (
           <FormField
@@ -207,7 +209,7 @@ export function AccountForm({
             name="overdraftLimit"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Overdraft limit</FormLabel>
+                <FormLabel>{t('form.overdraftLimit')}</FormLabel>
                 <FormControl>
                   <Input
                     type="number"
@@ -233,7 +235,7 @@ export function AccountForm({
           render={({ field }) => (
             <FormItem>
               <FormLabel>
-                Account type
+                {t('form.accountType')}
                 <RequiredMarker />
               </FormLabel>
               <FormControl>
@@ -246,13 +248,13 @@ export function AccountForm({
                   }
                   value={field.value}
                 >
-                  <SelectTrigger aria-label="Account type">
+                  <SelectTrigger aria-label={t('form.accountType')}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {ACCOUNT_SUBTYPE_TYPES.map((kind) => (
                       <SelectItem key={kind} value={kind}>
-                        {ACCOUNT_SUBTYPE_LABELS[kind]}
+                        {accountSubtypeLabel(kind)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -267,10 +269,10 @@ export function AccountForm({
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
+            {t('common:cancel')}
           </Button>
           <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Saving…' : 'OK'}
+            {isSubmitting ? t('form.saving') : t('common:ok')}
           </Button>
         </DialogFooter>
       </form>

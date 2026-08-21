@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -30,6 +31,7 @@ import {
   SelectItem,
 } from '@/components/ui/select';
 import { ApiError } from '@/api/client';
+import i18n from '@/lib/i18n';
 import type { AccountResponse, AccountAccessEntry, AccountRole } from '@/api/types';
 import { useAuth } from '@/auth/useAuth';
 import { RequiredMarker } from '@/components/RequiredMarker';
@@ -37,7 +39,7 @@ import { shareAccountSchema, type ShareAccountFormValues } from './shareAccountS
 import { useAccountAccess } from './useAccountAccess';
 import { useShareAccount } from './useShareAccount';
 import { useRevokeAccess } from './useRevokeAccess';
-import { canManage, GRANTABLE_ROLES, ROLE_LABELS } from './roles';
+import { canManage, GRANTABLE_ROLES, roleLabel } from './roles';
 
 export interface ManageAccessDialogProps {
   open: boolean;
@@ -57,7 +59,7 @@ function displayLabel(entry: AccountAccessEntry): string {
 }
 
 function RoleBadge({ role }: { role: AccountRole }) {
-  return <Badge variant="status">{ROLE_LABELS[role]}</Badge>;
+  return <Badge variant="status">{roleLabel(role)}</Badge>;
 }
 
 // Maps a share-request ApiError onto the friendly copy called for by the
@@ -67,15 +69,16 @@ function RoleBadge({ role }: { role: AccountRole }) {
 function mapShareError(e: ApiError): string {
   const haystack = `${e.code ?? ''} ${e.message}`.toLowerCase();
   if (e.status === 404 || haystack.includes('not found') || haystack.includes('no user')) {
-    return 'No user found with that ID.';
+    return i18n.t('accounts:manageDialog.noUserFound');
   }
   if (haystack.includes('self')) {
-    return "You can't share an account with yourself.";
+    return i18n.t('accounts:manageDialog.selfShare');
   }
   return e.message;
 }
 
 export function ManageAccessDialog({ open, onOpenChange, account }: ManageAccessDialogProps) {
+  const { t } = useTranslation('accounts');
   const access = useAccountAccess(account.id, open);
   const share = useShareAccount(account.id);
   const revoke = useRevokeAccess(account.id);
@@ -95,9 +98,7 @@ export function ManageAccessDialog({ open, onOpenChange, account }: ManageAccess
       await share.mutateAsync(values);
       form.reset({ userId: '', role: 'viewer' });
     } catch (e) {
-      setShareError(
-        e instanceof ApiError ? mapShareError(e) : 'Something went wrong. Please try again.',
-      );
+      setShareError(e instanceof ApiError ? mapShareError(e) : t('errors.generic'));
     }
   });
 
@@ -112,9 +113,7 @@ export function ManageAccessDialog({ open, onOpenChange, account }: ManageAccess
   };
 
   const revokeBannerMessage =
-    revoke.error instanceof ApiError
-      ? revoke.error.message
-      : 'Something went wrong. Please try again.';
+    revoke.error instanceof ApiError ? revoke.error.message : t('errors.generic');
 
   return (
     <>
@@ -134,9 +133,9 @@ export function ManageAccessDialog({ open, onOpenChange, account }: ManageAccess
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Manage access</DialogTitle>
+            <DialogTitle>{t('manageDialog.title')}</DialogTitle>
             <DialogDescription>
-              Share &ldquo;{account.name}&rdquo; with other people, or revoke their access.
+              {t('manageDialog.description', { name: account.name })}
             </DialogDescription>
           </DialogHeader>
 
@@ -158,11 +157,11 @@ export function ManageAccessDialog({ open, onOpenChange, account }: ManageAccess
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      User ID
+                      {t('manageDialog.userId')}
                       <RequiredMarker />
                     </FormLabel>
                     <FormControl>
-                      <Input placeholder="00000000-0000-0000-0000-000000000000" {...field} />
+                      <Input placeholder={t('manageDialog.userIdPlaceholder')} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -174,18 +173,18 @@ export function ManageAccessDialog({ open, onOpenChange, account }: ManageAccess
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      Role
+                      {t('manageDialog.role')}
                       <RequiredMarker />
                     </FormLabel>
                     <FormControl>
                       <Select onValueChange={field.onChange} value={field.value}>
-                        <SelectTrigger aria-label="Role">
+                        <SelectTrigger aria-label={t('manageDialog.role')}>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
                           {GRANTABLE_ROLES.map((r) => (
                             <SelectItem key={r} value={r}>
-                              {ROLE_LABELS[r]}
+                              {roleLabel(r)}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -197,14 +196,14 @@ export function ManageAccessDialog({ open, onOpenChange, account }: ManageAccess
               />
               <div className="flex justify-end">
                 <Button type="submit" disabled={share.isPending}>
-                  {share.isPending ? 'Sharing…' : 'Share'}
+                  {share.isPending ? t('manageDialog.sharing') : t('manageDialog.share')}
                 </Button>
               </div>
             </form>
           </FormProvider>
 
           <div className="space-y-2">
-            <h3 className="text-sm font-medium">People with access</h3>
+            <h3 className="text-sm font-medium">{t('manageDialog.peopleWithAccess')}</h3>
 
             {access.isLoading && (
               <div className="space-y-2">
@@ -216,10 +215,10 @@ export function ManageAccessDialog({ open, onOpenChange, account }: ManageAccess
             {access.isError && (
               <div className="space-y-2">
                 <Alert variant="destructive" role="alert">
-                  <AlertDescription>Couldn&rsquo;t load access.</AlertDescription>
+                  <AlertDescription>{t('manageDialog.loadError')}</AlertDescription>
                 </Alert>
                 <Button variant="outline" size="sm" onClick={() => void access.refetch()}>
-                  Retry
+                  {t('common:retry')}
                 </Button>
               </div>
             )}
@@ -244,10 +243,10 @@ export function ManageAccessDialog({ open, onOpenChange, account }: ManageAccess
                         variant="outline"
                         size="sm"
                         disabled={disabled}
-                        aria-label={`Revoke ${label}`}
+                        aria-label={t('manageDialog.revokeAria', { label })}
                         onClick={() => setRevokeTarget(entry)}
                       >
-                        Revoke
+                        {t('manageDialog.revoke')}
                       </Button>
                     </li>
                   );
@@ -270,10 +269,13 @@ export function ManageAccessDialog({ open, onOpenChange, account }: ManageAccess
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Revoke access?</AlertDialogTitle>
+            <AlertDialogTitle>{t('manageDialog.revokeTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
               {revokeTarget &&
-                `${displayLabel(revokeTarget)} will lose access to "${account.name}".`}
+                t('manageDialog.revokeDescription', {
+                  label: displayLabel(revokeTarget),
+                  name: account.name,
+                })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           {revoke.isError && (
@@ -290,14 +292,14 @@ export function ManageAccessDialog({ open, onOpenChange, account }: ManageAccess
                 setRevokeTarget(null);
               }}
             >
-              Cancel
+              {t('common:cancel')}
             </Button>
             <Button
               variant="destructive"
               disabled={revoke.isPending}
               onClick={() => void confirmRevoke()}
             >
-              Revoke
+              {t('manageDialog.revoke')}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>

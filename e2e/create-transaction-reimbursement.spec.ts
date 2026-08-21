@@ -63,7 +63,7 @@ test.describe('create reimbursement (contra-expense) income @local', () => {
     //    render each entry's leaf name, not its parent group).
     await incomeDialog.getByRole('button', { name: /^ok$/i }).click();
     await expect(incomeDialog).toBeHidden();
-    await expect(page.getByRole('cell', { name: 'Salary + rent reimbursement' })).toBeVisible({
+    await expect(page.getByRole('cell', { name: 'Salary + rent reimbursement', exact: true })).toBeVisible({
       timeout: 10000,
     });
     const categoryCell = page

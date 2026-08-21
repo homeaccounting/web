@@ -1,0 +1,20 @@
+{
+  "summary": {
+    "imported_one": "Imported {{count}} transaction",
+    "imported_few": "Imported {{count}} transactions",
+    "imported_many": "Imported {{count}} transactions",
+    "imported_other": "Imported {{count}} transactions",
+    "skipped": "{{count}} skipped",
+    "failed": "{{count}} failed",
+    "unresolved_one": "{{count}} row needs attention",
+    "unresolved_few": "{{count}} rows need attention",
+    "unresolved_many": "{{count}} rows need attention",
+    "unresolved_other": "{{count}} rows need attention"
+  },
+  "statement": {
+    "mixedOrUnknownFormat": "Select statement files of the same type (.csv or .xlsx)."
+  },
+  "providerOptions": {
+    "otherCountries": "Other countries"
+  }
+}

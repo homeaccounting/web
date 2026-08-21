@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, Trash2 } from 'lucide-react';
 import type { DictionaryEntryResponse, UpdateBankingRequest, UUID } from '@/api/types';
 import { Input } from '@/components/ui/input';
@@ -38,12 +39,6 @@ const KINDS_BY_DIRECTION: Record<'income' | 'expense', readonly Kind[]> = {
   income: ['counterparty'],
 };
 
-const KIND_LABELS: Record<Kind, string> = {
-  mcc: 'MCC',
-  label: 'Label',
-  counterparty: 'Counterparty',
-};
-
 interface BankProviderCategoryMapEditorProps {
   // Whether this editor edits the income or the expense provider-category map.
   // Drives which kinds are offered, which categories the dropdown lists, and
@@ -70,11 +65,12 @@ export function BankProviderCategoryMapEditor({
   value,
   categories,
 }: BankProviderCategoryMapEditorProps) {
+  const { t } = useTranslation('profile');
   const update = useUpdateBanking();
   const kinds = KINDS_BY_DIRECTION[direction];
   const defaultKind = kinds[0] as Kind;
   const showKindSelect = kinds.length > 1;
-  const categoryNoun = direction === 'income' ? 'Income' : 'Expense';
+  const kindLabelFor = (k: Kind) => t(`categoryEditor.kind.${k}`);
   const [rows, setRows] = useState<Row[]>(() =>
     Object.entries(value).map(([key, categoryId]) => {
       const parsed = parseBankProviderCategoryKey(key) ?? { kind: 'label' as const, value: key };
@@ -95,19 +91,19 @@ export function BankProviderCategoryMapEditor({
     for (const row of rows) {
       const parsed = bankProviderCategoryRowSchema.safeParse(row);
       if (!parsed.success) {
-        setValidationError(parsed.error.issues[0]?.message ?? 'Invalid mapping');
+        setValidationError(parsed.error.issues[0]?.message ?? t('mapEditor.invalidMapping'));
         return;
       }
       const key = renderBankProviderCategoryKey(parsed.data);
       if (map[key] !== undefined) {
-        setValidationError(`Duplicate mapping: ${key}`);
+        setValidationError(t('mapEditor.duplicateMapping', { key }));
         return;
       }
       map[key] = parsed.data.categoryId;
     }
     const body: UpdateBankingRequest =
       direction === 'income' ? { incomeCategoryMap: map } : { expenseCategoryMap: map };
-    update.mutate(body, { onSuccess: () => toast.success('Updated.') });
+    update.mutate(body, { onSuccess: () => toast.success(t('updated')) });
   };
 
   const opError = validationError ?? update.error?.message ?? null;
@@ -118,19 +114,16 @@ export function BankProviderCategoryMapEditor({
       aria-labelledby={`bank-provider-${direction}-category-mapping-heading`}
     >
       <h3 id={`bank-provider-${direction}-category-mapping-heading`} className="sr-only">
-        Bank provider category to {direction} category mapping
+        {t(`categoryEditor.heading.${direction}`)}
       </h3>
-      {rows.length === 0 && <EmptyState message="No mappings yet." className="p-0" />}
+      {rows.length === 0 && <EmptyState message={t('mapEditor.noMappings')} className="p-0" />}
       <ul className="space-y-2">
         {rows.map((row, index) => {
-          const kindLabel = `Kind, row ${index + 1}`;
-          const valueLabel =
-            row.kind === 'mcc'
-              ? `MCC code, row ${index + 1}`
-              : row.kind === 'counterparty'
-                ? `Counterparty token, row ${index + 1}`
-                : `Bank provider label, row ${index + 1}`;
-          const categoryLabel = `${categoryNoun} category, row ${index + 1}`;
+          const kindLabel = t('categoryEditor.kindLabel', { row: index + 1 });
+          const valueLabel = t(`categoryEditor.valueLabel.${row.kind}`, { row: index + 1 });
+          const categoryLabel = t(`categoryEditor.categoryLabelRow.${direction}`, {
+            row: index + 1,
+          });
           return (
             <li key={index} className="flex items-center gap-2">
               {showKindSelect ? (
@@ -141,7 +134,7 @@ export function BankProviderCategoryMapEditor({
                   <SelectContent>
                     {kinds.map((k) => (
                       <SelectItem key={k} value={k}>
-                        {KIND_LABELS[k]}
+                        {kindLabelFor(k)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -150,7 +143,7 @@ export function BankProviderCategoryMapEditor({
                 // Single signal for this direction (income → counterparty): a
                 // static badge instead of a one-option dropdown.
                 <Badge variant="muted" className="w-32 justify-center py-1.5">
-                  {KIND_LABELS[defaultKind]}
+                  {kindLabelFor(defaultKind)}
                 </Badge>
               )}
               {row.kind === 'mcc' ? (
@@ -159,7 +152,7 @@ export function BankProviderCategoryMapEditor({
                   onChange={(e) => setRow(index, { value: e.target.value })}
                   inputMode="numeric"
                   maxLength={4}
-                  placeholder="MCC"
+                  placeholder={t('categoryEditor.mccPlaceholder')}
                   className="w-28"
                   aria-label={valueLabel}
                 />
@@ -168,7 +161,9 @@ export function BankProviderCategoryMapEditor({
                   value={row.value}
                   onChange={(e) => setRow(index, { value: e.target.value })}
                   placeholder={
-                    row.kind === 'counterparty' ? 'EDRPOU / IBAN' : 'Bank provider label'
+                    row.kind === 'counterparty'
+                      ? t('categoryEditor.counterpartyPlaceholder')
+                      : t('categoryEditor.labelPlaceholder')
                   }
                   className="flex-1"
                   aria-label={valueLabel}
@@ -179,7 +174,7 @@ export function BankProviderCategoryMapEditor({
                 onValueChange={(v) => setRow(index, { categoryId: v })}
               >
                 <SelectTrigger className="flex-1" aria-label={categoryLabel}>
-                  <SelectValue placeholder={`${categoryNoun} category`} />
+                  <SelectValue placeholder={t(`categoryEditor.categoryPlaceholder.${direction}`)} />
                 </SelectTrigger>
                 <SelectContent>
                   {categories.map((cat) => (
@@ -192,7 +187,9 @@ export function BankProviderCategoryMapEditor({
               <Button
                 variant="ghost"
                 size="icon"
-                aria-label={`Remove mapping ${row.value || `row ${index + 1}`}`}
+                aria-label={t('mapEditor.removeMapping', {
+                  label: row.value || t('mapEditor.rowFallback', { row: index + 1 }),
+                })}
                 onClick={() => removeRow(index)}
               >
                 <Trash2 className="h-4 w-4" />
@@ -204,15 +201,20 @@ export function BankProviderCategoryMapEditor({
       <div className="flex gap-2">
         <Button variant="outline" size="sm" onClick={addRow}>
           <Plus className="mr-1 h-4 w-4" />
-          Add mapping
+          {t('mapEditor.addMapping')}
         </Button>
-        <Button size="sm" onClick={save} disabled={update.isPending} aria-label="Save mapping">
-          {update.isPending ? 'Saving…' : 'Save mapping'}
+        <Button
+          size="sm"
+          onClick={save}
+          disabled={update.isPending}
+          aria-label={t('mapEditor.saveMapping')}
+        >
+          {update.isPending ? t('saving') : t('mapEditor.saveMapping')}
         </Button>
       </div>
       {opError && (
         <Alert variant="destructive" role="alert">
-          <AlertDescription>{opError}</AlertDescription>
+          <AlertDescription>{t(opError)}</AlertDescription>
         </Alert>
       )}
     </section>

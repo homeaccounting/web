@@ -1,0 +1,136 @@
+{
+  "subtype": {
+    "cash": "Готівка",
+    "bankAccount": "Банківський рахунок",
+    "eWallet": "Електронний гаманець",
+    "asset": "Актив",
+    "loan": "Кредит",
+    "unknown": "Рахунок"
+  },
+  "cardNetwork": {
+    "visa": "Visa",
+    "mastercard": "Mastercard",
+    "amex": "Amex"
+  },
+  "assetType": {
+    "property": "Нерухомість",
+    "vehicle": "Транспорт",
+    "stocks": "Акції",
+    "retirementFund": "Пенсійний фонд"
+  },
+  "role": {
+    "owner": "Власник",
+    "editor": "Редактор",
+    "viewer": "Глядач"
+  },
+  "group": {
+    "other": "Інше",
+    "sharedWithMe": "Надано мені"
+  },
+  "pane": {
+    "title": "Рахунки",
+    "allAccounts": "Усі рахунки",
+    "editAccount": "Редагувати рахунок",
+    "ownerOnly": "Лише власник",
+    "reopenAccount": "Відновити рахунок",
+    "closeAccount": "Закрити рахунок",
+    "manageAccess": "Керувати доступом",
+    "addAccount": "Додати рахунок",
+    "loadError": "Не вдалося завантажити рахунки.",
+    "empty": "Ще немає рахунків.",
+    "hideClosed": "Сховати закриті",
+    "showClosed": "Показати закриті ({{count}})",
+    "reopenError": "Не вдалося відновити цей рахунок. Спробуйте ще раз."
+  },
+  "contextMenu": {
+    "edit": "Редагувати",
+    "access": "Доступ",
+    "reopen": "Відновити",
+    "close": "Закрити"
+  },
+  "form": {
+    "name": "Назва",
+    "initialBalance": "Початковий баланс",
+    "currency": "Валюта",
+    "currencyLocked": "Не можна змінити після створення",
+    "moreOptions": "Більше опцій",
+    "hide": "Сховати",
+    "overdraftLimit": "Ліміт овердрафту",
+    "accountType": "Тип рахунку",
+    "saving": "Збереження…"
+  },
+  "subtypeFields": {
+    "bankName": "Назва банку",
+    "selectPlaceholder": "Виберіть…",
+    "otherOption": "Інше…",
+    "customBankName": "Власна назва банку",
+    "storageLocation": "Місце зберігання",
+    "accountNumber": "Номер рахунку",
+    "cardNetwork": "Платіжна система",
+    "provider": "Провайдер",
+    "accountIdentifier": "Ідентифікатор рахунку",
+    "assetType": "Тип активу",
+    "description": "Опис",
+    "lender": "Кредитор",
+    "interestRate": "Відсоткова ставка (% річних)",
+    "dueDate": "Дата погашення (РРРР-ММ-ДД)"
+  },
+  "createDialog": {
+    "title": "Створити рахунок",
+    "description": "Додайте новий рахунок для відстеження балансів і транзакцій."
+  },
+  "editDialog": {
+    "title": "Редагувати рахунок",
+    "description": "Оновіть деталі рахунку."
+  },
+  "closeDialog": {
+    "title": "Закрити цей рахунок?",
+    "description": "«{{name}}» буде приховано зі списку ваших рахунків. Ви зможете відновити його пізніше через «Показати закриті»."
+  },
+  "adjustDialog": {
+    "title": "Коригувати баланс",
+    "description": "Запишіть коригування балансу як синтетичну транзакцію.",
+    "noAccounts": "Спочатку створіть рахунок, щоб коригувати баланс.",
+    "account": "Рахунок",
+    "currentBalanceLabel": "Поточний баланс:",
+    "targetBalance": "Цільовий баланс",
+    "date": "Дата",
+    "description": "Опис"
+  },
+  "manageDialog": {
+    "title": "Керувати доступом",
+    "description": "Поділіться «{{name}}» з іншими людьми або скасуйте їхній доступ.",
+    "userId": "ID користувача",
+    "userIdPlaceholder": "00000000-0000-0000-0000-000000000000",
+    "role": "Роль",
+    "sharing": "Надання доступу…",
+    "share": "Поділитися",
+    "peopleWithAccess": "Люди з доступом",
+    "loadError": "Не вдалося завантажити доступ.",
+    "revoke": "Скасувати",
+    "revokeAria": "Скасувати доступ для {{label}}",
+    "revokeTitle": "Скасувати доступ?",
+    "revokeDescription": "{{label}} втратить доступ до «{{name}}».",
+    "noUserFound": "Користувача з таким ID не знайдено.",
+    "selfShare": "Ви не можете поділитися рахунком із собою."
+  },
+  "importButton": {
+    "label": "Імпортувати виписку",
+    "error": "Не вдалося імпортувати цю виписку. Спробуйте ще раз."
+  },
+  "syncButton": {
+    "label": "Синхронізувати зараз",
+    "error": "Не вдалося синхронізувати цей рахунок. Спробуйте ще раз."
+  },
+  "errors": {
+    "generic": "Щось пішло не так. Спробуйте ще раз."
+  },
+  "validation": {
+    "nameRequired": "Назва обов'язкова",
+    "overdraftRequired": "Ліміт овердрафту обов'язковий, коли початковий баланс від'ємний.",
+    "overdraftMin": "Ліміт овердрафту має бути не меншим за |початковий баланс|.",
+    "dateRequired": "Дата обов'язкова",
+    "dateFuture": "Дата не може бути в майбутньому.",
+    "userIdInvalid": "Введіть дійсний ID користувача"
+  }
+}

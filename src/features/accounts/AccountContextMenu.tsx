@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Archive, ArchiveRestore, Pencil, Users } from 'lucide-react';
 import {
   ContextMenu,
@@ -29,6 +30,7 @@ export function AccountContextMenu({
   onRequestManageAccess,
   children,
 }: AccountContextMenuProps) {
+  const { t } = useTranslation('accounts');
   const isClosed = account.status === 'Closed';
   return (
     <ContextMenu>
@@ -36,24 +38,24 @@ export function AccountContextMenu({
       <ContextMenuContent>
         <ContextMenuItem onSelect={() => onRequestEdit(account)}>
           <Pencil className="mr-2 h-4 w-4" />
-          Edit
+          {t('contextMenu.edit')}
         </ContextMenuItem>
         {canManage(account.role) && (
           <ContextMenuItem onSelect={() => onRequestManageAccess(account)}>
             <Users className="mr-2 h-4 w-4" />
-            Access
+            {t('contextMenu.access')}
           </ContextMenuItem>
         )}
         <ContextMenuSeparator />
         {isClosed ? (
           <ContextMenuItem onSelect={() => onRequestReopen(account)}>
             <ArchiveRestore className="mr-2 h-4 w-4" />
-            Reopen
+            {t('contextMenu.reopen')}
           </ContextMenuItem>
         ) : (
           <ContextMenuItem onSelect={() => onRequestClose(account)}>
             <Archive className="mr-2 h-4 w-4" />
-            Close
+            {t('contextMenu.close')}
           </ContextMenuItem>
         )}
       </ContextMenuContent>

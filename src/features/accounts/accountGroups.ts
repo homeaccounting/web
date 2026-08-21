@@ -1,6 +1,7 @@
 import type { AccountResponse, AccountSubtypeType, AssetType } from '@/api/types';
 import { ACCOUNT_SUBTYPE_TYPES } from '@/api/types';
-import { ACCOUNT_SUBTYPE_LABELS, ASSET_TYPE_LABELS } from './labels';
+import i18n from '@/lib/i18n';
+import { accountSubtypeLabel, assetTypeLabel } from './labels';
 import { canManage } from './roles';
 
 // A sidebar section of accounts. `key` is either a subtype kind (from
@@ -20,10 +21,18 @@ export interface AccountGroup {
 }
 
 // Synthetic (non-subtype) group kinds — owned accounts with no known subtype,
-// and accounts shared with the user. Named constants rather than inline magic
-// strings so the pane and this module agree on the keys/labels.
-export const OTHER_GROUP = { key: 'other', label: 'Other' } as const;
-export const SHARED_GROUP = { key: 'shared', label: 'Shared with me' } as const;
+// and accounts shared with the user. Named constants (keys only) so the pane
+// and this module agree on the identities. Labels are resolved at CALL TIME
+// (see the helpers below) so they track live language switches.
+export const OTHER_GROUP = { key: 'other' } as const;
+export const SHARED_GROUP = { key: 'shared' } as const;
+
+// Call-time label resolvers for the synthetic groups. buildAccountGroups runs
+// at render (from AccountsPane, which subscribes via useTranslation), so these
+// re-resolve on every language change. The defaultValue is the English fallback.
+const otherGroupLabel = () => i18n.t('accounts:group.other', { defaultValue: 'Other' });
+const sharedGroupLabel = () =>
+  i18n.t('accounts:group.sharedWithMe', { defaultValue: 'Shared with me' });
 
 // Per-subtype second-level grouping. A kind listed here splits into nested
 // sub-groups keyed by a subtype field (e.g. bank accounts by `bankName`) —
@@ -32,23 +41,24 @@ export const SHARED_GROUP = { key: 'shared', label: 'Shared with me' } as const;
 // Adding a kind is a one-line entry; the mechanism (buildSubgroups) is generic.
 interface SecondaryGrouping {
   field: string; // subtype field read as the sub-group key (defensively; see subgroupValue)
-  fallbackLabel: string; // label for accounts missing/blank on `field`
   minCount: number; // sub-group only when the section has strictly more than this
   formatValue?: (raw: string) => string; // display label for a value (e.g. enum → human label)
 }
 
+// Accounts missing/blank on the grouping field land in the synthetic "Other"
+// sub-bucket; its label is resolved at call time in buildSubgroups (not baked
+// here) so language switches stay live.
 const SECONDARY_GROUPING: Partial<Record<AccountSubtypeType, SecondaryGrouping>> = {
-  cash: { field: 'storageLocation', fallbackLabel: 'Other', minCount: 5 },
-  bankAccount: { field: 'bankName', fallbackLabel: 'Other', minCount: 5 },
-  eWallet: { field: 'provider', fallbackLabel: 'Other', minCount: 5 },
+  cash: { field: 'storageLocation', minCount: 5 },
+  bankAccount: { field: 'bankName', minCount: 5 },
+  eWallet: { field: 'provider', minCount: 5 },
   // assetType is an enum, so its raw value ("property") is shown via its label ("Property").
   asset: {
     field: 'assetType',
-    fallbackLabel: 'Other',
     minCount: 5,
-    formatValue: (raw) => ASSET_TYPE_LABELS[raw as AssetType] ?? raw,
+    formatValue: (raw) => assetTypeLabel(raw as AssetType),
   },
-  loan: { field: 'lender', fallbackLabel: 'Other', minCount: 5 },
+  loan: { field: 'lender', minCount: 5 },
 };
 
 // Sentinel bucket key for accounts with no usable secondary value; kept
@@ -89,7 +99,7 @@ function buildSubgroups(
 
   const fallback = buckets.get(FALLBACK_BUCKET);
   if (fallback) {
-    named.push({ key: `${kind}:__other__`, label: config.fallbackLabel, accounts: fallback });
+    named.push({ key: `${kind}:__other__`, label: otherGroupLabel(), accounts: fallback });
   }
   return named;
 }
@@ -97,7 +107,7 @@ function buildSubgroups(
 // Build one owned subtype section: a flat leaf, unless the kind opts into
 // secondary grouping and the section is large enough to warrant sub-groups.
 function buildKindGroup(kind: AccountSubtypeType, accounts: AccountResponse[]): AccountGroup {
-  const leaf = { key: kind, label: ACCOUNT_SUBTYPE_LABELS[kind], accounts };
+  const leaf = { key: kind, label: accountSubtypeLabel(kind), accounts };
   const config = SECONDARY_GROUPING[kind];
   if (!config || accounts.length <= config.minCount) return leaf;
 
@@ -125,7 +135,7 @@ export function buildAccountGroups(openAccounts: AccountResponse[]): AccountGrou
     ),
     {
       key: OTHER_GROUP.key,
-      label: OTHER_GROUP.label,
+      label: otherGroupLabel(),
       accounts: ownedOpenAccounts.filter(
         (a) => !a.subtype || !ACCOUNT_SUBTYPE_TYPES.includes(a.subtype.type as never),
       ),
@@ -133,6 +143,6 @@ export function buildAccountGroups(openAccounts: AccountResponse[]): AccountGrou
   ].filter((g) => g.accounts.length > 0 || (g.subgroups?.length ?? 0) > 0);
 
   return sharedOpenAccounts.length > 0
-    ? [...ownedGroups, { ...SHARED_GROUP, accounts: sharedOpenAccounts }]
+    ? [...ownedGroups, { key: SHARED_GROUP.key, label: sharedGroupLabel(), accounts: sharedOpenAccounts }]
     : ownedGroups;
 }

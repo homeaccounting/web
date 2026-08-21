@@ -1,9 +1,11 @@
 import { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Sparkles, X } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ApiError } from '@/api/client';
+import i18n from '@/lib/i18n';
 import { toast } from '@/lib/toast';
 import type { PromptFailure, UUID } from '@/api/types';
 import { usePrompt } from './usePrompt';
@@ -32,15 +34,16 @@ interface AlertState {
 function errorAlert(error: unknown): AlertState {
   if (error instanceof ApiError) {
     if (error.status === 503)
-      return { message: 'Quick add is unavailable right now.', failures: [] };
+      return { message: i18n.t('transactions:bulk.quickAddUnavailable'), failures: [] };
     if (error.status === 502)
-      return { message: 'Couldn’t process that — please try again or rephrase.', failures: [] };
+      return { message: i18n.t('transactions:bulk.quickAddUpstream'), failures: [] };
     if (error.status === 400) return { message: error.message, failures: [] };
   }
-  return { message: 'Something went wrong. Please try again.', failures: [] };
+  return { message: i18n.t('transactions:bulk.genericError'), failures: [] };
 }
 
 export function QuickAddPrompt({ accountId, accountName }: QuickAddPromptProps) {
+  const { t } = useTranslation('transactions');
   const [text, setText] = useState('');
   const [alert, setAlert] = useState<AlertState | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -54,7 +57,7 @@ export function QuickAddPrompt({ accountId, accountName }: QuickAddPromptProps) 
       const res = await prompt.mutateAsync({ text: trimmed, account: accountId });
       const okCount = res.succeeded.length;
       const failCount = res.failed.length;
-      const okMsg = `Added ${okCount} transaction${okCount === 1 ? '' : 's'}.`;
+      const okMsg = t('bulk.added', { count: okCount });
       if (failCount === 0) {
         // Full success: toast, clear, refocus.
         toast.success(okMsg);
@@ -65,12 +68,12 @@ export function QuickAddPrompt({ accountId, accountName }: QuickAddPromptProps) 
         toast.success(okMsg);
         setText('');
         setAlert({
-          title: `Couldn’t record ${failCount} of ${okCount + failCount}`,
+          title: t('bulk.couldntRecordN', { failed: failCount, total: okCount + failCount }),
           failures: res.failed,
         });
       } else {
         // Total failure: keep the text editable, alert the reasons.
-        setAlert({ title: 'Couldn’t record that', failures: res.failed });
+        setAlert({ title: t('bulk.couldntRecordThat'), failures: res.failed });
       }
     } catch (e) {
       // Errors keep the text so the user can adjust and retry.
@@ -91,7 +94,7 @@ export function QuickAddPrompt({ accountId, accountName }: QuickAddPromptProps) 
         >
           <button
             type="button"
-            aria-label="Dismiss"
+            aria-label={t('bulk.dismiss')}
             className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
             onClick={() => setAlert(null)}
           >
@@ -103,9 +106,7 @@ export function QuickAddPrompt({ accountId, accountName }: QuickAddPromptProps) 
             {alert.failures.length > 0 && (
               <ul className="mt-1 list-disc pl-5">
                 {alert.failures.map((f) => (
-                  <li key={f.index}>
-                    Item {f.index + 1} — {f.reason}
-                  </li>
+                  <li key={f.index}>{t('bulk.item', { n: f.index + 1, reason: f.reason })}</li>
                 ))}
               </ul>
             )}
@@ -125,15 +126,15 @@ export function QuickAddPrompt({ accountId, accountName }: QuickAddPromptProps) 
           value={text}
           onChange={(e) => setText(e.target.value)}
           disabled={prompt.isPending}
-          aria-label="Quick add transaction"
+          aria-label={t('bulk.quickAddAria')}
           placeholder={
             accountName
-              ? `Add to ${accountName} — e.g. coffee 4.50, taxi 12`
-              : 'Type what you spent or earned — e.g. coffee 4.50'
+              ? t('bulk.quickAddPlaceholderNamed', { name: accountName })
+              : t('bulk.quickAddPlaceholder')
           }
         />
         <Button type="submit" disabled={prompt.isPending || text.trim() === ''}>
-          {prompt.isPending ? 'Adding…' : 'Add'}
+          {prompt.isPending ? t('bulk.adding') : t('bulk.add')}
         </Button>
       </form>
     </div>

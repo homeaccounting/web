@@ -34,7 +34,7 @@ test.describe('edit transaction @local', () => {
     await expenseDialog.getByLabel(/description/i).fill('Coffee');
     await expenseDialog.getByRole('button', { name: /^ok$/i }).click();
     await expect(expenseDialog).toBeHidden();
-    const row = page.getByRole('cell', { name: 'Coffee' });
+    const row = page.getByRole('cell', { name: 'Coffee', exact: true });
     await expect(row).toBeVisible({ timeout: 10000 });
 
     // 3. Double-click the row to open the edit dialog.
@@ -49,7 +49,7 @@ test.describe('edit transaction @local', () => {
     await expect(editDialog).toBeHidden();
 
     // 5. The list reflects the new description.
-    await expect(page.getByRole('cell', { name: 'Latte' })).toBeVisible({ timeout: 10000 });
-    await expect(page.getByRole('cell', { name: 'Coffee' })).toBeHidden();
+    await expect(page.getByRole('cell', { name: 'Latte', exact: true })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('cell', { name: 'Coffee', exact: true })).toBeHidden();
   });
 });

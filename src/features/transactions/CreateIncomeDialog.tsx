@@ -1,4 +1,5 @@
 import { useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogContent,
@@ -17,7 +18,7 @@ import { defaultTransactionDate, writeStickyDay } from '@/lib/stickyDate';
 import { IncomeExpenseForm, type IncomeExpenseFormApi } from './IncomeExpenseForm';
 import { useCreateIncome } from './useCreateIncome';
 import { toIncomeRequest, type IncomeExpenseFormValues } from './schema';
-import { TRANSACTION_KIND_LABELS } from './labels';
+import { transactionKindLabel } from './labels';
 
 export interface CreateIncomeDialogProps {
   open: boolean;
@@ -30,6 +31,7 @@ export function CreateIncomeDialog({
   onOpenChange,
   selectedAccountId,
 }: CreateIncomeDialogProps) {
+  const { t } = useTranslation('transactions');
   const { data: accounts } = useAccounts();
   const { data: config } = useConfiguration();
   const create = useCreateIncome();
@@ -88,16 +90,14 @@ export function CreateIncomeDialog({
   const bannerMessage =
     create.error instanceof ApiError
       ? create.error.message
-      : 'Something went wrong. Please try again.';
+      : t('form.genericError');
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="lg">
         <DialogHeader>
-          <DialogTitle>{TRANSACTION_KIND_LABELS.income.title}</DialogTitle>
-          <DialogDescription>
-            Record an income transaction to one of your accounts.
-          </DialogDescription>
+          <DialogTitle>{transactionKindLabel('income', 'title')}</DialogTitle>
+          <DialogDescription>{t('form.incomeDescription')}</DialogDescription>
         </DialogHeader>
         {showBanner && (
           <Alert variant="destructive" role="alert">
@@ -127,7 +127,7 @@ export function CreateIncomeDialog({
         )}
         {(!accounts || accounts.length === 0) && (
           <div className="p-2 text-sm text-muted-foreground">
-            Create an account first to record income.
+            {t('form.noAccountsIncome')}
           </div>
         )}
       </DialogContent>

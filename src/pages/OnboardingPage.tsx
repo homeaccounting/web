@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BrandLogo } from '@/components/BrandLogo';
@@ -8,6 +9,7 @@ import { useOnboardingStatus } from '@/features/onboarding/useOnboardingStatus';
 // First-run screen (tracker#58). Freely visitable — an already-configured user
 // who lands here just sees their current values and can leave via Get started.
 export default function OnboardingPage() {
+  const { t } = useTranslation('onboarding');
   const navigate = useNavigate();
   const { skip } = useOnboardingStatus();
 
@@ -25,22 +27,17 @@ export default function OnboardingPage() {
       </div>
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Let&rsquo;s set up the basics</CardTitle>
+          <CardTitle>{t('page.title')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          <p className="text-sm text-muted-foreground">
-            Pick your country and we&rsquo;ll set sensible currency and language defaults. Adjust
-            anything below.
-          </p>
+          <p className="text-sm text-muted-foreground">{t('page.intro')}</p>
           <OnboardingForm />
-          <p className="text-sm text-muted-foreground">
-            You can change any of this later in Settings.
-          </p>
+          <p className="text-sm text-muted-foreground">{t('page.later')}</p>
           <div className="flex items-center justify-end gap-3">
             <Button variant="ghost" onClick={onSkip}>
-              Skip for now
+              {t('page.skip')}
             </Button>
-            <Button onClick={goToApp}>Get started</Button>
+            <Button onClick={goToApp}>{t('page.getStarted')}</Button>
           </div>
         </CardContent>
       </Card>

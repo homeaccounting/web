@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useForm, FormProvider, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { DialogBody, DialogFooter } from '@/components/ui/dialog';
@@ -18,7 +19,7 @@ import { transferFormSchema, makeTransferFormSchema, type TransferFormValues } f
 import { LabelMultiSelect } from './LabelMultiSelect';
 import { DatePicker } from '@/components/DatePicker';
 import { RequiredMarker } from '@/components/RequiredMarker';
-import { TRANSACTION_KIND_LABELS } from './labels';
+import { transactionKindLabel } from './labels';
 import { accountLabelParts } from '@/features/accounts/accountLabel';
 
 export interface TransferFormApi {
@@ -49,6 +50,7 @@ export function TransferForm({
   onCancel,
   onReady,
 }: TransferFormProps) {
+  const { t } = useTranslation('transactions');
   const resolver = useMemo<Resolver<TransferFormValues>>(
     () =>
       zodResolver(
@@ -90,7 +92,7 @@ export function TransferForm({
   return (
     <FormProvider {...form}>
       <form
-        aria-label={`${TRANSACTION_KIND_LABELS.transfer.title} form`}
+        aria-label={t('form.formAria', { title: transactionKindLabel('transfer', 'title') })}
         onSubmit={(e) => {
           void submit(e);
         }}
@@ -107,12 +109,12 @@ export function TransferForm({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>
-                    Source account
+                    {t('form.sourceAccount')}
                     <RequiredMarker />
                   </FormLabel>
                   <FormControl>
                     <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger aria-label="Source account">
+                      <SelectTrigger aria-label={t('form.sourceAccount')}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -141,12 +143,12 @@ export function TransferForm({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>
-                    Target account
+                    {t('form.targetAccount')}
                     <RequiredMarker />
                   </FormLabel>
                   <FormControl>
                     <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger aria-label="Target account">
+                      <SelectTrigger aria-label={t('form.targetAccount')}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -181,7 +183,7 @@ export function TransferForm({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>
-                    Amount
+                    {t('form.amount')}
                     <RequiredMarker />
                   </FormLabel>
                   <FormControl>
@@ -205,7 +207,7 @@ export function TransferForm({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>
-                    Date <RequiredMarker />
+                    {t('form.date')} <RequiredMarker />
                   </FormLabel>
                   <FormControl>
                     <DatePicker
@@ -228,7 +230,7 @@ export function TransferForm({
               name="exchangeRate"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Exchange rate</FormLabel>
+                  <FormLabel>{t('form.exchangeRate')}</FormLabel>
                   <FormControl>
                     <Input
                       type="number"
@@ -249,7 +251,7 @@ export function TransferForm({
                     />
                   </FormControl>
                   <p className="text-xs text-muted-foreground">
-                    Uses the default rate if left blank.
+                    {t('form.exchangeRateHint')}
                   </p>
                   <FormMessage />
                 </FormItem>
@@ -262,7 +264,7 @@ export function TransferForm({
             name="description"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Description</FormLabel>
+                <FormLabel>{t('form.description')}</FormLabel>
                 <FormControl>
                   <Input {...field} />
                 </FormControl>
@@ -276,7 +278,7 @@ export function TransferForm({
             name="labels"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Labels</FormLabel>
+                <FormLabel>{t('form.labels')}</FormLabel>
                 <FormControl>
                   <LabelMultiSelect
                     options={labels}
@@ -292,14 +294,14 @@ export function TransferForm({
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
+            {t('common:cancel')}
           </Button>
           <Button type="submit" disabled={isSubmitting || (isEdit && !isDirty)}>
             {isSubmitting
-              ? 'Saving…'
+              ? t('form.saving')
               : isEdit
-                ? TRANSACTION_KIND_LABELS.transfer.editSubmit
-                : TRANSACTION_KIND_LABELS.transfer.submit}
+                ? transactionKindLabel('transfer', 'editSubmit')
+                : transactionKindLabel('transfer', 'submit')}
           </Button>
         </DialogFooter>
       </form>

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -31,7 +32,7 @@ import {
   useDictionaryEntryNames,
 } from '@/features/configuration/useConfiguration';
 import { useAccountById } from '@/features/accounts/useAccountById';
-import { formatDateTime, formatMoney } from '@/lib/format';
+import { useFormat } from '@/lib/useFormat';
 import { cn } from '@/lib/utils';
 import { flattenDictionary } from '@/api/dictionary';
 import { toast } from '@/lib/toast';
@@ -86,7 +87,7 @@ import { CopyTransactionDialog } from './CopyTransactionDialog';
 import { ConvertTransactionDialog } from './ConvertTransactionDialog';
 import { RefundTransactionDialog } from './RefundTransactionDialog';
 import { MergeTransactionsDialog } from './MergeTransactionsDialog';
-import { checkMergeEligibility, MERGE_INELIGIBILITY_MESSAGE } from './mergeEligibility';
+import { checkMergeEligibility, mergeIneligibilityMessage } from './mergeEligibility';
 import { useTransactionSelection } from './useTransactionSelection';
 import { SelectionActionBar } from './SelectionActionBar';
 import { BulkTransactionMenu } from './BulkTransactionMenu';
@@ -139,6 +140,7 @@ interface AssocEdge {
 // inside the row map). The parent resolves the counterpart edges from the loaded
 // window; this only renders and wires unlink behind a confirm.
 function AssociationBadges({ actingId, edges }: { actingId: string; edges: AssocEdge[] }) {
+  const { t } = useTranslation('transactions');
   const unlink = useUnlinkRelation(actingId);
   // Holds the edge awaiting confirmation in the AlertDialog below; null means
   // no dialog is open. Set by the badge's unlink affordance, cleared by both
@@ -163,14 +165,11 @@ function AssociationBadges({ actingId, edges }: { actingId: string; edges: Assoc
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove association?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This detaches the link between the two transactions. Neither transaction is otherwise
-              changed.
-            </AlertDialogDescription>
+            <AlertDialogTitle>{t('list.removeAssociationTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>{t('list.removeAssociationDesc')}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('common:cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 if (pendingUnlink) {
@@ -182,7 +181,7 @@ function AssociationBadges({ actingId, edges }: { actingId: string; edges: Assoc
                 setPendingUnlink(null);
               }}
             >
-              Remove
+              {t('list.remove')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -205,6 +204,10 @@ const EMPTY_FILTERS: TransactionFilters = {
 const TX_PRESETS = ['this-month', 'last-month', 'this-year', 'last-year'] as const;
 
 export function TransactionsPane() {
+  // Aliased to `translate` because the row map below binds `t` to each
+  // TransactionResponse; the i18n function must not be shadowed by it.
+  const { t: translate } = useTranslation('transactions');
+  const { formatDateTime, formatMoney } = useFormat();
   // The date range is derived from the URL (?period / ?from / ?to), falling back
   // to the persisted "last view" and finally the default 'this-month' preset.
   const [searchParams, setSearchParams] = useSearchParams();
@@ -378,7 +381,7 @@ export function TransactionsPane() {
   const canMerge = mergeEligibility?.eligible ?? false;
   const mergeDisabledReason =
     mergeEligibility && !mergeEligibility.eligible
-      ? MERGE_INELIGIBILITY_MESSAGE[mergeEligibility.reason]
+      ? mergeIneligibilityMessage(mergeEligibility.reason)
       : undefined;
 
   // Frozen snapshots of the selection at the moment a dialog opens, so mutating
@@ -408,8 +411,8 @@ export function TransactionsPane() {
     setIsApplying(false);
     const failed = results.filter((r) => r.status === 'rejected').length;
     const ok = results.length - failed;
-    if (failed === 0) toast.success(`Updated ${ok} transaction${ok === 1 ? '' : 's'}.`);
-    else toast.error(`Updated ${ok} of ${results.length}; ${failed} failed.`);
+    if (failed === 0) toast.success(translate('list.bulkUpdated', { count: ok }));
+    else toast.error(translate('list.bulkPartial', { ok, total: results.length, failed }));
   };
 
   const bulkAddLabel = (labelId: UUID) =>
@@ -573,17 +576,17 @@ export function TransactionsPane() {
     body = (
       <div className="space-y-2 p-4">
         <Alert variant="destructive" role="alert">
-          <AlertDescription>Couldn&rsquo;t load transactions.</AlertDescription>
+          <AlertDescription>{translate('list.loadError')}</AlertDescription>
         </Alert>
         <Button variant="outline" size="sm" onClick={() => void refetch()}>
-          Retry
+          {translate('common:retry')}
         </Button>
       </div>
     );
   } else if (!data || data.length === 0) {
-    body = <EmptyState message="No transactions in this date range." />;
+    body = <EmptyState message={translate('list.emptyDateRange')} />;
   } else if (filtered.length === 0) {
-    body = <EmptyState message="No transactions match your filters." />;
+    body = <EmptyState message={translate('list.emptyFilters')} />;
   } else {
     body = (
       <table className="w-full text-sm">
@@ -592,7 +595,7 @@ export function TransactionsPane() {
             <th className="w-8 px-2 py-2">
               <input
                 type="checkbox"
-                aria-label="Select all"
+                aria-label={translate('list.selectAll')}
                 checked={allPageSelected}
                 ref={(el) => {
                   if (el) el.indeterminate = somePageSelected && !allPageSelected;
@@ -601,11 +604,13 @@ export function TransactionsPane() {
               />
             </th>
             <th className="w-8 px-4 py-2" />
-            <th className="px-4 py-2 text-left font-medium">Date</th>
-            <th className="px-4 py-2 text-left font-medium">Description</th>
-            {showAccountColumn && <th className="px-4 py-2 text-left font-medium">Account</th>}
-            <th className="w-40 px-4 py-2 text-left font-medium">Category</th>
-            <th className="px-4 py-2 text-right font-medium">Amount</th>
+            <th className="px-4 py-2 text-left font-medium">{translate('list.colDate')}</th>
+            <th className="px-4 py-2 text-left font-medium">{translate('list.colDescription')}</th>
+            {showAccountColumn && (
+              <th className="px-4 py-2 text-left font-medium">{translate('list.colAccount')}</th>
+            )}
+            <th className="w-40 px-4 py-2 text-left font-medium">{translate('list.colCategory')}</th>
+            <th className="px-4 py-2 text-right font-medium">{translate('list.colAmount')}</th>
             <th className="w-20 px-2 py-2" />
           </tr>
         </thead>
@@ -643,7 +648,9 @@ export function TransactionsPane() {
                     <td className="px-2 py-2">
                       <input
                         type="checkbox"
-                        aria-label={`Select ${t.description || 'transaction'}`}
+                        aria-label={translate('list.selectRow', {
+                          name: t.description || translate('list.transactionFallback'),
+                        })}
                         checked={selection.isSelected(t.id)}
                         onClick={(e) => e.stopPropagation()}
                         onKeyDown={(e) => e.stopPropagation()}
@@ -810,7 +817,7 @@ export function TransactionsPane() {
                                 <Button
                                   size="icon"
                                   variant="ghost"
-                                  aria-label="Duplicate"
+                                  aria-label={translate('list.duplicate')}
                                   className="h-7 w-7 opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -820,7 +827,7 @@ export function TransactionsPane() {
                                   <Copy className="h-3.5 w-3.5" />
                                 </Button>
                               </TooltipTrigger>
-                              <TooltipContent>Duplicate</TooltipContent>
+                              <TooltipContent>{translate('list.duplicate')}</TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
                         )}
@@ -831,7 +838,7 @@ export function TransactionsPane() {
                                 <Button
                                   size="icon"
                                   variant="ghost"
-                                  aria-label="Cancel"
+                                  aria-label={translate('common:cancel')}
                                   className="h-7 w-7 opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -841,7 +848,7 @@ export function TransactionsPane() {
                                   <Ban className="h-3.5 w-3.5" />
                                 </Button>
                               </TooltipTrigger>
-                              <TooltipContent>Cancel</TooltipContent>
+                              <TooltipContent>{translate('common:cancel')}</TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
                         )}
@@ -881,19 +888,19 @@ export function TransactionsPane() {
                         disabled={isAdjustment(t.transactionType)}
                       >
                         <Pencil className="mr-2 h-4 w-4" aria-hidden />
-                        Edit
+                        {translate('list.edit')}
                       </ContextMenuItem>
                       {!isAdjustment(t.transactionType) && (
                         <ContextMenuItem onSelect={() => openCopy(t)}>
                           <Copy className="mr-2 h-4 w-4" aria-hidden />
-                          Duplicate
+                          {translate('list.duplicate')}
                         </ContextMenuItem>
                       )}
                       {t.status === 'Completed' && !isAdjustment(t.transactionType) && (
                         <ContextMenuSub>
                           <ContextMenuSubTrigger>
                             <ArrowLeftRight className="mr-2 h-4 w-4" aria-hidden />
-                            Convert to
+                            {translate('list.convertTo')}
                           </ContextMenuSubTrigger>
                           <ContextMenuSubContent>
                             {convertTargets(t.transactionType).map((k) => (
@@ -939,7 +946,7 @@ export function TransactionsPane() {
                       {t.status === 'Completed' && t.transactionType === 'expense' && (
                         <ContextMenuItem onSelect={() => openRefund(t)}>
                           <Undo2 className="mr-2 h-4 w-4" aria-hidden />
-                          Refund
+                          {translate('list.refund')}
                         </ContextMenuItem>
                       )}
                       {t.status !== 'Cancelled' && (
@@ -948,7 +955,7 @@ export function TransactionsPane() {
                           onSelect={() => openCancel(t)}
                         >
                           <Ban className="mr-2 h-4 w-4" aria-hidden />
-                          Cancel
+                          {translate('common:cancel')}
                         </ContextMenuItem>
                       )}
                     </>
@@ -981,7 +988,7 @@ export function TransactionsPane() {
             ) : (
               <ChevronRight className="h-4 w-4" />
             )}
-            Filters
+            {translate('list.filters')}
             {activeFilterCount > 0 && (
               <Badge variant="count" className="ml-1">
                 {activeFilterCount}

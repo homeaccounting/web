@@ -56,7 +56,7 @@ describe('buildAccountGroups', () => {
     expect(groups.at(-1)?.key).toBe(SHARED_GROUP.key);
     const shared = groups.find((g) => g.key === SHARED_GROUP.key);
     expect(shared).toBeDefined();
-    expect(shared?.label).toBe(SHARED_GROUP.label);
+    expect(shared?.label).toBe('Shared with me');
     expect(shared?.accounts.map((a) => a.id)).toEqual(['ed', 'vw']);
     // owned account is in a subtype group, never in "Shared with me"
     expect(shared?.accounts.some((a) => a.id === 'mine')).toBe(false);
