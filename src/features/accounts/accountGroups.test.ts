@@ -237,6 +237,32 @@ describe('buildAccountGroups — sub-grouping of other account kinds', () => {
     ]);
   });
 
+  it('sub-groups assets across new named categories and freeform values', () => {
+    const groups = many('asset', 'assetType', [
+      'electronics',
+      'furniture',
+      'equipment',
+      'piano',
+      'electronics',
+      'furniture',
+    ]);
+    const g = groupFor(groups, 'asset');
+    // Named constants render via their human label; a freeform value ("piano",
+    // stored as OtherAsset) buckets by its raw text and labels as that text.
+    expect(g?.subgroups?.map((s) => s.label)).toEqual([
+      'Electronics',
+      'Equipment',
+      'Furniture',
+      'piano',
+    ]);
+    expect(g?.subgroups?.map((s) => s.key)).toEqual([
+      'asset:electronics',
+      'asset:equipment',
+      'asset:furniture',
+      'asset:piano',
+    ]);
+  });
+
   it('collects assets with no asset type into the trailing Other sub-group', () => {
     const groups = buildAccountGroups([
       acc('a1', 'owner', 'asset', 'Opened', { assetType: 'property' }),

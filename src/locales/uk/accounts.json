@@ -16,7 +16,10 @@
     "property": "Нерухомість",
     "vehicle": "Транспорт",
     "stocks": "Акції",
-    "retirementFund": "Пенсійний фонд"
+    "retirementFund": "Пенсійний фонд",
+    "electronics": "Електроніка",
+    "equipment": "Обладнання",
+    "furniture": "Меблі"
   },
   "role": {
     "owner": "Власник",
@@ -64,6 +67,7 @@
     "selectPlaceholder": "Виберіть…",
     "otherOption": "Інше…",
     "customBankName": "Власна назва банку",
+    "customAssetType": "Власний тип активу",
     "storageLocation": "Місце зберігання",
     "accountNumber": "Номер рахунку",
     "cardNetwork": "Платіжна система",

@@ -49,6 +49,36 @@ function ui(bankName?: string) {
   );
 }
 
+// Asset counterpart of Harness: mounts SubtypeFields for an asset account and
+// surfaces the live watched assetType so selection/typing can be asserted.
+function AssetHarness({ assetType }: { assetType?: string }) {
+  const form = useForm<CreateAccountFormValues>({
+    defaultValues: {
+      name: '',
+      currency: 'USD',
+      initialBalance: 0,
+      subtype: { type: 'asset', assetType },
+    },
+  });
+  const watchedAssetType = form.watch('subtype.assetType');
+  return (
+    <FormProvider {...form}>
+      <form>
+        <SubtypeFields />
+        <div data-testid="asset-type-value">{watchedAssetType ?? ''}</div>
+      </form>
+    </FormProvider>
+  );
+}
+
+function assetUi(assetType?: string) {
+  return (
+    <AuthProvider>
+      <AssetHarness assetType={assetType} />
+    </AuthProvider>
+  );
+}
+
 beforeEach(() => {
   saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
 });
@@ -188,5 +218,55 @@ describe('SubtypeFields — bank account bankName provider select', () => {
     });
     expect(screen.queryByLabelText(/custom bank name/i)).not.toBeInTheDocument();
     expect(screen.getByTestId('bank-name-value')).toHaveTextContent('Monobank');
+  });
+});
+
+describe('SubtypeFields — asset assetType select', () => {
+  it('selecting a named category from the Select sets assetType to its enum value', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(assetUi());
+    await user.click(await screen.findByRole('combobox', { name: /asset type/i }));
+    await user.click(await screen.findByRole('option', { name: /^electronics$/i }));
+    expect(screen.getByTestId('asset-type-value')).toHaveTextContent('electronics');
+  });
+
+  it('selecting "Other…" reveals a text input; typing sets assetType to the typed value', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(assetUi());
+    await user.click(await screen.findByRole('combobox', { name: /asset type/i }));
+    await user.click(await screen.findByRole('option', { name: /other/i }));
+    const customInput = await screen.findByLabelText(/custom asset type/i);
+    await user.type(customInput, 'Piano');
+    expect(screen.getByTestId('asset-type-value')).toHaveTextContent('Piano');
+  });
+
+  it('editing an account whose assetType is a freeform value opens in custom mode, prefilled', async () => {
+    renderWithProviders(assetUi('antique clock'));
+    const customInput = await screen.findByLabelText(/custom asset type/i);
+    expect(customInput).toHaveValue('antique clock');
+  });
+
+  it('editing an account whose assetType is a known category shows it selected, no custom input', async () => {
+    renderWithProviders(assetUi('furniture'));
+    expect(await screen.findByRole('combobox', { name: /asset type/i })).toHaveTextContent(
+      'Furniture',
+    );
+    expect(screen.queryByLabelText(/custom asset type/i)).not.toBeInTheDocument();
+  });
+
+  it('switching from custom entry back to a named category removes the custom Input', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(assetUi());
+    await user.click(await screen.findByRole('combobox', { name: /asset type/i }));
+    await user.click(await screen.findByRole('option', { name: /other/i }));
+    const customInput = await screen.findByLabelText(/custom asset type/i);
+    await user.type(customInput, 'Piano');
+    expect(screen.getByTestId('asset-type-value')).toHaveTextContent('Piano');
+
+    await user.click(screen.getByRole('combobox', { name: /asset type/i }));
+    await user.click(await screen.findByRole('option', { name: /^equipment$/i }));
+
+    expect(screen.queryByLabelText(/custom asset type/i)).not.toBeInTheDocument();
+    expect(screen.getByTestId('asset-type-value')).toHaveTextContent('equipment');
   });
 });

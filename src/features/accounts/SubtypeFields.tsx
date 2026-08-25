@@ -22,6 +22,9 @@ import { assetTypeLabel, cardNetworkLabel } from './labels';
 // NONE_VALUE / LinkAccountsDialog's NOT_IMPORTED.
 const CUSTOM_BANK_VALUE = '__custom__';
 
+// Same idiom for the asset-type "Other…" entry (backend freeform OtherAsset).
+const CUSTOM_ASSET_VALUE = '__custom_asset__';
+
 // Provider Select + custom-entry fallback for `subtype.bankName`. Fails soft
 // to a plain text Input when the provider list is empty/unavailable (loading,
 // errored, or genuinely empty) — see useProviders().
@@ -89,7 +92,9 @@ function BankNameField({ control }: { control: Control<CreateAccountFormValues> 
                 </SelectTrigger>
                 <SelectContent>
                   {renderProviderOptions(providers, (p) => p.displayName)}
-                  <SelectItem value={CUSTOM_BANK_VALUE}>{t('subtypeFields.otherOption')}</SelectItem>
+                  <SelectItem value={CUSTOM_BANK_VALUE}>
+                    {t('subtypeFields.otherOption')}
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </FormControl>
@@ -99,6 +104,81 @@ function BankNameField({ control }: { control: Control<CreateAccountFormValues> 
                 name={field.name}
                 onBlur={field.onBlur}
                 value={bankName}
+                onChange={(e) => field.onChange(e.target.value)}
+              />
+            )}
+            <FormMessage />
+          </FormItem>
+        );
+      }}
+    />
+  );
+}
+
+// Named asset-type Select + custom-entry fallback for `subtype.assetType`. An
+// "Other…" option reveals a free-text Input whose value is stored verbatim
+// (backend OtherAsset). Sticky custom mode + edit-load detection mirror
+// BankNameField: a loaded value outside ASSET_TYPES opens in custom mode.
+function AssetTypeField({ control }: { control: Control<CreateAccountFormValues> }) {
+  const { t } = useTranslation('accounts');
+  const [forceCustom, setForceCustom] = useState(false);
+  const watchedAssetType = useWatch({ control, name: 'subtype.assetType' }) ?? '';
+  const watchedNamed = (ASSET_TYPES as readonly string[]).includes(watchedAssetType);
+
+  useEffect(() => {
+    if (watchedAssetType !== '' && !watchedNamed) {
+      setForceCustom(true);
+    }
+  }, [watchedAssetType, watchedNamed]);
+
+  return (
+    <FormField
+      control={control}
+      name="subtype.assetType"
+      render={({ field }) => {
+        const assetType = field.value ?? '';
+        const named = (ASSET_TYPES as readonly string[]).includes(assetType);
+        const isCustom = forceCustom || (assetType !== '' && !named);
+        // Always a string so the Select stays controlled (see BankNameField).
+        const selectValue = named ? assetType : isCustom ? CUSTOM_ASSET_VALUE : '';
+
+        return (
+          <FormItem>
+            <FormLabel>{t('subtypeFields.assetType')}</FormLabel>
+            <FormControl>
+              <Select
+                onValueChange={(value) => {
+                  if (value === CUSTOM_ASSET_VALUE) {
+                    setForceCustom(true);
+                    field.onChange('');
+                  } else {
+                    setForceCustom(false);
+                    field.onChange(value);
+                  }
+                }}
+                value={selectValue}
+              >
+                <SelectTrigger aria-label={t('subtypeFields.assetType')}>
+                  <SelectValue placeholder={t('subtypeFields.selectPlaceholder')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {ASSET_TYPES.map((kind) => (
+                    <SelectItem key={kind} value={kind}>
+                      {assetTypeLabel(kind)}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value={CUSTOM_ASSET_VALUE}>
+                    {t('subtypeFields.otherOption')}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </FormControl>
+            {isCustom && (
+              <Input
+                aria-label={t('subtypeFields.customAssetType')}
+                name={field.name}
+                onBlur={field.onBlur}
+                value={assetType}
                 onChange={(e) => field.onChange(e.target.value)}
               />
             )}
@@ -211,30 +291,7 @@ export function SubtypeFields() {
   if (kind === 'asset') {
     return (
       <>
-        <FormField
-          control={control}
-          name="subtype.assetType"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{t('subtypeFields.assetType')}</FormLabel>
-              <FormControl>
-                <Select onValueChange={field.onChange} value={field.value ?? ''}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={t('subtypeFields.selectPlaceholder')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ASSET_TYPES.map((kind) => (
-                      <SelectItem key={kind} value={kind}>
-                        {assetTypeLabel(kind)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <AssetTypeField control={control} />
         <FormField
           control={control}
           name="subtype.description"

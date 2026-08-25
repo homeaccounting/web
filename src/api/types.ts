@@ -130,11 +130,25 @@ export const ACCOUNT_ROLES = ['owner', 'editor', 'viewer'] as const;
 export type AccountRole = (typeof ACCOUNT_ROLES)[number];
 
 // Backend enums (closed sets at the Haskell level; backend also accepts
-// freeform OtherCardNetwork/OtherAsset, but the web UI does not expose those).
+// freeform OtherCardNetwork/OtherAsset). The card-network UI exposes only the
+// named set; the asset-type UI surfaces the freeform OtherAsset fallback via an
+// "Other…" entry, so `assetType` below is a plain string, not this enum.
 export const CARD_NETWORKS = ['visa', 'mastercard', 'amex'] as const;
 export type CardNetwork = (typeof CARD_NETWORKS)[number];
 
-export const ASSET_TYPES = ['property', 'vehicle', 'stocks', 'retirementFund'] as const;
+// The named asset categories the UI offers directly. A user can also enter a
+// freeform value via "Other…" (backend OtherAsset), so a stored/submitted
+// assetType is any string — this list only drives the named Select options,
+// their i18n labels, and secondary grouping.
+export const ASSET_TYPES = [
+  'property',
+  'vehicle',
+  'stocks',
+  'retirementFund',
+  'electronics',
+  'equipment',
+  'furniture',
+] as const;
 export type AssetType = (typeof ASSET_TYPES)[number];
 
 // Currencies the web UI offers at account creation. Matches the backend's
@@ -152,7 +166,7 @@ export interface AccountSubtypeRequest {
   cardNetwork?: CardNetwork;
   provider?: string;
   accountIdentifier?: string;
-  assetType?: AssetType;
+  assetType?: string;
   description?: string;
   lender?: string;
   interestRate?: number;

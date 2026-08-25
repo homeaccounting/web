@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import {
-  ASSET_TYPES,
   CARD_NETWORKS,
   SUPPORTED_CURRENCIES,
   type AccountResponse,
@@ -27,7 +26,9 @@ const eWalletSchema = z.object({
 
 const assetSchema = z.object({
   type: z.literal('asset'),
-  assetType: z.enum(ASSET_TYPES).optional(),
+  // Freeform: the UI offers named ASSET_TYPES plus an "Other…" free-text entry
+  // (backend OtherAsset), so any string is valid — mirrors bankName.
+  assetType: z.string().trim().optional(),
   description: z.string().trim().optional(),
 });
 
@@ -148,7 +149,7 @@ function normaliseSubtype(subtype: AccountResponse['subtype']): EditAccountFormV
     case 'asset':
       return {
         type: 'asset',
-        assetType: asEnum(ASSET_TYPES, s.assetType),
+        assetType: typeof s.assetType === 'string' ? s.assetType : undefined,
         description: typeof s.description === 'string' ? s.description : undefined,
       };
     case 'loan':

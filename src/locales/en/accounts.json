@@ -16,7 +16,10 @@
     "property": "Property",
     "vehicle": "Vehicle",
     "stocks": "Stocks",
-    "retirementFund": "Retirement fund"
+    "retirementFund": "Retirement fund",
+    "electronics": "Electronics",
+    "equipment": "Equipment",
+    "furniture": "Furniture"
   },
   "role": {
     "owner": "Owner",
@@ -64,6 +67,7 @@
     "selectPlaceholder": "Select…",
     "otherOption": "Other…",
     "customBankName": "Custom bank name",
+    "customAssetType": "Custom asset type",
     "storageLocation": "Storage location",
     "accountNumber": "Account number",
     "cardNetwork": "Card network",
