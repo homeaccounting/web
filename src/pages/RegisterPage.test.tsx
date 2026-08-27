@@ -20,7 +20,7 @@ function ui() {
 describe('RegisterPage', () => {
   it('shows the brand logo so users recognize the app', () => {
     renderWithProviders(ui(), { initialPath: '/register' });
-    expect(screen.getByRole('img', { name: 'Home Accounting' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'HomeAccounting' })).toBeInTheDocument();
   });
 
   it('rejects short passwords client-side', async () => {

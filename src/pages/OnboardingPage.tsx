@@ -23,7 +23,7 @@ export default function OnboardingPage() {
     <div className="flex min-h-screen flex-col items-center justify-center px-4 py-10">
       <div className="mb-6 flex flex-col items-center gap-2">
         <BrandLogo className="h-16" />
-        <span className="text-xl font-semibold">Home Accounting</span>
+        <span className="text-xl font-semibold">HomeAccounting</span>
       </div>
       <Card className="w-full max-w-md">
         <CardHeader>

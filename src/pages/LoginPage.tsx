@@ -62,7 +62,7 @@ export default function LoginPage() {
     <div className="flex min-h-screen flex-col items-center justify-center px-4">
       <div className="mb-6 flex flex-col items-center gap-2">
         <BrandLogo className="h-24" />
-        <span className="text-2xl font-semibold">Home Accounting</span>
+        <span className="text-2xl font-semibold">HomeAccounting</span>
       </div>
       <Card className="w-full max-w-md">
         <CardHeader>

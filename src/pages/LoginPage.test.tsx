@@ -24,7 +24,7 @@ function ui() {
 describe('LoginPage', () => {
   it('shows the brand logo so users recognize the app', () => {
     renderWithProviders(ui(), { initialPath: '/login' });
-    expect(screen.getByRole('img', { name: 'Home Accounting' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'HomeAccounting' })).toBeInTheDocument();
   });
 
   it('logs in and navigates to /', async () => {

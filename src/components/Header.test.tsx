@@ -42,8 +42,8 @@ describe('Header navigation', () => {
     renderWithProviders(ui, { initialPath: '/' });
     // Brand is now a logo image (accessible name preserved via alt text); the
     // two section tabs are distinct links.
-    expect(screen.getByRole('img', { name: 'Home Accounting' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Home Accounting' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'HomeAccounting' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'HomeAccounting' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Accounts' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Reports' })).toBeInTheDocument();
   });
