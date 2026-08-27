@@ -159,9 +159,4 @@ When introducing new routes, register them in `src/App.tsx` and put protected ro
 
 ## Documentation Structure
 
-Project documentation lives in `docs/`:
-
-- `docs/specs/` — design specs (`YYYY-MM-DD-feature-name-design.md`)
-- `docs/plans/` — implementation plans (`YYYY-MM-DD-feature-name.md`)
-
-Specs and plans use frontmatter with `status: draft|in-progress|completed|superseded`. In case of conflict, specs take precedence over plans.
+Durable project documentation lives in `docs/` and is versioned.
