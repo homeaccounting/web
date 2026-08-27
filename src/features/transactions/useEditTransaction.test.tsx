@@ -256,4 +256,34 @@ describe('useEditTransaction', () => {
     const allAccountsList = client.getQueryData<TransactionResponse[]>(allAccountsKey());
     expect(allAccountsList?.[0]?.description).toBe('patched');
   });
+
+  it('tolerates a non-array cache entry under the ["transactions"] prefix (useHasTransactions boolean)', async () => {
+    server.use(
+      http.put(`${apiBase}/api/transactions/:id/description`, () =>
+        HttpResponse.json(txResponse({ description: 'patched' })),
+      ),
+    );
+
+    const client = new QueryClient();
+    // useHasTransactions caches a boolean under ['transactions', 'any']. The
+    // ['transactions'] prefix filter in patchCachedTx matches it too, so the
+    // updater must not blindly call .map on it (regression: TypeError →
+    // "Something went wrong" banner while the edit itself succeeds).
+    client.setQueryData(['transactions', 'any'], true);
+    client.setQueryData(windowedKey('a1'), [txResponse()] as TransactionResponse[]);
+
+    const { result } = renderHook(() => useEditTransaction(), { wrapper: makeWrapper(client) });
+    await result.current.mutateAsync({
+      id: 'tx-1',
+      accountIds: ['a1'],
+      diff: { description: 'patched' },
+      onSubCallApplied: vi.fn(),
+    });
+
+    // The real list is still patched, and the boolean probe is left untouched.
+    expect(client.getQueryData<TransactionResponse[]>(windowedKey('a1'))?.[0]?.description).toBe(
+      'patched',
+    );
+    expect(client.getQueryData(['transactions', 'any'])).toBe(true);
+  });
 });

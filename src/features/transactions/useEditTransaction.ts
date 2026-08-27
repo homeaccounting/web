@@ -59,9 +59,14 @@ export function useEditTransaction() {
 // matches ALL of them (v5 partial-key match), so the edited row is patched wherever it is
 // currently displayed, regardless of account or which window(s) happen to be mounted.
 // `.map` only rewrites the row whose id matches, so applying this across every list is safe.
+//
+// The prefix also matches non-list entries — notably useHasTransactions' boolean under
+// ['transactions', 'any'] — so guard on Array.isArray and leave anything else untouched;
+// calling .map on a boolean would throw and reject the mutation even though the edit already
+// landed on the backend.
 function patchCachedTx(queryClient: QueryClient, next: TransactionResponse) {
   queryClient.setQueriesData<TransactionResponse[] | undefined>(
     { queryKey: ['transactions'] },
-    (list) => list?.map((t) => (t.id === next.id ? next : t)),
+    (list) => (Array.isArray(list) ? list.map((t) => (t.id === next.id ? next : t)) : list),
   );
 }
