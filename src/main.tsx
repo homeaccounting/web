@@ -9,6 +9,7 @@ import { AuthProvider } from '@/auth/AuthContext';
 import { queryClient } from '@/lib/queryClient';
 import { Toaster } from '@/components/ui/sonner';
 import { LanguageSync } from '@/features/i18n/LanguageSync';
+import { AnalyticsTracker } from '@/features/analytics/AnalyticsTracker';
 import App from './App';
 
 async function bootstrap() {
@@ -22,6 +23,7 @@ async function bootstrap() {
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
             <LanguageSync />
+            <AnalyticsTracker />
             <App />
             <Toaster />
           </AuthProvider>
