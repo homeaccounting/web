@@ -294,10 +294,8 @@ nix-collect-garbage -d      # clear cache (last resort)
 
 ## References
 
-- [`docs/specs/`](docs/specs) — design specs (e.g. `2026-04-28-web-mvp-design.md`)
-- [`docs/plans/`](docs/plans) — implementation plans
 - [`CLAUDE.md`](CLAUDE.md) — coding conventions, architecture rules, testing policy
-- [`../backend/README.md`](../backend/README.md) — backend setup and API surface
+- [Backend repository](https://github.com/homeaccounting/backend) — backend setup and API surface
 
 ## License
 
