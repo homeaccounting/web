@@ -298,3 +298,7 @@ nix-collect-garbage -d      # clear cache (last resort)
 - [`docs/plans/`](docs/plans) — implementation plans
 - [`CLAUDE.md`](CLAUDE.md) — coding conventions, architecture rules, testing policy
 - [`../backend/README.md`](../backend/README.md) — backend setup and API surface
+
+## License
+
+GNU Affero General Public License v3.0 (AGPL-3.0) - See [LICENSE](LICENSE) for details
