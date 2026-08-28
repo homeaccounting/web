@@ -38,8 +38,9 @@ const pending: string[] = [];
 export function isAnalyticsEnabled(): boolean {
   const url = import.meta.env.VITE_GOATCOUNTER_URL;
   if (!url) return false;
-  const host = window.location.hostname;
-  return host !== 'localhost' && host !== '127.0.0.1';
+  // location.hostname serialises the IPv6 loopback with brackets, e.g. "[::1]".
+  const loopback = new Set(['localhost', '127.0.0.1', '::1', '[::1]']);
+  return !loopback.has(window.location.hostname);
 }
 
 function flush(): void {
@@ -47,6 +48,9 @@ function flush(): void {
   if (!count) return;
   let path = pending.shift();
   while (path !== undefined) {
+    // GoatCounter also reports document.title; safe only because ours is the
+    // static "HomeAccounting". If titles ever become dynamic (account/txn
+    // names), pass an explicit title here so scrubbing isn't bypassed.
     count({ path });
     path = pending.shift();
   }
@@ -63,6 +67,11 @@ export function ensureGoatCounter(): void {
   el.src = COUNT_JS;
   el.dataset.goatcounter = url;
   el.addEventListener('load', flush);
+  // If count.js is blocked (ad-blocker) or fails, drop queued pageviews so the
+  // pending queue can't grow unbounded across a session.
+  el.addEventListener('error', () => {
+    pending.length = 0;
+  });
   document.head.appendChild(el);
 }
 

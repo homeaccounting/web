@@ -91,6 +91,11 @@ describe('analytics runtime', () => {
     expect(count).toHaveBeenCalledWith({ path: '/transactions' });
   });
 
+  it('isAnalyticsEnabled is false on the IPv6 loopback host', () => {
+    window.location.href = 'http://[::1]/app/';
+    expect(mod.isAnalyticsEnabled()).toBe(false);
+  });
+
   it('trackPageview is a no-op (no script, no count) when the var is unset', () => {
     vi.stubEnv('VITE_GOATCOUNTER_URL', '');
     const count = vi.fn();
@@ -98,5 +103,16 @@ describe('analytics runtime', () => {
     mod.trackPageview('/transactions');
     expect(count).not.toHaveBeenCalled();
     expect(document.querySelector('script[data-goatcounter]')).toBeNull();
+  });
+
+  it('drops queued pageviews when count.js fails to load (bounded queue)', () => {
+    mod.trackPageview('/transactions'); // queued; count.js not loaded
+    const el = document.querySelector('script[data-goatcounter]') as HTMLScriptElement;
+    el.dispatchEvent(new Event('error'));
+    // After failure, a later load event must not replay the dropped pageview.
+    const count = vi.fn();
+    (window as unknown as { goatcounter: { count: typeof count } }).goatcounter = { count };
+    el.dispatchEvent(new Event('load'));
+    expect(count).not.toHaveBeenCalled();
   });
 });
