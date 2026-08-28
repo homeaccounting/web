@@ -15,7 +15,9 @@ describe('catalog completeness', () => {
 
   it.each(namespaces)('uk namespace "%s" has the same keys as en', (ns) => {
     const en = new Set(keyPaths(resources.en[ns]));
-    const uk = new Set(keyPaths((resources.uk as Record<string, unknown>)[ns] as Record<string, unknown>));
+    const uk = new Set(
+      keyPaths((resources.uk as Record<string, unknown>)[ns] as Record<string, unknown>),
+    );
     const missingInUk = [...en].filter((k) => !uk.has(k));
     const extraInUk = [...uk].filter((k) => !en.has(k));
     expect({ missingInUk, extraInUk }).toEqual({ missingInUk: [], extraInUk: [] });

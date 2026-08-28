@@ -134,7 +134,10 @@
     "alreadyLinked": "Ці транзакції вже зв’язані.",
     "relationKindGroup": "Тип зв’язку",
     "linkKind": { "refund": "Повернення", "associated": "Асоціація" },
-    "linkKindHint": { "refund": "Дохід повертає витрату", "associated": "Загальний зв’язок між двома" },
+    "linkKindHint": {
+      "refund": "Дохід повертає витрату",
+      "associated": "Загальний зв’язок між двома"
+    },
     "checkingRefundable": "Перевірка суми до повернення…",
     "refundLoadErrorExpense": "Не вдалося завантажити попередні повернення для цієї витрати.",
     "fullyRefunded": "Цю витрату вже повністю повернено.",

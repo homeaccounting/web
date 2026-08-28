@@ -27,8 +27,7 @@ export function CloseAccountDialog({ open, onOpenChange, account }: CloseAccount
   const close = useCloseAccount();
 
   const showBanner = close.isError;
-  const bannerMessage =
-    close.error instanceof ApiError ? close.error.message : t('errors.generic');
+  const bannerMessage = close.error instanceof ApiError ? close.error.message : t('errors.generic');
 
   const onConfirm = async () => {
     try {

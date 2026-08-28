@@ -48,7 +48,9 @@ test.describe('filter by a category name shared across dictionaries @local', () 
     await exp.getByRole('button', { name: /^ok$/i }).click();
     await expect(exp).toBeHidden();
 
-    await expect(page.getByRole('cell', { name: 'Income other', exact: true })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('cell', { name: 'Income other', exact: true })).toBeVisible({
+      timeout: 10000,
+    });
     await expect(page.getByRole('cell', { name: 'Expense other', exact: true })).toBeVisible();
 
     // Filter by the category name "Other" — both rows must remain.

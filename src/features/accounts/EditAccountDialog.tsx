@@ -109,8 +109,7 @@ function EditAccountForm({
   // (e.g. 500, or a partial-save where the failing sub-call didn't return
   // fieldErrors).
   const showBanner = edit.isError && !(edit.error instanceof ApiError && edit.error.fieldErrors);
-  const bannerMessage =
-    edit.error instanceof ApiError ? edit.error.message : t('errors.generic');
+  const bannerMessage = edit.error instanceof ApiError ? edit.error.message : t('errors.generic');
 
   const handleSubmit = async (values: CreateAccountFormValues | EditAccountFormValues) => {
     // mode='edit' guarantees `values` is EditAccountFormValues at runtime,

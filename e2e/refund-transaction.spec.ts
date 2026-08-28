@@ -42,7 +42,9 @@ async function seedExpense(
   await dialog.getByLabel(/description/i).fill(description);
   await dialog.getByRole('button', { name: /^ok$/i }).click();
   await expect(dialog).toBeHidden();
-  await expect(page.getByRole('cell', { name: description, exact: true })).toBeVisible({ timeout: 10000 });
+  await expect(page.getByRole('cell', { name: description, exact: true })).toBeVisible({
+    timeout: 10000,
+  });
   // The action guard only shows "Refund" once the transaction is Completed.
   await expect(page.getByRole('img', { name: 'Expense' })).toBeVisible({ timeout: 10000 });
 }

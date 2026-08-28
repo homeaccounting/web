@@ -44,7 +44,9 @@ export function ProviderRow({ provider, status, onLink, onUnlink, disableUnlinkR
       <div>
         <p className="text-sm font-medium">{provider}</p>
         <p className="text-sm text-muted-foreground">
-          {status.linked ? t('provider.linkedAs', { subtitle: status.subtitle }) : t('provider.notLinked')}
+          {status.linked
+            ? t('provider.linkedAs', { subtitle: status.subtitle })
+            : t('provider.notLinked')}
         </p>
       </div>
       {status.linked ? (

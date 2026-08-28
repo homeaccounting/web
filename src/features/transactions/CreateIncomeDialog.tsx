@@ -88,9 +88,7 @@ export function CreateIncomeDialog({
   const showBanner =
     create.isError && !(create.error instanceof ApiError && create.error.fieldErrors);
   const bannerMessage =
-    create.error instanceof ApiError
-      ? create.error.message
-      : t('form.genericError');
+    create.error instanceof ApiError ? create.error.message : t('form.genericError');
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -126,9 +124,7 @@ export function CreateIncomeDialog({
           />
         )}
         {(!accounts || accounts.length === 0) && (
-          <div className="p-2 text-sm text-muted-foreground">
-            {t('form.noAccountsIncome')}
-          </div>
+          <div className="p-2 text-sm text-muted-foreground">{t('form.noAccountsIncome')}</div>
         )}
       </DialogContent>
     </Dialog>

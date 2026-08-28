@@ -207,7 +207,9 @@ export function AccountsPane() {
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                {selectedAccount && !canManageSelected ? t('pane.ownerOnly') : t('pane.editAccount')}
+                {selectedAccount && !canManageSelected
+                  ? t('pane.ownerOnly')
+                  : t('pane.editAccount')}
               </TooltipContent>
             </Tooltip>
             <Tooltip>

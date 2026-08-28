@@ -161,8 +161,7 @@ export function LinkAccountsDialog({ open, onOpenChange, connection }: LinkAccou
   };
 
   const saveError = setAccountMap.error;
-  const saveErrorMessage =
-    saveError instanceof ApiError ? saveError.message : t('errors.generic');
+  const saveErrorMessage = saveError instanceof ApiError ? saveError.message : t('errors.generic');
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

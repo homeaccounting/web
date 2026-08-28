@@ -154,9 +154,7 @@ function CopyIncomeExpenseBody({
   const showBanner =
     create.isError && !(create.error instanceof ApiError && create.error.fieldErrors);
   const bannerMessage =
-    create.error instanceof ApiError
-      ? create.error.message
-      : t('form.genericError');
+    create.error instanceof ApiError ? create.error.message : t('form.genericError');
 
   return (
     <>
@@ -232,9 +230,7 @@ function CopyTransferBody({
   const showBanner =
     create.isError && !(create.error instanceof ApiError && create.error.fieldErrors);
   const bannerMessage =
-    create.error instanceof ApiError
-      ? create.error.message
-      : t('form.genericError');
+    create.error instanceof ApiError ? create.error.message : t('form.genericError');
 
   return (
     <>

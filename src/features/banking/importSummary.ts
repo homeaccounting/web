@@ -30,7 +30,6 @@ export function formatSummary(s: Summary): string {
   const parts = [i18n.t('banking:summary.imported', { count: s.imported })];
   if (s.skipped > 0) parts.push(i18n.t('banking:summary.skipped', { count: s.skipped }));
   if (s.failed > 0) parts.push(i18n.t('banking:summary.failed', { count: s.failed }));
-  if (s.unresolved > 0)
-    parts.push(i18n.t('banking:summary.unresolved', { count: s.unresolved }));
+  if (s.unresolved > 0) parts.push(i18n.t('banking:summary.unresolved', { count: s.unresolved }));
   return parts.join(' · ');
 }

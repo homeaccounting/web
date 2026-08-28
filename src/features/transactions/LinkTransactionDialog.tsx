@@ -220,7 +220,10 @@ export function LinkTransactionDialog({
                     refundSummary.remainingTotal,
                     pairing.expense.sourceCurrency,
                   ),
-                  original: formatMoney(refundSummary.originalTotal, pairing.expense.sourceCurrency),
+                  original: formatMoney(
+                    refundSummary.originalTotal,
+                    pairing.expense.sourceCurrency,
+                  ),
                 })
               )}
             </div>

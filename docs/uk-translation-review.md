@@ -21,659 +21,658 @@ Full side-by-side per namespace follows.
 
 ## `common` (33 keys)
 
-| key | en | uk |
-|---|---|---|
-| `save` | Save | Зберегти |
-| `cancel` | Cancel | Скасувати |
-| `ok` | OK | OK |
-| `delete` | Delete | Видалити |
-| `retry` | Retry | Повторити |
-| `close` | Close | Закрити |
-| `nav.accounts` | Accounts | Рахунки |
-| `nav.reports` | Reports | Звіти |
-| `userMenu.open` | Open user menu | Відкрити меню користувача |
-| `userMenu.accountFallback` | Account | Обліковий запис |
-| `userMenu.profile` | Profile | Профіль |
-| `userMenu.signOut` | Sign out | Вийти |
-| `period.label` | Period | Період |
-| `period.custom` | Custom… | Вручну… |
-| `period.from` | From | Від |
-| `period.to` | To | До |
-| `period.presets.this-month` | This month | Цей місяць |
-| `period.presets.last-month` | Last month | Минулий місяць |
-| `period.presets.this-year` | This year | Цей рік |
-| `period.presets.last-year` | Last year | Минулий рік |
-| `period.presets.all-time` | All time | Увесь час |
-| `telegram.title` | Link Telegram | Прив'язати Telegram |
-| `telegram.linkedAs` | Telegram linked as @{{handle}} | Telegram прив'язано як @{{handle}} |
-| `telegram.generating` | Generating link… | Створення посилання… |
-| `telegram.open` | Open Telegram | Відкрити Telegram |
-| `telegram.expiresAt` | Link expires at {{time}} | Посилання діє до {{time}} |
-| `telegram.confirmLinked` | I've linked it | Я прив'язав(ла) |
-| `datePicker.placeholder` | Pick a date | Оберіть дату |
-| `datePicker.openCalendar` | Open calendar | Відкрити календар |
-| `datePicker.calendarFor` | {{label}} calendar | {{label}} — календар |
-| `datePicker.time` | Time | Час |
-| `moneyInput.amount` | Amount | Сума |
-| `moneyInput.currency` | Currency | Валюта |
+| key                         | en                             | uk                                 |
+| --------------------------- | ------------------------------ | ---------------------------------- |
+| `save`                      | Save                           | Зберегти                           |
+| `cancel`                    | Cancel                         | Скасувати                          |
+| `ok`                        | OK                             | OK                                 |
+| `delete`                    | Delete                         | Видалити                           |
+| `retry`                     | Retry                          | Повторити                          |
+| `close`                     | Close                          | Закрити                            |
+| `nav.accounts`              | Accounts                       | Рахунки                            |
+| `nav.reports`               | Reports                        | Звіти                              |
+| `userMenu.open`             | Open user menu                 | Відкрити меню користувача          |
+| `userMenu.accountFallback`  | Account                        | Обліковий запис                    |
+| `userMenu.profile`          | Profile                        | Профіль                            |
+| `userMenu.signOut`          | Sign out                       | Вийти                              |
+| `period.label`              | Period                         | Період                             |
+| `period.custom`             | Custom…                        | Вручну…                            |
+| `period.from`               | From                           | Від                                |
+| `period.to`                 | To                             | До                                 |
+| `period.presets.this-month` | This month                     | Цей місяць                         |
+| `period.presets.last-month` | Last month                     | Минулий місяць                     |
+| `period.presets.this-year`  | This year                      | Цей рік                            |
+| `period.presets.last-year`  | Last year                      | Минулий рік                        |
+| `period.presets.all-time`   | All time                       | Увесь час                          |
+| `telegram.title`            | Link Telegram                  | Прив'язати Telegram                |
+| `telegram.linkedAs`         | Telegram linked as @{{handle}} | Telegram прив'язано як @{{handle}} |
+| `telegram.generating`       | Generating link…               | Створення посилання…               |
+| `telegram.open`             | Open Telegram                  | Відкрити Telegram                  |
+| `telegram.expiresAt`        | Link expires at {{time}}       | Посилання діє до {{time}}          |
+| `telegram.confirmLinked`    | I've linked it                 | Я прив'язав(ла)                    |
+| `datePicker.placeholder`    | Pick a date                    | Оберіть дату                       |
+| `datePicker.openCalendar`   | Open calendar                  | Відкрити календар                  |
+| `datePicker.calendarFor`    | {{label}} calendar             | {{label}} — календар               |
+| `datePicker.time`           | Time                           | Час                                |
+| `moneyInput.amount`         | Amount                         | Сума                               |
+| `moneyInput.currency`       | Currency                       | Валюта                             |
 
 ## `accounts` (97 keys)
 
-| key | en | uk |
-|---|---|---|
-| `subtype.cash` | Cash | Готівка |
-| `subtype.bankAccount` | Bank account | Банківський рахунок |
-| `subtype.eWallet` | E-wallet | Електронний гаманець |
-| `subtype.asset` | Asset | Актив |
-| `subtype.loan` | Loan | Кредит |
-| `subtype.unknown` | Account | Рахунок |
-| `cardNetwork.visa` | Visa | Visa |
-| `cardNetwork.mastercard` | Mastercard | Mastercard |
-| `cardNetwork.amex` | Amex | Amex |
-| `assetType.property` | Property | Нерухомість |
-| `assetType.vehicle` | Vehicle | Транспорт |
-| `assetType.stocks` | Stocks | Акції |
-| `assetType.retirementFund` | Retirement fund | Пенсійний фонд |
-| `role.owner` | Owner | Власник |
-| `role.editor` | Editor | Редактор |
-| `role.viewer` | Viewer | Глядач |
-| `group.other` | Other | Інше |
-| `group.sharedWithMe` | Shared with me | Надано мені |
-| `pane.title` | Accounts | Рахунки |
-| `pane.allAccounts` | All accounts | Усі рахунки |
-| `pane.editAccount` | Edit account | Редагувати рахунок |
-| `pane.ownerOnly` | Owner only | Лише власник |
-| `pane.reopenAccount` | Reopen account | Відновити рахунок |
-| `pane.closeAccount` | Close account | Закрити рахунок |
-| `pane.manageAccess` | Manage access | Керувати доступом |
-| `pane.addAccount` | Add account | Додати рахунок |
-| `pane.loadError` | Couldn’t load accounts. | Не вдалося завантажити рахунки. |
-| `pane.empty` | No accounts yet. | Ще немає рахунків. |
-| `pane.hideClosed` | Hide closed | Сховати закриті |
-| `pane.showClosed` | Show closed ({{count}}) | Показати закриті ({{count}}) |
-| `pane.reopenError` | Couldn’t reopen this account. Try again. | Не вдалося відновити цей рахунок. Спробуйте ще раз. |
-| `contextMenu.edit` | Edit | Редагувати |
-| `contextMenu.access` | Access | Доступ |
-| `contextMenu.reopen` | Reopen | Відновити |
-| `contextMenu.close` | Close | Закрити |
-| `form.name` | Name | Назва |
-| `form.initialBalance` | Initial balance | Початковий баланс |
-| `form.currency` | Currency | Валюта |
-| `form.currencyLocked` | Cannot be changed after creation | Не можна змінити після створення |
-| `form.moreOptions` | More options | Більше опцій |
-| `form.hide` | Hide | Сховати |
-| `form.overdraftLimit` | Overdraft limit | Ліміт овердрафту |
-| `form.accountType` | Account type | Тип рахунку |
-| `form.saving` | Saving… | Збереження… |
-| `subtypeFields.bankName` | Bank name | Назва банку |
-| `subtypeFields.selectPlaceholder` | Select… | Виберіть… |
-| `subtypeFields.otherOption` | Other… | Інше… |
-| `subtypeFields.customBankName` | Custom bank name | Власна назва банку |
-| `subtypeFields.storageLocation` | Storage location | Місце зберігання |
-| `subtypeFields.accountNumber` | Account number | Номер рахунку |
-| `subtypeFields.cardNetwork` | Card network | Платіжна система |
-| `subtypeFields.provider` | Provider | Провайдер |
-| `subtypeFields.accountIdentifier` | Account identifier | Ідентифікатор рахунку |
-| `subtypeFields.assetType` | Asset type | Тип активу |
-| `subtypeFields.description` | Description | Опис |
-| `subtypeFields.lender` | Lender | Кредитор |
-| `subtypeFields.interestRate` | Interest rate (% APR) | Відсоткова ставка (% річних) |
-| `subtypeFields.dueDate` | Due date (YYYY-MM-DD) | Дата погашення (РРРР-ММ-ДД) |
-| `createDialog.title` | Create account | Створити рахунок |
-| `createDialog.description` | Add a new account to track balances and transactions. | Додайте новий рахунок для відстеження балансів і транзакцій. |
-| `editDialog.title` | Edit account | Редагувати рахунок |
-| `editDialog.description` | Update account details. | Оновіть деталі рахунку. |
-| `closeDialog.title` | Close this account? | Закрити цей рахунок? |
-| `closeDialog.description` | “{{name}}” will be hidden from your accounts list. You can reopen it later from “Show closed”. | «{{name}}» буде приховано зі списку ваших рахунків. Ви зможете відновити його пізніше через «Показати закриті». |
-| `adjustDialog.title` | Adjust balance | Коригувати баланс |
-| `adjustDialog.description` | Description | Опис |
-| `adjustDialog.noAccounts` | Create an account first to adjust a balance. | Спочатку створіть рахунок, щоб коригувати баланс. |
-| `adjustDialog.account` | Account | Рахунок |
-| `adjustDialog.currentBalanceLabel` | Current balance: | Поточний баланс: |
-| `adjustDialog.targetBalance` | Target balance | Цільовий баланс |
-| `adjustDialog.date` | Date | Дата |
-| `manageDialog.title` | Manage access | Керувати доступом |
-| `manageDialog.description` | Share “{{name}}” with other people, or revoke their access. | Поділіться «{{name}}» з іншими людьми або скасуйте їхній доступ. |
-| `manageDialog.userId` | User ID | ID користувача |
-| `manageDialog.userIdPlaceholder` | 00000000-0000-0000-0000-000000000000 | 00000000-0000-0000-0000-000000000000 |
-| `manageDialog.role` | Role | Роль |
-| `manageDialog.sharing` | Sharing… | Надання доступу… |
-| `manageDialog.share` | Share | Поділитися |
-| `manageDialog.peopleWithAccess` | People with access | Люди з доступом |
-| `manageDialog.loadError` | Couldn’t load access. | Не вдалося завантажити доступ. |
-| `manageDialog.revoke` | Revoke | Скасувати |
-| `manageDialog.revokeAria` | Revoke {{label}} | Скасувати доступ для {{label}} |
-| `manageDialog.revokeTitle` | Revoke access? | Скасувати доступ? |
-| `manageDialog.revokeDescription` | {{label}} will lose access to "{{name}}". | {{label}} втратить доступ до «{{name}}». |
-| `manageDialog.noUserFound` | No user found with that ID. | Користувача з таким ID не знайдено. |
-| `manageDialog.selfShare` | You can't share an account with yourself. | Ви не можете поділитися рахунком із собою. |
-| `importButton.label` | Import statement | Імпортувати виписку |
-| `importButton.error` | Couldn’t import this statement. Try again. | Не вдалося імпортувати цю виписку. Спробуйте ще раз. |
-| `syncButton.label` | Sync now | Синхронізувати зараз |
-| `syncButton.error` | Couldn’t sync this account. Try again. | Не вдалося синхронізувати цей рахунок. Спробуйте ще раз. |
-| `errors.generic` | Something went wrong. Please try again. | Щось пішло не так. Спробуйте ще раз. |
-| `validation.nameRequired` | Name is required | Назва обов'язкова |
-| `validation.overdraftRequired` | Overdraft limit is required when initial balance is negative. | Ліміт овердрафту обов'язковий, коли початковий баланс від'ємний. |
-| `validation.overdraftMin` | Overdraft limit must be at least \|initial balance\|. | Ліміт овердрафту має бути не меншим за \|початковий баланс\|. |
-| `validation.dateRequired` | Date is required | Дата обов'язкова |
-| `validation.dateFuture` | Date cannot be in the future. | Дата не може бути в майбутньому. |
-| `validation.userIdInvalid` | Enter a valid user ID | Введіть дійсний ID користувача |
+| key                                | en                                                                                             | uk                                                                                                              |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `subtype.cash`                     | Cash                                                                                           | Готівка                                                                                                         |
+| `subtype.bankAccount`              | Bank account                                                                                   | Банківський рахунок                                                                                             |
+| `subtype.eWallet`                  | E-wallet                                                                                       | Електронний гаманець                                                                                            |
+| `subtype.asset`                    | Asset                                                                                          | Актив                                                                                                           |
+| `subtype.loan`                     | Loan                                                                                           | Кредит                                                                                                          |
+| `subtype.unknown`                  | Account                                                                                        | Рахунок                                                                                                         |
+| `cardNetwork.visa`                 | Visa                                                                                           | Visa                                                                                                            |
+| `cardNetwork.mastercard`           | Mastercard                                                                                     | Mastercard                                                                                                      |
+| `cardNetwork.amex`                 | Amex                                                                                           | Amex                                                                                                            |
+| `assetType.property`               | Property                                                                                       | Нерухомість                                                                                                     |
+| `assetType.vehicle`                | Vehicle                                                                                        | Транспорт                                                                                                       |
+| `assetType.stocks`                 | Stocks                                                                                         | Акції                                                                                                           |
+| `assetType.retirementFund`         | Retirement fund                                                                                | Пенсійний фонд                                                                                                  |
+| `role.owner`                       | Owner                                                                                          | Власник                                                                                                         |
+| `role.editor`                      | Editor                                                                                         | Редактор                                                                                                        |
+| `role.viewer`                      | Viewer                                                                                         | Глядач                                                                                                          |
+| `group.other`                      | Other                                                                                          | Інше                                                                                                            |
+| `group.sharedWithMe`               | Shared with me                                                                                 | Надано мені                                                                                                     |
+| `pane.title`                       | Accounts                                                                                       | Рахунки                                                                                                         |
+| `pane.allAccounts`                 | All accounts                                                                                   | Усі рахунки                                                                                                     |
+| `pane.editAccount`                 | Edit account                                                                                   | Редагувати рахунок                                                                                              |
+| `pane.ownerOnly`                   | Owner only                                                                                     | Лише власник                                                                                                    |
+| `pane.reopenAccount`               | Reopen account                                                                                 | Відновити рахунок                                                                                               |
+| `pane.closeAccount`                | Close account                                                                                  | Закрити рахунок                                                                                                 |
+| `pane.manageAccess`                | Manage access                                                                                  | Керувати доступом                                                                                               |
+| `pane.addAccount`                  | Add account                                                                                    | Додати рахунок                                                                                                  |
+| `pane.loadError`                   | Couldn’t load accounts.                                                                        | Не вдалося завантажити рахунки.                                                                                 |
+| `pane.empty`                       | No accounts yet.                                                                               | Ще немає рахунків.                                                                                              |
+| `pane.hideClosed`                  | Hide closed                                                                                    | Сховати закриті                                                                                                 |
+| `pane.showClosed`                  | Show closed ({{count}})                                                                        | Показати закриті ({{count}})                                                                                    |
+| `pane.reopenError`                 | Couldn’t reopen this account. Try again.                                                       | Не вдалося відновити цей рахунок. Спробуйте ще раз.                                                             |
+| `contextMenu.edit`                 | Edit                                                                                           | Редагувати                                                                                                      |
+| `contextMenu.access`               | Access                                                                                         | Доступ                                                                                                          |
+| `contextMenu.reopen`               | Reopen                                                                                         | Відновити                                                                                                       |
+| `contextMenu.close`                | Close                                                                                          | Закрити                                                                                                         |
+| `form.name`                        | Name                                                                                           | Назва                                                                                                           |
+| `form.initialBalance`              | Initial balance                                                                                | Початковий баланс                                                                                               |
+| `form.currency`                    | Currency                                                                                       | Валюта                                                                                                          |
+| `form.currencyLocked`              | Cannot be changed after creation                                                               | Не можна змінити після створення                                                                                |
+| `form.moreOptions`                 | More options                                                                                   | Більше опцій                                                                                                    |
+| `form.hide`                        | Hide                                                                                           | Сховати                                                                                                         |
+| `form.overdraftLimit`              | Overdraft limit                                                                                | Ліміт овердрафту                                                                                                |
+| `form.accountType`                 | Account type                                                                                   | Тип рахунку                                                                                                     |
+| `form.saving`                      | Saving…                                                                                        | Збереження…                                                                                                     |
+| `subtypeFields.bankName`           | Bank name                                                                                      | Назва банку                                                                                                     |
+| `subtypeFields.selectPlaceholder`  | Select…                                                                                        | Виберіть…                                                                                                       |
+| `subtypeFields.otherOption`        | Other…                                                                                         | Інше…                                                                                                           |
+| `subtypeFields.customBankName`     | Custom bank name                                                                               | Власна назва банку                                                                                              |
+| `subtypeFields.storageLocation`    | Storage location                                                                               | Місце зберігання                                                                                                |
+| `subtypeFields.accountNumber`      | Account number                                                                                 | Номер рахунку                                                                                                   |
+| `subtypeFields.cardNetwork`        | Card network                                                                                   | Платіжна система                                                                                                |
+| `subtypeFields.provider`           | Provider                                                                                       | Провайдер                                                                                                       |
+| `subtypeFields.accountIdentifier`  | Account identifier                                                                             | Ідентифікатор рахунку                                                                                           |
+| `subtypeFields.assetType`          | Asset type                                                                                     | Тип активу                                                                                                      |
+| `subtypeFields.description`        | Description                                                                                    | Опис                                                                                                            |
+| `subtypeFields.lender`             | Lender                                                                                         | Кредитор                                                                                                        |
+| `subtypeFields.interestRate`       | Interest rate (% APR)                                                                          | Відсоткова ставка (% річних)                                                                                    |
+| `subtypeFields.dueDate`            | Due date (YYYY-MM-DD)                                                                          | Дата погашення (РРРР-ММ-ДД)                                                                                     |
+| `createDialog.title`               | Create account                                                                                 | Створити рахунок                                                                                                |
+| `createDialog.description`         | Add a new account to track balances and transactions.                                          | Додайте новий рахунок для відстеження балансів і транзакцій.                                                    |
+| `editDialog.title`                 | Edit account                                                                                   | Редагувати рахунок                                                                                              |
+| `editDialog.description`           | Update account details.                                                                        | Оновіть деталі рахунку.                                                                                         |
+| `closeDialog.title`                | Close this account?                                                                            | Закрити цей рахунок?                                                                                            |
+| `closeDialog.description`          | “{{name}}” will be hidden from your accounts list. You can reopen it later from “Show closed”. | «{{name}}» буде приховано зі списку ваших рахунків. Ви зможете відновити його пізніше через «Показати закриті». |
+| `adjustDialog.title`               | Adjust balance                                                                                 | Коригувати баланс                                                                                               |
+| `adjustDialog.description`         | Description                                                                                    | Опис                                                                                                            |
+| `adjustDialog.noAccounts`          | Create an account first to adjust a balance.                                                   | Спочатку створіть рахунок, щоб коригувати баланс.                                                               |
+| `adjustDialog.account`             | Account                                                                                        | Рахунок                                                                                                         |
+| `adjustDialog.currentBalanceLabel` | Current balance:                                                                               | Поточний баланс:                                                                                                |
+| `adjustDialog.targetBalance`       | Target balance                                                                                 | Цільовий баланс                                                                                                 |
+| `adjustDialog.date`                | Date                                                                                           | Дата                                                                                                            |
+| `manageDialog.title`               | Manage access                                                                                  | Керувати доступом                                                                                               |
+| `manageDialog.description`         | Share “{{name}}” with other people, or revoke their access.                                    | Поділіться «{{name}}» з іншими людьми або скасуйте їхній доступ.                                                |
+| `manageDialog.userId`              | User ID                                                                                        | ID користувача                                                                                                  |
+| `manageDialog.userIdPlaceholder`   | 00000000-0000-0000-0000-000000000000                                                           | 00000000-0000-0000-0000-000000000000                                                                            |
+| `manageDialog.role`                | Role                                                                                           | Роль                                                                                                            |
+| `manageDialog.sharing`             | Sharing…                                                                                       | Надання доступу…                                                                                                |
+| `manageDialog.share`               | Share                                                                                          | Поділитися                                                                                                      |
+| `manageDialog.peopleWithAccess`    | People with access                                                                             | Люди з доступом                                                                                                 |
+| `manageDialog.loadError`           | Couldn’t load access.                                                                          | Не вдалося завантажити доступ.                                                                                  |
+| `manageDialog.revoke`              | Revoke                                                                                         | Скасувати                                                                                                       |
+| `manageDialog.revokeAria`          | Revoke {{label}}                                                                               | Скасувати доступ для {{label}}                                                                                  |
+| `manageDialog.revokeTitle`         | Revoke access?                                                                                 | Скасувати доступ?                                                                                               |
+| `manageDialog.revokeDescription`   | {{label}} will lose access to "{{name}}".                                                      | {{label}} втратить доступ до «{{name}}».                                                                        |
+| `manageDialog.noUserFound`         | No user found with that ID.                                                                    | Користувача з таким ID не знайдено.                                                                             |
+| `manageDialog.selfShare`           | You can't share an account with yourself.                                                      | Ви не можете поділитися рахунком із собою.                                                                      |
+| `importButton.label`               | Import statement                                                                               | Імпортувати виписку                                                                                             |
+| `importButton.error`               | Couldn’t import this statement. Try again.                                                     | Не вдалося імпортувати цю виписку. Спробуйте ще раз.                                                            |
+| `syncButton.label`                 | Sync now                                                                                       | Синхронізувати зараз                                                                                            |
+| `syncButton.error`                 | Couldn’t sync this account. Try again.                                                         | Не вдалося синхронізувати цей рахунок. Спробуйте ще раз.                                                        |
+| `errors.generic`                   | Something went wrong. Please try again.                                                        | Щось пішло не так. Спробуйте ще раз.                                                                            |
+| `validation.nameRequired`          | Name is required                                                                               | Назва обов'язкова                                                                                               |
+| `validation.overdraftRequired`     | Overdraft limit is required when initial balance is negative.                                  | Ліміт овердрафту обов'язковий, коли початковий баланс від'ємний.                                                |
+| `validation.overdraftMin`          | Overdraft limit must be at least \|initial balance\|.                                          | Ліміт овердрафту має бути не меншим за \|початковий баланс\|.                                                   |
+| `validation.dateRequired`          | Date is required                                                                               | Дата обов'язкова                                                                                                |
+| `validation.dateFuture`            | Date cannot be in the future.                                                                  | Дата не може бути в майбутньому.                                                                                |
+| `validation.userIdInvalid`         | Enter a valid user ID                                                                          | Введіть дійсний ID користувача                                                                                  |
 
 ## `transactions` (255 keys)
 
-| key | en | uk |
-|---|---|---|
-| `kind.income.title` | Add income | Додати дохід |
-| `kind.income.submit` | OK | OK |
-| `kind.income.aria` | Add income | Додати дохід |
-| `kind.income.editTitle` | Edit income | Редагувати дохід |
-| `kind.income.editSubmit` | OK | OK |
-| `kind.income.copyTitle` | Copy income | Копіювати дохід |
-| `kind.income.convertTitle` | Convert to income | Перетворити на дохід |
-| `kind.expense.title` | Add expense | Додати витрату |
-| `kind.expense.submit` | OK | OK |
-| `kind.expense.aria` | Add expense | Додати витрату |
-| `kind.expense.editTitle` | Edit expense | Редагувати витрату |
-| `kind.expense.editSubmit` | OK | OK |
-| `kind.expense.copyTitle` | Copy expense | Копіювати витрату |
-| `kind.expense.convertTitle` | Convert to expense | Перетворити на витрату |
-| `kind.transfer.title` | Add transfer | Додати переказ |
-| `kind.transfer.submit` | OK | OK |
-| `kind.transfer.aria` | Add transfer | Додати переказ |
-| `kind.transfer.editTitle` | Edit transfer | Редагувати переказ |
-| `kind.transfer.editSubmit` | OK | OK |
-| `kind.transfer.copyTitle` | Copy transfer | Копіювати переказ |
-| `kind.transfer.convertTitle` | Convert to transfer | Перетворити на переказ |
-| `type.income` | Income | Дохід |
-| `type.expense` | Expense | Витрата |
-| `type.transfer` | Transfer | Переказ |
-| `type.adjustment` | Adjustment | Коригування |
-| `type.unknown` | Unknown | Невідомо |
-| `status.Pending` | Pending | В очікуванні |
-| `status.Failed` | Failed | Помилка |
-| `status.Cancelled` | Cancelled | Скасовано |
-| `validation.amountPositive` | Amount must be positive | Сума має бути додатною |
-| `validation.dateRequired` | Date is required | Потрібно вказати дату |
-| `validation.accountsMustDiffer` | Source and target accounts must differ | Рахунки списання та зарахування мають відрізнятися |
-| `validation.addCategory` | Add at least one category | Додайте принаймні одну категорію |
-| `validation.expenseNoIncome` | An expense cannot carry income categories | Витрата не може містити категорії доходу |
-| `validation.enterTargetTotal` | Enter a target total | Вкажіть цільову суму |
-| `validation.exceedsBalance` | Exceeds available balance ({{amount}}) | Перевищує доступний баланс ({{amount}}) |
-| `validation.overTarget` | Allocations are {{amount}} over the target | Розподіл перевищує ціль на {{amount}} |
-| `validation.shortOfTarget` | Allocations are {{amount}} short of the target | Розподілу бракує {{amount}} до цілі |
-| `validation.refundCategoryCap` | Refund for a category can't exceed {{amount}} left to refund | Повернення за категорією не може перевищувати {{amount}}, доступних до повернення |
-| `validation.refundTotalCap` | Refund can't exceed {{amount}} left on this transaction | Повернення не може перевищувати {{amount}}, доступних за цією транзакцією |
-| `merge.ineligibility.too-few` | Select at least two transactions to merge. | Виберіть принаймні дві транзакції для об’єднання. |
-| `merge.ineligibility.not-completed` | Only completed transactions can be merged. | Об’єднувати можна лише завершені транзакції. |
-| `merge.ineligibility.unsupported-kind` | Only income or expense transactions can be merged. | Об’єднувати можна лише транзакції доходу або витрат. |
-| `merge.ineligibility.mixed-kinds` | All transactions must be the same kind — all income or all expense. | Усі транзакції мають бути одного типу — усі доходи або усі витрати. |
-| `merge.ineligibility.different-accounts` | All transactions must be on the same account. | Усі транзакції мають бути на одному рахунку. |
-| `merge.ineligibility.different-currencies` | All transactions must use the same currency. | Усі транзакції мають бути в одній валюті. |
-| `merge.ineligibility.conflicting-contacts` | The selection has two different contacts. They must share one contact, or leave it unset. | У вибірці два різні контакти. Вони мають мати спільний контакт або залишити його незаданим. |
-| `merge.ineligibility.transfer-same-account` | A transfer needs two different accounts. | Для переказу потрібні два різні рахунки. |
-| `merge.ineligibility.transfer-legs-mismatch` | Amount, currency, and dates (within 24h) must match. | Сума, валюта та дати (у межах 24 год) мають збігатися. |
-| `form.genericError` | Something went wrong. Please try again. | Щось пішло не так. Спробуйте ще раз. |
-| `form.saving` | Saving… | Збереження… |
-| `form.formAria` | {{title}} form | Форма: {{title}} |
-| `form.incomeDescription` | Record an income transaction to one of your accounts. | Записати дохід на один із ваших рахунків. |
-| `form.expenseDescription` | Record an expense transaction from one of your accounts. | Записати витрату з одного з ваших рахунків. |
-| `form.transferDescription` | Transfer funds between two of your accounts. | Переказати кошти між двома вашими рахунками. |
-| `form.noAccountsIncome` | Create an account first to record income. | Спочатку створіть рахунок, щоб записати дохід. |
-| `form.noAccountsExpense` | Create an account first to record an expense. | Спочатку створіть рахунок, щоб записати витрату. |
-| `form.noAccountsTransfer` | Create at least two accounts first to make a transfer. | Спочатку створіть щонайменше два рахунки, щоб зробити переказ. |
-| `form.editDescription` | Update transaction details. | Оновіть деталі транзакції. |
-| `form.adjustmentTitle` | Balance adjustment | Коригування балансу |
-| `form.copyDescription` | Create a new transaction from an existing one. | Створити нову транзакцію на основі наявної. |
-| `form.copyAdjustmentTitle` | Copy transaction | Копіювати транзакцію |
-| `form.adjustmentCopyNotice` | Balance adjustments can't be copied. Use "Adjust balance" to record a new adjustment. | Коригування балансу не можна копіювати. Скористайтеся «Скоригувати баланс», щоб записати нове коригування. |
-| `form.convertDescription` | Change this transaction's type. | Змінити тип цієї транзакції. |
-| `form.readOnlyNotice` | This transaction is {{status}} and cannot be edited. | Ця транзакція має статус {{status}} і не може бути змінена. |
-| `form.importDetails` | Import details | Деталі імпорту |
-| `form.mcc` | MCC | MCC |
-| `form.category` | Category | Категорія |
-| `form.mccTitle` | Merchant category code from the bank | Код категорії продавця з банку |
-| `form.providerCategoryTitle` | Provider's own category label | Власна назва категорії провайдера |
-| `form.counterpartyCategory` | Counterparty category | Категорія контрагента |
-| `form.counterparty` | Counterparty | Контрагент |
-| `form.counterpartyTokenTitle` | Counterparty token from the bank | Токен контрагента з банку |
-| `form.mappedCategory` | mapped category | зіставлена категорія |
-| `form.mappedContact` | mapped contact | зіставлений контакт |
-| `form.mapToCategoryPlaceholder` | Map to category… | Зіставити з категорією… |
-| `form.mapToCategoryAria` | Map to category | Зіставити з категорією |
-| `form.mapToContactPlaceholder` | Map to contact… | Зіставити з контактом… |
-| `form.mapToContactAria` | Map to contact | Зіставити з контактом |
-| `form.account` | Account | Рахунок |
-| `form.sourceAccount` | Source account | Рахунок-джерело |
-| `form.targetAccount` | Target account | Рахунок-отримувач |
-| `form.amount` | Amount | Сума |
-| `form.date` | Date | Дата |
-| `form.contact` | Contact | Контакт |
-| `form.description` | Description | Опис |
-| `form.labels` | Labels | Мітки |
-| `form.exchangeRate` | Exchange rate | Обмінний курс |
-| `form.exchangeRateHint` | Uses the default rate if left blank. | Якщо не заповнено, використовується курс за замовчуванням. |
-| `form.incomeCategoriesTitle` | Income categories | Категорії доходів |
-| `form.addIncomeCategory` | + Add income category | + Додати категорію доходу |
-| `form.reimbursementsTitle` | Reimbursements (reduces an expense) | Відшкодування (зменшує витрату) |
-| `form.addReimbursement` | + Add reimbursement | + Додати відшкодування |
-| `form.expenseCategoriesTitle` | Expense categories | Категорії витрат |
-| `form.addCategory` | + Add category | + Додати категорію |
-| `resolve.genericError` | Something went wrong. Please try again. | Щось пішло не так. Спробуйте ще раз. |
-| `resolve.noDescription` | (no description) | (без опису) |
-| `resolve.refund` | refund | повернення |
-| `resolve.refundOf` | refund of {{description}} | повернення за {{description}} |
-| `resolve.refundedInFull` | refunded in full | повернено повністю |
-| `resolve.partiallyRefunded` | partially refunded ({{refunded}} of {{original}}) | частково повернено ({{refunded}} з {{original}}) |
-| `resolve.refundTitle` | Refund transaction | Повернення транзакції |
-| `resolve.refundDescription` | Record a refund as an income transaction linked back to the original expense. | Запишіть повернення як дохідну транзакцію, пов’язану з початковою витратою. |
-| `resolve.refundLoadError` | Couldn't load prior refunds for this transaction. Please try again. | Не вдалося завантажити попередні повернення для цієї транзакції. Спробуйте ще раз. |
-| `resolve.refundPrefix` | Refund: {{description}} | Повернення: {{description}} |
-| `resolve.refundedSummary` | {{refunded}} of {{original}} already refunded · {{remaining}} left | {{refunded}} з {{original}} уже повернено · залишилось {{remaining}} |
-| `resolve.cancelTitle` | Cancel this transaction? | Скасувати цю транзакцію? |
-| `resolve.cancelDescription` | It will be excluded from the account balance and hidden from the default transactions list. This can't be undone here. | Її буде виключено з балансу рахунку та приховано зі стандартного списку транзакцій. Скасувати цю дію тут неможливо. |
-| `resolve.keep` | Keep | Залишити |
-| `resolve.linkTitle` | Link 2 transactions | Зв’язати 2 транзакції |
-| `resolve.linkDescription` | Create a typed relation between the two selected transactions. | Створіть типізований зв’язок між двома вибраними транзакціями. |
-| `resolve.alreadyLinked` | These transactions are already linked. | Ці транзакції вже зв’язані. |
-| `resolve.relationKindGroup` | Relation kind | Тип зв’язку |
-| `resolve.linkKind.refund` | Refund | Повернення |
-| `resolve.linkKind.associated` | Association | Асоціація |
-| `resolve.linkKindHint.refund` | Income refunds the expense | Дохід повертає витрату |
-| `resolve.linkKindHint.associated` | General link between the two | Загальний зв’язок між двома |
-| `resolve.checkingRefundable` | Checking refundable amount… | Перевірка суми до повернення… |
-| `resolve.refundLoadErrorExpense` | Couldn’t load prior refunds for this expense. | Не вдалося завантажити попередні повернення для цієї витрати. |
-| `resolve.fullyRefunded` | This expense is already fully refunded. | Цю витрату вже повністю повернено. |
-| `resolve.refundLeftSummary` | {{remaining}} of {{original}} left to refund | {{remaining}} з {{original}} залишилось повернути |
-| `resolve.link` | Link | Зв’язати |
-| `resolve.mergeTransferTitle` | Merge into transfer | Об’єднати в переказ |
-| `resolve.mergeTransferDescription` | These two are one transfer between your accounts. The income is kept and becomes the transfer (holding its date & description); the expense is cancelled and linked. | Ці дві — один переказ між вашими рахунками. Дохід зберігається та стає переказом (зберігаючи свою дату та опис); витрата скасовується й прив’язується. |
-| `resolve.mergeCountTitle_one` | Merge {{count}} transaction | Об’єднати {{count}} транзакцію |
-| `resolve.mergeCountTitle_few` | Merge {{count}} transactions | Об’єднати {{count}} транзакції |
-| `resolve.mergeCountTitle_many` | Merge {{count}} transactions | Об’єднати {{count}} транзакцій |
-| `resolve.mergeCountTitle_other` | Merge {{count}} transactions | Об’єднати {{count}} транзакції |
-| `resolve.mergePickDescription` | Pick the one to keep. It holds its date & description and absorbs the others’ allocations; the rest are cancelled. | Виберіть ту, яку залишити. Вона зберігає свою дату та опис і вбирає розподіли інших; решта скасовуються. |
-| `resolve.from` | From | Звідки |
-| `resolve.to` | To | Куди |
-| `resolve.amount` | Amount | Сума |
-| `resolve.date` | Date | Дата |
-| `resolve.transferExpenseNote` | The expense is cancelled and linked to the resulting transfer. | Витрата скасовується та прив’язується до утвореного переказу. |
-| `resolve.keepLegend` | Keep | Залишити |
-| `resolve.keepAria` | Keep {{description}} | Залишити {{description}} |
-| `resolve.transactionFallback` | transaction | транзакцію |
-| `resolve.survivor` | Survivor | Основна |
-| `resolve.mergedTotalLabel` | Merged total: | Загальна сума об’єднання: |
-| `resolve.sourcesCancelled_one` | {{count}} transaction will be cancelled. | {{count}} транзакцію буде скасовано. |
-| `resolve.sourcesCancelled_few` | {{count}} transactions will be cancelled. | {{count}} транзакції буде скасовано. |
-| `resolve.sourcesCancelled_many` | {{count}} transactions will be cancelled. | {{count}} транзакцій буде скасовано. |
-| `resolve.sourcesCancelled_other` | {{count}} transactions will be cancelled. | {{count}} транзакції буде скасовано. |
-| `resolve.makeTransfer` | Make transfer | Створити переказ |
-| `resolve.merge` | Merge | Об’єднати |
-| `resolve.associatedWith` | associated with {{description}} | асоційовано з {{description}} |
-| `resolve.associated` | associated | асоційовано |
-| `resolve.associatedCancelled` | {{base}} (cancelled) | {{base}} (скасовано) |
-| `resolve.unlink` | Unlink | Відв’язати |
-| `pickers.selectCategory` | Select a category… | Виберіть категорію… |
-| `pickers.selectContact` | Select a contact… | Виберіть контакт… |
-| `pickers.archivedCategory` | Archived category | Архівна категорія |
-| `pickers.archivedContact` | Archived contact | Архівний контакт |
-| `pickers.none` | — none — | — немає — |
-| `pickers.noMatches` | No matches | Немає збігів |
-| `pickers.create` | Create ‘{{name}}’ | Створити «{{name}}» |
-| `pickers.remove` | Remove {{name}} | Видалити {{name}} |
-| `pickers.addLabels` | Add labels… | Додати мітки… |
-| `pickers.allAccounts` | All accounts | Усі рахунки |
-| `pickers.useHint` | Use: {{hint}} | Використати: {{hint}} |
-| `pickers.category` | Category | Категорія |
-| `pickers.contact` | Contact | Контакт |
-| `pickers.labels` | Labels | Мітки |
-| `pickers.searchCategories` | Search categories | Пошук категорій |
-| `pickers.searchCategoriesPlaceholder` | Search categories… | Пошук категорій… |
-| `pickers.searchContacts` | Search contacts | Пошук контактів |
-| `pickers.searchContactsPlaceholder` | Search contacts… | Пошук контактів… |
-| `pickers.searchLabels` | Search labels | Пошук міток |
-| `pickers.searchLabelsPlaceholder` | Search labels… | Пошук міток… |
-| `list.selectionActions` | Selection actions | Дії з вибором |
-| `list.selected` | {{count}} selected | Вибрано {{count}} |
-| `list.selectHint` | Select 2 to link or merge | Виберіть 2, щоб зв’язати або об’єднати |
-| `list.linkAria` | Link selected transactions | Зв’язати вибрані транзакції |
-| `list.link` | Link | Зв’язати |
-| `list.mergeAria` | Merge selected transactions | Об’єднати вибрані транзакції |
-| `list.merge` | Merge | Об’єднати |
-| `list.clearSelection` | Clear selection | Очистити вибір |
-| `list.showing` | Showing {{start}}–{{end}} of {{total}} | Показано {{start}}–{{end}} з {{total}} |
-| `list.rows` | Rows | Рядки |
-| `list.rowsPerPage` | Rows per page | Рядків на сторінці |
-| `list.prev` | ‹ Prev | ‹ Назад |
-| `list.next` | Next › | Далі › |
-| `list.allAccounts` | All accounts | Усі рахунки |
-| `list.accountsCount_one` | {{count}} account | {{count}} рахунок |
-| `list.accountsCount_few` | {{count}} accounts | {{count}} рахунки |
-| `list.accountsCount_many` | {{count}} accounts | {{count}} рахунків |
-| `list.accountsCount_other` | {{count}} accounts | {{count}} рахунка |
-| `list.transactions` | Transactions | Транзакції |
-| `list.adjustBalance` | Adjust balance | Скоригувати баланс |
-| `list.noAccountsHint` | Create an account first | Спочатку створіть рахунок |
-| `list.allCategories` | All categories | Усі категорії |
-| `list.anyContact` | Any contact | Будь-який контакт |
-| `list.descriptionPlaceholder` | Description… | Опис… |
-| `list.contact` | Contact | Контакт |
-| `list.cancelledFailed` | Cancelled & failed | Скасовані та невдалі |
-| `list.clear` | Clear | Очистити |
-| `list.removeAssociationTitle` | Remove association? | Видалити зв’язок? |
-| `list.removeAssociationDesc` | This detaches the link between the two transactions. Neither transaction is otherwise changed. | Це від’єднає зв’язок між двома транзакціями. Інших змін у транзакціях не буде. |
-| `list.remove` | Remove | Видалити |
-| `list.bulkUpdated_one` | Updated {{count}} transaction. | Оновлено {{count}} транзакцію. |
-| `list.bulkUpdated_few` | Updated {{count}} transactions. | Оновлено {{count}} транзакції. |
-| `list.bulkUpdated_many` | Updated {{count}} transactions. | Оновлено {{count}} транзакцій. |
-| `list.bulkUpdated_other` | Updated {{count}} transactions. | Оновлено {{count}} транзакції. |
-| `list.bulkPartial` | Updated {{ok}} of {{total}}; {{failed}} failed. | Оновлено {{ok}} з {{total}}; {{failed}} не вдалося. |
-| `list.loadError` | Couldn’t load transactions. | Не вдалося завантажити транзакції. |
-| `list.emptyDateRange` | No transactions in this date range. | Немає транзакцій у цьому діапазоні дат. |
-| `list.emptyFilters` | No transactions match your filters. | Немає транзакцій, що відповідають фільтрам. |
-| `list.selectAll` | Select all | Вибрати все |
-| `list.selectRow` | Select {{name}} | Вибрати {{name}} |
-| `list.transactionFallback` | transaction | транзакцію |
-| `list.colDate` | Date | Дата |
-| `list.colDescription` | Description | Опис |
-| `list.colAccount` | Account | Рахунок |
-| `list.colCategory` | Category | Категорія |
-| `list.colAmount` | Amount | Сума |
-| `list.duplicate` | Duplicate | Дублювати |
-| `list.edit` | Edit | Редагувати |
-| `list.convertTo` | Convert to | Перетворити на |
-| `list.refund` | Refund | Повернення |
-| `list.filters` | Filters | Фільтри |
-| `bulk.fill` | Fill {{amount}} | Заповнити {{amount}} |
-| `bulk.removeRow` | Remove row | Видалити рядок |
-| `bulk.comment` | Comment | Коментар |
-| `bulk.collapseDuplicates` | Collapse duplicates | Згорнути дублікати |
-| `bulk.target` | Target | Ціль |
-| `bulk.total` | Total: {{amount}} | Разом: {{amount}} |
-| `bulk.targetTotal` | Target total | Цільова сума |
-| `bulk.allocatedTowardTarget` | Allocated toward target | Розподілено до цілі |
-| `bulk.balanced` | Balanced | Збалансовано |
-| `bulk.leftAmount` | {{amount}} left | Залишилось {{amount}} |
-| `bulk.overAmount` | {{amount}} over | Перевищення {{amount}} |
-| `bulk.setCategory` | Set category | Встановити категорію |
-| `bulk.setLabels` | Set labels | Встановити мітки |
-| `bulk.setContact` | Set contact | Встановити контакт |
-| `bulk.onlyCompletedEditable` | Only completed transactions can be edited | Редагувати можна лише завершені транзакції |
-| `bulk.noCategoryType` | These transactions have no category | Ці транзакції не мають категорії |
-| `bulk.selectOneType` | Select transactions of one type to set a category | Виберіть транзакції одного типу, щоб встановити категорію |
-| `bulk.noSplitRefundCategory` | Can't set a category on split or refund transactions | Не можна встановити категорію для розділених транзакцій або повернень |
-| `bulk.contactsIncomeExpenseOnly` | Contacts apply only to income and expense | Контакти застосовуються лише до доходів і витрат |
-| `bulk.quickAddUnavailable` | Quick add is unavailable right now. | Швидке додавання зараз недоступне. |
-| `bulk.quickAddUpstream` | Couldn’t process that — please try again or rephrase. | Не вдалося обробити — спробуйте ще раз або переформулюйте. |
-| `bulk.genericError` | Something went wrong. Please try again. | Щось пішло не так. Спробуйте ще раз. |
-| `bulk.added_one` | Added {{count}} transaction. | Додано {{count}} транзакцію. |
-| `bulk.added_few` | Added {{count}} transactions. | Додано {{count}} транзакції. |
-| `bulk.added_many` | Added {{count}} transactions. | Додано {{count}} транзакцій. |
-| `bulk.added_other` | Added {{count}} transactions. | Додано {{count}} транзакції. |
-| `bulk.couldntRecordN` | Couldn’t record {{failed}} of {{total}} | Не вдалося записати {{failed}} з {{total}} |
-| `bulk.couldntRecordThat` | Couldn’t record that | Не вдалося це записати |
-| `bulk.item` | Item {{n}} — {{reason}} | Пункт {{n}} — {{reason}} |
-| `bulk.dismiss` | Dismiss | Закрити |
-| `bulk.quickAddAria` | Quick add transaction | Швидке додавання транзакції |
-| `bulk.quickAddPlaceholderNamed` | Add to {{name}} — e.g. coffee 4.50, taxi 12 | Додайте до {{name}} — напр. кава 4.50, таксі 12 |
-| `bulk.quickAddPlaceholder` | Type what you spent or earned — e.g. coffee 4.50 | Введіть, що ви витратили або заробили — напр. кава 4.50 |
-| `bulk.adding` | Adding… | Додавання… |
-| `bulk.add` | Add | Додати |
+| key                                          | en                                                                                                                                                                   | uk                                                                                                                                                     |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `kind.income.title`                          | Add income                                                                                                                                                           | Додати дохід                                                                                                                                           |
+| `kind.income.submit`                         | OK                                                                                                                                                                   | OK                                                                                                                                                     |
+| `kind.income.aria`                           | Add income                                                                                                                                                           | Додати дохід                                                                                                                                           |
+| `kind.income.editTitle`                      | Edit income                                                                                                                                                          | Редагувати дохід                                                                                                                                       |
+| `kind.income.editSubmit`                     | OK                                                                                                                                                                   | OK                                                                                                                                                     |
+| `kind.income.copyTitle`                      | Copy income                                                                                                                                                          | Копіювати дохід                                                                                                                                        |
+| `kind.income.convertTitle`                   | Convert to income                                                                                                                                                    | Перетворити на дохід                                                                                                                                   |
+| `kind.expense.title`                         | Add expense                                                                                                                                                          | Додати витрату                                                                                                                                         |
+| `kind.expense.submit`                        | OK                                                                                                                                                                   | OK                                                                                                                                                     |
+| `kind.expense.aria`                          | Add expense                                                                                                                                                          | Додати витрату                                                                                                                                         |
+| `kind.expense.editTitle`                     | Edit expense                                                                                                                                                         | Редагувати витрату                                                                                                                                     |
+| `kind.expense.editSubmit`                    | OK                                                                                                                                                                   | OK                                                                                                                                                     |
+| `kind.expense.copyTitle`                     | Copy expense                                                                                                                                                         | Копіювати витрату                                                                                                                                      |
+| `kind.expense.convertTitle`                  | Convert to expense                                                                                                                                                   | Перетворити на витрату                                                                                                                                 |
+| `kind.transfer.title`                        | Add transfer                                                                                                                                                         | Додати переказ                                                                                                                                         |
+| `kind.transfer.submit`                       | OK                                                                                                                                                                   | OK                                                                                                                                                     |
+| `kind.transfer.aria`                         | Add transfer                                                                                                                                                         | Додати переказ                                                                                                                                         |
+| `kind.transfer.editTitle`                    | Edit transfer                                                                                                                                                        | Редагувати переказ                                                                                                                                     |
+| `kind.transfer.editSubmit`                   | OK                                                                                                                                                                   | OK                                                                                                                                                     |
+| `kind.transfer.copyTitle`                    | Copy transfer                                                                                                                                                        | Копіювати переказ                                                                                                                                      |
+| `kind.transfer.convertTitle`                 | Convert to transfer                                                                                                                                                  | Перетворити на переказ                                                                                                                                 |
+| `type.income`                                | Income                                                                                                                                                               | Дохід                                                                                                                                                  |
+| `type.expense`                               | Expense                                                                                                                                                              | Витрата                                                                                                                                                |
+| `type.transfer`                              | Transfer                                                                                                                                                             | Переказ                                                                                                                                                |
+| `type.adjustment`                            | Adjustment                                                                                                                                                           | Коригування                                                                                                                                            |
+| `type.unknown`                               | Unknown                                                                                                                                                              | Невідомо                                                                                                                                               |
+| `status.Pending`                             | Pending                                                                                                                                                              | В очікуванні                                                                                                                                           |
+| `status.Failed`                              | Failed                                                                                                                                                               | Помилка                                                                                                                                                |
+| `status.Cancelled`                           | Cancelled                                                                                                                                                            | Скасовано                                                                                                                                              |
+| `validation.amountPositive`                  | Amount must be positive                                                                                                                                              | Сума має бути додатною                                                                                                                                 |
+| `validation.dateRequired`                    | Date is required                                                                                                                                                     | Потрібно вказати дату                                                                                                                                  |
+| `validation.accountsMustDiffer`              | Source and target accounts must differ                                                                                                                               | Рахунки списання та зарахування мають відрізнятися                                                                                                     |
+| `validation.addCategory`                     | Add at least one category                                                                                                                                            | Додайте принаймні одну категорію                                                                                                                       |
+| `validation.expenseNoIncome`                 | An expense cannot carry income categories                                                                                                                            | Витрата не може містити категорії доходу                                                                                                               |
+| `validation.enterTargetTotal`                | Enter a target total                                                                                                                                                 | Вкажіть цільову суму                                                                                                                                   |
+| `validation.exceedsBalance`                  | Exceeds available balance ({{amount}})                                                                                                                               | Перевищує доступний баланс ({{amount}})                                                                                                                |
+| `validation.overTarget`                      | Allocations are {{amount}} over the target                                                                                                                           | Розподіл перевищує ціль на {{amount}}                                                                                                                  |
+| `validation.shortOfTarget`                   | Allocations are {{amount}} short of the target                                                                                                                       | Розподілу бракує {{amount}} до цілі                                                                                                                    |
+| `validation.refundCategoryCap`               | Refund for a category can't exceed {{amount}} left to refund                                                                                                         | Повернення за категорією не може перевищувати {{amount}}, доступних до повернення                                                                      |
+| `validation.refundTotalCap`                  | Refund can't exceed {{amount}} left on this transaction                                                                                                              | Повернення не може перевищувати {{amount}}, доступних за цією транзакцією                                                                              |
+| `merge.ineligibility.too-few`                | Select at least two transactions to merge.                                                                                                                           | Виберіть принаймні дві транзакції для об’єднання.                                                                                                      |
+| `merge.ineligibility.not-completed`          | Only completed transactions can be merged.                                                                                                                           | Об’єднувати можна лише завершені транзакції.                                                                                                           |
+| `merge.ineligibility.unsupported-kind`       | Only income or expense transactions can be merged.                                                                                                                   | Об’єднувати можна лише транзакції доходу або витрат.                                                                                                   |
+| `merge.ineligibility.mixed-kinds`            | All transactions must be the same kind — all income or all expense.                                                                                                  | Усі транзакції мають бути одного типу — усі доходи або усі витрати.                                                                                    |
+| `merge.ineligibility.different-accounts`     | All transactions must be on the same account.                                                                                                                        | Усі транзакції мають бути на одному рахунку.                                                                                                           |
+| `merge.ineligibility.different-currencies`   | All transactions must use the same currency.                                                                                                                         | Усі транзакції мають бути в одній валюті.                                                                                                              |
+| `merge.ineligibility.conflicting-contacts`   | The selection has two different contacts. They must share one contact, or leave it unset.                                                                            | У вибірці два різні контакти. Вони мають мати спільний контакт або залишити його незаданим.                                                            |
+| `merge.ineligibility.transfer-same-account`  | A transfer needs two different accounts.                                                                                                                             | Для переказу потрібні два різні рахунки.                                                                                                               |
+| `merge.ineligibility.transfer-legs-mismatch` | Amount, currency, and dates (within 24h) must match.                                                                                                                 | Сума, валюта та дати (у межах 24 год) мають збігатися.                                                                                                 |
+| `form.genericError`                          | Something went wrong. Please try again.                                                                                                                              | Щось пішло не так. Спробуйте ще раз.                                                                                                                   |
+| `form.saving`                                | Saving…                                                                                                                                                              | Збереження…                                                                                                                                            |
+| `form.formAria`                              | {{title}} form                                                                                                                                                       | Форма: {{title}}                                                                                                                                       |
+| `form.incomeDescription`                     | Record an income transaction to one of your accounts.                                                                                                                | Записати дохід на один із ваших рахунків.                                                                                                              |
+| `form.expenseDescription`                    | Record an expense transaction from one of your accounts.                                                                                                             | Записати витрату з одного з ваших рахунків.                                                                                                            |
+| `form.transferDescription`                   | Transfer funds between two of your accounts.                                                                                                                         | Переказати кошти між двома вашими рахунками.                                                                                                           |
+| `form.noAccountsIncome`                      | Create an account first to record income.                                                                                                                            | Спочатку створіть рахунок, щоб записати дохід.                                                                                                         |
+| `form.noAccountsExpense`                     | Create an account first to record an expense.                                                                                                                        | Спочатку створіть рахунок, щоб записати витрату.                                                                                                       |
+| `form.noAccountsTransfer`                    | Create at least two accounts first to make a transfer.                                                                                                               | Спочатку створіть щонайменше два рахунки, щоб зробити переказ.                                                                                         |
+| `form.editDescription`                       | Update transaction details.                                                                                                                                          | Оновіть деталі транзакції.                                                                                                                             |
+| `form.adjustmentTitle`                       | Balance adjustment                                                                                                                                                   | Коригування балансу                                                                                                                                    |
+| `form.copyDescription`                       | Create a new transaction from an existing one.                                                                                                                       | Створити нову транзакцію на основі наявної.                                                                                                            |
+| `form.copyAdjustmentTitle`                   | Copy transaction                                                                                                                                                     | Копіювати транзакцію                                                                                                                                   |
+| `form.adjustmentCopyNotice`                  | Balance adjustments can't be copied. Use "Adjust balance" to record a new adjustment.                                                                                | Коригування балансу не можна копіювати. Скористайтеся «Скоригувати баланс», щоб записати нове коригування.                                             |
+| `form.convertDescription`                    | Change this transaction's type.                                                                                                                                      | Змінити тип цієї транзакції.                                                                                                                           |
+| `form.readOnlyNotice`                        | This transaction is {{status}} and cannot be edited.                                                                                                                 | Ця транзакція має статус {{status}} і не може бути змінена.                                                                                            |
+| `form.importDetails`                         | Import details                                                                                                                                                       | Деталі імпорту                                                                                                                                         |
+| `form.mcc`                                   | MCC                                                                                                                                                                  | MCC                                                                                                                                                    |
+| `form.category`                              | Category                                                                                                                                                             | Категорія                                                                                                                                              |
+| `form.mccTitle`                              | Merchant category code from the bank                                                                                                                                 | Код категорії продавця з банку                                                                                                                         |
+| `form.providerCategoryTitle`                 | Provider's own category label                                                                                                                                        | Власна назва категорії провайдера                                                                                                                      |
+| `form.counterpartyCategory`                  | Counterparty category                                                                                                                                                | Категорія контрагента                                                                                                                                  |
+| `form.counterparty`                          | Counterparty                                                                                                                                                         | Контрагент                                                                                                                                             |
+| `form.counterpartyTokenTitle`                | Counterparty token from the bank                                                                                                                                     | Токен контрагента з банку                                                                                                                              |
+| `form.mappedCategory`                        | mapped category                                                                                                                                                      | зіставлена категорія                                                                                                                                   |
+| `form.mappedContact`                         | mapped contact                                                                                                                                                       | зіставлений контакт                                                                                                                                    |
+| `form.mapToCategoryPlaceholder`              | Map to category…                                                                                                                                                     | Зіставити з категорією…                                                                                                                                |
+| `form.mapToCategoryAria`                     | Map to category                                                                                                                                                      | Зіставити з категорією                                                                                                                                 |
+| `form.mapToContactPlaceholder`               | Map to contact…                                                                                                                                                      | Зіставити з контактом…                                                                                                                                 |
+| `form.mapToContactAria`                      | Map to contact                                                                                                                                                       | Зіставити з контактом                                                                                                                                  |
+| `form.account`                               | Account                                                                                                                                                              | Рахунок                                                                                                                                                |
+| `form.sourceAccount`                         | Source account                                                                                                                                                       | Рахунок-джерело                                                                                                                                        |
+| `form.targetAccount`                         | Target account                                                                                                                                                       | Рахунок-отримувач                                                                                                                                      |
+| `form.amount`                                | Amount                                                                                                                                                               | Сума                                                                                                                                                   |
+| `form.date`                                  | Date                                                                                                                                                                 | Дата                                                                                                                                                   |
+| `form.contact`                               | Contact                                                                                                                                                              | Контакт                                                                                                                                                |
+| `form.description`                           | Description                                                                                                                                                          | Опис                                                                                                                                                   |
+| `form.labels`                                | Labels                                                                                                                                                               | Мітки                                                                                                                                                  |
+| `form.exchangeRate`                          | Exchange rate                                                                                                                                                        | Обмінний курс                                                                                                                                          |
+| `form.exchangeRateHint`                      | Uses the default rate if left blank.                                                                                                                                 | Якщо не заповнено, використовується курс за замовчуванням.                                                                                             |
+| `form.incomeCategoriesTitle`                 | Income categories                                                                                                                                                    | Категорії доходів                                                                                                                                      |
+| `form.addIncomeCategory`                     | + Add income category                                                                                                                                                | + Додати категорію доходу                                                                                                                              |
+| `form.reimbursementsTitle`                   | Reimbursements (reduces an expense)                                                                                                                                  | Відшкодування (зменшує витрату)                                                                                                                        |
+| `form.addReimbursement`                      | + Add reimbursement                                                                                                                                                  | + Додати відшкодування                                                                                                                                 |
+| `form.expenseCategoriesTitle`                | Expense categories                                                                                                                                                   | Категорії витрат                                                                                                                                       |
+| `form.addCategory`                           | + Add category                                                                                                                                                       | + Додати категорію                                                                                                                                     |
+| `resolve.genericError`                       | Something went wrong. Please try again.                                                                                                                              | Щось пішло не так. Спробуйте ще раз.                                                                                                                   |
+| `resolve.noDescription`                      | (no description)                                                                                                                                                     | (без опису)                                                                                                                                            |
+| `resolve.refund`                             | refund                                                                                                                                                               | повернення                                                                                                                                             |
+| `resolve.refundOf`                           | refund of {{description}}                                                                                                                                            | повернення за {{description}}                                                                                                                          |
+| `resolve.refundedInFull`                     | refunded in full                                                                                                                                                     | повернено повністю                                                                                                                                     |
+| `resolve.partiallyRefunded`                  | partially refunded ({{refunded}} of {{original}})                                                                                                                    | частково повернено ({{refunded}} з {{original}})                                                                                                       |
+| `resolve.refundTitle`                        | Refund transaction                                                                                                                                                   | Повернення транзакції                                                                                                                                  |
+| `resolve.refundDescription`                  | Record a refund as an income transaction linked back to the original expense.                                                                                        | Запишіть повернення як дохідну транзакцію, пов’язану з початковою витратою.                                                                            |
+| `resolve.refundLoadError`                    | Couldn't load prior refunds for this transaction. Please try again.                                                                                                  | Не вдалося завантажити попередні повернення для цієї транзакції. Спробуйте ще раз.                                                                     |
+| `resolve.refundPrefix`                       | Refund: {{description}}                                                                                                                                              | Повернення: {{description}}                                                                                                                            |
+| `resolve.refundedSummary`                    | {{refunded}} of {{original}} already refunded · {{remaining}} left                                                                                                   | {{refunded}} з {{original}} уже повернено · залишилось {{remaining}}                                                                                   |
+| `resolve.cancelTitle`                        | Cancel this transaction?                                                                                                                                             | Скасувати цю транзакцію?                                                                                                                               |
+| `resolve.cancelDescription`                  | It will be excluded from the account balance and hidden from the default transactions list. This can't be undone here.                                               | Її буде виключено з балансу рахунку та приховано зі стандартного списку транзакцій. Скасувати цю дію тут неможливо.                                    |
+| `resolve.keep`                               | Keep                                                                                                                                                                 | Залишити                                                                                                                                               |
+| `resolve.linkTitle`                          | Link 2 transactions                                                                                                                                                  | Зв’язати 2 транзакції                                                                                                                                  |
+| `resolve.linkDescription`                    | Create a typed relation between the two selected transactions.                                                                                                       | Створіть типізований зв’язок між двома вибраними транзакціями.                                                                                         |
+| `resolve.alreadyLinked`                      | These transactions are already linked.                                                                                                                               | Ці транзакції вже зв’язані.                                                                                                                            |
+| `resolve.relationKindGroup`                  | Relation kind                                                                                                                                                        | Тип зв’язку                                                                                                                                            |
+| `resolve.linkKind.refund`                    | Refund                                                                                                                                                               | Повернення                                                                                                                                             |
+| `resolve.linkKind.associated`                | Association                                                                                                                                                          | Асоціація                                                                                                                                              |
+| `resolve.linkKindHint.refund`                | Income refunds the expense                                                                                                                                           | Дохід повертає витрату                                                                                                                                 |
+| `resolve.linkKindHint.associated`            | General link between the two                                                                                                                                         | Загальний зв’язок між двома                                                                                                                            |
+| `resolve.checkingRefundable`                 | Checking refundable amount…                                                                                                                                          | Перевірка суми до повернення…                                                                                                                          |
+| `resolve.refundLoadErrorExpense`             | Couldn’t load prior refunds for this expense.                                                                                                                        | Не вдалося завантажити попередні повернення для цієї витрати.                                                                                          |
+| `resolve.fullyRefunded`                      | This expense is already fully refunded.                                                                                                                              | Цю витрату вже повністю повернено.                                                                                                                     |
+| `resolve.refundLeftSummary`                  | {{remaining}} of {{original}} left to refund                                                                                                                         | {{remaining}} з {{original}} залишилось повернути                                                                                                      |
+| `resolve.link`                               | Link                                                                                                                                                                 | Зв’язати                                                                                                                                               |
+| `resolve.mergeTransferTitle`                 | Merge into transfer                                                                                                                                                  | Об’єднати в переказ                                                                                                                                    |
+| `resolve.mergeTransferDescription`           | These two are one transfer between your accounts. The income is kept and becomes the transfer (holding its date & description); the expense is cancelled and linked. | Ці дві — один переказ між вашими рахунками. Дохід зберігається та стає переказом (зберігаючи свою дату та опис); витрата скасовується й прив’язується. |
+| `resolve.mergeCountTitle_one`                | Merge {{count}} transaction                                                                                                                                          | Об’єднати {{count}} транзакцію                                                                                                                         |
+| `resolve.mergeCountTitle_few`                | Merge {{count}} transactions                                                                                                                                         | Об’єднати {{count}} транзакції                                                                                                                         |
+| `resolve.mergeCountTitle_many`               | Merge {{count}} transactions                                                                                                                                         | Об’єднати {{count}} транзакцій                                                                                                                         |
+| `resolve.mergeCountTitle_other`              | Merge {{count}} transactions                                                                                                                                         | Об’єднати {{count}} транзакції                                                                                                                         |
+| `resolve.mergePickDescription`               | Pick the one to keep. It holds its date & description and absorbs the others’ allocations; the rest are cancelled.                                                   | Виберіть ту, яку залишити. Вона зберігає свою дату та опис і вбирає розподіли інших; решта скасовуються.                                               |
+| `resolve.from`                               | From                                                                                                                                                                 | Звідки                                                                                                                                                 |
+| `resolve.to`                                 | To                                                                                                                                                                   | Куди                                                                                                                                                   |
+| `resolve.amount`                             | Amount                                                                                                                                                               | Сума                                                                                                                                                   |
+| `resolve.date`                               | Date                                                                                                                                                                 | Дата                                                                                                                                                   |
+| `resolve.transferExpenseNote`                | The expense is cancelled and linked to the resulting transfer.                                                                                                       | Витрата скасовується та прив’язується до утвореного переказу.                                                                                          |
+| `resolve.keepLegend`                         | Keep                                                                                                                                                                 | Залишити                                                                                                                                               |
+| `resolve.keepAria`                           | Keep {{description}}                                                                                                                                                 | Залишити {{description}}                                                                                                                               |
+| `resolve.transactionFallback`                | transaction                                                                                                                                                          | транзакцію                                                                                                                                             |
+| `resolve.survivor`                           | Survivor                                                                                                                                                             | Основна                                                                                                                                                |
+| `resolve.mergedTotalLabel`                   | Merged total:                                                                                                                                                        | Загальна сума об’єднання:                                                                                                                              |
+| `resolve.sourcesCancelled_one`               | {{count}} transaction will be cancelled.                                                                                                                             | {{count}} транзакцію буде скасовано.                                                                                                                   |
+| `resolve.sourcesCancelled_few`               | {{count}} transactions will be cancelled.                                                                                                                            | {{count}} транзакції буде скасовано.                                                                                                                   |
+| `resolve.sourcesCancelled_many`              | {{count}} transactions will be cancelled.                                                                                                                            | {{count}} транзакцій буде скасовано.                                                                                                                   |
+| `resolve.sourcesCancelled_other`             | {{count}} transactions will be cancelled.                                                                                                                            | {{count}} транзакції буде скасовано.                                                                                                                   |
+| `resolve.makeTransfer`                       | Make transfer                                                                                                                                                        | Створити переказ                                                                                                                                       |
+| `resolve.merge`                              | Merge                                                                                                                                                                | Об’єднати                                                                                                                                              |
+| `resolve.associatedWith`                     | associated with {{description}}                                                                                                                                      | асоційовано з {{description}}                                                                                                                          |
+| `resolve.associated`                         | associated                                                                                                                                                           | асоційовано                                                                                                                                            |
+| `resolve.associatedCancelled`                | {{base}} (cancelled)                                                                                                                                                 | {{base}} (скасовано)                                                                                                                                   |
+| `resolve.unlink`                             | Unlink                                                                                                                                                               | Відв’язати                                                                                                                                             |
+| `pickers.selectCategory`                     | Select a category…                                                                                                                                                   | Виберіть категорію…                                                                                                                                    |
+| `pickers.selectContact`                      | Select a contact…                                                                                                                                                    | Виберіть контакт…                                                                                                                                      |
+| `pickers.archivedCategory`                   | Archived category                                                                                                                                                    | Архівна категорія                                                                                                                                      |
+| `pickers.archivedContact`                    | Archived contact                                                                                                                                                     | Архівний контакт                                                                                                                                       |
+| `pickers.none`                               | — none —                                                                                                                                                             | — немає —                                                                                                                                              |
+| `pickers.noMatches`                          | No matches                                                                                                                                                           | Немає збігів                                                                                                                                           |
+| `pickers.create`                             | Create ‘{{name}}’                                                                                                                                                    | Створити «{{name}}»                                                                                                                                    |
+| `pickers.remove`                             | Remove {{name}}                                                                                                                                                      | Видалити {{name}}                                                                                                                                      |
+| `pickers.addLabels`                          | Add labels…                                                                                                                                                          | Додати мітки…                                                                                                                                          |
+| `pickers.allAccounts`                        | All accounts                                                                                                                                                         | Усі рахунки                                                                                                                                            |
+| `pickers.useHint`                            | Use: {{hint}}                                                                                                                                                        | Використати: {{hint}}                                                                                                                                  |
+| `pickers.category`                           | Category                                                                                                                                                             | Категорія                                                                                                                                              |
+| `pickers.contact`                            | Contact                                                                                                                                                              | Контакт                                                                                                                                                |
+| `pickers.labels`                             | Labels                                                                                                                                                               | Мітки                                                                                                                                                  |
+| `pickers.searchCategories`                   | Search categories                                                                                                                                                    | Пошук категорій                                                                                                                                        |
+| `pickers.searchCategoriesPlaceholder`        | Search categories…                                                                                                                                                   | Пошук категорій…                                                                                                                                       |
+| `pickers.searchContacts`                     | Search contacts                                                                                                                                                      | Пошук контактів                                                                                                                                        |
+| `pickers.searchContactsPlaceholder`          | Search contacts…                                                                                                                                                     | Пошук контактів…                                                                                                                                       |
+| `pickers.searchLabels`                       | Search labels                                                                                                                                                        | Пошук міток                                                                                                                                            |
+| `pickers.searchLabelsPlaceholder`            | Search labels…                                                                                                                                                       | Пошук міток…                                                                                                                                           |
+| `list.selectionActions`                      | Selection actions                                                                                                                                                    | Дії з вибором                                                                                                                                          |
+| `list.selected`                              | {{count}} selected                                                                                                                                                   | Вибрано {{count}}                                                                                                                                      |
+| `list.selectHint`                            | Select 2 to link or merge                                                                                                                                            | Виберіть 2, щоб зв’язати або об’єднати                                                                                                                 |
+| `list.linkAria`                              | Link selected transactions                                                                                                                                           | Зв’язати вибрані транзакції                                                                                                                            |
+| `list.link`                                  | Link                                                                                                                                                                 | Зв’язати                                                                                                                                               |
+| `list.mergeAria`                             | Merge selected transactions                                                                                                                                          | Об’єднати вибрані транзакції                                                                                                                           |
+| `list.merge`                                 | Merge                                                                                                                                                                | Об’єднати                                                                                                                                              |
+| `list.clearSelection`                        | Clear selection                                                                                                                                                      | Очистити вибір                                                                                                                                         |
+| `list.showing`                               | Showing {{start}}–{{end}} of {{total}}                                                                                                                               | Показано {{start}}–{{end}} з {{total}}                                                                                                                 |
+| `list.rows`                                  | Rows                                                                                                                                                                 | Рядки                                                                                                                                                  |
+| `list.rowsPerPage`                           | Rows per page                                                                                                                                                        | Рядків на сторінці                                                                                                                                     |
+| `list.prev`                                  | ‹ Prev                                                                                                                                                               | ‹ Назад                                                                                                                                                |
+| `list.next`                                  | Next ›                                                                                                                                                               | Далі ›                                                                                                                                                 |
+| `list.allAccounts`                           | All accounts                                                                                                                                                         | Усі рахунки                                                                                                                                            |
+| `list.accountsCount_one`                     | {{count}} account                                                                                                                                                    | {{count}} рахунок                                                                                                                                      |
+| `list.accountsCount_few`                     | {{count}} accounts                                                                                                                                                   | {{count}} рахунки                                                                                                                                      |
+| `list.accountsCount_many`                    | {{count}} accounts                                                                                                                                                   | {{count}} рахунків                                                                                                                                     |
+| `list.accountsCount_other`                   | {{count}} accounts                                                                                                                                                   | {{count}} рахунка                                                                                                                                      |
+| `list.transactions`                          | Transactions                                                                                                                                                         | Транзакції                                                                                                                                             |
+| `list.adjustBalance`                         | Adjust balance                                                                                                                                                       | Скоригувати баланс                                                                                                                                     |
+| `list.noAccountsHint`                        | Create an account first                                                                                                                                              | Спочатку створіть рахунок                                                                                                                              |
+| `list.allCategories`                         | All categories                                                                                                                                                       | Усі категорії                                                                                                                                          |
+| `list.anyContact`                            | Any contact                                                                                                                                                          | Будь-який контакт                                                                                                                                      |
+| `list.descriptionPlaceholder`                | Description…                                                                                                                                                         | Опис…                                                                                                                                                  |
+| `list.contact`                               | Contact                                                                                                                                                              | Контакт                                                                                                                                                |
+| `list.cancelledFailed`                       | Cancelled & failed                                                                                                                                                   | Скасовані та невдалі                                                                                                                                   |
+| `list.clear`                                 | Clear                                                                                                                                                                | Очистити                                                                                                                                               |
+| `list.removeAssociationTitle`                | Remove association?                                                                                                                                                  | Видалити зв’язок?                                                                                                                                      |
+| `list.removeAssociationDesc`                 | This detaches the link between the two transactions. Neither transaction is otherwise changed.                                                                       | Це від’єднає зв’язок між двома транзакціями. Інших змін у транзакціях не буде.                                                                         |
+| `list.remove`                                | Remove                                                                                                                                                               | Видалити                                                                                                                                               |
+| `list.bulkUpdated_one`                       | Updated {{count}} transaction.                                                                                                                                       | Оновлено {{count}} транзакцію.                                                                                                                         |
+| `list.bulkUpdated_few`                       | Updated {{count}} transactions.                                                                                                                                      | Оновлено {{count}} транзакції.                                                                                                                         |
+| `list.bulkUpdated_many`                      | Updated {{count}} transactions.                                                                                                                                      | Оновлено {{count}} транзакцій.                                                                                                                         |
+| `list.bulkUpdated_other`                     | Updated {{count}} transactions.                                                                                                                                      | Оновлено {{count}} транзакції.                                                                                                                         |
+| `list.bulkPartial`                           | Updated {{ok}} of {{total}}; {{failed}} failed.                                                                                                                      | Оновлено {{ok}} з {{total}}; {{failed}} не вдалося.                                                                                                    |
+| `list.loadError`                             | Couldn’t load transactions.                                                                                                                                          | Не вдалося завантажити транзакції.                                                                                                                     |
+| `list.emptyDateRange`                        | No transactions in this date range.                                                                                                                                  | Немає транзакцій у цьому діапазоні дат.                                                                                                                |
+| `list.emptyFilters`                          | No transactions match your filters.                                                                                                                                  | Немає транзакцій, що відповідають фільтрам.                                                                                                            |
+| `list.selectAll`                             | Select all                                                                                                                                                           | Вибрати все                                                                                                                                            |
+| `list.selectRow`                             | Select {{name}}                                                                                                                                                      | Вибрати {{name}}                                                                                                                                       |
+| `list.transactionFallback`                   | transaction                                                                                                                                                          | транзакцію                                                                                                                                             |
+| `list.colDate`                               | Date                                                                                                                                                                 | Дата                                                                                                                                                   |
+| `list.colDescription`                        | Description                                                                                                                                                          | Опис                                                                                                                                                   |
+| `list.colAccount`                            | Account                                                                                                                                                              | Рахунок                                                                                                                                                |
+| `list.colCategory`                           | Category                                                                                                                                                             | Категорія                                                                                                                                              |
+| `list.colAmount`                             | Amount                                                                                                                                                               | Сума                                                                                                                                                   |
+| `list.duplicate`                             | Duplicate                                                                                                                                                            | Дублювати                                                                                                                                              |
+| `list.edit`                                  | Edit                                                                                                                                                                 | Редагувати                                                                                                                                             |
+| `list.convertTo`                             | Convert to                                                                                                                                                           | Перетворити на                                                                                                                                         |
+| `list.refund`                                | Refund                                                                                                                                                               | Повернення                                                                                                                                             |
+| `list.filters`                               | Filters                                                                                                                                                              | Фільтри                                                                                                                                                |
+| `bulk.fill`                                  | Fill {{amount}}                                                                                                                                                      | Заповнити {{amount}}                                                                                                                                   |
+| `bulk.removeRow`                             | Remove row                                                                                                                                                           | Видалити рядок                                                                                                                                         |
+| `bulk.comment`                               | Comment                                                                                                                                                              | Коментар                                                                                                                                               |
+| `bulk.collapseDuplicates`                    | Collapse duplicates                                                                                                                                                  | Згорнути дублікати                                                                                                                                     |
+| `bulk.target`                                | Target                                                                                                                                                               | Ціль                                                                                                                                                   |
+| `bulk.total`                                 | Total: {{amount}}                                                                                                                                                    | Разом: {{amount}}                                                                                                                                      |
+| `bulk.targetTotal`                           | Target total                                                                                                                                                         | Цільова сума                                                                                                                                           |
+| `bulk.allocatedTowardTarget`                 | Allocated toward target                                                                                                                                              | Розподілено до цілі                                                                                                                                    |
+| `bulk.balanced`                              | Balanced                                                                                                                                                             | Збалансовано                                                                                                                                           |
+| `bulk.leftAmount`                            | {{amount}} left                                                                                                                                                      | Залишилось {{amount}}                                                                                                                                  |
+| `bulk.overAmount`                            | {{amount}} over                                                                                                                                                      | Перевищення {{amount}}                                                                                                                                 |
+| `bulk.setCategory`                           | Set category                                                                                                                                                         | Встановити категорію                                                                                                                                   |
+| `bulk.setLabels`                             | Set labels                                                                                                                                                           | Встановити мітки                                                                                                                                       |
+| `bulk.setContact`                            | Set contact                                                                                                                                                          | Встановити контакт                                                                                                                                     |
+| `bulk.onlyCompletedEditable`                 | Only completed transactions can be edited                                                                                                                            | Редагувати можна лише завершені транзакції                                                                                                             |
+| `bulk.noCategoryType`                        | These transactions have no category                                                                                                                                  | Ці транзакції не мають категорії                                                                                                                       |
+| `bulk.selectOneType`                         | Select transactions of one type to set a category                                                                                                                    | Виберіть транзакції одного типу, щоб встановити категорію                                                                                              |
+| `bulk.noSplitRefundCategory`                 | Can't set a category on split or refund transactions                                                                                                                 | Не можна встановити категорію для розділених транзакцій або повернень                                                                                  |
+| `bulk.contactsIncomeExpenseOnly`             | Contacts apply only to income and expense                                                                                                                            | Контакти застосовуються лише до доходів і витрат                                                                                                       |
+| `bulk.quickAddUnavailable`                   | Quick add is unavailable right now.                                                                                                                                  | Швидке додавання зараз недоступне.                                                                                                                     |
+| `bulk.quickAddUpstream`                      | Couldn’t process that — please try again or rephrase.                                                                                                                | Не вдалося обробити — спробуйте ще раз або переформулюйте.                                                                                             |
+| `bulk.genericError`                          | Something went wrong. Please try again.                                                                                                                              | Щось пішло не так. Спробуйте ще раз.                                                                                                                   |
+| `bulk.added_one`                             | Added {{count}} transaction.                                                                                                                                         | Додано {{count}} транзакцію.                                                                                                                           |
+| `bulk.added_few`                             | Added {{count}} transactions.                                                                                                                                        | Додано {{count}} транзакції.                                                                                                                           |
+| `bulk.added_many`                            | Added {{count}} transactions.                                                                                                                                        | Додано {{count}} транзакцій.                                                                                                                           |
+| `bulk.added_other`                           | Added {{count}} transactions.                                                                                                                                        | Додано {{count}} транзакції.                                                                                                                           |
+| `bulk.couldntRecordN`                        | Couldn’t record {{failed}} of {{total}}                                                                                                                              | Не вдалося записати {{failed}} з {{total}}                                                                                                             |
+| `bulk.couldntRecordThat`                     | Couldn’t record that                                                                                                                                                 | Не вдалося це записати                                                                                                                                 |
+| `bulk.item`                                  | Item {{n}} — {{reason}}                                                                                                                                              | Пункт {{n}} — {{reason}}                                                                                                                               |
+| `bulk.dismiss`                               | Dismiss                                                                                                                                                              | Закрити                                                                                                                                                |
+| `bulk.quickAddAria`                          | Quick add transaction                                                                                                                                                | Швидке додавання транзакції                                                                                                                            |
+| `bulk.quickAddPlaceholderNamed`              | Add to {{name}} — e.g. coffee 4.50, taxi 12                                                                                                                          | Додайте до {{name}} — напр. кава 4.50, таксі 12                                                                                                        |
+| `bulk.quickAddPlaceholder`                   | Type what you spent or earned — e.g. coffee 4.50                                                                                                                     | Введіть, що ви витратили або заробили — напр. кава 4.50                                                                                                |
+| `bulk.adding`                                | Adding…                                                                                                                                                              | Додавання…                                                                                                                                             |
+| `bulk.add`                                   | Add                                                                                                                                                                  | Додати                                                                                                                                                 |
 
 ## `profile` (163 keys)
 
-| key | en | uk |
-|---|---|---|
-| `page.title` | Profile | Профіль |
-| `tabs.general` | General | Загальні |
-| `tabs.dictionaries` | Dictionaries | Довідники |
-| `tabs.defaults` | Defaults | За замовчуванням |
-| `tabs.auth` | Auth | Автентифікація |
-| `tabs.banking` | Banking | Банк |
-| `saving` | Saving… | Збереження… |
-| `updated` | Updated. | Оновлено. |
-| `selectPlaceholder` | Select… | Виберіть… |
-| `errors.loadConfiguration` | Couldn’t load configuration. | Не вдалося завантажити конфігурацію. |
-| `errors.loadProfile` | Couldn’t load profile. | Не вдалося завантажити профіль. |
-| `errors.loadBankConnections` | Couldn’t load bank connections. | Не вдалося завантажити банківські підключення. |
-| `errors.generic` | Something went wrong. Please try again. | Щось пішло не так. Спробуйте ще раз. |
-| `userId.title` | Your sharing ID | Ваш ID для спільного доступу |
-| `userId.copy` | Copy | Копіювати |
-| `userId.copyUserId` | Copy user ID | Копіювати ID користувача |
-| `userId.copied` | Copied | Скопійовано |
-| `userId.description` | Share this ID with someone to let them add you to an account. | Поділіться цим ID, щоб вас додали до рахунку. |
-| `currencies.title` | Currencies | Валюти |
-| `currencies.defaultCurrency` | Default currency | Валюта за замовчуванням |
-| `currencies.defaultCurrencyDescription` | Used when creating new accounts and transactions. | Використовується під час створення нових рахунків і транзакцій. |
-| `currencies.baseCurrency` | Base currency | Базова валюта |
-| `currencies.baseCurrencyDescriptionEditable` | Re-bases the External account that anchors your reporting. | Змінює базу зовнішнього рахунку, на якому ґрунтується ваша звітність. |
-| `currencies.baseCurrencyDescriptionLocked` | Base currency is locked because your books already contain transactions. | Базову валюту заблоковано, оскільки у ваших книгах уже є транзакції. |
-| `currencies.confirmTitle` | Change base currency | Змінити базову валюту |
-| `currencies.confirmDescription` | Change base currency from {{from}} to {{to}}? This re-bases the External account that anchors your reporting. This cannot be undone from the UI. | Змінити базову валюту з {{from}} на {{to}}? Це змінить базу зовнішнього рахунку, на якому ґрунтується ваша звітність. Цю дію не можна скасувати через інтерфейс. |
-| `currencies.confirmAction` | Change base currency | Змінити базову валюту |
-| `localization.title` | Region & language | Регіон і мова |
-| `localization.country` | Country | Країна |
-| `localization.countryNotSet` | Not set | Не вибрано |
-| `localization.countryDescription` | Sets regional defaults such as currency and language. | Визначає регіональні налаштування за замовчуванням, як-от валюту та мову. |
-| `localization.language` | Language | Мова |
-| `localization.languageDescription` | The language used across the app and in notifications. | Мова, що використовується в застосунку та в сповіщеннях. |
-| `country.cascade.defaultCurrency` | default currency to {{value}} | валюту за замовчуванням на {{value}} |
-| `country.cascade.baseCurrency` | base currency to {{value}} | базову валюту на {{value}} |
-| `country.cascade.language` | language to {{value}} | мову на {{value}} |
-| `country.cascade.summary` | Updated {{changes}} to match your country. | Оновлено {{changes}} відповідно до вашої країни. |
-| `defaults.categoriesTitle` | Default categories | Категорії за замовчуванням |
-| `defaults.incomeCategory` | Default income category | Категорія доходу за замовчуванням |
-| `defaults.expenseCategory` | Default expense category | Категорія витрат за замовчуванням |
-| `defaults.accountsTitle` | Default accounts | Рахунки за замовчуванням |
-| `defaults.defaultAccount` | Default account | Рахунок за замовчуванням |
-| `defaults.subtypeDefaultAccount` | {{subtype}} default account | Рахунок за замовчуванням ({{subtype}}) |
-| `defaults.none` | — none — | — немає — |
-| `dictionaries.tabs.expense` | Expense | Витрати |
-| `dictionaries.tabs.income` | Income | Доходи |
-| `dictionaries.tabs.contact` | Contact | Контакт |
-| `dictionaries.tabs.label` | Label | Мітка |
-| `dictionaries.title.expense` | Expense | Витрати |
-| `dictionaries.title.income` | Income | Доходи |
-| `dictionaries.title.contact` | Contact | Контакт |
-| `dictionaries.title.label` | Labels | Мітки |
-| `dictionaries.add.expense` | Add expense category | Додати категорію витрат |
-| `dictionaries.add.income` | Add income category | Додати категорію доходів |
-| `dictionaries.add.contact` | Add contact | Додати контакт |
-| `dictionaries.add.label` | Add label | Додати мітку |
-| `dictionaries.empty` | No entries yet. | Записів ще немає. |
-| `dictionaries.rename` | Rename {{name}} | Перейменувати {{name}} |
-| `dictionaries.move` | Move {{name}} | Перемістити {{name}} |
-| `dictionaries.delete` | Delete {{name}} | Видалити {{name}} |
-| `dictionaries.topLevel` | Top level | Верхній рівень |
-| `dictionaries.entryType` | Entry type | Тип запису |
-| `dictionaries.item` | Item | Елемент |
-| `dictionaries.group` | Group | Група |
-| `dictionaries.groupBadge` | group | група |
-| `dictionaries.parentGroup` | Parent group | Батьківська група |
-| `dictionaries.deleteTitle` | Delete {{name}}? | Видалити {{name}}? |
-| `dictionaries.deleteDescription` | Transactions tagged with it will not be deleted. | Транзакції, позначені нею, не буде видалено. |
-| `auth.passwordTitle` | Password | Пароль |
-| `auth.currentPassword` | Current password | Поточний пароль |
-| `auth.newPassword` | New password | Новий пароль |
-| `auth.confirmPassword` | Confirm new password | Підтвердьте новий пароль |
-| `auth.changePassword` | Change password | Змінити пароль |
-| `auth.passwordChanged` | Password changed. | Пароль змінено. |
-| `auth.oauthOnly` | Your account uses OAuth sign-in. Setting an initial password isn’t available yet. | Ваш обліковий запис використовує вхід через OAuth. Встановлення початкового пароля поки що недоступне. |
-| `auth.linkedAccountsTitle` | Linked accounts | Прив’язані облікові записи |
-| `auth.atLeastOneCredential` | You need at least one way to sign in. | Вам потрібен щонайменше один спосіб входу. |
-| `provider.linkedAs` | Linked as {{subtitle}} | Прив’язано як {{subtitle}} |
-| `provider.notLinked` | Not linked | Не прив’язано |
-| `provider.unlink` | Unlink | Відв’язати |
-| `provider.link` | Link {{provider}} | Прив’язати {{provider}} |
-| `provider.unlinkTitle` | Unlink {{provider}}? | Відв’язати {{provider}}? |
-| `provider.unlinkDescription` | You won’t be able to sign in with {{provider}} until you link it again. | Ви не зможете входити через {{provider}}, доки не прив’яжете його знову. |
-| `banking.tabs.connections` | Connections | Підключення |
-| `banking.tabs.expenses` | Expenses | Витрати |
-| `banking.tabs.income` | Income | Доходи |
-| `banking.tabs.contacts` | Contacts | Контакти |
-| `banking.connectionsHeading` | Bank connections | Банківські підключення |
-| `banking.noConnections` | No connections yet. | Підключень ще немає. |
-| `banking.addConnection` | Add connection | Додати підключення |
-| `banking.expensesHeading` | Bank provider category → expense category | Категорія провайдера банку → категорія витрат |
-| `banking.incomeHeading` | Bank provider counterparty → income category | Контрагент провайдера банку → категорія доходу |
-| `banking.contactsHeading` | Bank provider token → contact | Токен провайдера банку → контакт |
-| `banking.mapped` | {{count}} mapped | зіставлено: {{count}} |
-| `banking.enableConnection` | Enable {{name}} | Увімкнути {{name}} |
-| `banking.linkAccounts` | Link accounts | Прив’язати рахунки |
-| `banking.edit` | Edit | Редагувати |
-| `banking.remove` | Remove | Видалити |
-| `banking.removeTitle` | Remove {{name}}? | Видалити {{name}}? |
-| `banking.removeDescription` | This removes the bank connection. Imported transactions are not deleted. | Це видалить банківське підключення. Імпортовані транзакції не буде видалено. |
-| `connectionDialog.editTitle` | Edit bank connection | Редагувати банківське підключення |
-| `connectionDialog.addTitle` | Add bank connection | Додати банківське підключення |
-| `connectionDialog.editDescription` | Update this connection. Leave the token blank to keep the current one. | Оновіть це підключення. Залиште токен порожнім, щоб зберегти поточний. |
-| `connectionDialog.addDescription` | Connect a bank to import transactions automatically. | Підключіть банк для автоматичного імпорту транзакцій. |
-| `connectionDialog.name` | Name | Назва |
-| `connectionDialog.provider` | Provider | Провайдер |
-| `connectionDialog.providerPlaceholder` | Select a provider… | Виберіть провайдера… |
-| `connectionDialog.providersUnavailable` | No bank providers available. Try again later. | Немає доступних банківських провайдерів. Спробуйте пізніше. |
-| `connectionDialog.token` | Token | Токен |
-| `connectionDialog.tokenKept` | •••• kept | •••• збережено |
-| `connectionDialog.enabled` | Enabled | Увімкнено |
-| `linkAccounts.title` | Link accounts | Прив’язати рахунки |
-| `linkAccounts.description` | Map each external bank account to one of your local accounts. | Зіставте кожен зовнішній банківський рахунок з одним із ваших локальних рахунків. |
-| `linkAccounts.statementFiles` | Statement files | Файли виписок |
-| `linkAccounts.uploadPrompt` | Upload your statement(s) to list accounts. | Завантажте виписку(и), щоб побачити список рахунків. |
-| `linkAccounts.rateLimited` | {{provider}} is rate-limited. Try again in a moment. | {{provider}} обмежує частоту запитів. Спробуйте за мить. |
-| `linkAccounts.providerFallback` | The provider | Провайдер |
-| `linkAccounts.loadError` | Couldn’t load external accounts. Please try again. | Не вдалося завантажити зовнішні рахунки. Спробуйте ще раз. |
-| `linkAccounts.tryAgain` | Try again | Спробувати ще раз |
-| `linkAccounts.notImported` | — not imported — | — не імпортовано — |
-| `linkAccounts.noCurrencyAccount` | No {{currency}} account — create one to import this card. | Немає рахунку в {{currency}} — створіть його, щоб імпортувати цю картку. |
-| `categoryEditor.kind.mcc` | MCC | MCC |
-| `categoryEditor.kind.label` | Label | Мітка |
-| `categoryEditor.kind.counterparty` | Counterparty | Контрагент |
-| `categoryEditor.heading.income` | Bank provider category to income category mapping | Зіставлення категорії провайдера банку з категорією доходу |
-| `categoryEditor.heading.expense` | Bank provider category to expense category mapping | Зіставлення категорії провайдера банку з категорією витрат |
-| `categoryEditor.kindLabel` | Kind, row {{row}} | Тип, рядок {{row}} |
-| `categoryEditor.valueLabel.mcc` | MCC code, row {{row}} | Код MCC, рядок {{row}} |
-| `categoryEditor.valueLabel.counterparty` | Counterparty token, row {{row}} | Токен контрагента, рядок {{row}} |
-| `categoryEditor.valueLabel.label` | Bank provider label, row {{row}} | Мітка провайдера банку, рядок {{row}} |
-| `categoryEditor.categoryPlaceholder.income` | Income category | Категорія доходу |
-| `categoryEditor.categoryPlaceholder.expense` | Expense category | Категорія витрат |
-| `categoryEditor.categoryLabelRow.income` | Income category, row {{row}} | Категорія доходу, рядок {{row}} |
-| `categoryEditor.categoryLabelRow.expense` | Expense category, row {{row}} | Категорія витрат, рядок {{row}} |
-| `categoryEditor.mccPlaceholder` | MCC | MCC |
-| `categoryEditor.counterpartyPlaceholder` | EDRPOU / IBAN | ЄДРПОУ / IBAN |
-| `categoryEditor.labelPlaceholder` | Bank provider label | Мітка провайдера банку |
-| `contactEditor.heading` | Bank provider token to contact mapping | Зіставлення токена провайдера банку з контактом |
-| `contactEditor.futureImports` | Mappings apply to future imports. | Зіставлення застосовуються до майбутніх імпортів. |
-| `contactEditor.tokenPlaceholder` | Provider counterparty token | Токен контрагента провайдера |
-| `contactEditor.tokenLabel` | Provider token, row {{row}} | Токен провайдера, рядок {{row}} |
-| `contactEditor.contactPlaceholder` | Contact | Контакт |
-| `contactEditor.contactLabel` | Contact, row {{row}} | Контакт, рядок {{row}} |
-| `contactEditor.createError` | Could not create contact. | Не вдалося створити контакт. |
-| `mapEditor.noMappings` | No mappings yet. | Зіставлень ще немає. |
-| `mapEditor.rowFallback` | row {{row}} | рядок {{row}} |
-| `mapEditor.removeMapping` | Remove mapping {{label}} | Видалити зіставлення {{label}} |
-| `mapEditor.addMapping` | Add mapping | Додати зіставлення |
-| `mapEditor.saveMapping` | Save mapping | Зберегти зіставлення |
-| `mapEditor.invalidMapping` | Invalid mapping | Некоректне зіставлення |
-| `mapEditor.duplicateMapping` | Duplicate mapping: {{key}} | Дубльоване зіставлення: {{key}} |
-| `validation.nameRequired` | Name is required | Вкажіть назву |
-| `validation.nameTooLong` | Too long | Занадто довго |
-| `validation.providerRequired` | Provider is required | Виберіть провайдера |
-| `validation.tokenRequired` | Token is required | Вкажіть токен |
-| `validation.currentPasswordRequired` | Current password is required | Вкажіть поточний пароль |
-| `validation.passwordMinLength` | At least 8 characters | Щонайменше 8 символів |
-| `validation.passwordsMismatch` | Passwords do not match | Паролі не збігаються |
-| `validation.mccDigits` | MCC must be 4 digits | MCC має містити 4 цифри |
-| `validation.pickCategory` | Pick a category | Виберіть категорію |
-| `validation.labelRequired` | Label is required | Вкажіть мітку |
-| `validation.counterpartyRequired` | Counterparty token is required | Вкажіть токен контрагента |
-| `validation.pickContact` | Pick a contact | Виберіть контакт |
+| key                                          | en                                                                                                                                               | uk                                                                                                                                                               |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `page.title`                                 | Profile                                                                                                                                          | Профіль                                                                                                                                                          |
+| `tabs.general`                               | General                                                                                                                                          | Загальні                                                                                                                                                         |
+| `tabs.dictionaries`                          | Dictionaries                                                                                                                                     | Довідники                                                                                                                                                        |
+| `tabs.defaults`                              | Defaults                                                                                                                                         | За замовчуванням                                                                                                                                                 |
+| `tabs.auth`                                  | Auth                                                                                                                                             | Автентифікація                                                                                                                                                   |
+| `tabs.banking`                               | Banking                                                                                                                                          | Банк                                                                                                                                                             |
+| `saving`                                     | Saving…                                                                                                                                          | Збереження…                                                                                                                                                      |
+| `updated`                                    | Updated.                                                                                                                                         | Оновлено.                                                                                                                                                        |
+| `selectPlaceholder`                          | Select…                                                                                                                                          | Виберіть…                                                                                                                                                        |
+| `errors.loadConfiguration`                   | Couldn’t load configuration.                                                                                                                     | Не вдалося завантажити конфігурацію.                                                                                                                             |
+| `errors.loadProfile`                         | Couldn’t load profile.                                                                                                                           | Не вдалося завантажити профіль.                                                                                                                                  |
+| `errors.loadBankConnections`                 | Couldn’t load bank connections.                                                                                                                  | Не вдалося завантажити банківські підключення.                                                                                                                   |
+| `errors.generic`                             | Something went wrong. Please try again.                                                                                                          | Щось пішло не так. Спробуйте ще раз.                                                                                                                             |
+| `userId.title`                               | Your sharing ID                                                                                                                                  | Ваш ID для спільного доступу                                                                                                                                     |
+| `userId.copy`                                | Copy                                                                                                                                             | Копіювати                                                                                                                                                        |
+| `userId.copyUserId`                          | Copy user ID                                                                                                                                     | Копіювати ID користувача                                                                                                                                         |
+| `userId.copied`                              | Copied                                                                                                                                           | Скопійовано                                                                                                                                                      |
+| `userId.description`                         | Share this ID with someone to let them add you to an account.                                                                                    | Поділіться цим ID, щоб вас додали до рахунку.                                                                                                                    |
+| `currencies.title`                           | Currencies                                                                                                                                       | Валюти                                                                                                                                                           |
+| `currencies.defaultCurrency`                 | Default currency                                                                                                                                 | Валюта за замовчуванням                                                                                                                                          |
+| `currencies.defaultCurrencyDescription`      | Used when creating new accounts and transactions.                                                                                                | Використовується під час створення нових рахунків і транзакцій.                                                                                                  |
+| `currencies.baseCurrency`                    | Base currency                                                                                                                                    | Базова валюта                                                                                                                                                    |
+| `currencies.baseCurrencyDescriptionEditable` | Re-bases the External account that anchors your reporting.                                                                                       | Змінює базу зовнішнього рахунку, на якому ґрунтується ваша звітність.                                                                                            |
+| `currencies.baseCurrencyDescriptionLocked`   | Base currency is locked because your books already contain transactions.                                                                         | Базову валюту заблоковано, оскільки у ваших книгах уже є транзакції.                                                                                             |
+| `currencies.confirmTitle`                    | Change base currency                                                                                                                             | Змінити базову валюту                                                                                                                                            |
+| `currencies.confirmDescription`              | Change base currency from {{from}} to {{to}}? This re-bases the External account that anchors your reporting. This cannot be undone from the UI. | Змінити базову валюту з {{from}} на {{to}}? Це змінить базу зовнішнього рахунку, на якому ґрунтується ваша звітність. Цю дію не можна скасувати через інтерфейс. |
+| `currencies.confirmAction`                   | Change base currency                                                                                                                             | Змінити базову валюту                                                                                                                                            |
+| `localization.title`                         | Region & language                                                                                                                                | Регіон і мова                                                                                                                                                    |
+| `localization.country`                       | Country                                                                                                                                          | Країна                                                                                                                                                           |
+| `localization.countryNotSet`                 | Not set                                                                                                                                          | Не вибрано                                                                                                                                                       |
+| `localization.countryDescription`            | Sets regional defaults such as currency and language.                                                                                            | Визначає регіональні налаштування за замовчуванням, як-от валюту та мову.                                                                                        |
+| `localization.language`                      | Language                                                                                                                                         | Мова                                                                                                                                                             |
+| `localization.languageDescription`           | The language used across the app and in notifications.                                                                                           | Мова, що використовується в застосунку та в сповіщеннях.                                                                                                         |
+| `country.cascade.defaultCurrency`            | default currency to {{value}}                                                                                                                    | валюту за замовчуванням на {{value}}                                                                                                                             |
+| `country.cascade.baseCurrency`               | base currency to {{value}}                                                                                                                       | базову валюту на {{value}}                                                                                                                                       |
+| `country.cascade.language`                   | language to {{value}}                                                                                                                            | мову на {{value}}                                                                                                                                                |
+| `country.cascade.summary`                    | Updated {{changes}} to match your country.                                                                                                       | Оновлено {{changes}} відповідно до вашої країни.                                                                                                                 |
+| `defaults.categoriesTitle`                   | Default categories                                                                                                                               | Категорії за замовчуванням                                                                                                                                       |
+| `defaults.incomeCategory`                    | Default income category                                                                                                                          | Категорія доходу за замовчуванням                                                                                                                                |
+| `defaults.expenseCategory`                   | Default expense category                                                                                                                         | Категорія витрат за замовчуванням                                                                                                                                |
+| `defaults.accountsTitle`                     | Default accounts                                                                                                                                 | Рахунки за замовчуванням                                                                                                                                         |
+| `defaults.defaultAccount`                    | Default account                                                                                                                                  | Рахунок за замовчуванням                                                                                                                                         |
+| `defaults.subtypeDefaultAccount`             | {{subtype}} default account                                                                                                                      | Рахунок за замовчуванням ({{subtype}})                                                                                                                           |
+| `defaults.none`                              | — none —                                                                                                                                         | — немає —                                                                                                                                                        |
+| `dictionaries.tabs.expense`                  | Expense                                                                                                                                          | Витрати                                                                                                                                                          |
+| `dictionaries.tabs.income`                   | Income                                                                                                                                           | Доходи                                                                                                                                                           |
+| `dictionaries.tabs.contact`                  | Contact                                                                                                                                          | Контакт                                                                                                                                                          |
+| `dictionaries.tabs.label`                    | Label                                                                                                                                            | Мітка                                                                                                                                                            |
+| `dictionaries.title.expense`                 | Expense                                                                                                                                          | Витрати                                                                                                                                                          |
+| `dictionaries.title.income`                  | Income                                                                                                                                           | Доходи                                                                                                                                                           |
+| `dictionaries.title.contact`                 | Contact                                                                                                                                          | Контакт                                                                                                                                                          |
+| `dictionaries.title.label`                   | Labels                                                                                                                                           | Мітки                                                                                                                                                            |
+| `dictionaries.add.expense`                   | Add expense category                                                                                                                             | Додати категорію витрат                                                                                                                                          |
+| `dictionaries.add.income`                    | Add income category                                                                                                                              | Додати категорію доходів                                                                                                                                         |
+| `dictionaries.add.contact`                   | Add contact                                                                                                                                      | Додати контакт                                                                                                                                                   |
+| `dictionaries.add.label`                     | Add label                                                                                                                                        | Додати мітку                                                                                                                                                     |
+| `dictionaries.empty`                         | No entries yet.                                                                                                                                  | Записів ще немає.                                                                                                                                                |
+| `dictionaries.rename`                        | Rename {{name}}                                                                                                                                  | Перейменувати {{name}}                                                                                                                                           |
+| `dictionaries.move`                          | Move {{name}}                                                                                                                                    | Перемістити {{name}}                                                                                                                                             |
+| `dictionaries.delete`                        | Delete {{name}}                                                                                                                                  | Видалити {{name}}                                                                                                                                                |
+| `dictionaries.topLevel`                      | Top level                                                                                                                                        | Верхній рівень                                                                                                                                                   |
+| `dictionaries.entryType`                     | Entry type                                                                                                                                       | Тип запису                                                                                                                                                       |
+| `dictionaries.item`                          | Item                                                                                                                                             | Елемент                                                                                                                                                          |
+| `dictionaries.group`                         | Group                                                                                                                                            | Група                                                                                                                                                            |
+| `dictionaries.groupBadge`                    | group                                                                                                                                            | група                                                                                                                                                            |
+| `dictionaries.parentGroup`                   | Parent group                                                                                                                                     | Батьківська група                                                                                                                                                |
+| `dictionaries.deleteTitle`                   | Delete {{name}}?                                                                                                                                 | Видалити {{name}}?                                                                                                                                               |
+| `dictionaries.deleteDescription`             | Transactions tagged with it will not be deleted.                                                                                                 | Транзакції, позначені нею, не буде видалено.                                                                                                                     |
+| `auth.passwordTitle`                         | Password                                                                                                                                         | Пароль                                                                                                                                                           |
+| `auth.currentPassword`                       | Current password                                                                                                                                 | Поточний пароль                                                                                                                                                  |
+| `auth.newPassword`                           | New password                                                                                                                                     | Новий пароль                                                                                                                                                     |
+| `auth.confirmPassword`                       | Confirm new password                                                                                                                             | Підтвердьте новий пароль                                                                                                                                         |
+| `auth.changePassword`                        | Change password                                                                                                                                  | Змінити пароль                                                                                                                                                   |
+| `auth.passwordChanged`                       | Password changed.                                                                                                                                | Пароль змінено.                                                                                                                                                  |
+| `auth.oauthOnly`                             | Your account uses OAuth sign-in. Setting an initial password isn’t available yet.                                                                | Ваш обліковий запис використовує вхід через OAuth. Встановлення початкового пароля поки що недоступне.                                                           |
+| `auth.linkedAccountsTitle`                   | Linked accounts                                                                                                                                  | Прив’язані облікові записи                                                                                                                                       |
+| `auth.atLeastOneCredential`                  | You need at least one way to sign in.                                                                                                            | Вам потрібен щонайменше один спосіб входу.                                                                                                                       |
+| `provider.linkedAs`                          | Linked as {{subtitle}}                                                                                                                           | Прив’язано як {{subtitle}}                                                                                                                                       |
+| `provider.notLinked`                         | Not linked                                                                                                                                       | Не прив’язано                                                                                                                                                    |
+| `provider.unlink`                            | Unlink                                                                                                                                           | Відв’язати                                                                                                                                                       |
+| `provider.link`                              | Link {{provider}}                                                                                                                                | Прив’язати {{provider}}                                                                                                                                          |
+| `provider.unlinkTitle`                       | Unlink {{provider}}?                                                                                                                             | Відв’язати {{provider}}?                                                                                                                                         |
+| `provider.unlinkDescription`                 | You won’t be able to sign in with {{provider}} until you link it again.                                                                          | Ви не зможете входити через {{provider}}, доки не прив’яжете його знову.                                                                                         |
+| `banking.tabs.connections`                   | Connections                                                                                                                                      | Підключення                                                                                                                                                      |
+| `banking.tabs.expenses`                      | Expenses                                                                                                                                         | Витрати                                                                                                                                                          |
+| `banking.tabs.income`                        | Income                                                                                                                                           | Доходи                                                                                                                                                           |
+| `banking.tabs.contacts`                      | Contacts                                                                                                                                         | Контакти                                                                                                                                                         |
+| `banking.connectionsHeading`                 | Bank connections                                                                                                                                 | Банківські підключення                                                                                                                                           |
+| `banking.noConnections`                      | No connections yet.                                                                                                                              | Підключень ще немає.                                                                                                                                             |
+| `banking.addConnection`                      | Add connection                                                                                                                                   | Додати підключення                                                                                                                                               |
+| `banking.expensesHeading`                    | Bank provider category → expense category                                                                                                        | Категорія провайдера банку → категорія витрат                                                                                                                    |
+| `banking.incomeHeading`                      | Bank provider counterparty → income category                                                                                                     | Контрагент провайдера банку → категорія доходу                                                                                                                   |
+| `banking.contactsHeading`                    | Bank provider token → contact                                                                                                                    | Токен провайдера банку → контакт                                                                                                                                 |
+| `banking.mapped`                             | {{count}} mapped                                                                                                                                 | зіставлено: {{count}}                                                                                                                                            |
+| `banking.enableConnection`                   | Enable {{name}}                                                                                                                                  | Увімкнути {{name}}                                                                                                                                               |
+| `banking.linkAccounts`                       | Link accounts                                                                                                                                    | Прив’язати рахунки                                                                                                                                               |
+| `banking.edit`                               | Edit                                                                                                                                             | Редагувати                                                                                                                                                       |
+| `banking.remove`                             | Remove                                                                                                                                           | Видалити                                                                                                                                                         |
+| `banking.removeTitle`                        | Remove {{name}}?                                                                                                                                 | Видалити {{name}}?                                                                                                                                               |
+| `banking.removeDescription`                  | This removes the bank connection. Imported transactions are not deleted.                                                                         | Це видалить банківське підключення. Імпортовані транзакції не буде видалено.                                                                                     |
+| `connectionDialog.editTitle`                 | Edit bank connection                                                                                                                             | Редагувати банківське підключення                                                                                                                                |
+| `connectionDialog.addTitle`                  | Add bank connection                                                                                                                              | Додати банківське підключення                                                                                                                                    |
+| `connectionDialog.editDescription`           | Update this connection. Leave the token blank to keep the current one.                                                                           | Оновіть це підключення. Залиште токен порожнім, щоб зберегти поточний.                                                                                           |
+| `connectionDialog.addDescription`            | Connect a bank to import transactions automatically.                                                                                             | Підключіть банк для автоматичного імпорту транзакцій.                                                                                                            |
+| `connectionDialog.name`                      | Name                                                                                                                                             | Назва                                                                                                                                                            |
+| `connectionDialog.provider`                  | Provider                                                                                                                                         | Провайдер                                                                                                                                                        |
+| `connectionDialog.providerPlaceholder`       | Select a provider…                                                                                                                               | Виберіть провайдера…                                                                                                                                             |
+| `connectionDialog.providersUnavailable`      | No bank providers available. Try again later.                                                                                                    | Немає доступних банківських провайдерів. Спробуйте пізніше.                                                                                                      |
+| `connectionDialog.token`                     | Token                                                                                                                                            | Токен                                                                                                                                                            |
+| `connectionDialog.tokenKept`                 | •••• kept                                                                                                                                        | •••• збережено                                                                                                                                                   |
+| `connectionDialog.enabled`                   | Enabled                                                                                                                                          | Увімкнено                                                                                                                                                        |
+| `linkAccounts.title`                         | Link accounts                                                                                                                                    | Прив’язати рахунки                                                                                                                                               |
+| `linkAccounts.description`                   | Map each external bank account to one of your local accounts.                                                                                    | Зіставте кожен зовнішній банківський рахунок з одним із ваших локальних рахунків.                                                                                |
+| `linkAccounts.statementFiles`                | Statement files                                                                                                                                  | Файли виписок                                                                                                                                                    |
+| `linkAccounts.uploadPrompt`                  | Upload your statement(s) to list accounts.                                                                                                       | Завантажте виписку(и), щоб побачити список рахунків.                                                                                                             |
+| `linkAccounts.rateLimited`                   | {{provider}} is rate-limited. Try again in a moment.                                                                                             | {{provider}} обмежує частоту запитів. Спробуйте за мить.                                                                                                         |
+| `linkAccounts.providerFallback`              | The provider                                                                                                                                     | Провайдер                                                                                                                                                        |
+| `linkAccounts.loadError`                     | Couldn’t load external accounts. Please try again.                                                                                               | Не вдалося завантажити зовнішні рахунки. Спробуйте ще раз.                                                                                                       |
+| `linkAccounts.tryAgain`                      | Try again                                                                                                                                        | Спробувати ще раз                                                                                                                                                |
+| `linkAccounts.notImported`                   | — not imported —                                                                                                                                 | — не імпортовано —                                                                                                                                               |
+| `linkAccounts.noCurrencyAccount`             | No {{currency}} account — create one to import this card.                                                                                        | Немає рахунку в {{currency}} — створіть його, щоб імпортувати цю картку.                                                                                         |
+| `categoryEditor.kind.mcc`                    | MCC                                                                                                                                              | MCC                                                                                                                                                              |
+| `categoryEditor.kind.label`                  | Label                                                                                                                                            | Мітка                                                                                                                                                            |
+| `categoryEditor.kind.counterparty`           | Counterparty                                                                                                                                     | Контрагент                                                                                                                                                       |
+| `categoryEditor.heading.income`              | Bank provider category to income category mapping                                                                                                | Зіставлення категорії провайдера банку з категорією доходу                                                                                                       |
+| `categoryEditor.heading.expense`             | Bank provider category to expense category mapping                                                                                               | Зіставлення категорії провайдера банку з категорією витрат                                                                                                       |
+| `categoryEditor.kindLabel`                   | Kind, row {{row}}                                                                                                                                | Тип, рядок {{row}}                                                                                                                                               |
+| `categoryEditor.valueLabel.mcc`              | MCC code, row {{row}}                                                                                                                            | Код MCC, рядок {{row}}                                                                                                                                           |
+| `categoryEditor.valueLabel.counterparty`     | Counterparty token, row {{row}}                                                                                                                  | Токен контрагента, рядок {{row}}                                                                                                                                 |
+| `categoryEditor.valueLabel.label`            | Bank provider label, row {{row}}                                                                                                                 | Мітка провайдера банку, рядок {{row}}                                                                                                                            |
+| `categoryEditor.categoryPlaceholder.income`  | Income category                                                                                                                                  | Категорія доходу                                                                                                                                                 |
+| `categoryEditor.categoryPlaceholder.expense` | Expense category                                                                                                                                 | Категорія витрат                                                                                                                                                 |
+| `categoryEditor.categoryLabelRow.income`     | Income category, row {{row}}                                                                                                                     | Категорія доходу, рядок {{row}}                                                                                                                                  |
+| `categoryEditor.categoryLabelRow.expense`    | Expense category, row {{row}}                                                                                                                    | Категорія витрат, рядок {{row}}                                                                                                                                  |
+| `categoryEditor.mccPlaceholder`              | MCC                                                                                                                                              | MCC                                                                                                                                                              |
+| `categoryEditor.counterpartyPlaceholder`     | EDRPOU / IBAN                                                                                                                                    | ЄДРПОУ / IBAN                                                                                                                                                    |
+| `categoryEditor.labelPlaceholder`            | Bank provider label                                                                                                                              | Мітка провайдера банку                                                                                                                                           |
+| `contactEditor.heading`                      | Bank provider token to contact mapping                                                                                                           | Зіставлення токена провайдера банку з контактом                                                                                                                  |
+| `contactEditor.futureImports`                | Mappings apply to future imports.                                                                                                                | Зіставлення застосовуються до майбутніх імпортів.                                                                                                                |
+| `contactEditor.tokenPlaceholder`             | Provider counterparty token                                                                                                                      | Токен контрагента провайдера                                                                                                                                     |
+| `contactEditor.tokenLabel`                   | Provider token, row {{row}}                                                                                                                      | Токен провайдера, рядок {{row}}                                                                                                                                  |
+| `contactEditor.contactPlaceholder`           | Contact                                                                                                                                          | Контакт                                                                                                                                                          |
+| `contactEditor.contactLabel`                 | Contact, row {{row}}                                                                                                                             | Контакт, рядок {{row}}                                                                                                                                           |
+| `contactEditor.createError`                  | Could not create contact.                                                                                                                        | Не вдалося створити контакт.                                                                                                                                     |
+| `mapEditor.noMappings`                       | No mappings yet.                                                                                                                                 | Зіставлень ще немає.                                                                                                                                             |
+| `mapEditor.rowFallback`                      | row {{row}}                                                                                                                                      | рядок {{row}}                                                                                                                                                    |
+| `mapEditor.removeMapping`                    | Remove mapping {{label}}                                                                                                                         | Видалити зіставлення {{label}}                                                                                                                                   |
+| `mapEditor.addMapping`                       | Add mapping                                                                                                                                      | Додати зіставлення                                                                                                                                               |
+| `mapEditor.saveMapping`                      | Save mapping                                                                                                                                     | Зберегти зіставлення                                                                                                                                             |
+| `mapEditor.invalidMapping`                   | Invalid mapping                                                                                                                                  | Некоректне зіставлення                                                                                                                                           |
+| `mapEditor.duplicateMapping`                 | Duplicate mapping: {{key}}                                                                                                                       | Дубльоване зіставлення: {{key}}                                                                                                                                  |
+| `validation.nameRequired`                    | Name is required                                                                                                                                 | Вкажіть назву                                                                                                                                                    |
+| `validation.nameTooLong`                     | Too long                                                                                                                                         | Занадто довго                                                                                                                                                    |
+| `validation.providerRequired`                | Provider is required                                                                                                                             | Виберіть провайдера                                                                                                                                              |
+| `validation.tokenRequired`                   | Token is required                                                                                                                                | Вкажіть токен                                                                                                                                                    |
+| `validation.currentPasswordRequired`         | Current password is required                                                                                                                     | Вкажіть поточний пароль                                                                                                                                          |
+| `validation.passwordMinLength`               | At least 8 characters                                                                                                                            | Щонайменше 8 символів                                                                                                                                            |
+| `validation.passwordsMismatch`               | Passwords do not match                                                                                                                           | Паролі не збігаються                                                                                                                                             |
+| `validation.mccDigits`                       | MCC must be 4 digits                                                                                                                             | MCC має містити 4 цифри                                                                                                                                          |
+| `validation.pickCategory`                    | Pick a category                                                                                                                                  | Виберіть категорію                                                                                                                                               |
+| `validation.labelRequired`                   | Label is required                                                                                                                                | Вкажіть мітку                                                                                                                                                    |
+| `validation.counterpartyRequired`            | Counterparty token is required                                                                                                                   | Вкажіть токен контрагента                                                                                                                                        |
+| `validation.pickContact`                     | Pick a contact                                                                                                                                   | Виберіть контакт                                                                                                                                                 |
 
 ## `banking` (12 keys)
 
-| key | en | uk |
-|---|---|---|
-| `summary.imported_one` | Imported {{count}} transaction | Імпортовано {{count}} транзакцію |
-| `summary.imported_few` | Imported {{count}} transactions | Імпортовано {{count}} транзакції |
-| `summary.imported_many` | Imported {{count}} transactions | Імпортовано {{count}} транзакцій |
-| `summary.imported_other` | Imported {{count}} transactions | Імпортовано {{count}} транзакції |
-| `summary.skipped` | {{count}} skipped | {{count}} пропущено |
-| `summary.failed` | {{count}} failed | {{count}} з помилкою |
-| `summary.unresolved_one` | {{count}} row needs attention | {{count}} рядок потребує уваги |
-| `summary.unresolved_few` | {{count}} rows need attention | {{count}} рядки потребують уваги |
-| `summary.unresolved_many` | {{count}} rows need attention | {{count}} рядків потребують уваги |
-| `summary.unresolved_other` | {{count}} rows need attention | {{count}} рядка потребують уваги |
+| key                              | en                                                       | uk                                                   |
+| -------------------------------- | -------------------------------------------------------- | ---------------------------------------------------- |
+| `summary.imported_one`           | Imported {{count}} transaction                           | Імпортовано {{count}} транзакцію                     |
+| `summary.imported_few`           | Imported {{count}} transactions                          | Імпортовано {{count}} транзакції                     |
+| `summary.imported_many`          | Imported {{count}} transactions                          | Імпортовано {{count}} транзакцій                     |
+| `summary.imported_other`         | Imported {{count}} transactions                          | Імпортовано {{count}} транзакції                     |
+| `summary.skipped`                | {{count}} skipped                                        | {{count}} пропущено                                  |
+| `summary.failed`                 | {{count}} failed                                         | {{count}} з помилкою                                 |
+| `summary.unresolved_one`         | {{count}} row needs attention                            | {{count}} рядок потребує уваги                       |
+| `summary.unresolved_few`         | {{count}} rows need attention                            | {{count}} рядки потребують уваги                     |
+| `summary.unresolved_many`        | {{count}} rows need attention                            | {{count}} рядків потребують уваги                    |
+| `summary.unresolved_other`       | {{count}} rows need attention                            | {{count}} рядка потребують уваги                     |
 | `statement.mixedOrUnknownFormat` | Select statement files of the same type (.csv or .xlsx). | Виберіть файли виписок одного типу (.csv або .xlsx). |
-| `providerOptions.otherCountries` | Other countries | Інші країни |
+| `providerOptions.otherCountries` | Other countries                                          | Інші країни                                          |
 
 ## `onboarding` (17 keys)
 
-| key | en | uk |
-|---|---|---|
-| `loading` | Loading | Завантаження |
-| `updated` | Updated. | Оновлено. |
-| `errors.loadConfiguration` | Couldn’t load configuration. | Не вдалося завантажити конфігурацію. |
-| `fields.country.label` | Country | Країна |
-| `fields.country.help` | Sets regional defaults such as currency and language. | Визначає регіональні налаштування за замовчуванням, як-от валюту та мову. |
-| `fields.country.placeholder` | Select your country | Виберіть свою країну |
-| `fields.defaultCurrency.label` | Default currency | Валюта за замовчуванням |
-| `fields.defaultCurrency.help` | Used when creating new accounts and transactions. | Використовується під час створення нових рахунків і транзакцій. |
-| `fields.language.label` | Language | Мова |
-| `fields.language.help` | The language used across the app and in notifications. | Мова, що використовується в застосунку та в сповіщеннях. |
-| `fields.baseCurrency.label` | Base currency | Базова валюта |
-| `fields.baseCurrency.help` | Anchors your reporting across all accounts. | Слугує основою для звітності за всіма рахунками. |
-| `page.title` | Let’s set up the basics | Налаштуймо основи |
-| `page.intro` | Pick your country and we’ll set sensible currency and language defaults. Adjust anything below. | Виберіть країну, і ми встановимо доцільні значення валюти й мови за замовчуванням. Змініть будь-що нижче. |
-| `page.later` | You can change any of this later in Settings. | Ви зможете змінити будь-що з цього пізніше в налаштуваннях. |
-| `page.skip` | Skip for now | Пропустити поки що |
-| `page.getStarted` | Get started | Почати |
+| key                            | en                                                                                              | uk                                                                                                        |
+| ------------------------------ | ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `loading`                      | Loading                                                                                         | Завантаження                                                                                              |
+| `updated`                      | Updated.                                                                                        | Оновлено.                                                                                                 |
+| `errors.loadConfiguration`     | Couldn’t load configuration.                                                                    | Не вдалося завантажити конфігурацію.                                                                      |
+| `fields.country.label`         | Country                                                                                         | Країна                                                                                                    |
+| `fields.country.help`          | Sets regional defaults such as currency and language.                                           | Визначає регіональні налаштування за замовчуванням, як-от валюту та мову.                                 |
+| `fields.country.placeholder`   | Select your country                                                                             | Виберіть свою країну                                                                                      |
+| `fields.defaultCurrency.label` | Default currency                                                                                | Валюта за замовчуванням                                                                                   |
+| `fields.defaultCurrency.help`  | Used when creating new accounts and transactions.                                               | Використовується під час створення нових рахунків і транзакцій.                                           |
+| `fields.language.label`        | Language                                                                                        | Мова                                                                                                      |
+| `fields.language.help`         | The language used across the app and in notifications.                                          | Мова, що використовується в застосунку та в сповіщеннях.                                                  |
+| `fields.baseCurrency.label`    | Base currency                                                                                   | Базова валюта                                                                                             |
+| `fields.baseCurrency.help`     | Anchors your reporting across all accounts.                                                     | Слугує основою для звітності за всіма рахунками.                                                          |
+| `page.title`                   | Let’s set up the basics                                                                         | Налаштуймо основи                                                                                         |
+| `page.intro`                   | Pick your country and we’ll set sensible currency and language defaults. Adjust anything below. | Виберіть країну, і ми встановимо доцільні значення валюти й мови за замовчуванням. Змініть будь-що нижче. |
+| `page.later`                   | You can change any of this later in Settings.                                                   | Ви зможете змінити будь-що з цього пізніше в налаштуваннях.                                               |
+| `page.skip`                    | Skip for now                                                                                    | Пропустити поки що                                                                                        |
+| `page.getStarted`              | Get started                                                                                     | Почати                                                                                                    |
 
 ## `reports` (16 keys)
 
-| key | en | uk |
-|---|---|---|
-| `title` | Reports | Звіти |
-| `tabs.cashFlow` | Cash flow | Грошовий потік |
-| `tabs.netWorth` | Net worth | Чиста вартість |
-| `incomeVsExpense.title` | Income vs. expense | Доходи та витрати |
-| `incomeVsExpense.income` | Income | Доходи |
-| `incomeVsExpense.expense` | Expense | Витрати |
-| `incomeVsExpense.net` | Net | Сальдо |
-| `incomeVsExpense.loadError` | Couldn’t load income vs. expense. | Не вдалося завантажити доходи та витрати. |
-| `spendingByCategory.title` | Spending by category | Витрати за категоріями |
+| key                            | en                                  | uk                                             |
+| ------------------------------ | ----------------------------------- | ---------------------------------------------- |
+| `title`                        | Reports                             | Звіти                                          |
+| `tabs.cashFlow`                | Cash flow                           | Грошовий потік                                 |
+| `tabs.netWorth`                | Net worth                           | Чиста вартість                                 |
+| `incomeVsExpense.title`        | Income vs. expense                  | Доходи та витрати                              |
+| `incomeVsExpense.income`       | Income                              | Доходи                                         |
+| `incomeVsExpense.expense`      | Expense                             | Витрати                                        |
+| `incomeVsExpense.net`          | Net                                 | Сальдо                                         |
+| `incomeVsExpense.loadError`    | Couldn’t load income vs. expense.   | Не вдалося завантажити доходи та витрати.      |
+| `spendingByCategory.title`     | Spending by category                | Витрати за категоріями                         |
 | `spendingByCategory.loadError` | Couldn’t load spending by category. | Не вдалося завантажити витрати за категоріями. |
-| `spendingByCategory.empty` | No spending in this period. | Немає витрат за цей період. |
-| `netWorth.title` | Net worth | Чиста вартість |
-| `netWorth.current` | current | поточна |
-| `netWorth.loadError` | Couldn’t load net worth. | Не вдалося завантажити чисту вартість. |
-| `netWorth.empty` | No accounts yet. | Ще немає рахунків. |
-| `netWorth.total` | Total | Разом |
+| `spendingByCategory.empty`     | No spending in this period.         | Немає витрат за цей період.                    |
+| `netWorth.title`               | Net worth                           | Чиста вартість                                 |
+| `netWorth.current`             | current                             | поточна                                        |
+| `netWorth.loadError`           | Couldn’t load net worth.            | Не вдалося завантажити чисту вартість.         |
+| `netWorth.empty`               | No accounts yet.                    | Ще немає рахунків.                             |
+| `netWorth.total`               | Total                               | Разом                                          |
 
 ## `pages` (25 keys)
 
-| key | en | uk |
-|---|---|---|
-| `auth.email` | Email | Електронна пошта |
-| `auth.password` | Password | Пароль |
-| `login.title` | Sign in | Вхід |
-| `login.submit` | Sign in | Увійти |
-| `login.google` | Sign in with Google | Увійти через Google |
-| `login.newHere` | New here? | Вперше тут? |
-| `login.createAccount` | Create an account | Створити обліковий запис |
-| `login.failed` | Login failed | Не вдалося увійти |
-| `login.googleFailed` | Google sign-in failed | Не вдалося увійти через Google |
-| `register.title` | Create an account | Створення облікового запису |
-| `register.submit` | Create account | Створити обліковий запис |
-| `register.google` | Sign up with Google | Зареєструватися через Google |
-| `register.alreadyRegistered` | Already registered? | Вже зареєстровані? |
-| `register.signIn` | Sign in | Увійти |
-| `register.failed` | Registration failed | Не вдалося зареєструватися |
-| `register.googleFailed` | Google sign-up failed | Не вдалося зареєструватися через Google |
-| `notFound.title` | Page not found | Сторінку не знайдено |
-| `notFound.body` | The page you’re looking for doesn’t exist. | Сторінка, яку ви шукаєте, не існує. |
-| `notFound.goHome` | Go back home | Повернутися на головну |
-| `oauth.missingParams` | Missing code or state in OAuth callback. | Відсутній код або стан у відповіді OAuth. |
-| `oauth.stateMismatch` | OAuth state mismatch — please try again. | Невідповідність стану OAuth — спробуйте ще раз. |
-| `oauth.failed` | OAuth failed. | Помилка OAuth. |
-| `validation.emailInvalid` | Invalid email | Недійсна електронна пошта |
-| `validation.passwordRequired` | Password is required | Введіть пароль |
-| `validation.passwordMinLength` | Password must be at least 8 characters | Пароль має містити щонайменше 8 символів |
-
+| key                            | en                                         | uk                                              |
+| ------------------------------ | ------------------------------------------ | ----------------------------------------------- |
+| `auth.email`                   | Email                                      | Електронна пошта                                |
+| `auth.password`                | Password                                   | Пароль                                          |
+| `login.title`                  | Sign in                                    | Вхід                                            |
+| `login.submit`                 | Sign in                                    | Увійти                                          |
+| `login.google`                 | Sign in with Google                        | Увійти через Google                             |
+| `login.newHere`                | New here?                                  | Вперше тут?                                     |
+| `login.createAccount`          | Create an account                          | Створити обліковий запис                        |
+| `login.failed`                 | Login failed                               | Не вдалося увійти                               |
+| `login.googleFailed`           | Google sign-in failed                      | Не вдалося увійти через Google                  |
+| `register.title`               | Create an account                          | Створення облікового запису                     |
+| `register.submit`              | Create account                             | Створити обліковий запис                        |
+| `register.google`              | Sign up with Google                        | Зареєструватися через Google                    |
+| `register.alreadyRegistered`   | Already registered?                        | Вже зареєстровані?                              |
+| `register.signIn`              | Sign in                                    | Увійти                                          |
+| `register.failed`              | Registration failed                        | Не вдалося зареєструватися                      |
+| `register.googleFailed`        | Google sign-up failed                      | Не вдалося зареєструватися через Google         |
+| `notFound.title`               | Page not found                             | Сторінку не знайдено                            |
+| `notFound.body`                | The page you’re looking for doesn’t exist. | Сторінка, яку ви шукаєте, не існує.             |
+| `notFound.goHome`              | Go back home                               | Повернутися на головну                          |
+| `oauth.missingParams`          | Missing code or state in OAuth callback.   | Відсутній код або стан у відповіді OAuth.       |
+| `oauth.stateMismatch`          | OAuth state mismatch — please try again.   | Невідповідність стану OAuth — спробуйте ще раз. |
+| `oauth.failed`                 | OAuth failed.                              | Помилка OAuth.                                  |
+| `validation.emailInvalid`      | Invalid email                              | Недійсна електронна пошта                       |
+| `validation.passwordRequired`  | Password is required                       | Введіть пароль                                  |
+| `validation.passwordMinLength` | Password must be at least 8 characters     | Пароль має містити щонайменше 8 символів        |

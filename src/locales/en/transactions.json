@@ -134,7 +134,10 @@
     "alreadyLinked": "These transactions are already linked.",
     "relationKindGroup": "Relation kind",
     "linkKind": { "refund": "Refund", "associated": "Association" },
-    "linkKindHint": { "refund": "Income refunds the expense", "associated": "General link between the two" },
+    "linkKindHint": {
+      "refund": "Income refunds the expense",
+      "associated": "General link between the two"
+    },
     "checkingRefundable": "Checking refundable amount…",
     "refundLoadErrorExpense": "Couldn’t load prior refunds for this expense.",
     "fullyRefunded": "This expense is already fully refunded.",

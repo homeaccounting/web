@@ -94,7 +94,9 @@ function ConnectionRow({ connection }: { connection: BankConnectionDTO }) {
       <AlertDialog open={confirmRemove} onOpenChange={setConfirmRemove}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('banking.removeTitle', { name: connection.name })}</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t('banking.removeTitle', { name: connection.name })}
+            </AlertDialogTitle>
             <AlertDialogDescription>{t('banking.removeDescription')}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
