@@ -11,16 +11,23 @@ import { Toaster } from '@/components/ui/sonner';
 import { LanguageSync } from '@/features/i18n/LanguageSync';
 import App from './App';
 
-createRoot(document.getElementById('root') as HTMLElement).render(
-  <StrictMode>
-    <BrowserRouter basename="/app">
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <LanguageSync />
-          <App />
-          <Toaster />
-        </AuthProvider>
-      </QueryClientProvider>
-    </BrowserRouter>
-  </StrictMode>,
-);
+async function bootstrap() {
+  if (import.meta.env.VITE_DEMO === 'true') {
+    const { startDemoWorker } = await import('./demo/browser');
+    await startDemoWorker();
+  }
+  createRoot(document.getElementById('root') as HTMLElement).render(
+    <StrictMode>
+      <BrowserRouter basename="/app">
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <LanguageSync />
+            <App />
+            <Toaster />
+          </AuthProvider>
+        </QueryClientProvider>
+      </BrowserRouter>
+    </StrictMode>,
+  );
+}
+void bootstrap();

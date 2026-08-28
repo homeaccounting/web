@@ -84,6 +84,14 @@ test-watch:
 e2e:
     pnpm exec playwright test
 
+# Regenerate deterministic demo screenshots of the main flows (VITE_DEMO, no backend)
+screenshots:
+    pnpm exec playwright test --config playwright.demo.config.ts --project demo-chromium --update-snapshots
+
+# Regenerate demo flow clips (webm) into demo-assets/clips/ (VITE_DEMO, no backend)
+clips:
+    pnpm exec playwright test --config playwright.demo.config.ts --project demo-clips
+
 # Clean build artifacts and node_modules
 clean:
     @echo "Cleaning..."

@@ -26,7 +26,11 @@ export default tseslint.config(
     languageOptions: {
       parserOptions: {
         projectService: {
-          allowDefaultProject: ['tailwind.config.ts', 'playwright.config.ts'],
+          allowDefaultProject: [
+            'tailwind.config.ts',
+            'playwright.config.ts',
+            'playwright.demo.config.ts',
+          ],
         },
         tsconfigRootDir: import.meta.dirname,
       },
