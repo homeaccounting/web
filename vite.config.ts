@@ -10,6 +10,12 @@ export default defineConfig({
   server: { port: 5173 },
   test: {
     environment: 'happy-dom',
+    // analytics.ts injects a real <script src=gc.zgo.at/count.js>; without this,
+    // happy-dom network-fetches it, flaking the suite and tripping MSW's
+    // onUnhandledRequest:'error'. No test relies on loading external scripts.
+    environmentOptions: {
+      happyDOM: { settings: { disableJavaScriptFileLoading: true } },
+    },
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
     css: false,

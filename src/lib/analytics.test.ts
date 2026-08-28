@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { scrubPath } from './analytics';
 
 describe('scrubPath', () => {
@@ -30,5 +30,73 @@ describe('scrubPath', () => {
 
   it('scrubs multiple id segments in one path', () => {
     expect(scrubPath('/a/12345/b/67890')).toBe('/a/:id/b/:id');
+  });
+});
+
+describe('analytics runtime', () => {
+  // Re-import per test so the module-level pageview queue is fresh.
+  let mod: typeof import('./analytics');
+
+  beforeEach(async () => {
+    vi.resetModules();
+    document.head.innerHTML = '';
+    delete (window as unknown as { goatcounter?: unknown }).goatcounter;
+    window.location.href = 'https://app.example.test/app/';
+    vi.stubEnv('VITE_GOATCOUNTER_URL', 'https://x.goatcounter.com/count');
+    mod = await import('./analytics');
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('isAnalyticsEnabled is true when the var is set and host is not localhost', () => {
+    expect(mod.isAnalyticsEnabled()).toBe(true);
+  });
+
+  it('isAnalyticsEnabled is false when the var is unset', () => {
+    vi.stubEnv('VITE_GOATCOUNTER_URL', '');
+    expect(mod.isAnalyticsEnabled()).toBe(false);
+  });
+
+  it('isAnalyticsEnabled is false on localhost even when the var is set', () => {
+    window.location.href = 'http://localhost/app/';
+    expect(mod.isAnalyticsEnabled()).toBe(false);
+  });
+
+  it('ensureGoatCounter injects the count.js script exactly once', () => {
+    mod.ensureGoatCounter();
+    mod.ensureGoatCounter();
+    const scripts = document.querySelectorAll('script[data-goatcounter]');
+    expect(scripts).toHaveLength(1);
+    const el = scripts[0] as HTMLScriptElement;
+    expect(el.src).toBe('https://gc.zgo.at/count.js');
+    expect(el.dataset.goatcounter).toBe('https://x.goatcounter.com/count');
+    expect(window.goatcounter?.no_onload).toBe(true);
+  });
+
+  it('trackPageview counts immediately when count.js is already loaded', () => {
+    const count = vi.fn();
+    (window as unknown as { goatcounter: { count: typeof count } }).goatcounter = { count };
+    mod.trackPageview('/transactions');
+    expect(count).toHaveBeenCalledWith({ path: '/transactions' });
+  });
+
+  it('trackPageview queues before load and flushes on the script load event', () => {
+    mod.trackPageview('/transactions'); // no count() yet -> queued
+    const count = vi.fn();
+    const el = document.querySelector('script[data-goatcounter]') as HTMLScriptElement;
+    (window as unknown as { goatcounter: { count: typeof count } }).goatcounter = { count };
+    el.dispatchEvent(new Event('load'));
+    expect(count).toHaveBeenCalledWith({ path: '/transactions' });
+  });
+
+  it('trackPageview is a no-op (no script, no count) when the var is unset', () => {
+    vi.stubEnv('VITE_GOATCOUNTER_URL', '');
+    const count = vi.fn();
+    (window as unknown as { goatcounter: { count: typeof count } }).goatcounter = { count };
+    mod.trackPageview('/transactions');
+    expect(count).not.toHaveBeenCalled();
+    expect(document.querySelector('script[data-goatcounter]')).toBeNull();
   });
 });
