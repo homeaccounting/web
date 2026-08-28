@@ -131,6 +131,7 @@ publish tag="": install
     echo "==> docker build $IMAGE"
     docker build --platform linux/amd64 \
       --build-arg APP_COMMIT_HASH="$SHA" \
+      --build-arg VITE_GOATCOUNTER_URL="${VITE_GOATCOUNTER_URL:-}" \
       -t "$IMAGE" .
     echo "==> docker push $IMAGE"
     docker push "$IMAGE"
