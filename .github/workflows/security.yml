@@ -1,0 +1,44 @@
+name: Security
+
+# Automated security scanning — the compensating control for skipping a paid
+# third-party review (tracker#4 decision). Secret scanning of full git history
+# (gitleaks) + static analysis (semgrep). CodeQL can be added once the repo is
+# public (it's free for public repos; private org repos need GitHub Advanced
+# Security). Both jobs are clean as of adoption, so they fail the build on any
+# new finding.
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: ['**']
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  secrets:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history — a value scan of every commit, not just HEAD
+      - name: gitleaks (git history + working tree)
+        run: docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:latest git /repo --redact --exit-code 1
+
+  sast:
+    name: SAST (semgrep)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    container: semgrep/semgrep
+    steps:
+      - uses: actions/checkout@v4
+      - name: semgrep (security-audit + secrets rulesets)
+        run: semgrep scan --config p/security-audit --config p/secrets --error --metrics off
