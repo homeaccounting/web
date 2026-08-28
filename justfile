@@ -129,10 +129,14 @@ publish tag="": install
     echo "==> docker login ghcr.io"
     gh auth token | docker login ghcr.io -u "$(gh api user -q .login)" --password-stdin
     echo "==> docker build $IMAGE"
-    docker build --platform linux/amd64 \
-      --build-arg APP_COMMIT_HASH="$SHA" \
-      --build-arg VITE_GOATCOUNTER_URL="${VITE_GOATCOUNTER_URL:-}" \
-      -t "$IMAGE" .
+    # Only override analytics when VITE_GOATCOUNTER_URL is set (.env via direnv);
+    # otherwise the Dockerfile ARG default is used, so a bare `just publish`
+    # still bakes analytics in — same as CI.
+    BUILD_ARGS=(--build-arg APP_COMMIT_HASH="$SHA")
+    if [[ -n "${VITE_GOATCOUNTER_URL:-}" ]]; then
+      BUILD_ARGS+=(--build-arg VITE_GOATCOUNTER_URL="$VITE_GOATCOUNTER_URL")
+    fi
+    docker build --platform linux/amd64 "${BUILD_ARGS[@]}" -t "$IMAGE" .
     echo "==> docker push $IMAGE"
     docker push "$IMAGE"
     echo "==> Published: $IMAGE"

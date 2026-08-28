@@ -12,7 +12,9 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 ARG VITE_API_BASE_URL=""
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
-ARG VITE_GOATCOUNTER_URL=""
+# Default so every image build (CI and `just publish`) bakes analytics in.
+# Override with --build-arg / .env to point elsewhere or set "" to disable.
+ARG VITE_GOATCOUNTER_URL="https://homeaccounting-app.goatcounter.com/count"
 ENV VITE_GOATCOUNTER_URL=$VITE_GOATCOUNTER_URL
 ARG APP_COMMIT_HASH=""
 ENV APP_COMMIT_HASH=$APP_COMMIT_HASH
