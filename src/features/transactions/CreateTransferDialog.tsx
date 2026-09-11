@@ -81,9 +81,7 @@ export function CreateTransferDialog({
   const showBanner =
     create.isError && !(create.error instanceof ApiError && create.error.fieldErrors);
   const bannerMessage =
-    create.error instanceof ApiError
-      ? create.error.message
-      : t('form.genericError');
+    create.error instanceof ApiError ? create.error.message : t('form.genericError');
 
   const hasEnoughAccounts = accounts && accounts.length >= 2;
 
@@ -113,9 +111,7 @@ export function CreateTransferDialog({
           />
         )}
         {!hasEnoughAccounts && (
-          <div className="p-2 text-sm text-muted-foreground">
-            {t('form.noAccountsTransfer')}
-          </div>
+          <div className="p-2 text-sm text-muted-foreground">{t('form.noAccountsTransfer')}</div>
         )}
       </DialogContent>
     </Dialog>

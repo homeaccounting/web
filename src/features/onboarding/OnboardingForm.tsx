@@ -102,11 +102,7 @@ export function OnboardingForm() {
 
   return (
     <div className="space-y-5">
-      <Field
-        id="country"
-        label={t('fields.country.label')}
-        help={t('fields.country.help')}
-      >
+      <Field id="country" label={t('fields.country.label')} help={t('fields.country.help')}>
         <Select
           disabled={busy}
           value={c.country ?? ''}
@@ -153,11 +149,7 @@ export function OnboardingForm() {
         </Select>
       </Field>
 
-      <Field
-        id="language"
-        label={t('fields.language.label')}
-        help={t('fields.language.help')}
-      >
+      <Field id="language" label={t('fields.language.label')} help={t('fields.language.help')}>
         <Select
           disabled={busy}
           value={c.language}
@@ -188,7 +180,10 @@ export function OnboardingForm() {
           disabled={!c.baseCurrencyEditable || busy}
           value={c.baseCurrency}
           onValueChange={(v) =>
-            setBaseCurrency.mutate({ currency: v }, { onSuccess: () => toast.success(t('updated')) })
+            setBaseCurrency.mutate(
+              { currency: v },
+              { onSuccess: () => toast.success(t('updated')) },
+            )
           }
         >
           <SelectTrigger id="baseCurrency" aria-label={t('fields.baseCurrency.label')}>

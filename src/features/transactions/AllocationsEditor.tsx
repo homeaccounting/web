@@ -175,7 +175,9 @@ function AllocationSectionRows({
                       })
                     }
                   >
-                    {t('bulk.fill', { amount: currency ? formatMoney(next, currency) : String(next) })}
+                    {t('bulk.fill', {
+                      amount: currency ? formatMoney(next, currency) : String(next),
+                    })}
                   </Button>
                 );
               })()}

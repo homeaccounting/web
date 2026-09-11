@@ -143,6 +143,9 @@ export function buildAccountGroups(openAccounts: AccountResponse[]): AccountGrou
   ].filter((g) => g.accounts.length > 0 || (g.subgroups?.length ?? 0) > 0);
 
   return sharedOpenAccounts.length > 0
-    ? [...ownedGroups, { key: SHARED_GROUP.key, label: sharedGroupLabel(), accounts: sharedOpenAccounts }]
+    ? [
+        ...ownedGroups,
+        { key: SHARED_GROUP.key, label: sharedGroupLabel(), accounts: sharedOpenAccounts },
+      ]
     : ownedGroups;
 }

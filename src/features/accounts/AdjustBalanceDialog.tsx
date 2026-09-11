@@ -64,9 +64,7 @@ export function AdjustBalanceDialog({
             onClose={() => onOpenChange(false)}
           />
         ) : (
-          <div className="p-2 text-sm text-muted-foreground">
-            {t('adjustDialog.noAccounts')}
-          </div>
+          <div className="p-2 text-sm text-muted-foreground">{t('adjustDialog.noAccounts')}</div>
         )}
       </DialogContent>
     </Dialog>

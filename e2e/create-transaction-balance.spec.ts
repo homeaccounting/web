@@ -51,6 +51,8 @@ test.describe('create transaction balance validation @local', () => {
     await expenseDialog.getByLabel(/description/i).fill('Coffee');
     await expenseDialog.getByRole('button', { name: /^ok$/i }).click();
     await expect(expenseDialog).toBeHidden();
-    await expect(page.getByRole('cell', { name: 'Coffee', exact: true })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('cell', { name: 'Coffee', exact: true })).toBeVisible({
+      timeout: 10000,
+    });
   });
 });

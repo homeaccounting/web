@@ -49,7 +49,9 @@ test.describe('edit transaction @local', () => {
     await expect(editDialog).toBeHidden();
 
     // 5. The list reflects the new description.
-    await expect(page.getByRole('cell', { name: 'Latte', exact: true })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('cell', { name: 'Latte', exact: true })).toBeVisible({
+      timeout: 10000,
+    });
     await expect(page.getByRole('cell', { name: 'Coffee', exact: true })).toBeHidden();
   });
 });

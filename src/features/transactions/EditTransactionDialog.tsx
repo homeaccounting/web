@@ -171,9 +171,7 @@ export function EditTransactionDialog({ open, onOpenChange, tx }: EditTransactio
                       <span
                         className="select-all font-mono"
                         title={
-                          sig.kind === 'mcc'
-                            ? t('form.mccTitle')
-                            : t('form.providerCategoryTitle')
+                          sig.kind === 'mcc' ? t('form.mccTitle') : t('form.providerCategoryTitle')
                         }
                       >
                         {sig.value}
@@ -320,7 +318,9 @@ function ReadOnlyNotice({ status, onClose }: { status: string; onClose: () => vo
   return (
     <div className="space-y-3">
       <Alert role="alert">
-        <AlertDescription>{t('form.readOnlyNotice', { status: t(`status.${status}`) })}</AlertDescription>
+        <AlertDescription>
+          {t('form.readOnlyNotice', { status: t(`status.${status}`) })}
+        </AlertDescription>
       </Alert>
       <div className="flex justify-end">
         <Button type="button" variant="outline" onClick={onClose}>

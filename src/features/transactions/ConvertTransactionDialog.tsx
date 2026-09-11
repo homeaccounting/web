@@ -272,8 +272,7 @@ function ErrorBanner({ edit }: { edit: ReturnType<typeof useEditTransaction> }) 
   const { t } = useTranslation('transactions');
   const show = edit.isError && !(edit.error instanceof ApiError && edit.error.fieldErrors);
   if (!show) return null;
-  const message =
-    edit.error instanceof ApiError ? edit.error.message : t('form.genericError');
+  const message = edit.error instanceof ApiError ? edit.error.message : t('form.genericError');
   return (
     <Alert variant="destructive" role="alert">
       <AlertDescription>{message}</AlertDescription>

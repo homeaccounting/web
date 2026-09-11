@@ -65,8 +65,7 @@ export function ProfileAuthPane() {
   const tg = p.telegramIdentity;
 
   const credentialCount = (p.hasPassword ? 1 : 0) + p.oauthIdentities.length + (tg ? 1 : 0);
-  const disableUnlinkReason =
-    credentialCount <= 1 ? t('auth.atLeastOneCredential') : undefined;
+  const disableUnlinkReason = credentialCount <= 1 ? t('auth.atLeastOneCredential') : undefined;
 
   const onLinkGoogle = async () => {
     const { redirectUrl, state } = await authApi(client).initiateOAuth('google');

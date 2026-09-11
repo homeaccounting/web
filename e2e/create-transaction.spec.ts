@@ -44,6 +44,8 @@ test.describe('create transaction @local', () => {
     // 6. Submit, expect the new row.
     await expenseDialog.getByRole('button', { name: /^ok$/i }).click();
     await expect(expenseDialog).toBeHidden();
-    await expect(page.getByRole('cell', { name: 'Coffee', exact: true })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('cell', { name: 'Coffee', exact: true })).toBeVisible({
+      timeout: 10000,
+    });
   });
 });

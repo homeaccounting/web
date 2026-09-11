@@ -609,7 +609,9 @@ export function TransactionsPane() {
             {showAccountColumn && (
               <th className="px-4 py-2 text-left font-medium">{translate('list.colAccount')}</th>
             )}
-            <th className="w-40 px-4 py-2 text-left font-medium">{translate('list.colCategory')}</th>
+            <th className="w-40 px-4 py-2 text-left font-medium">
+              {translate('list.colCategory')}
+            </th>
             <th className="px-4 py-2 text-right font-medium">{translate('list.colAmount')}</th>
             <th className="w-20 px-2 py-2" />
           </tr>

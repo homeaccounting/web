@@ -250,9 +250,7 @@ export function TransferForm({
                       }}
                     />
                   </FormControl>
-                  <p className="text-xs text-muted-foreground">
-                    {t('form.exchangeRateHint')}
-                  </p>
+                  <p className="text-xs text-muted-foreground">{t('form.exchangeRateHint')}</p>
                   <FormMessage />
                 </FormItem>
               )}
