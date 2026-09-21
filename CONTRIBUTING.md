@@ -15,6 +15,7 @@ repository you are using**:
 | API behaviour, bank provider, data problem | [homeaccounting/backend](https://github.com/homeaccounting/backend/issues) |
 | Website / marketing content                | [homeaccounting/site](https://github.com/homeaccounting/site/issues)       |
 | Questions, ideas, bank-provider requests   | [Discussions](https://github.com/homeaccounting/backend/discussions)       |
+| Anything conversational                    | [Community chat](https://www.homeaccounting.com/chat) (Discord)            |
 | **Security vulnerabilities**               | **Never an issue** — see [SECURITY.md](SECURITY.md)                        |
 
 A bug that looks like a UI problem is often an API problem and the other way
