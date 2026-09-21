@@ -303,7 +303,7 @@ nix-collect-garbage -d      # clear cache (last resort)
 - [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) — expected behaviour; reports go to `conduct@homeaccounting.com`
 - [`CLA.md`](CLA.md) — Contributor Licence Agreement, signed once via a bot on your first PR
 - [Discussions](https://github.com/homeaccounting/backend/discussions) — questions and ideas
-- [Community chat](https://www.homeaccounting.com/chat) — Discord
+- [Community chat](https://www.homeaccounting.com/community) — Discord
 
 ## Security
 
