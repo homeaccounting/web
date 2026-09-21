@@ -4,7 +4,7 @@ contact_links:
     url: https://www.homeaccounting.com/community
     about: Discord — #general, #self-hosting, #bank-providers, #showcase. Good for anything conversational.
   - name: Question, idea, or bank-provider request
-    url: https://github.com/homeaccounting/backend/discussions
+    url: https://github.com/orgs/homeaccounting/discussions
     about: Discussions are the place for questions and ideas. Issues are for confirmed bugs and agreed work.
   - name: Security vulnerability
     url: https://github.com/homeaccounting/web/security/advisories/new

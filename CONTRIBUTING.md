@@ -14,7 +14,7 @@ repository you are using**:
 | UI bug, layout problem, UX friction        | this repository's [Issues](https://github.com/homeaccounting/web/issues)   |
 | API behaviour, bank provider, data problem | [homeaccounting/backend](https://github.com/homeaccounting/backend/issues) |
 | Website / marketing content                | [homeaccounting/site](https://github.com/homeaccounting/site/issues)       |
-| Questions, ideas, bank-provider requests   | [Discussions](https://github.com/homeaccounting/backend/discussions)       |
+| Questions, ideas, bank-provider requests   | [Discussions](https://github.com/orgs/homeaccounting/discussions)          |
 | Anything conversational                    | [Community chat](https://www.homeaccounting.com/community) (Discord)       |
 | **Security vulnerabilities**               | **Never an issue** — see [SECURITY.md](SECURITY.md)                        |
 
