@@ -297,6 +297,21 @@ nix-collect-garbage -d      # clear cache (last resort)
 - [`CLAUDE.md`](CLAUDE.md) — coding conventions, architecture rules, testing policy
 - [Backend repository](https://github.com/homeaccounting/backend) — backend setup and API surface
 
+## Contributing
+
+- [`CONTRIBUTING.md`](CONTRIBUTING.md) — setup, what CI checks, commit and branch conventions
+- [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) — expected behaviour; reports go to `conduct@homeaccounting.com`
+- [`CLA.md`](CLA.md) — Contributor Licence Agreement, signed once via a bot on your first PR
+- [Discussions](https://github.com/homeaccounting/backend/discussions) — questions and ideas
+
+## Security
+
+Never report a vulnerability in a public issue — see [`SECURITY.md`](SECURITY.md)
+for private reporting and `security@homeaccounting.com`.
+
 ## License
 
-GNU Affero General Public License v3.0 (AGPL-3.0) - See [LICENSE](LICENSE) for details
+GNU Affero General Public License v3.0 (AGPL-3.0) - See [LICENSE](LICENSE) for details.
+
+The HomeAccounting name and logo are not covered by that license — see the
+[trademark policy](https://github.com/homeaccounting/backend/blob/master/TRADEMARK.md).

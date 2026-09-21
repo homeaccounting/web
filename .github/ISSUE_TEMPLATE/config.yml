@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question, idea, or bank-provider request
+    url: https://github.com/homeaccounting/backend/discussions
+    about: Discussions are the place for questions and ideas. Issues are for confirmed bugs and agreed work.
+  - name: Security vulnerability
+    url: https://github.com/homeaccounting/web/security/advisories/new
+    about: Never report a security problem in a public issue. Use private vulnerability reporting, or email security@homeaccounting.com.
+  - name: API or data problem
+    url: https://github.com/homeaccounting/backend/issues/new/choose
+    about: Wrong balances, failed imports, or anything the API returns incorrectly belongs on the backend repository.

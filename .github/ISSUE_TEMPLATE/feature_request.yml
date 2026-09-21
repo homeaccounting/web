@@ -1,0 +1,32 @@
+name: Feature or change
+description: Propose agreed work on the web client
+labels: [feature]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Issues are for work we have agreed to do. If you are floating an idea, start in
+        [Discussions](https://github.com/homeaccounting/backend/discussions) — it will be
+        converted to an issue once the shape is clear.
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What can you not do today? Describe the situation, not the solution.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+    validations:
+      required: true
+  - type: textarea
+    id: api
+    attributes:
+      label: Does this need backend work?
+      description: If it needs a new endpoint or field, link or open the backend issue too.
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
