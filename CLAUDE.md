@@ -10,7 +10,7 @@ React/TypeScript single-page application that consumes the [HomeAccounting backe
 - **Package manager**: pnpm 9 (lockfile committed; CI uses `--frozen-lockfile`)
 - **Bundler**: Vite 6 (`base: '/app/'`)
 - **UI**: React 18, Tailwind CSS 3, shadcn/ui components in `src/components/ui/`
-- **Routing**: react-router-dom v6, `BrowserRouter` with `basename="/app"`
+- **Routing**: react-router-dom v6, `BrowserRouter` with a basename derived from the Vite base (`/app` for the app, `/` for the published sandbox)
 - **Server state**: `@tanstack/react-query`
 - **Forms**: `react-hook-form` + `zod` via `@hookform/resolvers`
 - **Auth**: JWT bearer tokens with OAuth (Google/GitHub/Microsoft), kept in `localStorage`
@@ -144,8 +144,16 @@ Runtime configuration is read from Vite-style env vars (only variables prefixed 
 The app is mounted at `/app/`:
 
 - Vite `base: '/app/'` (so all built asset URLs are `/app/...`)
-- Router `basename="/app"` (so `<Link to="/login">` becomes `/app/login`)
+- Router `basename={routerBasename()}` — derived from `import.meta.env.BASE_URL`, so it is `/app` for this build (and `<Link to="/login">` becomes `/app/login`)
 - Caddy `try_files {path} /index.html` provides SPA fallback
+
+**The base is per-build, so never hardcode it.** The published sandbox
+(tracker#71) builds the same source with `--base=/` and serves it at the root of
+`demo.homeaccounting.com`. Anything that assumed `/app/` broke silently there:
+the router prefixed every route with a path that does not exist, and the MSW
+worker 404'd and stopped intercepting, leaving the app calling an API that build
+has no access to. Use the helpers in `src/lib/basePath.ts` — `routerBasename()`
+for the router, `assetUrl(file)` for anything fetched from `public/`.
 
 When introducing new routes, register them in `src/App.tsx` and put protected routes under the `<ProtectedRoute />` parent route.
 

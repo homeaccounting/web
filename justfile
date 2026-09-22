@@ -84,6 +84,10 @@ test-watch:
 e2e:
     pnpm exec playwright test
 
+# Preview the published sandbox locally, exactly as demo.homeaccounting.com serves it
+demo-public:
+    pnpm run demo:public
+
 # Regenerate deterministic demo screenshots of the main flows (VITE_DEMO, no backend)
 screenshots:
     pnpm exec playwright test --config playwright.demo.config.ts --project demo-chromium --update-snapshots

@@ -2,10 +2,11 @@ import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import path from 'node:path';
 import infoEndpoint from './vite/plugins/info-endpoint';
+import demoNoindex from './vite/plugins/demo-noindex';
 
 export default defineConfig({
   base: '/app/',
-  plugins: [react(), infoEndpoint()],
+  plugins: [react(), infoEndpoint(), demoNoindex(process.env.VITE_DEMO_PUBLIC === 'true')],
   resolve: { alias: { '@': path.resolve(__dirname, 'src') } },
   server: { port: 5173 },
   test: {
