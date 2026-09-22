@@ -20,4 +20,4 @@
 - [ ] No real financial data in code, fixtures, tests, or screenshots
 - [ ] User-facing strings go through the translation layer
 - [ ] Title follows Conventional Commits
-- [ ] I have signed the [CLA](../CLA.md) (a bot will ask on your first PR)
+- [ ] I have signed the [CLA](https://github.com/homeaccounting/web/blob/master/CLA.md) (a bot will ask on your first PR)
