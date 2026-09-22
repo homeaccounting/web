@@ -6,11 +6,7 @@ import demoNoindex from './vite/plugins/demo-noindex';
 
 export default defineConfig({
   base: '/app/',
-  plugins: [
-    react(),
-    infoEndpoint(),
-    demoNoindex(process.env.VITE_DEMO_PUBLIC === 'true'),
-  ],
+  plugins: [react(), infoEndpoint(), demoNoindex(process.env.VITE_DEMO_PUBLIC === 'true')],
   resolve: { alias: { '@': path.resolve(__dirname, 'src') } },
   server: { port: 5173 },
   test: {
