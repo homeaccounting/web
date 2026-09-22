@@ -1,0 +1,80 @@
+name: Demo
+
+# Publishes the in-browser sandbox to demo.homeaccounting.com via GitHub Pages
+# (tracker#71). Static only: the MSW worker (VITE_DEMO) answers every API call
+# from a seeded in-browser store, so no backend, no database and no production
+# traffic are involved, and each visitor gets their own isolated world.
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: demo-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build sandbox
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec tsc -b
+      # --base=/ : the sandbox owns its domain root, unlike the app at /app.
+      # routerBasename() and assetUrl() (src/lib/basePath.ts) both follow it, so
+      # the router and the service worker stay in step with the build.
+      #
+      # VITE_DEMO starts the worker; VITE_DEMO_PUBLIC adds the sandbox banner
+      # and the noindex meta. They are separate because the screenshot harness
+      # (#62) also runs VITE_DEMO and must capture the app without demo chrome.
+      - run: pnpm exec vite build --base=/
+        env:
+          VITE_DEMO: 'true'
+          VITE_DEMO_PUBLIC: 'true'
+      # Written here rather than in public/, which the production /app build
+      # also ships — a CNAME or robots.txt in there would follow the real app.
+      - name: Custom domain + keep the sandbox out of search
+        run: |
+          echo 'demo.homeaccounting.com' > dist/CNAME
+          printf 'User-agent: *\nDisallow: /\n' > dist/robots.txt
+      # Pages has no SPA rewrite: without this, every deep link (/transactions,
+      # /reports) 404s on refresh or when shared.
+      - name: SPA fallback
+        run: cp dist/index.html dist/404.html
+      - name: Verify the build is actually a sandbox
+        run: |
+          test -f dist/mockServiceWorker.js || { echo "::error::MSW worker missing — the demo would have no API"; exit 1; }
+          grep -q 'name="robots" content="noindex' dist/index.html || { echo "::error::noindex meta missing"; exit 1; }
+          grep -q '"/assets/' dist/index.html || { echo "::error::assets are not root-relative — wrong --base"; exit 1; }
+      - uses: actions/upload-pages-artifact@v3
+        if: github.event_name != 'pull_request'
+        with:
+          path: dist
+
+  deploy:
+    name: Deploy sandbox
+    needs: build
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: demo
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
