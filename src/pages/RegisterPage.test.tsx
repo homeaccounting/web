@@ -44,4 +44,27 @@ describe('RegisterPage', () => {
     renderWithProviders(ui(), { initialPath: '/register' });
     expect(screen.getByRole('button', { name: /sign up with google/i })).toBeInTheDocument();
   });
+
+  // tracker#10: this form took bank-connected finance accounts for months with
+  // no mention of terms or privacy anywhere on it, and both pages 404'd.
+  it('tells the user what they are agreeing to, and links both documents', () => {
+    renderWithProviders(ui(), { initialPath: '/register' });
+
+    // The sentence around the links can only come from the locale file — the
+    // anchors' own fallback children are just their labels — so asserting it
+    // proves the translation rendered rather than the JSX defaults.
+    expect(screen.getByText(/by creating an account you agree to/i)).toBeInTheDocument();
+
+    const terms = screen.getByRole('link', { name: /terms of service/i });
+    const privacy = screen.getByRole('link', { name: /privacy notice/i });
+
+    expect(terms).toHaveAttribute('href', 'https://www.homeaccounting.com/terms');
+    expect(privacy).toHaveAttribute('href', 'https://www.homeaccounting.com/privacy');
+    // Absolute, because the legal pages live on the marketing site while this
+    // form is served from /app — a root-relative href would 404 here.
+    for (const link of [terms, privacy]) {
+      expect(link).toHaveAttribute('target', '_blank');
+      expect(link).toHaveAttribute('rel', expect.stringContaining('noreferrer'));
+    }
+  });
 });
