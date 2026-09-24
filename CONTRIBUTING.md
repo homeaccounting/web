@@ -115,4 +115,4 @@ go to `conduct@homeaccounting.com`.
 Contributions are licensed under [AGPL-3.0](LICENSE), the licence of this
 repository. The HomeAccounting name and logo are not covered by that licence —
 see the
-[trademark policy](https://github.com/homeaccounting/backend/blob/master/TRADEMARK.md).
+[trademark policy](https://www.homeaccounting.com/trademark).
