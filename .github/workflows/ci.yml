@@ -84,10 +84,14 @@ jobs:
             echo "tags=${SHA_TAG},${BRANCH_TAG}" >> "$GITHUB_OUTPUT"
           fi
 
+      # One job, both architectures: the Dockerfile pins the heavy build stage
+      # to $BUILDPLATFORM, so only the final Caddy layer is emitted per target
+      # and nothing runs under emulation (tracker#75).
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
           context: .
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.tags.outputs.tags }}
           build-args: |
@@ -96,6 +100,22 @@ jobs:
             APP_COMMIT_HASH=${{ steps.meta.outputs.sha_short }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      # The failure this guards against is silent: the image stays pullable on
+      # the runner's own architecture while being unusable everywhere else.
+      - name: Verify both architectures are published
+        run: |
+          IMAGE="ghcr.io/${{ github.repository_owner }}/web:${{ steps.meta.outputs.sha_short }}"
+          docker buildx imagetools inspect "$IMAGE" --raw > manifest.json
+          for arch in amd64 arm64; do
+            if ! jq -e --arg a "$arch" \
+              '.manifests[] | select(.platform.os == "linux" and .platform.architecture == $a)' \
+              manifest.json > /dev/null; then
+              echo "::error::$IMAGE has no linux/$arch manifest"
+              exit 1
+            fi
+          done
+          echo "$IMAGE publishes linux/amd64 and linux/arm64"
 
   # Stable aggregate check named "CI" — the single required status check shared
   # across repos via the org ruleset (job names/matrices differ per repo).

@@ -1,7 +1,10 @@
 # syntax=docker/dockerfile:1.7
 
 # --- stage 1: build ---
-FROM node:22-alpine AS build
+# Pinned to the builder's own architecture: the output is a static bundle, so
+# it is identical for every target and there is no reason to run the install
+# and the Vite build again under emulation for each one (tracker#75).
+FROM --platform=$BUILDPLATFORM node:22-alpine AS build
 WORKDIR /app
 
 RUN npm install -g pnpm@9
