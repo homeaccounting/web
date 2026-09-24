@@ -19,7 +19,8 @@
     "alreadyRegistered": "Already registered?",
     "signIn": "Sign in",
     "failed": "Registration failed",
-    "googleFailed": "Google sign-up failed"
+    "googleFailed": "Google sign-up failed",
+    "consent": "By creating an account you agree to our <terms>Terms of Service</terms> and <privacy>Privacy Notice</privacy>."
   },
   "notFound": {
     "title": "Page not found",

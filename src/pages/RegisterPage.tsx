@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +15,7 @@ import { authApi } from '@/api/auth';
 import { useAuth } from '@/auth/useAuth';
 import { saveOAuthState } from '@/auth/oauthFlow';
 import { BrandLogo } from '@/components/BrandLogo';
+import { PRIVACY_URL, TERMS_URL } from '@/lib/legal';
 
 const schema = z.object({
   email: z.string().email('pages:validation.emailInvalid'),
@@ -105,6 +106,32 @@ export default function RegisterPage() {
           <Button variant="outline" className="w-full" onClick={() => void onGoogle()}>
             {t('register.google')}
           </Button>
+          {/*
+            Below both paths rather than inside the form: signing up with
+            Google is the same agreement, and a notice attached only to the
+            email form would not cover it (tracker#10).
+          */}
+          <p className="text-xs text-muted-foreground">
+            <Trans
+              t={t}
+              i18nKey="register.consent"
+              components={{
+                // The link text comes from the translation, which replaces
+                // these children. They are here so the anchors are not empty
+                // in source, which is what jsx-a11y/anchor-has-content checks.
+                terms: (
+                  <a className="underline" href={TERMS_URL} target="_blank" rel="noreferrer">
+                    Terms of Service
+                  </a>
+                ),
+                privacy: (
+                  <a className="underline" href={PRIVACY_URL} target="_blank" rel="noreferrer">
+                    Privacy Notice
+                  </a>
+                ),
+              }}
+            />
+          </p>
           <p className="text-sm text-muted-foreground">
             {t('register.alreadyRegistered')}{' '}
             <Link className="underline" to="/login">
