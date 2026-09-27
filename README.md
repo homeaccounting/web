@@ -294,7 +294,7 @@ nix-collect-garbage -d      # clear cache (last resort)
 
 ## References
 
-- [`CLAUDE.md`](CLAUDE.md) — coding conventions, architecture rules, testing policy
+- [`AGENTS.md`](AGENTS.md) — coding conventions, architecture rules, testing policy
 - [Backend repository](https://github.com/homeaccounting/backend) — backend setup and API surface
 
 ## Contributing
