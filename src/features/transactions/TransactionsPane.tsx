@@ -233,14 +233,15 @@ export function TransactionsPane() {
       ? { period: lastView.period, from: lastView.from, to: lastView.to }
       : undefined,
   });
-  const onPresetChange = (next: PeriodValue) => {
-    setSearchParams(periodParamsToSearch(next, dayRange), { replace: true });
+  const setPeriod = (next: PeriodValue, range: DayRange) => {
+    setSearchParams(
+      withAccountScope(new URLSearchParams(periodParamsToSearch(next, range)), scope),
+      { replace: true },
+    );
     setPageIndex(0);
   };
-  const onRangeChange = (range: DayRange) => {
-    setSearchParams(periodParamsToSearch('custom', range), { replace: true });
-    setPageIndex(0);
-  };
+  const onPresetChange = (next: PeriodValue) => setPeriod(next, dayRange);
+  const onRangeChange = (range: DayRange) => setPeriod('custom', range);
 
   const [filters, setFilters] = useState<TransactionFilters>(
     () => lastView?.filters ?? EMPTY_FILTERS,

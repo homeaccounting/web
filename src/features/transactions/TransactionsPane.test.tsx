@@ -2039,6 +2039,19 @@ describe('TransactionsPane', () => {
       );
     });
 
+    it('changing the preset keeps the account scope', async () => {
+      saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+      const user = userEvent.setup();
+      renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
+      await screen.findByText(transactionFixture.description);
+      await user.click(screen.getByRole('combobox', { name: /period/i }));
+      await user.click(await screen.findByRole('option', { name: 'This year' }));
+      await waitFor(() =>
+        expect(screen.getByTestId('search').textContent).toContain('period=this-year'),
+      );
+      expect(screen.getByTestId('search').textContent).toContain('accounts=a1');
+    });
+
     it('seeds filters from lastView', async () => {
       saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
       const user = userEvent.setup();
