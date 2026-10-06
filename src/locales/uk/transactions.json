@@ -107,6 +107,8 @@
     "labels": "Мітки",
     "exchangeRate": "Обмінний курс",
     "exchangeRateHint": "Якщо не заповнено, використовується курс за замовчуванням.",
+    "targetAmount": "Сума зарахування",
+    "targetAmountHint": "Вкажіть отриману суму, щоб розрахувати курс.",
     "incomeCategoriesTitle": "Категорії доходів",
     "addIncomeCategory": "+ Додати категорію доходу",
     "reimbursementsTitle": "Відшкодування (зменшує витрату)",

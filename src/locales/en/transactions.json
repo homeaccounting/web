@@ -107,6 +107,8 @@
     "labels": "Labels",
     "exchangeRate": "Exchange rate",
     "exchangeRateHint": "Uses the default rate if left blank.",
+    "targetAmount": "Target amount",
+    "targetAmountHint": "Enter the received amount to calculate the rate.",
     "incomeCategoriesTitle": "Income categories",
     "addIncomeCategory": "+ Add income category",
     "reimbursementsTitle": "Reimbursements (reduces an expense)",

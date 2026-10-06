@@ -1,10 +1,11 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useForm, FormProvider, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { DialogBody, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { MoneyInput } from '@/components/MoneyInput';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import {
@@ -21,6 +22,7 @@ import { DatePicker } from '@/components/DatePicker';
 import { RequiredMarker } from '@/components/RequiredMarker';
 import { transactionKindLabel } from './labels';
 import { accountLabelParts } from '@/features/accounts/accountLabel';
+import { convertAmount, deriveExchangeRate } from '@/lib/money';
 
 export interface TransferFormApi {
   setFieldError: (field: string, message: string) => void;
@@ -88,6 +90,34 @@ export function TransferForm({
   });
 
   const showExchangeRate = !!source && !!target && source.currency !== target.currency;
+
+  // UI-only: the wire format carries just amount + rate, so the target amount
+  // is a second way to enter the rate. Whichever of the two the user typed last
+  // stays fixed and the other is recomputed, including when the amount changes.
+  const [targetAmount, setTargetAmount] = useState<number | string | undefined>(() =>
+    convertAmount(defaultValues.amount, defaultValues.exchangeRate),
+  );
+  const targetDrivesRate = useRef(false);
+  const targetAmountId = useId();
+
+  const setDerivedRate = (rate: number | undefined) =>
+    form.setValue('exchangeRate', rate, { shouldDirty: true });
+
+  const handleAmountChange = (amount: number | string) => {
+    if (targetDrivesRate.current) setDerivedRate(deriveExchangeRate(amount, targetAmount));
+    else setTargetAmount(convertAmount(amount, form.getValues('exchangeRate')));
+  };
+
+  const handleRateChange = (rate: number | string | undefined) => {
+    targetDrivesRate.current = false;
+    setTargetAmount(convertAmount(form.getValues('amount'), rate));
+  };
+
+  const handleTargetAmountChange = (value: number | string) => {
+    targetDrivesRate.current = true;
+    setTargetAmount(value);
+    setDerivedRate(deriveExchangeRate(form.getValues('amount'), value));
+  };
 
   return (
     <FormProvider {...form}>
@@ -190,7 +220,10 @@ export function TransferForm({
                     <MoneyInput
                       currency={source?.currency ?? ''}
                       value={field.value}
-                      onChange={field.onChange}
+                      onChange={(v) => {
+                        field.onChange(v);
+                        handleAmountChange(v);
+                      }}
                       name={field.name}
                       onBlur={field.onBlur}
                       inputRef={field.ref}
@@ -225,36 +258,55 @@ export function TransferForm({
           </div>
 
           {showExchangeRate && (
-            <FormField
-              control={form.control}
-              name="exchangeRate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('form.exchangeRate')}</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      step="any"
-                      name={field.name}
-                      ref={field.ref}
-                      onBlur={field.onBlur}
-                      value={field.value ?? ''}
-                      onChange={(e) => {
-                        const raw = e.target.value;
-                        if (raw === '') {
-                          field.onChange(undefined);
-                          return;
-                        }
-                        const n = e.target.valueAsNumber;
-                        field.onChange(Number.isNaN(n) ? raw : n);
-                      }}
-                    />
-                  </FormControl>
-                  <p className="text-xs text-muted-foreground">{t('form.exchangeRateHint')}</p>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div
+              data-testid="form-grid-rate-target"
+              className="grid grid-cols-1 gap-4 sm:grid-cols-2"
+            >
+              <FormField
+                control={form.control}
+                name="exchangeRate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('form.exchangeRate')}</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="any"
+                        name={field.name}
+                        ref={field.ref}
+                        onBlur={field.onBlur}
+                        value={field.value ?? ''}
+                        onChange={(e) => {
+                          const raw = e.target.value;
+                          if (raw === '') {
+                            field.onChange(undefined);
+                            handleRateChange(undefined);
+                            return;
+                          }
+                          const n = e.target.valueAsNumber;
+                          const next = Number.isNaN(n) ? raw : n;
+                          field.onChange(next);
+                          handleRateChange(next);
+                        }}
+                      />
+                    </FormControl>
+                    <p className="text-xs text-muted-foreground">{t('form.exchangeRateHint')}</p>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="space-y-2">
+                <Label htmlFor={targetAmountId}>{t('form.targetAmount')}</Label>
+                <MoneyInput
+                  id={targetAmountId}
+                  aria-label={t('form.targetAmount')}
+                  currency={target.currency}
+                  value={targetAmount}
+                  onChange={handleTargetAmountChange}
+                />
+                <p className="text-xs text-muted-foreground">{t('form.targetAmountHint')}</p>
+              </div>
+            </div>
           )}
 
           <FormField
