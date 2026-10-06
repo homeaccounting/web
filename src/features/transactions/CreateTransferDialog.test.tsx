@@ -209,8 +209,8 @@ describe('CreateTransferDialog', () => {
     // Exchange rate field should be visible because accounts have different currencies
     await waitFor(() => expect(screen.getByLabelText(/exchange rate/i)).toBeInTheDocument());
 
-    await user.clear(screen.getByLabelText(/amount/i));
-    await user.type(screen.getByLabelText(/amount/i), '100');
+    await user.clear(screen.getByLabelText(/^amount/i));
+    await user.type(screen.getByLabelText(/^amount/i), '100');
     await user.type(screen.getByLabelText(/description/i), 'Cross-currency');
     await user.clear(screen.getByLabelText(/exchange rate/i));
     await user.type(screen.getByLabelText(/exchange rate/i), '0.92');

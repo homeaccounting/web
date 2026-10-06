@@ -123,6 +123,66 @@ describe('TransferForm', () => {
     await waitFor(() => expect(screen.getByLabelText(/exchange rate/i)).toBeInTheDocument());
   });
 
+  describe('cross-currency amounts', () => {
+    const fxDefaults = { ...defaults, targetAccountId: A2 };
+
+    function renderFx(onSubmit = vi.fn()) {
+      renderWithProviders(
+        <TransferForm
+          mode="create"
+          accounts={accounts}
+          labels={labels}
+          defaultValues={{ ...fxDefaults, date: '2026-03-04T10:00' }}
+          isSubmitting={false}
+          onSubmit={onSubmit}
+          onCancel={vi.fn()}
+        />,
+      );
+      return onSubmit;
+    }
+
+    const amountInput = () => screen.getByRole('spinbutton', { name: /^amount/i });
+    const rateInput = () => screen.getByLabelText(/exchange rate/i);
+    const targetInput = () => screen.getByLabelText(/target amount/i);
+
+    it('derives the target amount from amount and rate', async () => {
+      const user = userEvent.setup();
+      renderFx();
+      await user.type(amountInput(), '100');
+      await user.type(rateInput(), '0.9237');
+      expect(targetInput()).toHaveValue(92.37);
+    });
+
+    it('derives and submits the rate from amount and target amount', async () => {
+      const user = userEvent.setup();
+      const onSubmit = renderFx();
+      await user.type(amountInput(), '100');
+      await user.type(targetInput(), '92.37');
+      expect(rateInput()).toHaveValue(0.9237);
+      await user.click(screen.getByRole('button', { name: /transfer|ok|create/i }));
+      await waitFor(() => expect(onSubmit).toHaveBeenCalled());
+      expect(onSubmit.mock.calls[0]![0]).toMatchObject({ amount: 100, exchangeRate: 0.9237 });
+    });
+
+    it('keeps the last-entered value fixed when the amount changes', async () => {
+      const user = userEvent.setup();
+      renderFx();
+      await user.type(amountInput(), '100');
+      await user.type(targetInput(), '90');
+      await user.clear(amountInput());
+      await user.type(amountInput(), '200');
+      expect(targetInput()).toHaveValue(90);
+      expect(rateInput()).toHaveValue(0.45);
+
+      await user.clear(rateInput());
+      await user.type(rateInput(), '0.5');
+      await user.clear(amountInput());
+      await user.type(amountInput(), '300');
+      expect(rateInput()).toHaveValue(0.5);
+      expect(targetInput()).toHaveValue(150);
+    });
+  });
+
   describe('edit mode', () => {
     const editDefaults = {
       sourceAccountId: A1,
