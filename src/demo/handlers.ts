@@ -56,6 +56,11 @@ export function makeDemoHandlers(store: DemoStore): RequestHandler[] {
     // --- profile ---
     http.get(`${apiBase}/api/users/me`, () => HttpResponse.json(store.getProfile())),
 
+    // --- live-data change signal ---
+    // No other device writes the demo store, so the version never moves. Left
+    // unhandled, the poll bypasses to the real API and its 401 signs the user out.
+    http.get(`${apiBase}/api/sync/version`, () => HttpResponse.json({ version: 1 })),
+
     // --- accounts ---
     http.get(`${apiBase}/api/accounts`, () => HttpResponse.json(store.listAccounts())),
     http.post(`${apiBase}/api/accounts`, async ({ request }) => {

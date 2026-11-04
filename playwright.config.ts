@@ -2,6 +2,8 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './e2e',
+  // Demo specs run against the VITE_DEMO server via playwright.demo.config.ts.
+  testIgnore: 'demo/**',
   timeout: 30_000,
   retries: 0,
   reporter: 'list',
