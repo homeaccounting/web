@@ -488,6 +488,61 @@ describe('IncomeExpenseForm', () => {
     expect(arg.contactId).toBe(NEW_ID);
   });
 
+  it('creating a label calls onCreateLabel and submits the new label', async () => {
+    const NEW_ID = '00000000-0000-0000-0000-0000000000d9';
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    const onCreateLabel = vi.fn().mockResolvedValue(NEW_ID);
+    const user = userEvent.setup();
+    renderWithProviders(
+      <IncomeExpenseForm
+        kind="expense"
+        mode="create"
+        accounts={accounts}
+        categories={categories}
+        contacts={contacts}
+        labels={labels}
+        defaultValues={{ ...expenseDefaults, expenses: [{ category: C1, amount: 5 }] }}
+        isSubmitting={false}
+        onSubmit={onSubmit}
+        onCreateLabel={onCreateLabel}
+        onCancel={vi.fn()}
+      />,
+    );
+    const labelsCb = screen.getByRole('combobox', { name: /labels/i });
+    await user.click(labelsCb);
+    await user.type(labelsCb, 'Rome');
+    await user.click(screen.getByRole('option', { name: /create.*rome/i }));
+    await waitFor(() => expect(onCreateLabel).toHaveBeenCalledWith('Rome'));
+    fireEvent.submit(screen.getByRole('form'));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+    const arg = onSubmit.mock.calls[0]![0] as IncomeExpenseFormValues;
+    expect(arg.labels).toEqual([NEW_ID]);
+  });
+
+  it('offers the description as the name for a new contact', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <IncomeExpenseForm
+        kind="expense"
+        mode="create"
+        accounts={accounts}
+        categories={categories}
+        contacts={contacts}
+        labels={labels}
+        defaultValues={expenseDefaults}
+        isSubmitting={false}
+        onSubmit={vi.fn()}
+        onCreateContact={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    await user.type(screen.getByLabelText(/description/i), 'Coffee Lab');
+    const contactCb = screen.getByRole('combobox', { name: /contact/i });
+    await user.click(contactCb);
+    await user.click(screen.getByRole('button', { name: /use: coffee lab/i }));
+    expect(contactCb).toHaveValue('Coffee Lab');
+  });
+
   describe('edit mode', () => {
     const editDefaults: IncomeExpenseFormValues = {
       accountId: A1,

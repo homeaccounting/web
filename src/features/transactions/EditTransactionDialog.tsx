@@ -22,7 +22,7 @@ import type {
 import { useAccounts } from '@/features/accounts/useAccounts';
 import { flattenDictionary } from '@/api/dictionary';
 import { useConfiguration } from '@/features/configuration/useConfiguration';
-import { useCreateDictionaryEntry } from '@/features/configuration/useCreateDictionaryEntry';
+import { useCreateDictionaryItem } from '@/features/configuration/useCreateDictionaryEntry';
 import { useUpdateBanking } from '@/features/configuration/useUpdateBanking';
 import { ContactCombobox } from './ContactCombobox';
 import { CategoryCombobox } from './CategoryCombobox';
@@ -91,7 +91,7 @@ export function EditTransactionDialog({ open, onOpenChange, tx }: EditTransactio
   // user is looking at is also a statement about the transaction in front of
   // them (see the mapTo closures below).
   const updateBanking = useUpdateBanking();
-  const createContact = useCreateDictionaryEntry();
+  const createEntry = useCreateDictionaryItem();
   const contacts = flattenDictionary(config?.dictionaries.contact);
   // Inline "map to category" for an imported counterparty category signal
   // (tracker#55). Income has no MCC/label, so income counterparties would
@@ -291,14 +291,7 @@ export function EditTransactionDialog({ open, onOpenChange, tx }: EditTransactio
                         onChange={(id) => {
                           if (id) mapTo(id);
                         }}
-                        onCreate={async (name) => {
-                          const r = await createContact.mutateAsync({
-                            dictId: 'contact',
-                            name,
-                            dict: config?.dictionaries.contact,
-                          });
-                          mapTo(r.id);
-                        }}
+                        onCreate={(name) => createEntry('contact', name)}
                         placeholder={t('form.mapToContactPlaceholder')}
                         aria-label={t('form.mapToContactAria')}
                       />
@@ -374,7 +367,7 @@ function EditIncomeExpenseBody({
   const reimbursementCategories = flattenDictionary(config?.dictionaries['expense']);
   const labels = flattenDictionary(config?.dictionaries.label);
   const contacts = flattenDictionary(config?.dictionaries.contact);
-  const createContact = useCreateDictionaryEntry();
+  const createEntry = useCreateDictionaryItem();
 
   const defaultValues = useMemo(() => toIncomeExpenseFormValues(tx, accounts), [tx, accounts]);
   const baselineRef = useRef(defaultValues);
@@ -435,11 +428,8 @@ function EditIncomeExpenseBody({
         contacts={contacts}
         defaultValues={defaultValues}
         isSubmitting={edit.isPending}
-        onCreateContact={(name) =>
-          createContact
-            .mutateAsync({ dictId: 'contact', name, dict: config?.dictionaries.contact })
-            .then((r) => r.id)
-        }
+        onCreateContact={(name) => createEntry('contact', name)}
+        onCreateLabel={(name) => createEntry('label', name)}
         onSubmit={handleSubmit}
         onCancel={onClose}
         onReady={handleReady}
@@ -467,6 +457,7 @@ function EditTransferBody({
 }) {
   const { t } = useTranslation('transactions');
   const labels = flattenDictionary(config?.dictionaries.label);
+  const createEntry = useCreateDictionaryItem();
 
   const defaultValues = useMemo(() => toTransferFormValues(tx, accounts), [tx, accounts]);
   const baselineRef = useRef(defaultValues);
@@ -507,6 +498,7 @@ function EditTransferBody({
         mode="edit"
         accounts={accounts}
         labels={labels}
+        onCreateLabel={(name) => createEntry('label', name)}
         defaultValues={defaultValues}
         isSubmitting={edit.isPending}
         onSubmit={handleSubmit}

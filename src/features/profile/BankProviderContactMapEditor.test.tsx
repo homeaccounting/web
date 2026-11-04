@@ -165,7 +165,7 @@ describe('BankProviderContactMapEditor', () => {
     await user.click(screen.getByRole('combobox', { name: /contact, row 1/i }));
     await user.type(screen.getByRole('combobox', { name: /contact, row 1/i }), 'Fresh Co');
     await user.click(await screen.findByRole('option', { name: /create/i }));
-    // The created id isn't in the static options prop, so once createAndSelect
+    // The created id isn't in the static options prop, so once the combobox
     // commits it the row shows the archived-value display — confirming the
     // contactId is set before we Save.
     await screen.findByText(/archived contact/i);

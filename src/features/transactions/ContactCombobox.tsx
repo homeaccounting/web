@@ -4,6 +4,12 @@ import { ChevronDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import type { DictionaryEntryResponse, UUID } from '@/api/types';
+import {
+  createCandidate,
+  normalizeName,
+  useInlineCreate,
+  type CreateEntry,
+} from './useInlineCreate';
 
 // id, aria-invalid, aria-describedby are injected by shadcn's <FormControl>
 // (which wraps us with Radix Slot). They MUST land on the inner <input> so
@@ -14,10 +20,13 @@ export interface ContactComboboxProps {
   value: UUID | null;
   onChange: (id: UUID | null) => void;
   // Optional: when provided, a "Create '<query>'" row is offered for a
-  // non-empty query that matches no existing option. Activating it delegates to
-  // the parent, which creates the entry and then selects its id — this
-  // component never calls onChange for a create.
-  onCreate?: (name: string) => void | Promise<unknown>;
+  // non-empty query that matches no existing option. Activating it delegates the
+  // create to the parent and selects the resolved id; a null (failed create)
+  // keeps the typed name in the input and reports it.
+  onCreate?: CreateEntry;
+  // A suggested name for a new contact (e.g. the transaction description). With
+  // onCreate, a "Use: <hint>" affordance fills the search box with it.
+  createHint?: string;
   placeholder?: string;
   name?: string;
   id?: string;
@@ -38,6 +47,7 @@ export function ContactCombobox({
   value,
   onChange,
   onCreate,
+  createHint,
   placeholder,
   name,
   id,
@@ -67,6 +77,7 @@ export function ContactCombobox({
   // or viewport edge.
   const [dropUp, setDropUp] = useState(false);
   const wrapRef = useRef<HTMLDivElement | null>(null);
+  const { create: runCreate, failed } = useInlineCreate(onCreate);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -74,11 +85,9 @@ export function ContactCombobox({
     return options.filter((o) => o.name.toLowerCase().includes(q));
   }, [options, query]);
 
-  const trimmedQuery = query.trim();
-  const showCreate =
-    !!onCreate &&
-    trimmedQuery.length > 0 &&
-    !options.some((o) => o.name.toLowerCase() === trimmedQuery.toLowerCase());
+  const createName = onCreate ? createCandidate(query, options) : null;
+  const showCreate = createName !== null;
+  const hint = onCreate && createHint ? normalizeName(createHint) : '';
 
   // The navigable rows, in DOM order: a leading "none" row, the filtered
   // options, then an optional "create" row. The active index runs across all of
@@ -120,10 +129,18 @@ export function ContactCombobox({
     setOpen(false);
   };
 
+  // Clear and close right away: callers wait for the created contact's name to
+  // show before saving, so the typed text must not pass for it while the create
+  // is in flight. A failed create puts the name back next to the error.
   const create = () => {
-    void onCreate?.(trimmedQuery);
+    if (!createName) return;
+    const name = createName;
     setQuery('');
     setOpen(false);
+    void runCreate(name, commit, () => {
+      setQuery(name);
+      setOpen(true);
+    });
   };
 
   // Activate whichever synthetic/option row the active index points at.
@@ -217,74 +234,92 @@ export function ContactCombobox({
         />
       </div>
       {open && (
-        <ul
-          id={listId}
-          role="listbox"
+        <div
           className={cn(
-            'absolute z-50 max-h-60 w-full overflow-auto rounded-md border bg-popover p-1 text-popover-foreground shadow-md',
+            'absolute z-50 w-full rounded-md border bg-popover p-1 text-popover-foreground shadow-md',
             dropUp ? 'bottom-full mb-1' : 'top-full mt-1',
           )}
         >
-          <li
-            id={`${listId}-none`}
-            role="option"
-            aria-selected={value === null}
-            onMouseDown={(e) => {
-              // mousedown so the input's blur (which would close the menu)
-              // doesn't beat the click handler.
-              e.preventDefault();
-              commit(null);
-            }}
-            onMouseEnter={() => setActive(0)}
-            className={cn(
-              'cursor-pointer rounded-sm px-2 py-1.5 text-sm text-muted-foreground',
-              active === 0 && 'bg-accent text-accent-foreground',
-            )}
-          >
-            {t('pickers.none')}
-          </li>
-          {filtered.map((opt, i) => {
-            const rowIndex = i + 1;
-            return (
-              <li
-                key={opt.id}
-                id={`${listId}-opt-${opt.id}`}
-                role="option"
-                aria-selected={opt.id === value}
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  commit(opt.id);
-                }}
-                onMouseEnter={() => setActive(rowIndex)}
-                className={cn(
-                  'cursor-pointer rounded-sm px-2 py-1.5 text-sm',
-                  rowIndex === active && 'bg-accent text-accent-foreground',
-                  opt.id === value && 'font-medium',
-                )}
-              >
-                {opt.name}
-              </li>
-            );
-          })}
-          {showCreate && (
-            <li
-              id={`${listId}-create`}
-              role="option"
-              aria-selected={false}
+          {hint && (
+            <button
+              type="button"
               onMouseDown={(e) => {
+                // mousedown (not click) so the input's blur doesn't beat it.
                 e.preventDefault();
-                create();
+                setQuery(hint);
               }}
-              onMouseEnter={() => setActive(createIndex)}
+              className="w-full truncate rounded-sm px-2 py-1 text-left text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+            >
+              {t('pickers.useHint', { hint })}
+            </button>
+          )}
+          <ul id={listId} role="listbox" className="max-h-60 overflow-auto">
+            <li
+              id={`${listId}-none`}
+              role="option"
+              aria-selected={value === null}
+              onMouseDown={(e) => {
+                // mousedown so the input's blur (which would close the menu)
+                // doesn't beat the click handler.
+                e.preventDefault();
+                commit(null);
+              }}
+              onMouseEnter={() => setActive(0)}
               className={cn(
-                'cursor-pointer rounded-sm px-2 py-1.5 text-sm',
-                active === createIndex && 'bg-accent text-accent-foreground',
+                'cursor-pointer rounded-sm px-2 py-1.5 text-sm text-muted-foreground',
+                active === 0 && 'bg-accent text-accent-foreground',
               )}
             >
-              {t('pickers.create', { name: trimmedQuery })}
+              {t('pickers.none')}
             </li>
+            {filtered.map((opt, i) => {
+              const rowIndex = i + 1;
+              return (
+                <li
+                  key={opt.id}
+                  id={`${listId}-opt-${opt.id}`}
+                  role="option"
+                  aria-selected={opt.id === value}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    commit(opt.id);
+                  }}
+                  onMouseEnter={() => setActive(rowIndex)}
+                  className={cn(
+                    'cursor-pointer rounded-sm px-2 py-1.5 text-sm',
+                    rowIndex === active && 'bg-accent text-accent-foreground',
+                    opt.id === value && 'font-medium',
+                  )}
+                >
+                  {opt.name}
+                </li>
+              );
+            })}
+            {showCreate && (
+              <li
+                id={`${listId}-create`}
+                role="option"
+                aria-selected={false}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  create();
+                }}
+                onMouseEnter={() => setActive(createIndex)}
+                className={cn(
+                  'cursor-pointer rounded-sm px-2 py-1.5 text-sm',
+                  active === createIndex && 'bg-accent text-accent-foreground',
+                )}
+              >
+                {t('pickers.create', { name: createName })}
+              </li>
+            )}
+          </ul>
+          {failed !== null && failed === createName && (
+            <p role="alert" className="px-2 py-1.5 text-sm text-destructive">
+              {t('pickers.createFailed', { name: failed })}
+            </p>
           )}
-        </ul>
+        </div>
       )}
     </div>
   );

@@ -181,6 +181,7 @@
     "none": "— none —",
     "noMatches": "No matches",
     "create": "Create ‘{{name}}’",
+    "createFailed": "Couldn’t create ‘{{name}}’",
     "remove": "Remove {{name}}",
     "addLabels": "Add labels…",
     "allAccounts": "All accounts",

@@ -15,7 +15,7 @@ import type { AccountResponse, TransactionResponse } from '@/api/types';
 import { useAccounts } from '@/features/accounts/useAccounts';
 import { flattenDictionary } from '@/api/dictionary';
 import { useConfiguration } from '@/features/configuration/useConfiguration';
-import { useCreateDictionaryEntry } from '@/features/configuration/useCreateDictionaryEntry';
+import { useCreateDictionaryItem } from '@/features/configuration/useCreateDictionaryEntry';
 import { nowDateTimeInput } from '@/lib/dates';
 import { IncomeExpenseForm, type IncomeExpenseFormApi } from './IncomeExpenseForm';
 import { TransferForm, type TransferFormApi } from './TransferForm';
@@ -110,7 +110,7 @@ function CopyIncomeExpenseBody({
   const createIncome = useCreateIncome();
   const createExpense = useCreateExpense();
   const create = kind === 'income' ? createIncome : createExpense;
-  const createContact = useCreateDictionaryEntry();
+  const createEntry = useCreateDictionaryItem();
 
   const categoryDictId = kind === 'income' ? 'income' : 'expense';
   const categories = flattenDictionary(config?.dictionaries[categoryDictId]);
@@ -173,11 +173,8 @@ function CopyIncomeExpenseBody({
         contacts={contacts}
         defaultValues={defaultValues}
         isSubmitting={create.isPending}
-        onCreateContact={(name) =>
-          createContact
-            .mutateAsync({ dictId: 'contact', name, dict: config?.dictionaries.contact })
-            .then((r) => r.id)
-        }
+        onCreateContact={(name) => createEntry('contact', name)}
+        onCreateLabel={(name) => createEntry('label', name)}
         onSubmit={handleSubmit}
         onCancel={onClose}
         onReady={handleReady}
@@ -200,6 +197,7 @@ function CopyTransferBody({
   const { t } = useTranslation('transactions');
   const create = useCreateTransfer();
   const labels = flattenDictionary(config?.dictionaries.label);
+  const createEntry = useCreateDictionaryItem();
 
   const defaultValues = useMemo(
     () => ({ ...toTransferFormValues(tx, accounts), date: nowDateTimeInput() }),
@@ -243,6 +241,7 @@ function CopyTransferBody({
         mode="create"
         accounts={accounts}
         labels={labels}
+        onCreateLabel={(name) => createEntry('label', name)}
         defaultValues={defaultValues}
         isSubmitting={create.isPending}
         onSubmit={handleSubmit}

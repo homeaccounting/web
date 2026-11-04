@@ -14,10 +14,11 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select';
-import type { AccountResponse, DictionaryEntryResponse, UUID } from '@/api/types';
+import type { AccountResponse, DictionaryEntryResponse } from '@/api/types';
 import { makeIncomeExpenseFormSchema, type IncomeExpenseFormValues } from './schema';
 import { LabelMultiSelect } from './LabelMultiSelect';
 import { ContactCombobox } from './ContactCombobox';
+import type { CreateEntry } from './useInlineCreate';
 import { AllocationsEditor, type AllocationSection } from './AllocationsEditor';
 import { dropEmptySlices } from './allocations';
 import { DatePicker } from '@/components/DatePicker';
@@ -45,7 +46,9 @@ export interface IncomeExpenseFormProps {
    * failure). The create mutation itself lives in the caller (a dialog) so this
    * presentational form never calls a hook in a render callback.
    */
-  onCreateContact?: (name: string) => Promise<UUID | null>;
+  onCreateContact?: CreateEntry;
+  /** Create a new label from a typed name; same contract as onCreateContact. */
+  onCreateLabel?: CreateEntry;
   defaultValues: IncomeExpenseFormValues;
   isSubmitting: boolean;
   /** When set, validate the debit against the source account balance (create only). */
@@ -72,6 +75,7 @@ export function IncomeExpenseForm({
   labels,
   contacts,
   onCreateContact,
+  onCreateLabel,
   defaultValues,
   isSubmitting,
   enforceBalance = false,
@@ -250,10 +254,8 @@ export function IncomeExpenseForm({
                       options={contacts}
                       value={field.value ?? null}
                       onChange={field.onChange}
-                      onCreate={async (name) => {
-                        const id = await onCreateContact?.(name);
-                        if (id) field.onChange(id);
-                      }}
+                      onCreate={onCreateContact}
+                      createHint={form.watch('description')}
                     />
                   </FormControl>
                   <FormMessage />
@@ -287,6 +289,7 @@ export function IncomeExpenseForm({
                     options={labels}
                     value={field.value ?? []}
                     onChange={field.onChange}
+                    onCreate={onCreateLabel}
                   />
                 </FormControl>
                 <FormMessage />

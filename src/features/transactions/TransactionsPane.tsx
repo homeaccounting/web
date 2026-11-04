@@ -100,7 +100,7 @@ import {
   withLabelRemoved,
 } from './bulkLabels';
 import { TransactionStatusIcon } from './TransactionStatusIcon';
-import { useCreateDictionaryEntry } from '@/features/configuration/useCreateDictionaryEntry';
+import { useCreateDictionaryItem } from '@/features/configuration/useCreateDictionaryEntry';
 import { TxCategoryQuickPicker } from './TxCategoryQuickPicker';
 import { TxLabelQuickPicker } from './TxLabelQuickPicker';
 import { TxContactQuickPicker } from './TxContactQuickPicker';
@@ -332,23 +332,10 @@ export function TransactionsPane() {
       onSubCallApplied: () => {},
     });
 
-  // Create a new root-level item in any dictionary from a quick-picker's create
-  // row and hand back its id so the picker can assign it through its own commit
-  // path. The dictionary slug matches configuration.dictionaries[dictId]
-  // ('label', 'contact', …).
-  const create = useCreateDictionaryEntry();
-  const createEntry = async (dictId: string, name: string): Promise<UUID | null> => {
-    try {
-      const r = await create.mutateAsync({
-        dictId,
-        name,
-        dict: configuration?.dictionaries[dictId],
-      });
-      return r.id;
-    } catch {
-      return null;
-    }
-  };
+  // Create an item in any dictionary from a quick-picker's create row and hand
+  // back its id so the picker can assign it through its own commit path. The
+  // dictionary slug matches configuration.dictionaries[dictId] ('label', 'contact', …).
+  const createEntry = useCreateDictionaryItem();
   // The filter matches by category NAME (so a name shared across the income and
   // expense dictionaries — e.g. "Other" — matches either). The dropdown is
   // therefore deduped by name, and each option's value IS the name.

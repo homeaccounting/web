@@ -14,7 +14,7 @@ import type { TransactionResponse } from '@/api/types';
 import { useAccounts } from '@/features/accounts/useAccounts';
 import { flattenDictionary } from '@/api/dictionary';
 import { useConfiguration } from '@/features/configuration/useConfiguration';
-import { useCreateDictionaryEntry } from '@/features/configuration/useCreateDictionaryEntry';
+import { useCreateDictionaryItem } from '@/features/configuration/useCreateDictionaryEntry';
 import { nowDateTimeInput } from '@/lib/dates';
 import { useFormat } from '@/lib/useFormat';
 import { IncomeExpenseForm, type IncomeExpenseFormApi } from './IncomeExpenseForm';
@@ -82,7 +82,7 @@ function RefundForm({
   const { data: accounts } = useAccounts();
   const { data: config } = useConfiguration();
   const refund = useRefundTransaction(original.id);
-  const createContact = useCreateDictionaryEntry();
+  const createEntry = useCreateDictionaryItem();
 
   // A refund's contra allocations genuinely live in the `expenses` bucket, so the
   // form is built with `kind="expense"`: that renders a SINGLE, expanded section
@@ -187,11 +187,8 @@ function RefundForm({
           enforceBalance={false}
           extraRefine={extraRefine}
           lockTarget
-          onCreateContact={(name) =>
-            createContact
-              .mutateAsync({ dictId: 'contact', name, dict: config?.dictionaries.contact })
-              .then((r) => r.id)
-          }
+          onCreateContact={(name) => createEntry('contact', name)}
+          onCreateLabel={(name) => createEntry('label', name)}
           onSubmit={handleSubmit}
           onCancel={() => onOpenChange(false)}
           onReady={handleReady}

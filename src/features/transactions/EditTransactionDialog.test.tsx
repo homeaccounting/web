@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import userEvent from '@testing-library/user-event';
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/server';
 import { renderWithProviders } from '@/test/utils';
@@ -255,6 +255,30 @@ describe('EditTransactionDialog', () => {
     expect(screen.queryByText(/cannot be edited/i)).toBeNull();
     expect(screen.queryByRole('form')).toBeNull();
     expect(screen.queryByLabelText(/^Amount$/i)).toBeNull();
+  });
+
+  it('creating a label inline PUTs it onto the transaction', async () => {
+    const newLabelId = '00000000-0000-0000-0000-0000000000d9';
+    let labelsBody: unknown = null;
+    server.use(
+      http.post(`${apiBase}/api/users/me/configuration/dictionaries/label/entries`, () =>
+        HttpResponse.json({ id: newLabelId, name: 'Rome' }, { status: 201 }),
+      ),
+      http.put(`${apiBase}/api/transactions/:id/labels`, async ({ request }) => {
+        labelsBody = await request.json();
+        return HttpResponse.json({ ...baseTx, labels: [newLabelId] });
+      }),
+    );
+    const onOpenChange = vi.fn();
+    const user = userEvent.setup();
+    renderDialog({ onOpenChange });
+    const labels = await screen.findByRole('combobox', { name: /labels/i });
+    await user.click(labels);
+    await user.type(labels, 'Rome');
+    await user.click(screen.getByRole('option', { name: /create.*rome/i }));
+    await user.click(screen.getByRole('button', { name: 'OK' }));
+    await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
+    expect(labelsBody).toEqual({ labels: [newLabelId] });
   });
 
   it('description-only edit fires exactly one PUT description and closes the dialog', async () => {
