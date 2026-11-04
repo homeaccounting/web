@@ -181,6 +181,7 @@
     "none": "— немає —",
     "noMatches": "Немає збігів",
     "create": "Створити «{{name}}»",
+    "createFailed": "Не вдалося створити «{{name}}»",
     "remove": "Видалити {{name}}",
     "addLabels": "Додати мітки…",
     "allAccounts": "Усі рахунки",

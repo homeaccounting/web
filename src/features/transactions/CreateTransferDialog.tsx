@@ -15,6 +15,7 @@ import { flattenDictionary } from '@/api/dictionary';
 import { useConfiguration } from '@/features/configuration/useConfiguration';
 import { defaultTransactionDate, writeStickyDay } from '@/lib/stickyDate';
 import { TransferForm, type TransferFormApi } from './TransferForm';
+import { useCreateDictionaryItem } from '@/features/configuration/useCreateDictionaryEntry';
 import { useCreateTransfer } from './useCreateTransfer';
 import { toTransferRequest, type TransferFormValues } from './schema';
 import { transactionKindLabel } from './labels';
@@ -36,6 +37,7 @@ export function CreateTransferDialog({
   const create = useCreateTransfer();
 
   const labels = flattenDictionary(config?.dictionaries.label);
+  const createEntry = useCreateDictionaryItem();
 
   const sourceAccount = accounts?.find((a) => a.id === selectedAccountId) ?? accounts?.[0];
   const sourceAccountId = sourceAccount?.id ?? '';
@@ -103,6 +105,7 @@ export function CreateTransferDialog({
             enforceBalance
             accounts={accounts}
             labels={labels}
+            onCreateLabel={(name) => createEntry('label', name)}
             defaultValues={defaults}
             isSubmitting={create.isPending}
             onSubmit={handleSubmit}

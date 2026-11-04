@@ -13,7 +13,7 @@ import type { UUID } from '@/api/types';
 import { useAccounts } from '@/features/accounts/useAccounts';
 import { flattenDictionary } from '@/api/dictionary';
 import { useConfiguration } from '@/features/configuration/useConfiguration';
-import { useCreateDictionaryEntry } from '@/features/configuration/useCreateDictionaryEntry';
+import { useCreateDictionaryItem } from '@/features/configuration/useCreateDictionaryEntry';
 import { defaultTransactionDate, writeStickyDay } from '@/lib/stickyDate';
 import { IncomeExpenseForm, type IncomeExpenseFormApi } from './IncomeExpenseForm';
 import { useCreateExpense } from './useCreateExpense';
@@ -35,7 +35,7 @@ export function CreateExpenseDialog({
   const { data: accounts } = useAccounts();
   const { data: config } = useConfiguration();
   const create = useCreateExpense();
-  const createContact = useCreateDictionaryEntry();
+  const createEntry = useCreateDictionaryItem();
 
   // Backend uses a separate `expense-category` dictionary for expense
   // transactions — see server-infra/src/Domain/Configuration/Defaults.hs.
@@ -110,11 +110,8 @@ export function CreateExpenseDialog({
             contacts={contacts}
             defaultValues={defaults}
             isSubmitting={create.isPending}
-            onCreateContact={(name) =>
-              createContact
-                .mutateAsync({ dictId: 'contact', name, dict: config?.dictionaries.contact })
-                .then((r) => r.id)
-            }
+            onCreateContact={(name) => createEntry('contact', name)}
+            onCreateLabel={(name) => createEntry('label', name)}
             onSubmit={handleSubmit}
             onCancel={() => onOpenChange(false)}
             onReady={handleReady}

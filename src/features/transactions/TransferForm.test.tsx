@@ -123,6 +123,33 @@ describe('TransferForm', () => {
     await waitFor(() => expect(screen.getByLabelText(/exchange rate/i)).toBeInTheDocument());
   });
 
+  it('creating a label calls onCreateLabel and submits the new label', async () => {
+    const NEW_ID = '00000000-0000-0000-0000-0000000000d9';
+    const user = userEvent.setup();
+    const onSubmit = vi.fn();
+    const onCreateLabel = vi.fn().mockResolvedValue(NEW_ID);
+    renderWithProviders(
+      <TransferForm
+        mode="create"
+        accounts={accounts}
+        labels={labels}
+        defaultValues={{ ...defaults, amount: 10, date: '2026-03-04T10:00' }}
+        isSubmitting={false}
+        onSubmit={onSubmit}
+        onCreateLabel={onCreateLabel}
+        onCancel={vi.fn()}
+      />,
+    );
+    const labelsCb = screen.getByRole('combobox', { name: /labels/i });
+    await user.click(labelsCb);
+    await user.type(labelsCb, 'Rome');
+    await user.click(screen.getByRole('option', { name: /create.*rome/i }));
+    await waitFor(() => expect(onCreateLabel).toHaveBeenCalledWith('Rome'));
+    await user.click(screen.getByRole('button', { name: /transfer|ok|create/i }));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalled());
+    expect(onSubmit.mock.calls[0]![0]).toMatchObject({ labels: [NEW_ID] });
+  });
+
   describe('cross-currency amounts', () => {
     const fxDefaults = { ...defaults, targetAccountId: A2 };
 

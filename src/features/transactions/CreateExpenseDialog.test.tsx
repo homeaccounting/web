@@ -47,7 +47,54 @@ function Wrapper() {
   );
 }
 
+// The created label's id must be a UUID, or the form's labels schema rejects it.
+const newLabelId = '00000000-0000-0000-0000-0000000000d9';
+function captureLabelCreate() {
+  const created: unknown[] = [];
+  server.use(
+    http.post(
+      `${apiBase}/api/users/me/configuration/dictionaries/label/entries`,
+      async ({ request }) => {
+        created.push(await request.json());
+        return HttpResponse.json({ id: newLabelId, name: 'Rome' }, { status: 201 });
+      },
+    ),
+  );
+  return created;
+}
+
 describe('CreateExpenseDialog', () => {
+  it('creates a label inline and sends it with the expense', async () => {
+    const user = userEvent.setup();
+    const created = captureLabelCreate();
+    let body: { labels?: string[] } = {};
+    server.use(
+      http.post(`${apiBase}/api/transactions/expense`, async ({ request }) => {
+        body = (await request.json()) as typeof body;
+        return HttpResponse.json({ id: 'tx-1' });
+      }),
+    );
+
+    renderWithProviders(<Wrapper />, { initialPath: '/' });
+    await screen.findByRole('dialog', { name: /add expense/i });
+    await screen.findByLabelText(/account/i);
+
+    await user.click(screen.getByRole('combobox', { name: /category/i }));
+    await user.click(await screen.findByRole('option', { name: /food/i }));
+    await user.clear(screen.getByLabelText(/amount/i));
+    await user.type(screen.getByLabelText(/amount/i), '50');
+    const labels = screen.getByRole('combobox', { name: /labels/i });
+    await user.click(labels);
+    await user.type(labels, 'Rome');
+    await user.click(screen.getByRole('option', { name: /create.*rome/i }));
+    await waitFor(() => expect(created).toEqual([{ name: 'Rome', type: 'item', parentId: null }]));
+
+    await user.click(screen.getByRole('button', { name: 'OK' }));
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(body.labels).toEqual([newLabelId]);
+  });
+
   it('seeds the category from the global default expense category', async () => {
     const user = userEvent.setup();
     let capturedBody: Record<string, unknown> = {};

@@ -1,9 +1,10 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Check, ChevronDown, X } from 'lucide-react';
+import { Check, ChevronDown, Plus, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import type { DictionaryEntryResponse, UUID } from '@/api/types';
+import { createCandidate, useInlineCreate, type CreateEntry } from './useInlineCreate';
 
 export interface LabelMultiSelectProps {
   options: DictionaryEntryResponse[];
@@ -19,12 +20,16 @@ export interface LabelMultiSelectProps {
   // single h-10 line with horizontal scroll so its height doesn't grow as
   // chips are added). Forms omit it and keep the default wrapping behaviour.
   containerClassName?: string;
+  // When set, a "Create '<query>'" row is offered for a query that matches no
+  // label; the created label is appended to `value`.
+  onCreate?: CreateEntry;
 }
 
 // Multi-select with type-ahead. Typing filters the option list by
 // case-insensitive substring; clicking an option toggles its membership in
 // `value` without closing the menu. Selected entries render as removable
-// chips inside the input area.
+// chips inside the input area. With `onCreate`, an unmatched query can be
+// created as a new label in the same gesture.
 export function LabelMultiSelect({
   options,
   value,
@@ -34,6 +39,7 @@ export function LabelMultiSelect({
   'aria-invalid': ariaInvalid,
   'aria-describedby': ariaDescribedby,
   containerClassName,
+  onCreate,
 }: LabelMultiSelectProps) {
   const { t } = useTranslation('transactions');
   const generatedId = useId();
@@ -44,12 +50,22 @@ export function LabelMultiSelect({
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);
   const wrapRef = useRef<HTMLDivElement | null>(null);
+  // The create resolves after an await; read the latest selection then so a
+  // toggle made while it was in flight isn't dropped.
+  const valueRef = useRef(value);
+  valueRef.current = value;
+  const { create, failed } = useInlineCreate(onCreate);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return options;
     return options.filter((o) => o.name.toLowerCase().includes(q));
   }, [options, query]);
+
+  const createName = onCreate ? createCandidate(query, options) : null;
+  // The create row (when present) is the last navigable item.
+  const createIndex = createName ? filtered.length : -1;
+  const maxIndex = createName ? filtered.length : filtered.length - 1;
 
   useEffect(() => {
     setActive(0);
@@ -76,6 +92,12 @@ export function LabelMultiSelect({
   };
 
   const remove = (id: UUID) => onChange(value.filter((x) => x !== id));
+
+  const createLabel = (name: string) =>
+    void create(name, (id) => {
+      onChange([...valueRef.current, id]);
+      setQuery('');
+    });
 
   const selected = value
     .map((id) => options.find((o) => o.id === id))
@@ -113,7 +135,13 @@ export function LabelMultiSelect({
           aria-expanded={open}
           aria-controls={listId}
           aria-activedescendant={
-            open && filtered[active] ? `${listId}-opt-${filtered[active].id}` : undefined
+            !open
+              ? undefined
+              : active === createIndex
+                ? `${listId}-create`
+                : filtered[active]
+                  ? `${listId}-opt-${filtered[active].id}`
+                  : undefined
           }
           aria-invalid={ariaInvalid}
           aria-describedby={ariaDescribedby}
@@ -131,12 +159,15 @@ export function LabelMultiSelect({
                 setOpen(true);
                 return;
               }
-              setActive((i) => Math.min(i + 1, filtered.length - 1));
+              setActive((i) => Math.min(i + 1, maxIndex));
             } else if (e.key === 'ArrowUp') {
               e.preventDefault();
               setActive((i) => Math.max(i - 1, 0));
             } else if (e.key === 'Enter') {
-              if (open && filtered[active]) {
+              if (open && createName && active === createIndex) {
+                e.preventDefault();
+                createLabel(createName);
+              } else if (open && filtered[active]) {
                 e.preventDefault();
                 toggle(filtered[active]);
               }
@@ -160,43 +191,71 @@ export function LabelMultiSelect({
         />
       </div>
       {open && (
-        <ul
-          id={listId}
-          role="listbox"
-          aria-multiselectable="true"
-          className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
-        >
-          {filtered.length === 0 && (
-            <li className="px-2 py-1.5 text-sm text-muted-foreground">{t('pickers.noMatches')}</li>
-          )}
-          {filtered.map((opt, i) => {
-            const checked = value.includes(opt.id);
-            return (
+        <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover p-1 text-popover-foreground shadow-md">
+          <ul
+            id={listId}
+            role="listbox"
+            aria-multiselectable="true"
+            className="max-h-60 overflow-auto"
+          >
+            {filtered.length === 0 && !createName && (
+              <li className="px-2 py-1.5 text-sm text-muted-foreground">
+                {t('pickers.noMatches')}
+              </li>
+            )}
+            {filtered.map((opt, i) => {
+              const checked = value.includes(opt.id);
+              return (
+                <li
+                  key={opt.id}
+                  id={`${listId}-opt-${opt.id}`}
+                  role="option"
+                  aria-selected={checked}
+                  onMouseDown={(e) => {
+                    // mousedown so the input's blur (which would close the menu)
+                    // doesn't beat the click handler. Clearing the query also
+                    // keeps the typeahead UX predictable across consecutive picks.
+                    e.preventDefault();
+                    toggle(opt);
+                    setQuery('');
+                  }}
+                  onMouseEnter={() => setActive(i)}
+                  className={cn(
+                    'flex cursor-pointer items-center justify-between rounded-sm px-2 py-1.5 text-sm',
+                    i === active && 'bg-accent text-accent-foreground',
+                  )}
+                >
+                  <span className={cn(checked && 'font-medium')}>{opt.name}</span>
+                  {checked && <Check aria-hidden className="h-4 w-4" />}
+                </li>
+              );
+            })}
+            {createName && (
               <li
-                key={opt.id}
-                id={`${listId}-opt-${opt.id}`}
+                id={`${listId}-create`}
                 role="option"
-                aria-selected={checked}
+                aria-selected={false}
                 onMouseDown={(e) => {
-                  // mousedown so the input's blur (which would close the menu)
-                  // doesn't beat the click handler. Clearing the query also
-                  // keeps the typeahead UX predictable across consecutive picks.
                   e.preventDefault();
-                  toggle(opt);
-                  setQuery('');
+                  createLabel(createName);
                 }}
-                onMouseEnter={() => setActive(i)}
+                onMouseEnter={() => setActive(createIndex)}
                 className={cn(
-                  'flex cursor-pointer items-center justify-between rounded-sm px-2 py-1.5 text-sm',
-                  i === active && 'bg-accent text-accent-foreground',
+                  'flex cursor-pointer items-center gap-1 rounded-sm px-2 py-1.5 text-sm',
+                  active === createIndex && 'bg-accent text-accent-foreground',
                 )}
               >
-                <span className={cn(checked && 'font-medium')}>{opt.name}</span>
-                {checked && <Check aria-hidden className="h-4 w-4" />}
+                <Plus aria-hidden className="h-4 w-4 shrink-0" />
+                <span className="truncate">{t('pickers.create', { name: createName })}</span>
               </li>
-            );
-          })}
-        </ul>
+            )}
+          </ul>
+          {failed !== null && failed === createName && (
+            <p role="alert" className="px-2 py-1.5 text-sm text-destructive">
+              {t('pickers.createFailed', { name: failed })}
+            </p>
+          )}
+        </div>
       )}
     </div>
   );

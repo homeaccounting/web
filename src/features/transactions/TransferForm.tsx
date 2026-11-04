@@ -18,6 +18,7 @@ import {
 import type { AccountResponse, DictionaryEntryResponse } from '@/api/types';
 import { transferFormSchema, makeTransferFormSchema, type TransferFormValues } from './schema';
 import { LabelMultiSelect } from './LabelMultiSelect';
+import type { CreateEntry } from './useInlineCreate';
 import { DatePicker } from '@/components/DatePicker';
 import { RequiredMarker } from '@/components/RequiredMarker';
 import { transactionKindLabel } from './labels';
@@ -32,6 +33,8 @@ export interface TransferFormProps {
   mode: 'create' | 'edit';
   accounts: AccountResponse[];
   labels: DictionaryEntryResponse[];
+  /** Create a new label from a typed name and resolve its id (or null on failure). */
+  onCreateLabel?: CreateEntry;
   defaultValues: TransferFormValues;
   isSubmitting: boolean;
   /** When set, validate the debit against the source account balance (create only). */
@@ -45,6 +48,7 @@ export function TransferForm({
   mode,
   accounts,
   labels,
+  onCreateLabel,
   defaultValues,
   isSubmitting,
   enforceBalance = false,
@@ -334,6 +338,7 @@ export function TransferForm({
                     options={labels}
                     value={field.value ?? []}
                     onChange={field.onChange}
+                    onCreate={onCreateLabel}
                   />
                 </FormControl>
                 <FormMessage />

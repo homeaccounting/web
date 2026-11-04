@@ -48,12 +48,14 @@ export function BankProviderContactMapEditor({
   const addRow = () => setRows((prev) => [...prev, { token: '', contactId: '' }]);
   const removeRow = (index: number) => setRows((prev) => prev.filter((_, i) => i !== index));
 
-  const createAndSelect = async (index: number, name: string) => {
+  // ContactCombobox selects the resolved id through onChange.
+  const createContactId = async (name: string): Promise<UUID | null> => {
     try {
       const r = await createContact.mutateAsync({ dictId: 'contact', name, dict: contactDict });
-      setRow(index, { contactId: r.id });
+      return r.id;
     } catch {
       setValidationError(t('contactEditor.createError'));
+      return null;
     }
   };
 
@@ -99,7 +101,7 @@ export function BankProviderContactMapEditor({
                 options={contacts}
                 value={row.contactId || null}
                 onChange={(id) => setRow(index, { contactId: id ?? '' })}
-                onCreate={(name) => createAndSelect(index, name)}
+                onCreate={createContactId}
                 placeholder={t('contactEditor.contactPlaceholder')}
                 aria-label={t('contactEditor.contactLabel', { row: index + 1 })}
               />

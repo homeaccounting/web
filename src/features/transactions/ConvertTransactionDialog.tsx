@@ -14,7 +14,7 @@ import type { AccountResponse, TransactionResponse, UUID } from '@/api/types';
 import { useAccounts } from '@/features/accounts/useAccounts';
 import { flattenDictionary } from '@/api/dictionary';
 import { useConfiguration } from '@/features/configuration/useConfiguration';
-import { useCreateDictionaryEntry } from '@/features/configuration/useCreateDictionaryEntry';
+import { useCreateDictionaryItem } from '@/features/configuration/useCreateDictionaryEntry';
 import { useUserProfile } from '@/features/profile/useUserProfile';
 import { dateInputToWire } from '@/lib/dates';
 import { IncomeExpenseForm, type IncomeExpenseFormApi } from './IncomeExpenseForm';
@@ -127,7 +127,7 @@ function ConvertIncomeExpenseBody({
   onClose: () => void;
 }) {
   const edit = useEditTransaction();
-  const createContact = useCreateDictionaryEntry();
+  const createEntry = useCreateDictionaryItem();
   const categoryDictId = targetKind === 'income' ? 'income' : 'expense';
   const categories = flattenDictionary(config?.dictionaries[categoryDictId]);
   const reimbursementCategories = flattenDictionary(config?.dictionaries['expense']);
@@ -188,11 +188,8 @@ function ConvertIncomeExpenseBody({
         contacts={contacts}
         defaultValues={defaultValues}
         isSubmitting={edit.isPending}
-        onCreateContact={(name) =>
-          createContact
-            .mutateAsync({ dictId: 'contact', name, dict: config?.dictionaries.contact })
-            .then((r) => r.id)
-        }
+        onCreateContact={(name) => createEntry('contact', name)}
+        onCreateLabel={(name) => createEntry('label', name)}
         onSubmit={handleSubmit}
         onCancel={onClose}
         onReady={handleReady}
@@ -214,6 +211,7 @@ function ConvertTransferBody({
 }) {
   const edit = useEditTransaction();
   const labels = flattenDictionary(config?.dictionaries.label);
+  const createEntry = useCreateDictionaryItem();
 
   // Transfer-source conversion (Transfer→Transfer) is unreachable: the UI's convertTargets filter
   // only lists kinds other than the current one, so a transfer source never reaches this branch.
@@ -258,6 +256,7 @@ function ConvertTransferBody({
         mode="create"
         accounts={accounts}
         labels={labels}
+        onCreateLabel={(name) => createEntry('label', name)}
         defaultValues={defaultValues}
         isSubmitting={edit.isPending}
         onSubmit={handleSubmit}
