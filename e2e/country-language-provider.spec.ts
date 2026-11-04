@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { skipOnboarding } from './support/onboarding';
+import { uniqueEmail } from './support/email';
 
 // Smoke test for the country/language settings + country-aware provider
 // consumption feature (tracker#47). Runs against a real backend (@local).
@@ -20,7 +21,7 @@ test.describe('country/language + provider scoping @local', () => {
     // Local backend round-trips through the browser have been observed taking
     // several seconds; give generous headroom (mirrors profile.spec.ts).
     test.setTimeout(120000);
-    const email = `e2e-clp-${Date.now()}@example.com`;
+    const email = uniqueEmail('e2e-clp');
     const password = 'longenough';
 
     // Register a fresh user (English default).

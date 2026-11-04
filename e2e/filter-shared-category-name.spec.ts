@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { skipOnboarding } from './support/onboarding';
+import { uniqueEmail } from './support/email';
 
 // Requires a live backend (VITE_API_BASE_URL); @local, not run in CI.
 // Regression for the "Other" filter bug: "Other" is seeded into BOTH the
@@ -7,7 +8,7 @@ import { skipOnboarding } from './support/onboarding';
 // the category name "Other" must match income AND expense rows, not just one.
 test.describe('filter by a category name shared across dictionaries @local', () => {
   test('filtering "Other" matches both the income and the expense row', async ({ page }) => {
-    const email = `e2e-${Date.now()}@example.com`;
+    const email = uniqueEmail('e2e');
     const password = 'longenough';
 
     await page.goto('register');

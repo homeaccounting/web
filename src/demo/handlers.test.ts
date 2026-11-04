@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { getResponse } from 'msw';
 import { server } from '@/test/server';
 import type { AccountResponse, ConfigurationResponse, TransactionResponse } from '@/api/types';
 import { DemoStore } from './store';
@@ -34,6 +35,15 @@ describe('demo handlers', () => {
       transactions: TransactionResponse[];
     };
     expect(list.transactions[0]!.description).toBe('Museum');
+  });
+
+  it('answers the live-data sync poll instead of bypassing to a real backend', async () => {
+    // Queried against the demo handlers alone: the shared test server mocks this
+    // path too, which would hide a missing demo handler. An unhandled request
+    // bypasses to the real API, whose 401 signs the demo user out.
+    const res = await getResponse(makeDemoHandlers(store), new Request(`${base}/api/sync/version`));
+    expect(res?.status).toBe(200);
+    expect(await res!.json()).toEqual({ version: expect.any(Number) as number });
   });
 
   it('serves configuration at /api/users/me/configuration', async () => {

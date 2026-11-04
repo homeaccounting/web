@@ -1,13 +1,14 @@
 import { test, expect } from '@playwright/test';
 import { skipOnboarding } from './support/onboarding';
 import { format, subMonths } from 'date-fns';
+import { uniqueEmail } from './support/email';
 
 // The sticky default-date feature: after submitting a transaction dated to a
 // specific (here: past) day, reopening a create dialog defaults to that day
 // instead of snapping back to today. Session-scoped (sessionStorage).
 test.describe('sticky transaction date @local', () => {
   test('reopened Add expense defaults to the last-used (past) day', async ({ page }) => {
-    const email = `e2e-${Date.now()}@example.com`;
+    const email = uniqueEmail('e2e');
     const password = 'longenough';
 
     // A deterministic past day: the 15th of last month (always exists, always past).

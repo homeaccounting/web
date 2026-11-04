@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { skipOnboarding } from './support/onboarding';
+import { uniqueEmail } from './support/email';
 
 // Issue #11: a cross-currency transfer can be entered as amount + rate (target
 // derived) or as amount + target amount (rate derived). Runs against a live
@@ -30,7 +31,7 @@ async function openTransfer(page: Page) {
 test.describe('transfer exchange rate @local', () => {
   test('derives the target from the rate, and the rate from the target', async ({ page }) => {
     await page.goto('register');
-    await page.getByLabel(/email/i).fill(`e2e-fx-${Date.now()}@example.com`);
+    await page.getByLabel(/email/i).fill(uniqueEmail('e2e-fx'));
     await page.getByLabel(/password/i).fill('longenough');
     await page.getByRole('button', { name: /^create account$/i }).click();
     await skipOnboarding(page);

@@ -1,11 +1,12 @@
 import { test, expect } from '@playwright/test';
 import { skipOnboarding } from './support/onboarding';
+import { uniqueEmail } from './support/email';
 
 test.describe('quick add prompt @local', () => {
   test('composer anchors to the bottom on an empty list and responds to a prompt', async ({
     page,
   }) => {
-    const email = `e2e-${Date.now()}@example.com`;
+    const email = uniqueEmail('e2e');
     const password = 'longenough';
 
     // 1. Register a new user.

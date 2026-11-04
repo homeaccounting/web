@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { skipOnboarding } from './support/onboarding';
+import { uniqueEmail } from './support/email';
 
 // End-to-end coverage for the "transactions as canonical, account-scoped by
 // URL" feature: /transactions is the single list page, an `accounts=` query
@@ -12,7 +13,7 @@ import { skipOnboarding } from './support/onboarding';
 // from e2e/create-transaction.spec.ts.
 
 async function register(page: Page) {
-  const email = `e2e-tx-scope-${Date.now()}-${Math.floor(performance.now())}@example.com`;
+  const email = uniqueEmail('e2e-tx-scope');
   const password = 'longenough';
   await page.goto('register');
   await page.getByLabel(/email/i).fill(email);

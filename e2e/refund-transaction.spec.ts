@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { skipOnboarding } from './support/onboarding';
+import { uniqueEmail } from './support/email';
 
 // End-to-end coverage for tracker#33: refunding a completed expense creates an
 // Income (contra) transaction linked by a `Refund` relation, and the linkage
@@ -7,7 +8,7 @@ import { skipOnboarding } from './support/onboarding';
 
 /** Register a fresh user, create a USD "Wallet" (balance 100) and open it. */
 async function setupWallet(page: import('@playwright/test').Page) {
-  const email = `e2e-${Date.now()}-${Math.floor(performance.now())}@example.com`;
+  const email = uniqueEmail('e2e');
   const password = 'longenough';
 
   await page.goto('register');
@@ -66,8 +67,9 @@ test.describe('refund transaction @local', () => {
     await refundDialog.getByRole('button', { name: /^ok$/i }).click();
     await expect(refundDialog).toBeHidden();
 
-    // A new Income transaction "Refund: Coffee" is posted...
-    await expect(page.getByRole('cell', { name: 'Refund: Coffee', exact: true })).toBeVisible({
+    // A new Income transaction "Refund: Coffee" is posted. Match its text, not
+    // the cell: the cell's name also carries the "refund of …" relation badge.
+    await expect(page.getByText('Refund: Coffee', { exact: true })).toBeVisible({
       timeout: 10000,
     });
     await expect(page.getByRole('img', { name: 'Income' })).toBeVisible();
@@ -91,7 +93,7 @@ test.describe('refund transaction @local', () => {
     await refundDialog.getByRole('button', { name: /^ok$/i }).click();
     await expect(refundDialog).toBeHidden();
 
-    await expect(page.getByRole('cell', { name: 'Refund: Lunch', exact: true })).toBeVisible({
+    await expect(page.getByText('Refund: Lunch', { exact: true })).toBeVisible({
       timeout: 10000,
     });
     // The original expense now shows a partial-refund badge referencing both amounts.

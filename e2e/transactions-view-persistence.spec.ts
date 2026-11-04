@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { skipOnboarding } from './support/onboarding';
+import { uniqueEmail } from './support/email';
 
 // End-to-end coverage for the transactions "view persistence" feature: the
 // selected account's period + filters survive a reload (localStorage lastView)
@@ -9,7 +10,7 @@ import { skipOnboarding } from './support/onboarding';
 // e2e/sticky-transaction-date.spec.ts.
 
 async function register(page: Page) {
-  const email = `e2e-tx-view-${Date.now()}-${Math.floor(performance.now())}@example.com`;
+  const email = uniqueEmail('e2e-tx-view');
   const password = 'longenough';
   await page.goto('register');
   await page.getByLabel(/email/i).fill(email);

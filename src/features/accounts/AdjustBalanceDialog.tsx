@@ -199,6 +199,8 @@ function AdjustBalanceForm({ accounts, selectedAccountId, onClose }: AdjustBalan
                   </FormLabel>
                   <FormControl>
                     <MoneyInput
+                      // MoneyInput's default "Amount" aria-label would override the FormLabel.
+                      aria-label={t('adjustDialog.targetBalance')}
                       currency={selected.currency}
                       value={field.value}
                       onChange={field.onChange}

@@ -60,6 +60,14 @@ beforeEach(() => {
 });
 
 describe('AdjustBalanceDialog', () => {
+  it('names the target balance field after its visible label', async () => {
+    seedAccounts(accounts);
+    renderWithProviders(ui('a1'), { queryClient: makeQueryClient() });
+    // getByLabelText follows <label for> even when aria-label overrides it, so
+    // assert the computed accessible name that assistive tech announces.
+    expect(await screen.findByRole('spinbutton', { name: /target balance/i })).toHaveValue(100);
+  });
+
   it('opens with targetBalance prefilled to account.balance, date to today, description empty', async () => {
     seedAccounts(accounts);
     const qc = makeQueryClient();

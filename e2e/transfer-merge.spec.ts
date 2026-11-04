@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { skipOnboarding } from './support/onboarding';
+import { uniqueEmail } from './support/email';
 
 // End-to-end coverage for tracker#44: merging an existing income + expense pair
 // on two DIFFERENT accounts into a single Transfer. Reuses the selection-driven
@@ -9,7 +10,7 @@ import { skipOnboarding } from './support/onboarding';
 // Transfer and cancels the expense. Runs against a live backend (@local).
 
 async function register(page: Page) {
-  const email = `e2e-transfer-merge-${Date.now()}-${Math.floor(performance.now())}@example.com`;
+  const email = uniqueEmail('e2e-transfer-merge');
   await page.goto('register');
   await page.getByLabel(/email/i).fill(email);
   await page.getByLabel(/password/i).fill('longenough');

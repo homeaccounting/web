@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { skipOnboarding } from './support/onboarding';
+import { uniqueEmail } from './support/email';
 
 // Issue #46: the create expense/transfer dialogs must block a debit that exceeds
 // the source account's available balance (balance + overdraft limit) before it
@@ -8,7 +9,7 @@ test.describe('create transaction balance validation @local', () => {
   test('expense over balance is blocked in the dialog, allowed once within balance', async ({
     page,
   }) => {
-    const email = `e2e-${Date.now()}@example.com`;
+    const email = uniqueEmail('e2e');
     const password = 'longenough';
 
     // 1. Register a new user.
