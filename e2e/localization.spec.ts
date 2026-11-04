@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { skipOnboarding } from './support/onboarding';
+import { uniqueEmail } from './support/email';
 
 // Localization smoke (tracker#56 / #35). Runs against a real backend (@local).
 // Proves the UI language switches LIVE from the persisted `language` signal with
@@ -9,7 +10,7 @@ import { skipOnboarding } from './support/onboarding';
 test.describe('localization language switch @local', () => {
   test('switching language re-renders the UI live, no reload, and reverts', async ({ page }) => {
     test.setTimeout(120000);
-    const email = `e2e-i18n-${Date.now()}@example.com`;
+    const email = uniqueEmail('e2e-i18n');
     const password = 'longenough';
 
     // Register a fresh user (defaults to English) and reach the app.
@@ -67,7 +68,7 @@ test.describe('browser-language onboarding default @local', () => {
 
   test('a uk-browser fresh user sees Ukrainian onboarding + seeded language', async ({ page }) => {
     test.setTimeout(120000);
-    const email = `e2e-i18n-uk-${Date.now()}@example.com`;
+    const email = uniqueEmail('e2e-i18n-uk');
     const password = 'longenough';
 
     // Register — the pre-auth screen already renders in Ukrainian (uk labels).

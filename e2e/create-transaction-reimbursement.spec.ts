@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { skipOnboarding } from './support/onboarding';
+import { uniqueEmail } from './support/email';
 
 // Requires a live backend (VITE_API_BASE_URL); @local, not run in CI.
 // Exercises the contra-expense / "compensation" case: a single Income
@@ -9,7 +10,7 @@ test.describe('create reimbursement (contra-expense) income @local', () => {
   test('income with salary + reimbursement → split row, balance reflects total', async ({
     page,
   }) => {
-    const email = `e2e-${Date.now()}@example.com`;
+    const email = uniqueEmail('e2e');
     const password = 'longenough';
 
     // 1. Register.

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { uniqueEmail } from './support/email';
 
 // First-run onboarding smoke (tracker#58). Runs against a real backend (@local).
 test.describe('onboarding @local', () => {
@@ -6,7 +7,7 @@ test.describe('onboarding @local', () => {
     page,
   }) => {
     test.setTimeout(120000);
-    const email = `e2e-onb-${Date.now()}@example.com`;
+    const email = uniqueEmail('e2e-onb');
     const password = 'longenough';
 
     await page.goto('register');
@@ -43,7 +44,7 @@ test.describe('onboarding @local', () => {
 
     // User A: register and complete onboarding by setting a country, so A's
     // config (country) and transactions state are cached in this browser.
-    const userA = `e2e-onb-a-${Date.now()}@example.com`;
+    const userA = uniqueEmail('e2e-onb-a');
     await page.goto('register');
     await page.getByLabel(/email/i).fill(userA);
     await page.getByLabel(/password/i).fill(password);
@@ -66,7 +67,7 @@ test.describe('onboarding @local', () => {
     // reload — a reload would reset the query cache and hide the bug). B is
     // brand-new (no country) and must still be nudged to onboarding — A's cached
     // config must not leak through the shared query cache.
-    const userB = `e2e-onb-b-${Date.now()}@example.com`;
+    const userB = uniqueEmail('e2e-onb-b');
     await page.getByRole('link', { name: /create an account/i }).click();
     await expect(page).toHaveURL(/\/register/, { timeout: 20000 });
     await page.getByLabel(/email/i).fill(userB);
@@ -77,7 +78,7 @@ test.describe('onboarding @local', () => {
 
   test('Skip for now enters the app without setting a country', async ({ page }) => {
     test.setTimeout(120000);
-    const email = `e2e-onb-skip-${Date.now()}@example.com`;
+    const email = uniqueEmail('e2e-onb-skip');
     const password = 'longenough';
 
     await page.goto('register');

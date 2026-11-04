@@ -1,5 +1,5 @@
 import { test, expect, type APIRequestContext } from '@playwright/test';
-import { readFileSync } from 'node:fs';
+import { uniqueEmail } from './support/email';
 
 // Regression for the reported UX bug: opening the "Map to contact…" picker from
 // the (bottom-of-dialog) Import details section clipped the contact list. The
@@ -9,9 +9,26 @@ import { readFileSync } from 'node:fs';
 // then drives the browser as that user and asserts the dropdown is fully within
 // the viewport. Requires the running banking-enabled backend (@local).
 const API = 'http://localhost:8080';
-const TINY =
-  '/private/tmp/claude-501/-Users-oleksandrsy-Projects-Current-Wix-monorepo/f03fdfd7-8541-4c87-8f83-ddd7b43d73af/scratchpad/tiny.csv';
 const CARD = '4627 **** **** 9713';
+
+// A synthetic PrivatBank statement for CARD whose "Prom.ua" row has no contact
+// mapping. Dated today so it lands in the "This month" period the test views.
+// The backend keys a row's idempotency on date + amount + balance, so both vary
+// per run — a repeated row would be skipped as already imported.
+function privatStatement(): Buffer {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const d = new Date();
+  const day = `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`;
+  const time = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  const balance = (Math.random() * 100000).toFixed(2);
+  return Buffer.from(
+    [
+      `Історія операцій за період ${day} - ${day},,,,,,,,,`,
+      'Дата,Категорія,Картка,Опис операції,Сума в валюті картки,Валюта картки,Сума в валюті транзакції,Валюта транзакції,Залишок на кінець періоду,Валюта залишку',
+      `${day} ${time},Інтернет-магазини,${CARD},Prom.ua,-450,UAH,450,UAH,${balance},UAH`,
+    ].join('\n'),
+  );
+}
 
 interface AuthResp {
   token: string;
@@ -24,7 +41,7 @@ interface IdResp {
 }
 
 async function seed(request: APIRequestContext) {
-  const email = `dropdown-${Date.now()}@example.com`;
+  const email = uniqueEmail('dropdown');
   const reg = await request.post(`${API}/api/auth/register`, {
     data: { email, password: 'longenough123' },
   });
@@ -44,7 +61,7 @@ async function seed(request: APIRequestContext) {
     })
   ).json()) as IdResp;
 
-  const csv = readFileSync(TINY);
+  const csv = privatStatement();
   const multipart = {
     files: { name: 'tiny.csv', mimeType: 'text/csv', buffer: csv },
   };
@@ -86,6 +103,9 @@ test.describe('edit-transaction map-to-contact dropdown @local', () => {
     await page.goto('');
     // Open the seeded account's transactions.
     await page.getByRole('link', { name: new RegExp(s.accountName, 'i') }).click();
+    // The default period is "Last month", which excludes today's seeded row.
+    await page.getByRole('combobox', { name: /period/i }).click();
+    await page.getByRole('option', { name: 'This month' }).click();
 
     // Open the edit dialog for the imported "Prom.ua" transaction.
     const row = page.getByRole('cell', { name: /Prom\.ua/ }).first();

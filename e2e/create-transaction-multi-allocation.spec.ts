@@ -2,10 +2,11 @@
 // UNVERIFIED in the authoring environment — review selectors before first local run.
 import { test, expect } from '@playwright/test';
 import { skipOnboarding } from './support/onboarding';
+import { uniqueEmail } from './support/email';
 
 test.describe('create multi-allocation transaction @local', () => {
   test('add a 2-category expense → split row appears in transactions table', async ({ page }) => {
-    const email = `e2e-${Date.now()}@example.com`;
+    const email = uniqueEmail('e2e');
     const password = 'longenough';
 
     // 1. Register a new user.

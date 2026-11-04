@@ -2,10 +2,11 @@
 // Verification spec for: list category dedup + edit-dialog "Collapse duplicates".
 import { test, expect } from '@playwright/test';
 import { skipOnboarding } from './support/onboarding';
+import { uniqueEmail } from './support/email';
 
 test.describe('allocation dedup + collapse @local', () => {
   test('duplicate-category split: one chip in list, collapses in edit dialog', async ({ page }) => {
-    const email = `e2e-${Date.now()}@example.com`;
+    const email = uniqueEmail('e2e');
     const password = 'longenough';
 
     // Register + account.

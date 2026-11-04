@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { skipOnboarding } from './support/onboarding';
+import { uniqueEmail } from './support/email';
 
 // tracker#45 — the "data changed" signal. An OUT-OF-BAND write (made without the
 // open tab's involvement — here a direct backend HTTP call, standing in for the
@@ -15,7 +16,7 @@ test.describe('live data-change signal @local', () => {
   }) => {
     test.setTimeout(90_000);
 
-    const email = `e2e-sync-${Date.now()}@example.com`;
+    const email = uniqueEmail('e2e-sync');
     const password = 'longenough';
 
     // 1. Register and create two USD accounts: Wallet (100) and Savings (0).

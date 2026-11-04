@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { skipOnboarding } from './support/onboarding';
+import { uniqueEmail } from './support/email';
 
 // End-to-end coverage for the grouped reports UX (tracker#69): reports are split
 // into "Cash flow" and "Net worth" tabs, the period selector lives inside the
@@ -7,7 +8,7 @@ import { skipOnboarding } from './support/onboarding';
 // string. Runs against a live backend (@local).
 
 async function register(page: Page) {
-  const email = `e2e-reports-${Date.now()}-${Math.floor(performance.now())}@example.com`;
+  const email = uniqueEmail('e2e-reports');
   const password = 'longenough';
   await page.goto('register');
   await page.getByLabel(/email/i).fill(email);

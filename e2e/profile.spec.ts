@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { skipOnboarding } from './support/onboarding';
+import { uniqueEmail } from './support/email';
 
 test.describe('profile @local', () => {
   test('view profile, change default currency, add and remove a label', async ({ page }) => {
@@ -7,7 +8,7 @@ test.describe('profile @local', () => {
     // through the browser against the local backend — raise the test budget
     // so that doesn't blow past the suite-wide 30s default.
     test.setTimeout(60000);
-    const email = `e2e-${Date.now()}@example.com`;
+    const email = uniqueEmail('e2e');
     const password = 'longenough';
 
     // Register a fresh user so the books are empty and base currency is editable.

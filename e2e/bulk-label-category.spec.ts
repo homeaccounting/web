@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { skipOnboarding } from './support/onboarding';
+import { uniqueEmail } from './support/email';
 
 // End-to-end coverage for bulk label/category on a multi-selection: right-clicking
 // a selected row opens a BULK context menu (not the single-row one), and Set
@@ -8,7 +9,7 @@ import { skipOnboarding } from './support/onboarding';
 
 /** Register a fresh user, create a USD "Wallet" (balance 100) and open it. */
 async function setupWallet(page: Page) {
-  const email = `e2e-bulk-${Date.now()}-${Math.floor(performance.now())}@example.com`;
+  const email = uniqueEmail('e2e-bulk');
   const password = 'longenough';
 
   await page.goto('register');

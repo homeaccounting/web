@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { skipOnboarding } from './support/onboarding';
+import { uniqueEmail } from './support/email';
 
 // Exercises the "adjust balance consistency" feature:
 //  - with no accounts, all four control-bar action buttons are disabled
@@ -10,7 +11,7 @@ import { skipOnboarding } from './support/onboarding';
 //    adjustment is booked against the chosen account.
 test.describe('adjust balance consistency @local', () => {
   test('disabled with no accounts; pick + switch account inside the dialog', async ({ page }) => {
-    const email = `e2e-${Date.now()}@example.com`;
+    const email = uniqueEmail('e2e');
     const password = 'longenough';
 
     // 1. Register a new user — starts with no accounts.

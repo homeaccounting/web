@@ -1,9 +1,10 @@
 import { test, expect } from '@playwright/test';
 import { skipOnboarding } from './support/onboarding';
+import { uniqueEmail } from './support/email';
 
 test.describe('create transaction @local', () => {
   test('add expense → appears in transactions table', async ({ page }) => {
-    const email = `e2e-${Date.now()}@example.com`;
+    const email = uniqueEmail('e2e');
     const password = 'longenough';
 
     // 1. Register a new user.

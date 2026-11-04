@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { skipOnboarding } from './support/onboarding';
+import { uniqueEmail } from './support/email';
 
 // End-to-end coverage for the selection-driven Link/Merge UX (tracker#30 + the
 // selection redesign): a checkbox column drives a floating action bar. Merging
@@ -8,7 +9,7 @@ import { skipOnboarding } from './support/onboarding';
 
 /** Register a fresh user, create a USD "Wallet" (balance 100) and open it. */
 async function setupWallet(page: Page) {
-  const email = `e2e-merge-${Date.now()}-${Math.floor(performance.now())}@example.com`;
+  const email = uniqueEmail('e2e-merge');
   const password = 'longenough';
 
   await page.goto('register');

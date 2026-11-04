@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { skipOnboarding } from './support/onboarding';
+import { uniqueEmail } from './support/email';
 
 // SKIPPED: this smoke test requires a backend running with the banking feature
 // ENABLED (configuration `bankingFeatureEnabled: true`). Unlike the unit/component
@@ -14,7 +15,7 @@ import { skipOnboarding } from './support/onboarding';
 // and should pass as-is once the backend is available.
 test.describe('banking @local', () => {
   test.skip('add a bank connection → listed with masked token', async ({ page }) => {
-    const email = `e2e-${Date.now()}@example.com`;
+    const email = uniqueEmail('e2e');
     const password = 'longenough';
 
     // Register a fresh user.
@@ -63,7 +64,7 @@ test.describe('banking @local', () => {
     page,
   }) => {
     test.setTimeout(60000);
-    const email = `e2e-${Date.now()}@example.com`;
+    const email = uniqueEmail('e2e');
     const password = 'longenough';
 
     // A tiny statement CSV. The real backend parses this to discover accounts;

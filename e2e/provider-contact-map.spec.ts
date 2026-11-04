@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { skipOnboarding } from './support/onboarding';
+import { uniqueEmail } from './support/email';
 
 // tracker#54 — provider-token → contact map on Profile → Banking → Contacts,
 // plus create-and-map inline. Runs against a real banking-enabled backend
@@ -7,7 +8,7 @@ import { skipOnboarding } from './support/onboarding';
 test.describe('provider-contact map @local', () => {
   test('Contacts sub-tab: create-and-map a token, persists across reload', async ({ page }) => {
     test.setTimeout(60000);
-    const email = `e2e-${Date.now()}@example.com`;
+    const email = uniqueEmail('e2e');
     const password = 'longenough';
     const token = `MagazinREMONTI-${Date.now()}`;
     const contactName = `Repair Shop ${Date.now()}`;
@@ -59,7 +60,7 @@ test.describe('provider-contact map @local', () => {
 
   test('Banking sub-tabs switch between Connections, Expenses and Contacts', async ({ page }) => {
     test.setTimeout(60000);
-    const email = `e2e-${Date.now()}-tabs@example.com`;
+    const email = uniqueEmail('e2e-tabs');
     const password = 'longenough';
 
     await page.goto('register');
