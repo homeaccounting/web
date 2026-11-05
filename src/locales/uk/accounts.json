@@ -29,7 +29,8 @@
   "group": {
     "other": "Інше",
     "sharedWithMe": "Надано мені",
-    "closed": "Закриті"
+    "closed": "Закриті",
+    "recent": "Нещодавні"
   },
   "picker": {
     "placeholder": "Оберіть рахунок",

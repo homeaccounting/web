@@ -82,6 +82,35 @@ describe('buildPickerModel', () => {
   });
 });
 
+describe('buildPickerModel recent', () => {
+  const six = ['a', 'b', 'c', 'd', 'e'].map((id) => bank(id, 'Mono'));
+  const many = [...six, acc('w', { type: 'cash' })];
+
+  it('leads with a Recent group, in the given order, keeping rows in their own groups', () => {
+    const model = buildPickerModel(many, ['w', 'gone', 'c']);
+    expect(model.showHeaders).toBe(true);
+    expect(model.kinds.map((k) => k.key)).toEqual(['recent', 'cash', 'bankAccount']);
+    expect(model.kinds[0]).toMatchObject({ label: 'Recent' });
+    expect(pickerAccountIds(model.kinds)).toEqual(['w', 'c', 'w', 'a', 'b', 'c', 'd', 'e']);
+  });
+
+  it('omits Recent when none of its ids are offered', () => {
+    expect(buildPickerModel(many, ['gone']).kinds.map((k) => k.key)).toEqual([
+      'cash',
+      'bankAccount',
+    ]);
+  });
+
+  it('omits Recent for short lists', () => {
+    expect(buildPickerModel(six, ['a']).kinds.map((k) => k.key)).toEqual(['bankAccount']);
+  });
+
+  it('hides Recent while searching', () => {
+    const kinds = filterPickerKinds(buildPickerModel(many, ['c']).kinds, 'c');
+    expect(kinds.map((k) => k.key)).not.toContain('recent');
+  });
+});
+
 describe('filterPickerKinds', () => {
   const model = buildPickerModel([
     acc('wallet', { type: 'cash' }, { currency: 'USD' }),
