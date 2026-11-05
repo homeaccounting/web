@@ -13,17 +13,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from '@/components/ui/select';
 import { ApiError } from '@/api/client';
 import type { BankConnectionDTO, ExternalAccountDTO, UUID } from '@/api/types';
 import { useAccounts } from '@/features/accounts/useAccounts';
-import { accountLabel } from '@/features/accounts/accountLabel';
+import { AccountPicker } from '@/features/accounts/AccountPicker';
 import { useProviders } from '@/features/banking/useProviders';
 import { STATEMENT_FILE_ACCEPT, statementFormatForFiles } from '@/features/banking/statementFormat';
 import { useConfiguration } from '@/features/configuration/useConfiguration';
@@ -37,8 +30,8 @@ export interface LinkAccountsDialogProps {
   connection: BankConnectionDTO;
 }
 
-// Radix `SelectItem` cannot use an empty-string value, so "not imported" gets
-// its own sentinel; rows holding it are omitted from the saved `accountMap`.
+// "Not imported" is kept as a sentinel in the selection map; rows holding it
+// are omitted from the saved `accountMap`.
 const NOT_IMPORTED = '__not_imported__';
 
 function isRateLimited(error: unknown): boolean {
@@ -261,28 +254,19 @@ export function LinkAccountsDialog({ open, onOpenChange, connection }: LinkAccou
                     {acc.maskedPan ? `${acc.maskedPan} · ` : ''}
                     {acc.currency} · {acc.balance}
                   </div>
-                  <Select
-                    value={value}
-                    onValueChange={(v) =>
-                      setSelection((prev) => ({ ...prev, [acc.externalId]: v }))
+                  {/* The backend accountMap is many-to-one: sibling cards
+                      (e.g. two PrivatBank cards) legitimately share one local
+                      account, so a chosen account stays selectable in every
+                      same-currency row. */}
+                  <AccountPicker
+                    aria-label={label}
+                    accounts={options}
+                    value={value === NOT_IMPORTED ? null : value}
+                    noneLabel={t('linkAccounts.notImported')}
+                    onChange={(id) =>
+                      setSelection((prev) => ({ ...prev, [acc.externalId]: id ?? NOT_IMPORTED }))
                     }
-                  >
-                    <SelectTrigger aria-label={label}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={NOT_IMPORTED}>{t('linkAccounts.notImported')}</SelectItem>
-                      {/* The backend accountMap is many-to-one: sibling cards
-                          (e.g. two PrivatBank cards) legitimately share one
-                          local account, so a chosen account stays selectable in
-                          every same-currency row. */}
-                      {options.map((local) => (
-                        <SelectItem key={local.id} value={local.id}>
-                          {accountLabel(local, options)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  />
                   {options.length === 0 && (
                     <p className="text-xs text-muted-foreground">
                       {t('linkAccounts.noCurrencyAccount', { currency: acc.currency })}
