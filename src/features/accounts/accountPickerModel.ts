@@ -1,4 +1,5 @@
 import type { AccountResponse, UUID } from '@/api/types';
+import i18n from '@/lib/i18n';
 import { buildAccountGroups } from './accountGroups';
 import { accountMatches } from './accountName';
 
@@ -27,9 +28,11 @@ export interface PickerModel {
   showSearch: boolean;
 }
 
-// Reuses the sidebar grouping so pickers and sidebar order accounts the same way.
+// Reuses the sidebar grouping so pickers and sidebar order accounts the same
+// way, closed accounts last in their own group as under "Show closed".
 export function buildPickerModel(accounts: AccountResponse[]): PickerModel {
-  const groups = buildAccountGroups(accounts);
+  const groups = buildAccountGroups(accounts.filter((a) => a.status !== 'Closed'));
+  const closed = accounts.filter((a) => a.status === 'Closed');
   const kinds = groups.map((g) => ({
     key: g.key,
     label: g.label,
@@ -42,10 +45,18 @@ export function buildPickerModel(accounts: AccountResponse[]): PickerModel {
         }))
       : [{ key: g.key, subLabel: null, ariaLabel: g.label, accounts: g.accounts }],
   }));
+  if (closed.length > 0) {
+    const label = i18n.t('accounts:group.closed', { defaultValue: 'Closed' });
+    kinds.push({
+      key: 'closed',
+      label,
+      sections: [{ key: 'closed', subLabel: null, ariaLabel: label, accounts: closed }],
+    });
+  }
   return {
     kinds,
     // Headers only when grouping tells the user something.
-    showHeaders: groups.length >= 2 || groups.some((g) => g.subgroups !== undefined),
+    showHeaders: kinds.length >= 2 || groups.some((g) => g.subgroups !== undefined),
     showSearch: accounts.length > SEARCH_THRESHOLD,
   };
 }

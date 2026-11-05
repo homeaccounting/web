@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import type { AccountResponse, AccountRole } from '@/api/types';
+import type { AccountResponse, AccountRole, AccountStatus } from '@/api/types';
 import { buildPickerModel, filterPickerKinds, pickerAccountIds } from './accountPickerModel';
 
 function acc(
   id: string,
   subtype: Record<string, unknown>,
-  opts: { currency?: string; role?: AccountRole } = {},
+  opts: { currency?: string; role?: AccountRole; status?: AccountStatus } = {},
 ): AccountResponse {
   return {
     id,
@@ -14,7 +14,7 @@ function acc(
     currency: opts.currency ?? 'UAH',
     overdraftLimit: null,
     subtype: subtype as AccountResponse['subtype'],
-    status: 'Opened',
+    status: opts.status ?? 'Opened',
     role: opts.role ?? 'owner',
     version: 1,
   };
@@ -60,6 +60,19 @@ describe('buildPickerModel', () => {
       ['Mono', 'Bank account, Mono'],
       ['Privat', 'Bank account, Privat'],
     ]);
+  });
+
+  it('puts closed accounts last in their own group, as the sidebar does', () => {
+    const model = buildPickerModel([
+      bank('open', 'Mono'),
+      acc('old', { type: 'cash' }, { status: 'Closed' }),
+      acc('shared', { type: 'cash' }, { role: 'viewer' }),
+    ]);
+    expect(model.showHeaders).toBe(true);
+    expect(model.kinds.map((k) => k.key)).toEqual(['bankAccount', 'shared', 'closed']);
+    expect(model.kinds[2]).toMatchObject({ label: 'Closed' });
+    expect(model.kinds[2]!.sections[0]).toMatchObject({ ariaLabel: 'Closed' });
+    expect(pickerAccountIds(model.kinds)).toEqual(['open', 'shared', 'old']);
   });
 
   it('shows search but no headers for many accounts of one kind at one bank', () => {

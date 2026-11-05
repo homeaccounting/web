@@ -13,10 +13,10 @@ import { Check, ChevronDown } from 'lucide-react';
 import type { AccountResponse, UUID } from '@/api/types';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { useFormat } from '@/lib/useFormat';
 import { cn } from '@/lib/utils';
 import { AccountKindIcon } from './AccountKindIcon';
-import { accountNameParts, shortAccountName } from './accountName';
+import { AccountOptionContent } from './AccountOptionContent';
+import { shortAccountName } from './accountName';
 import { buildPickerModel, filterPickerKinds, pickerAccountIds } from './accountPickerModel';
 
 // id, aria-invalid and aria-describedby are injected by shadcn's <FormControl>
@@ -59,7 +59,6 @@ export function AccountPicker({
   'aria-describedby': ariaDescribedby,
 }: AccountPickerProps) {
   const { t } = useTranslation('accounts');
-  const { formatMoney } = useFormat();
   const generatedId = useId();
   const triggerId = id ?? generatedId;
   const listId = `${triggerId}-list`;
@@ -263,28 +262,14 @@ export function AccountPicker({
                         {section.subLabel}
                       </div>
                     )}
-                    {section.accounts.map((a) => {
-                      const { qualifier } = accountNameParts(a);
-                      return renderOption(
+                    {section.accounts.map((a) =>
+                      renderOption(
                         a.id,
                         shortAccountName(a),
-                        <>
-                          <AccountKindIcon account={a} />
-                          <span className="flex min-w-0 flex-1 items-baseline gap-1.5">
-                            <span className="truncate">{a.name}</span>
-                            {qualifier !== null && !subHeader && (
-                              <span className="shrink-0 text-xs text-muted-foreground">
-                                {qualifier}
-                              </span>
-                            )}
-                          </span>
-                          <span className="shrink-0 tabular-nums text-muted-foreground">
-                            {formatMoney(a.balance, a.currency)}
-                          </span>
-                        </>,
+                        <AccountOptionContent account={a} showQualifier={!subHeader} />,
                         subHeader,
-                      );
-                    })}
+                      ),
+                    )}
                   </div>
                 );
               })}
