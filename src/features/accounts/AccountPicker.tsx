@@ -38,6 +38,11 @@ export interface AccountPickerProps {
 // Navigable rows: null is the optional "none" row.
 type RowId = UUID | null;
 
+const rowsFor = (kinds: Parameters<typeof pickerAccountIds>[0], withNone: boolean): RowId[] => [
+  ...(withNone ? [null] : []),
+  ...pickerAccountIds(kinds),
+];
+
 // The shared single-select account field (tracker#97): rows grouped as in the
 // sidebar, a search box for longer lists, and balances on each row. The caller
 // decides which accounts are offered (see transactableAccounts).
@@ -70,10 +75,7 @@ export function AccountPicker({
   const kinds = useMemo(() => filterPickerKinds(model.kinds, query), [model.kinds, query]);
   // The none row isn't an account, so it hides while the user searches.
   const showNone = noneLabel !== undefined && query.trim() === '';
-  const rows = useMemo<RowId[]>(
-    () => [...(showNone ? [null] : []), ...pickerAccountIds(kinds)],
-    [showNone, kinds],
-  );
+  const rows = useMemo(() => rowsFor(kinds, showNone), [showNone, kinds]);
   const rowIndex = useMemo(() => new Map(rows.map((row, i) => [row, i])), [rows]);
   const selected = accounts.find((a) => a.id === value);
 
@@ -81,11 +83,7 @@ export function AccountPicker({
     setOpen(next);
     if (!next) return;
     setQuery('');
-    const initialRows = [
-      ...(noneLabel !== undefined ? [null] : []),
-      ...pickerAccountIds(model.kinds),
-    ];
-    setActive(Math.max(0, initialRows.indexOf(value)));
+    setActive(Math.max(0, rowsFor(model.kinds, noneLabel !== undefined).indexOf(value)));
   };
 
   useEffect(() => {
@@ -103,7 +101,7 @@ export function AccountPicker({
   const handleListKeyDown = (e: KeyboardEvent) => {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setActive((i) => Math.min(i + 1, rows.length - 1));
+      setActive((i) => Math.max(0, Math.min(i + 1, rows.length - 1)));
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       setActive((i) => Math.max(i - 1, 0));
@@ -112,14 +110,17 @@ export function AccountPicker({
       setActive(0);
     } else if (e.key === 'End') {
       e.preventDefault();
-      setActive(rows.length - 1);
-    } else if (e.key === 'Enter' && active < rows.length) {
+      setActive(Math.max(0, rows.length - 1));
+    } else if (e.key === 'Enter') {
+      const row = rows[active];
+      if (row === undefined) return;
       e.preventDefault();
-      pick(rows[active] ?? null);
+      pick(row);
     }
   };
 
-  const activeId = open && active < rows.length ? optionId(rows[active] ?? null) : undefined;
+  const activeRow = rows[active];
+  const activeId = open && activeRow !== undefined ? optionId(activeRow) : undefined;
 
   const renderOption = (row: RowId, label: string, content: ReactNode, indent = false) => {
     const index = rowIndex.get(row) ?? -1;
@@ -133,8 +134,14 @@ export function AccountPicker({
         aria-selected={isSelected}
         aria-label={label}
         onMouseDown={(e) => {
-          // mousedown so focus stays in the search box (or listbox) through the pick.
+          // Keeps focus in the search box (or listbox) through the pick.
           e.preventDefault();
+        }}
+        onClick={() => pick(row)}
+        onKeyDown={(e) => {
+          if (e.key !== 'Enter' && e.key !== ' ') return;
+          e.preventDefault();
+          e.stopPropagation();
           pick(row);
         }}
         onMouseEnter={() => setActive(index)}
@@ -151,7 +158,7 @@ export function AccountPicker({
   };
 
   return (
-    <Popover open={open} onOpenChange={handleOpenChange}>
+    <Popover modal open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <button
           type="button"
@@ -283,10 +290,10 @@ export function AccountPicker({
               })}
             </div>
           ))}
-          {rows.length === 0 && (
-            <div className="px-2 py-1.5 text-sm text-muted-foreground">{t('picker.noMatches')}</div>
-          )}
         </div>
+        {rows.length === 0 && (
+          <div className="px-3 py-2 text-sm text-muted-foreground">{t('picker.noMatches')}</div>
+        )}
       </PopoverContent>
     </Popover>
   );

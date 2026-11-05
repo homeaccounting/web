@@ -67,6 +67,7 @@ describe('rawQualifier', () => {
     expect(rawQualifier(acc('Flat', { type: 'asset', assetType: 'property' }))).toBe('property');
     expect(rawQualifier(acc('Card', { type: 'bankAccount', bankName: 'Mono' }))).toBe('Mono');
     expect(rawQualifier(acc('Y', null))).toBeNull();
+    expect(rawQualifier(acc('Card', { type: 'bankAccount', bankName: '  Mono ' }))).toBe('Mono');
   });
 });
 

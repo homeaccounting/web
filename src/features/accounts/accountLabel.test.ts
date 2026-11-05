@@ -31,7 +31,7 @@ function acc(
   };
 }
 
-describe('sortAccounts / compareAccounts (by display label)', () => {
+describe('sortAccounts / compareAccounts (by raw qualifier)', () => {
   const ids = (list: readonly AccountResponse[]) => list.map((a) => a.id);
 
   it('orders primarily by name, case-insensitively', () => {

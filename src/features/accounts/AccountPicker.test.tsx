@@ -136,6 +136,17 @@ describe('AccountPicker', () => {
     expect(screen.getByText('No matching accounts')).toBeInTheDocument();
   });
 
+  it('keeps the selection when Enter or arrows are pressed on an empty result list', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    renderWithProviders(<Harness accounts={mixed} initial="m1" onChange={onChange} />);
+    await user.click(trigger());
+    await user.type(screen.getByRole('combobox', { name: 'Search accounts' }), 'zzz');
+    await user.keyboard('{ArrowDown}{End}{Enter}');
+    expect(onChange).not.toHaveBeenCalled();
+    expect(screen.getByRole('combobox', { name: 'Search accounts' })).toBeInTheDocument();
+  });
+
   it('is keyboard operable: arrows, Home/End, Enter, Escape', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();

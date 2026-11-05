@@ -370,7 +370,7 @@ describe('LinkAccountsDialog', () => {
   it('disambiguates same-currency local accounts by their bank label', async () => {
     const user = userEvent.setup();
     // Two UAH accounts that share the name "Card" — indistinguishable without
-    // the bank qualifier the accountLabel helper appends.
+    // the bank qualifier in the short account name.
     server.use(
       http.get(`${apiBase}/api/accounts`, () => {
         const uahAccounts: AccountResponse[] = [

@@ -50,7 +50,8 @@ export function rawQualifier(account: AccountResponse): string | null {
   const kind = knownKind(account);
   if (!kind) return null;
   const raw = account.subtype?.[QUALIFIER[kind].field];
-  return typeof raw === 'string' && raw.trim() !== '' ? raw : null;
+  const trimmed = typeof raw === 'string' ? raw.trim() : '';
+  return trimmed !== '' ? trimmed : null;
 }
 
 export function accountNameParts(account: AccountResponse): AccountNameParts {
