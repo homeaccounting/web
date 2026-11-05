@@ -165,6 +165,9 @@ describe('TransactionsPane balance/list consistency', () => {
     const accountInput = container.querySelector('.w-64 input[role="combobox"]') as HTMLElement;
     await user.click(accountInput);
     await user.click(await screen.findByRole('option', { name: /Old Savings/i }));
+    // The menu stays open for further picks and lists every balance; close it
+    // so only the header's balance is on screen.
+    await user.keyboard('{Escape}');
 
     // a2's own balance (0) shows immediately — not a1's held 1,234.56 — even
     // though a2's transactions query is still loading (blocked below).
