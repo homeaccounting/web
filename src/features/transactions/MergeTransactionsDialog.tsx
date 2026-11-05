@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils';
 import type { TransactionResponse, UUID } from '@/api/types';
 import { useFormat } from '@/lib/useFormat';
 import { useAccounts } from '@/features/accounts/useAccounts';
-import { accountLabel } from '@/features/accounts/accountLabel';
+import { shortAccountName } from '@/features/accounts/accountName';
 import { useMergeTransactions } from './useMergeTransactions';
 import {
   categorisedTotal,
@@ -99,7 +99,7 @@ export function MergeTransactionsDialog({
   );
   const labelFor = (id: UUID): string => {
     const account = accountsById.get(id);
-    return account ? accountLabel(account, accounts ?? []) : '—';
+    return account ? shortAccountName(account) : '—';
   };
 
   const conflict = !eligibility.eligible ? eligibility : null;

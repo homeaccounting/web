@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import type { AccountResponse } from '@/api/types';
 import type { AccountScope } from './accountScope';
-import { accountLabel } from '@/features/accounts/accountLabel';
+import { shortAccountName } from '@/features/accounts/accountName';
 
 // The multi-account counterpart to AccountHeader: a heading identifying the
 // current scope ("All accounts" or "{n} accounts") without a balance, since a
@@ -21,7 +21,7 @@ export function ScopeHeader({
       : scope.ids
           .map((id) => accounts.find((a) => a.id === id))
           .filter((a): a is AccountResponse => !!a)
-          .map((a) => accountLabel(a, accounts));
+          .map((a) => shortAccountName(a));
   const title =
     scope.kind === 'all'
       ? t('list.allAccounts')

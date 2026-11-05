@@ -49,7 +49,7 @@ import { transactionAccountCell, transactionDisplayAmount } from './transactionD
 import { useScopedTransactions } from './useScopedTransactions';
 import { useConsistentAccountView } from './useConsistentAccountView';
 import { useAccounts } from '@/features/accounts/useAccounts';
-import { accountLabel } from '@/features/accounts/accountLabel';
+import { shortAccountName } from '@/features/accounts/accountName';
 import { ScopeHeader } from './ScopeHeader';
 import {
   parsePeriodParams,
@@ -766,14 +766,13 @@ export function TransactionsPane() {
                         const cell = transactionAccountCell(t);
                         const from = accountsById.get(cell.fromId);
                         const to = cell.toId ? accountsById.get(cell.toId) : undefined;
-                        const list = accounts ?? [];
                         return (
                           <td className="whitespace-nowrap px-4 py-2 text-muted-foreground">
-                            {from ? accountLabel(from, list) : '—'}
+                            {from ? shortAccountName(from) : '—'}
                             {cell.toId && (
                               <>
                                 {' '}
-                                <span aria-hidden>→</span> {to ? accountLabel(to, list) : '—'}
+                                <span aria-hidden>→</span> {to ? shortAccountName(to) : '—'}
                               </>
                             )}
                           </td>

@@ -4,7 +4,7 @@ import { Check, ChevronDown, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import type { AccountResponse, UUID } from '@/api/types';
-import { accountLabel } from '@/features/accounts/accountLabel';
+import { shortAccountName } from '@/features/accounts/accountName';
 
 export interface AccountMultiSelectProps {
   options: AccountResponse[];
@@ -23,7 +23,7 @@ export interface AccountMultiSelectProps {
 }
 
 // Multi-select with type-ahead over accounts. Typing filters the option list
-// by case-insensitive substring on the bank-qualified display label; clicking
+// by case-insensitive substring on the short account name (see accountName.ts); clicking
 // an option toggles its membership in `value` without closing the menu.
 // Selected entries render as removable chips inside the input area. Mirrors
 // LabelMultiSelect — see that file for the shared structure/behavior.
@@ -42,7 +42,7 @@ export function AccountMultiSelect({
   const inputId = id ?? generatedId;
   const listId = `${inputId}-list`;
 
-  const label = useCallback((a: AccountResponse) => accountLabel(a, options), [options]);
+  const label = useCallback((a: AccountResponse) => shortAccountName(a), []);
 
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
