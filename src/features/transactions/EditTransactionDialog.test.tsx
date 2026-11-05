@@ -362,11 +362,11 @@ describe('EditTransactionDialog', () => {
     const user = userEvent.setup();
     renderDialog({});
     const select = await screen.findByLabelText(/^Account\b/i);
-    // The picker qualifies bank accounts with their bank name (currency shown separately).
-    expect(select).toHaveTextContent('Checking · ACME (USD)');
+    // The picker names bank accounts as "name · bank · currency".
+    expect(select).toHaveTextContent('Checking · ACME · USD');
     await user.click(select);
     const options = await screen.findAllByRole('option');
-    expect(options.map((o) => o.textContent)).toEqual(['Checking · ACME (USD)']);
+    expect(options.map((o) => o.getAttribute('aria-label'))).toEqual(['Checking · ACME · USD']);
   });
 
   it('fieldErrors.targetAccountId on income amendment maps to the accountId field', async () => {

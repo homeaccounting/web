@@ -7,13 +7,6 @@ import { DialogBody, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from '@/components/ui/select';
 import type { AccountResponse, DictionaryEntryResponse } from '@/api/types';
 import { makeIncomeExpenseFormSchema, type IncomeExpenseFormValues } from './schema';
 import { LabelMultiSelect } from './LabelMultiSelect';
@@ -24,7 +17,8 @@ import { dropEmptySlices } from './allocations';
 import { DatePicker } from '@/components/DatePicker';
 import { RequiredMarker } from '@/components/RequiredMarker';
 import { transactionKindLabel, type TransactionKind } from './labels';
-import { accountLabelParts } from '@/features/accounts/accountLabel';
+import { AccountPicker } from '@/features/accounts/AccountPicker';
+import { transactableAccounts } from '@/features/accounts/transactableAccounts';
 
 export interface IncomeExpenseFormApi {
   setFieldError: (field: string, message: string) => void;
@@ -122,6 +116,13 @@ export function IncomeExpenseForm({
     if (a) form.setValue('currency', a.currency, { shouldDirty: false });
   }, [accountId, accounts, form]);
 
+  // Keep the initial account so an edited transaction on a since-closed or
+  // view-only account still shows it.
+  const accountOptions = useMemo(
+    () => transactableAccounts(accounts, [defaultValues.accountId]),
+    [accounts, defaultValues.accountId],
+  );
+
   useEffect(() => {
     onReady?.({
       setFieldError: (field, message) =>
@@ -173,9 +174,8 @@ export function IncomeExpenseForm({
         className="flex min-h-0 flex-1 flex-col"
       >
         <DialogBody>
-          {/* Currency is no longer a standalone field: it shows inline in each
-              amount row (via MoneyInput) and in the account option's "(USD)"
-              suffix, so the account picker spans the full width. */}
+          {/* Currency is not a standalone field: it shows inline in each amount
+              row (via MoneyInput) and in the account's short name. */}
           <FormField
             control={form.control}
             name="accountId"
@@ -186,25 +186,12 @@ export function IncomeExpenseForm({
                   <RequiredMarker />
                 </FormLabel>
                 <FormControl>
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger aria-label={t('form.account')}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {accounts.map((a) => {
-                        // Currency is already shown in parentheses, so the
-                        // qualifier carries only the bank name.
-                        const { qualifier } = accountLabelParts(a, accounts, {
-                          currencyTiebreaker: false,
-                        });
-                        return (
-                          <SelectItem key={a.id} value={a.id}>
-                            {qualifier ? `${a.name} · ${qualifier}` : a.name} ({a.currency})
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
+                  <AccountPicker
+                    accounts={accountOptions}
+                    value={field.value || null}
+                    onChange={(id) => field.onChange(id ?? '')}
+                    aria-label={t('form.account')}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

@@ -7,7 +7,12 @@ import { server } from '@/test/server';
 import { renderWithProviders } from '@/test/utils';
 import { AuthProvider } from '@/auth/AuthContext';
 import { saveSession } from '@/auth/storage';
-import { foodCategoryId, configurationFixture } from '@/test/fixtures';
+import {
+  foodCategoryId,
+  configurationFixture,
+  accountFixture,
+  closedAccountFixture,
+} from '@/test/fixtures';
 import { CreateExpenseDialog } from './CreateExpenseDialog';
 import { writeStickyDay } from '@/lib/stickyDate';
 
@@ -29,6 +34,8 @@ beforeEach(() => {
             currency: 'USD',
             overdraftLimit: null,
             subtype: { type: 'bankAccount', bankName: 'ACME' },
+            status: 'Opened',
+            role: 'owner',
             version: 1,
           },
         ],
@@ -64,6 +71,24 @@ function captureLabelCreate() {
 }
 
 describe('CreateExpenseDialog', () => {
+  it('defaults to the first eligible account, skipping a closed one', async () => {
+    server.use(
+      http.get(`${apiBase}/api/accounts`, () =>
+        HttpResponse.json({
+          // Named to sort before "Checking": accounts arrive label-sorted, so the
+          // closed one would be the naive first pick.
+          accounts: [{ ...closedAccountFixture, name: 'Aardvark Savings' }, accountFixture],
+          totalCount: 2,
+        }),
+      ),
+    );
+    renderWithProviders(<Wrapper />, { initialPath: '/' });
+    await screen.findByRole('dialog', { name: /add expense/i });
+    const trigger = await screen.findByRole('combobox', { name: /^account/i });
+    await waitFor(() => expect(trigger).toHaveTextContent('Checking'));
+    expect(trigger).not.toHaveTextContent('Aardvark');
+  });
+
   it('creates a label inline and sends it with the expense', async () => {
     const user = userEvent.setup();
     const created = captureLabelCreate();
@@ -243,6 +268,8 @@ describe('CreateExpenseDialog', () => {
               currency: 'USD',
               overdraftLimit: 0,
               subtype: { type: 'bankAccount', bankName: 'ACME' },
+              status: 'Opened',
+              role: 'owner',
               version: 1,
             },
           ],
