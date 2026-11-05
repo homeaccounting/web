@@ -5,6 +5,11 @@ import { renderWithProviders } from '@/test/utils';
 import type { AccountResponse, DictionaryEntryResponse } from '@/api/types';
 import { TransferForm } from './TransferForm';
 
+vi.mock('@/features/configuration/useConfiguration', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/features/configuration/useConfiguration')>()),
+  useConfiguration: () => ({ data: undefined }),
+}));
+
 const A1 = '00000000-0000-0000-0000-000000000001'; // USD
 const A2 = '00000000-0000-0000-0000-000000000002'; // EUR
 const A3 = '00000000-0000-0000-0000-000000000003'; // USD2
@@ -88,6 +93,67 @@ describe('TransferForm', () => {
     await user.click(screen.getByLabelText(/source account/i));
     expect(await screen.findByRole('option', { name: /visa · Monobank/ })).toBeInTheDocument();
     expect(await screen.findByRole('option', { name: /visa · PrivatBank/ })).toBeInTheDocument();
+  });
+
+  it('does not offer the selected source as a target', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <TransferForm
+        mode="create"
+        accounts={accounts}
+        labels={labels}
+        defaultValues={defaults}
+        isSubmitting={false}
+        onSubmit={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    await user.click(screen.getByRole('combobox', { name: /target account/i }));
+    expect(screen.queryByRole('option', { name: /^USD acct/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /^USD2/ })).toBeInTheDocument();
+  });
+
+  it('clears the target when the current target is picked as source', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <TransferForm
+        mode="create"
+        accounts={accounts}
+        labels={labels}
+        defaultValues={defaults}
+        isSubmitting={false}
+        onSubmit={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    await user.click(screen.getByRole('combobox', { name: /source account/i }));
+    await user.click(screen.getByRole('option', { name: /^USD2/ }));
+    expect(screen.getByRole('combobox', { name: /target account/i })).toHaveTextContent(
+      'Select an account',
+    );
+  });
+
+  it('offers only open accounts the user can record on', async () => {
+    const user = userEvent.setup();
+    const extra: AccountResponse[] = [
+      ...accounts,
+      { ...accounts[0]!, id: 'closed', name: 'Closed one', status: 'Closed' },
+      { ...accounts[0]!, id: 'viewer', name: 'Viewed one', role: 'viewer' },
+    ];
+    renderWithProviders(
+      <TransferForm
+        mode="create"
+        accounts={extra}
+        labels={labels}
+        defaultValues={defaults}
+        isSubmitting={false}
+        onSubmit={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    await user.click(screen.getByRole('combobox', { name: /source account/i }));
+    expect(screen.queryByRole('option', { name: /^Closed one/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /^Viewed one/ })).not.toBeInTheDocument();
   });
 
   it('hides exchangeRate when source/target share a currency', () => {
@@ -266,24 +332,5 @@ describe('TransferForm', () => {
       );
       expect(screen.getByRole('button', { name: 'OK' })).toBeDisabled();
     });
-  });
-
-  it('renders an inline error when source equals target', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(
-      <TransferForm
-        mode="create"
-        accounts={accounts}
-        labels={labels}
-        defaultValues={defaults}
-        isSubmitting={false}
-        onSubmit={vi.fn()}
-        onCancel={vi.fn()}
-      />,
-    );
-    await user.click(screen.getByLabelText(/target account/i));
-    await user.click(await screen.findByRole('option', { name: /usd acct/i }));
-    await user.click(screen.getByRole('button', { name: 'OK' }));
-    expect(await screen.findByText(/must differ/i)).toBeInTheDocument();
   });
 });

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { http, HttpResponse } from 'msw';
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { server } from '@/test/server';
 import { renderWithProviders } from '@/test/utils';
@@ -503,6 +503,45 @@ describe('AccountsPane', () => {
     expect(screen.getByText('PrivatBank')).toBeInTheDocument();
     // There is no "Monobank" collapse-toggle header in a flat section.
     expect(screen.queryByRole('button', { name: /^monobank$/i })).not.toBeInTheDocument();
+  });
+
+  it('qualifies a flat asset by its type and never adds currency to same-named bank accounts', async () => {
+    const accounts = [
+      {
+        ...accountFixture,
+        id: 'a1',
+        name: 'Flat',
+        subtype: { type: 'asset', assetType: 'property' },
+      },
+      {
+        ...accountFixture,
+        id: 'v1',
+        name: 'visa',
+        currency: 'UAH',
+        subtype: { type: 'bankAccount', bankName: 'Monobank' },
+      },
+      {
+        ...accountFixture,
+        id: 'v2',
+        name: 'visa',
+        currency: 'USD',
+        subtype: { type: 'bankAccount', bankName: 'Monobank' },
+      },
+    ];
+    server.use(
+      http.get(`${apiBase}/api/accounts`, () =>
+        HttpResponse.json({ accounts, totalCount: accounts.length }),
+      ),
+    );
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    renderWithProviders(ui(), { initialPath: '/' });
+    const assetRow = await screen.findByRole('link', { name: /^Flat/ });
+    // asset row: name + muted asset-type label
+    expect(within(assetRow).getByText('Flat')).toBeInTheDocument();
+    expect(within(assetRow).getByText('Property')).toBeInTheDocument();
+    // same-named bank accounts: qualifier is the bank only, no "· USD"
+    expect(screen.queryByText('Monobank · USD')).not.toBeInTheDocument();
+    expect(screen.getAllByText('Monobank')).toHaveLength(2);
   });
 
   it('does not repeat the bank name on rows inside a bank sub-group (header carries it)', async () => {

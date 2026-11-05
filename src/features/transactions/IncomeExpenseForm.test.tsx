@@ -77,6 +77,55 @@ const incomeDefaults: IncomeExpenseFormValues = {
 };
 
 describe('IncomeExpenseForm', () => {
+  it('offers only open accounts the user can record on', async () => {
+    const user = userEvent.setup();
+    const extra: AccountResponse[] = [
+      ...accounts,
+      { ...accounts[0]!, id: 'closed', name: 'Closed one', status: 'Closed' },
+      { ...accounts[0]!, id: 'viewer', name: 'Viewed one', role: 'viewer' },
+    ];
+    renderWithProviders(
+      <IncomeExpenseForm
+        kind="expense"
+        mode="create"
+        accounts={extra}
+        categories={[]}
+        labels={[]}
+        contacts={[]}
+        defaultValues={{ ...expenseDefaults, accountId: A1 }}
+        isSubmitting={false}
+        onSubmit={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    await user.click(screen.getByRole('combobox', { name: /^account/i }));
+    expect(screen.getByRole('option', { name: /^Checking/ })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /^Closed one/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /^Viewed one/ })).not.toBeInTheDocument();
+  });
+
+  it('still shows a closed account when editing a transaction recorded on it', () => {
+    const extra: AccountResponse[] = [
+      ...accounts,
+      { ...accounts[0]!, id: 'closed', name: 'Closed one', status: 'Closed' },
+    ];
+    renderWithProviders(
+      <IncomeExpenseForm
+        kind="expense"
+        mode="edit"
+        accounts={extra}
+        categories={[]}
+        labels={[]}
+        contacts={[]}
+        defaultValues={{ ...expenseDefaults, accountId: 'closed' }}
+        isSubmitting={false}
+        onSubmit={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole('combobox', { name: /^account/i })).toHaveTextContent('Closed one');
+  });
+
   it('renders only an Expense categories section for an expense', () => {
     renderWithProviders(
       <IncomeExpenseForm

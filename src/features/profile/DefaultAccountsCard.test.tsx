@@ -54,10 +54,10 @@ describe('DefaultAccountsCard', () => {
 
     const cashRow = screen.getByRole('combobox', { name: 'Cash default account' });
     await user.click(cashRow);
-    await user.click(await screen.findByRole('option', { name: 'Wallet' }));
+    await user.click(await screen.findByRole('option', { name: /^Wallet/ }));
     // Re-open to inspect options; the bank account must NOT be offered on the cash row.
     await user.click(cashRow);
-    expect(screen.queryByRole('option', { name: 'Checking' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /^Checking/ })).not.toBeInTheDocument();
     await user.keyboard('{Escape}');
 
     await user.click(screen.getByRole('button', { name: /save/i }));
@@ -77,7 +77,7 @@ describe('DefaultAccountsCard', () => {
     const user = userEvent.setup();
 
     await user.click(screen.getByRole('combobox', { name: 'Default account' }));
-    await user.click(await screen.findByRole('option', { name: 'Wallet' }));
+    await user.click(await screen.findByRole('option', { name: /^Wallet/ }));
 
     await user.click(screen.getByRole('button', { name: /save/i }));
     await waitFor(() =>
@@ -113,8 +113,21 @@ describe('DefaultAccountsCard', () => {
     });
     const user = userEvent.setup();
     await user.click(screen.getByRole('combobox', { name: 'Default account' }));
-    expect(await screen.findByRole('option', { name: 'Wallet' })).toBeInTheDocument();
-    expect(screen.queryByRole('option', { name: 'Old' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('option', { name: 'External' })).not.toBeInTheDocument();
+    expect(await screen.findByRole('option', { name: /^Wallet/ })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /^Old/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /^External/ })).not.toBeInTheDocument();
+  });
+
+  it('does not offer view-only accounts as defaults', async () => {
+    renderCard({
+      accounts: [
+        acct('cash-1', 'Wallet', 'cash'),
+        { ...acct('shared', 'Shared cash', 'cash'), role: 'viewer' },
+      ],
+    });
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('combobox', { name: 'Default account' }));
+    expect(await screen.findByRole('option', { name: /^Wallet/ })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /^Shared cash/ })).not.toBeInTheDocument();
   });
 });

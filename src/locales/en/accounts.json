@@ -30,6 +30,11 @@
     "other": "Other",
     "sharedWithMe": "Shared with me"
   },
+  "picker": {
+    "placeholder": "Select an account",
+    "search": "Search accounts",
+    "noMatches": "No matching accounts"
+  },
   "pane": {
     "title": "Accounts",
     "allAccounts": "All accounts",

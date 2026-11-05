@@ -22,7 +22,7 @@ import { toast } from '@/lib/toast';
 import type { AccountResponse } from '@/api/types';
 import { ApiError } from '@/api/client';
 import { buildAccountGroups } from './accountGroups';
-import { accountLabelParts } from './accountLabel';
+import { accountNameParts } from './accountName';
 import { useAccounts } from './useAccounts';
 import { useAccountById } from './useAccountById';
 import {
@@ -130,24 +130,22 @@ export function AccountsPane() {
     return qs ? `?${qs}` : '';
   };
 
-  // `qualify` turns on flat-context disambiguation: each row shows its bank
-  // name (currency on residual collision) so a user can identify the right
-  // account without a grouping header. Off inside a bank sub-group, where the
-  // sub-header already carries the bank name.
+  // `qualify` shows each row's qualifier (bank, provider, …) in flat lists so the
+  // user can tell accounts apart without a grouping header. Off inside a
+  // sub-group, whose header already carries it. Currency is never added: the
+  // balance column shows it.
   const renderAccountList = (accounts: AccountResponse[], qualify = false) => (
     <ul className="space-y-0.5">
       {accounts.map((a) => (
-        <li key={a.id}>{renderAccountRow(a, qualify ? accounts : undefined)}</li>
+        <li key={a.id}>{renderAccountRow(a, qualify)}</li>
       ))}
     </ul>
   );
 
-  const renderAccountRow = (a: AccountResponse, siblings?: readonly AccountResponse[]) => {
+  const renderAccountRow = (a: AccountResponse, qualify: boolean) => {
     const isClosed = a.status === 'Closed';
     const active = single === a.id;
-    const { qualifier } = siblings
-      ? accountLabelParts(a, siblings)
-      : { qualifier: null as string | null };
+    const qualifier = qualify ? accountNameParts(a).qualifier : null;
     return (
       <AccountContextMenu
         account={a}
@@ -366,7 +364,7 @@ export function AccountsPane() {
               {showClosed && (
                 <ul className="mt-1 space-y-0.5 border-t pt-2">
                   {closedAccounts.map((a) => (
-                    <li key={a.id}>{renderAccountRow(a, closedAccounts)}</li>
+                    <li key={a.id}>{renderAccountRow(a, true)}</li>
                   ))}
                 </ul>
               )}

@@ -18,8 +18,7 @@ import type { CreateAccountFormValues } from './schema';
 import { assetTypeLabel, cardNetworkLabel } from './labels';
 
 // Radix `SelectItem` cannot use an empty-string value, so "Other…" (custom
-// bank name entry) gets its own sentinel — same idiom as AccountSelect's
-// NONE_VALUE / LinkAccountsDialog's NOT_IMPORTED.
+// bank name entry) gets its own sentinel.
 const CUSTOM_BANK_VALUE = '__custom__';
 
 // Same idiom for the asset-type "Other…" entry (backend freeform OtherAsset).

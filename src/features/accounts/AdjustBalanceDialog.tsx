@@ -13,13 +13,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from '@/components/ui/select';
+import { AccountPicker } from './AccountPicker';
+import { transactableAccounts } from './transactableAccounts';
 import { DatePicker } from '@/components/DatePicker';
 import { MoneyInput } from '@/components/MoneyInput';
 import { RequiredMarker } from '@/components/RequiredMarker';
@@ -48,7 +43,8 @@ export function AdjustBalanceDialog({
 }: AdjustBalanceDialogProps) {
   const { t } = useTranslation('accounts');
   const { data: accounts } = useAccounts();
-  const hasAccounts = !!accounts && accounts.length > 0;
+  const eligible = transactableAccounts(accounts ?? []);
+  const hasAccounts = eligible.length > 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -59,7 +55,7 @@ export function AdjustBalanceDialog({
         </DialogHeader>
         {hasAccounts ? (
           <AdjustBalanceForm
-            accounts={accounts}
+            accounts={eligible}
             selectedAccountId={selectedAccountId}
             onClose={() => onOpenChange(false)}
           />
@@ -157,18 +153,12 @@ function AdjustBalanceForm({ accounts, selectedAccountId, onClose }: AdjustBalan
                   <RequiredMarker />
                 </FormLabel>
                 <FormControl>
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger aria-label={t('adjustDialog.account')}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {accounts.map((a) => (
-                        <SelectItem key={a.id} value={a.id}>
-                          {a.name} ({a.currency})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <AccountPicker
+                    accounts={accounts}
+                    value={field.value}
+                    onChange={field.onChange}
+                    aria-label={t('adjustDialog.account')}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

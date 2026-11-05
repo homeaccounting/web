@@ -15,7 +15,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from '@/lib/toast';
 import { useUpdateDefaults } from '@/features/configuration/useUpdateDefaults';
-import { AccountSelect, NONE_VALUE } from './AccountSelect';
+import { AccountPicker } from '@/features/accounts/AccountPicker';
+import { canModify } from '@/features/accounts/roles';
+
+const NONE_VALUE = '__none__';
 
 interface Props {
   accounts: AccountResponse[];
@@ -26,7 +29,8 @@ interface Props {
 export function DefaultAccountsCard({ accounts, accountCurrent, subtypeCurrent }: Props) {
   const { t } = useTranslation('profile');
   const update = useUpdateDefaults();
-  const selectable = accounts.filter(isSelectableDefaultAccount);
+  // Defaults seed new transactions, so view-only accounts aren't offered.
+  const selectable = accounts.filter((a) => isSelectableDefaultAccount(a) && canModify(a.role));
 
   const initialRows = Object.fromEntries(
     ACCOUNT_SUBTYPE_TYPES.map((k) => [k, subtypeCurrent[subtypeTypeToKind(k)] ?? NONE_VALUE]),
@@ -60,13 +64,14 @@ export function DefaultAccountsCard({ accounts, accountCurrent, subtypeCurrent }
           <label htmlFor="default-account" className="w-44 text-sm font-medium">
             {t('defaults.defaultAccount')}
           </label>
-          <AccountSelect
+          <AccountPicker
             id="default-account"
-            label={t('defaults.defaultAccount')}
-            value={account}
+            aria-label={t('defaults.defaultAccount')}
+            className="w-56"
             accounts={selectable}
-            includeNone={false}
-            onChange={setAccount}
+            value={account || null}
+            placeholder={t('selectPlaceholder')}
+            onChange={(id) => setAccount(id ?? '')}
           />
         </div>
         <div className="space-y-3 border-t pt-4">
@@ -75,13 +80,16 @@ export function DefaultAccountsCard({ accounts, accountCurrent, subtypeCurrent }
               <label htmlFor={`default-${k}`} className="w-44 text-sm font-medium">
                 {t('defaults.subtypeDefaultAccount', { subtype: accountSubtypeLabel(k) })}
               </label>
-              <AccountSelect
+              <AccountPicker
                 id={`default-${k}`}
-                label={t('defaults.subtypeDefaultAccount', { subtype: accountSubtypeLabel(k) })}
-                value={rows[k]}
-                includeNone
+                aria-label={t('defaults.subtypeDefaultAccount', {
+                  subtype: accountSubtypeLabel(k),
+                })}
+                className="w-56"
                 accounts={selectable.filter((a) => a.subtype?.type === k)}
-                onChange={(v) => setRows((prev) => ({ ...prev, [k]: v }))}
+                value={rows[k] === NONE_VALUE ? null : rows[k]}
+                noneLabel={t('defaults.none')}
+                onChange={(id) => setRows((prev) => ({ ...prev, [k]: id ?? NONE_VALUE }))}
               />
             </div>
           ))}

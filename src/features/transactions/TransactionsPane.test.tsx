@@ -2110,9 +2110,8 @@ describe('TransactionsPane', () => {
   });
 
   describe('account scope (multi-account)', () => {
-    // Two owned, open accounts sharing the same bank name — accountLabel only
-    // qualifies by bank when NAMES collide, so distinct names ("Checking" /
-    // "Savings") render as bare names, matching how the rows are asserted below.
+    // Two owned, open accounts sharing the same bank name — whose short
+    // names (name · qualifier · currency, see accountName.ts) differ by name.
     const checkingAccount: AccountResponse = { ...accountFixture };
     const savingsAccount: AccountResponse = {
       id: 'a2',
@@ -2178,9 +2177,8 @@ describe('TransactionsPane', () => {
       expect(await screen.findByRole('heading', { name: 'All accounts' })).toBeInTheDocument();
       expect(await screen.findByRole('columnheader', { name: 'Account' })).toBeInTheDocument();
 
-      // accountLabel always appends the bank-name qualifier ("Checking · ACME"),
-      // even without a name collision — see accountLabelParts — so match by
-      // substring rather than the bare account name.
+      // short names always carry the bank-name qualifier ("Checking · ACME · …"),
+      // so match by substring rather than the bare account name.
       const expenseRow = (await screen.findByText('ExpenseA1')).closest('tr')!;
       expect(within(expenseRow).getByText(/Checking/)).toBeInTheDocument();
       const incomeRow = (await screen.findByText('IncomeA2')).closest('tr')!;

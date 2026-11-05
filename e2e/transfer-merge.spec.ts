@@ -113,7 +113,7 @@ test.describe('transfer-merge @local', () => {
     // exposed as buttons, so assert on the individual cells.)
     await expect(page.getByRole('cell', { name: 'MoveIn', exact: true })).toBeVisible();
     await expect(page.getByRole('img', { name: 'Transfer' })).toBeVisible();
-    await expect(page.getByRole('cell', { name: 'Checking Savings' })).toBeVisible();
+    await expect(page.getByRole('cell', { name: 'Checking · USD Savings · USD' })).toBeVisible();
     await expect(page.getByRole('cell', { name: 'MoveOut', exact: true })).toHaveCount(0);
 
     // Reveal cancelled rows → the expense reappears, now Cancelled.

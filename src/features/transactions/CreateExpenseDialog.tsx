@@ -11,6 +11,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ApiError } from '@/api/client';
 import type { UUID } from '@/api/types';
 import { useAccounts } from '@/features/accounts/useAccounts';
+import { defaultRecordAccount } from '@/features/accounts/transactableAccounts';
 import { flattenDictionary } from '@/api/dictionary';
 import { useConfiguration } from '@/features/configuration/useConfiguration';
 import { useCreateDictionaryItem } from '@/features/configuration/useCreateDictionaryEntry';
@@ -43,7 +44,7 @@ export function CreateExpenseDialog({
   const labels = flattenDictionary(config?.dictionaries.label);
   const contacts = flattenDictionary(config?.dictionaries.contact);
 
-  const defaultAccount = accounts?.find((a) => a.id === selectedAccountId) ?? accounts?.[0];
+  const defaultAccount = defaultRecordAccount(accounts ?? [], selectedAccountId);
   const defaultCategory = config?.defaults.expenseCategory ?? '';
 
   // Computed fresh on every render (deliberately not memoized) so the date
@@ -99,7 +100,7 @@ export function CreateExpenseDialog({
             <AlertDescription>{bannerMessage}</AlertDescription>
           </Alert>
         )}
-        {accounts && accounts.length > 0 && (
+        {accounts && defaultAccount && (
           <IncomeExpenseForm
             kind="expense"
             mode="create"
@@ -117,7 +118,7 @@ export function CreateExpenseDialog({
             onReady={handleReady}
           />
         )}
-        {(!accounts || accounts.length === 0) && (
+        {!defaultAccount && (
           <div className="p-2 text-sm text-muted-foreground">{t('form.noAccountsExpense')}</div>
         )}
       </DialogContent>

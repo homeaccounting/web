@@ -9,6 +9,7 @@ import { saveSession } from '@/auth/storage';
 import { AdjustBalanceDialog } from './AdjustBalanceDialog';
 import { STICKY_DATE_KEY, writeStickyDay } from '@/lib/stickyDate';
 import type { AccountResponse } from '@/api/types';
+import { accountFixture, closedAccountFixture } from '@/test/fixtures';
 
 const apiBase = 'http://localhost:8080';
 
@@ -328,6 +329,16 @@ describe('AdjustBalanceDialog', () => {
     await userEvent.click(screen.getByLabelText(/account/i));
     await userEvent.click(await screen.findByRole('option', { name: /euro wallet/i }));
     expect(screen.getByLabelText(/target balance/i)).toHaveValue(42.5);
+  });
+
+  it('offers only accounts that can be recorded on', async () => {
+    seedAccounts([closedAccountFixture, accountFixture]);
+    renderWithProviders(ui(undefined), { queryClient: makeQueryClient() });
+    const trigger = await screen.findByRole('combobox', { name: /account/i });
+    expect(trigger).toHaveTextContent('Checking');
+    await userEvent.click(trigger);
+    expect(await screen.findByRole('option', { name: /^Checking/ })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /^Old Savings/ })).not.toBeInTheDocument();
   });
 
   it('shows a fallback message when there are no accounts', async () => {

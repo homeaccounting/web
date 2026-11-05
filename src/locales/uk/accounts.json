@@ -30,6 +30,11 @@
     "other": "Інше",
     "sharedWithMe": "Надано мені"
   },
+  "picker": {
+    "placeholder": "Оберіть рахунок",
+    "search": "Пошук рахунків",
+    "noMatches": "Немає відповідних рахунків"
+  },
   "pane": {
     "title": "Рахунки",
     "allAccounts": "Усі рахунки",

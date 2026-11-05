@@ -8,13 +8,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { MoneyInput } from '@/components/MoneyInput';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from '@/components/ui/select';
 import type { AccountResponse, DictionaryEntryResponse } from '@/api/types';
 import { transferFormSchema, makeTransferFormSchema, type TransferFormValues } from './schema';
 import { LabelMultiSelect } from './LabelMultiSelect';
@@ -22,7 +15,8 @@ import type { CreateEntry } from './useInlineCreate';
 import { DatePicker } from '@/components/DatePicker';
 import { RequiredMarker } from '@/components/RequiredMarker';
 import { transactionKindLabel } from './labels';
-import { accountLabelParts } from '@/features/accounts/accountLabel';
+import { AccountPicker } from '@/features/accounts/AccountPicker';
+import { transactableAccounts } from '@/features/accounts/transactableAccounts';
 import { convertAmount, deriveExchangeRate } from '@/lib/money';
 
 export interface TransferFormApi {
@@ -77,6 +71,19 @@ export function TransferForm({
   const targetAccountId = form.watch('targetAccountId');
   const source = accounts.find((a) => a.id === sourceAccountId);
   const target = accounts.find((a) => a.id === targetAccountId);
+  // Keep the initial accounts so an edited transfer on a since-closed or
+  // view-only account still shows them.
+  const sourceOptions = useMemo(
+    () => transactableAccounts(accounts, [defaultValues.sourceAccountId]),
+    [accounts, defaultValues.sourceAccountId],
+  );
+  const targetOptions = useMemo(
+    () =>
+      transactableAccounts(accounts, [defaultValues.targetAccountId]).filter(
+        (a) => a.id !== sourceAccountId,
+      ),
+    [accounts, defaultValues.targetAccountId, sourceAccountId],
+  );
 
   useEffect(() => {
     if (source) form.setValue('currency', source.currency, { shouldDirty: false });
@@ -147,25 +154,18 @@ export function TransferForm({
                     <RequiredMarker />
                   </FormLabel>
                   <FormControl>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger aria-label={t('form.sourceAccount')}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {accounts.map((a) => {
-                          // Currency is already shown in parentheses, so the
-                          // qualifier carries only the bank name.
-                          const { qualifier } = accountLabelParts(a, accounts, {
-                            currencyTiebreaker: false,
-                          });
-                          return (
-                            <SelectItem key={a.id} value={a.id}>
-                              {qualifier ? `${a.name} · ${qualifier}` : a.name} ({a.currency})
-                            </SelectItem>
-                          );
-                        })}
-                      </SelectContent>
-                    </Select>
+                    <AccountPicker
+                      accounts={sourceOptions}
+                      value={field.value || null}
+                      onChange={(id) => {
+                        field.onChange(id ?? '');
+                        // Otherwise the target would show an account its list no longer offers.
+                        if (id && id === form.getValues('targetAccountId')) {
+                          form.setValue('targetAccountId', '', { shouldDirty: true });
+                        }
+                      }}
+                      aria-label={t('form.sourceAccount')}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -181,25 +181,12 @@ export function TransferForm({
                     <RequiredMarker />
                   </FormLabel>
                   <FormControl>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger aria-label={t('form.targetAccount')}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {accounts.map((a) => {
-                          // Currency is already shown in parentheses, so the
-                          // qualifier carries only the bank name.
-                          const { qualifier } = accountLabelParts(a, accounts, {
-                            currencyTiebreaker: false,
-                          });
-                          return (
-                            <SelectItem key={a.id} value={a.id}>
-                              {qualifier ? `${a.name} · ${qualifier}` : a.name} ({a.currency})
-                            </SelectItem>
-                          );
-                        })}
-                      </SelectContent>
-                    </Select>
+                    <AccountPicker
+                      accounts={targetOptions}
+                      value={field.value || null}
+                      onChange={(id) => field.onChange(id ?? '')}
+                      aria-label={t('form.targetAccount')}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

@@ -4,9 +4,10 @@ import { http, HttpResponse } from 'msw';
 import { screen, waitFor } from '@testing-library/react';
 import { useState } from 'react';
 import { server } from '@/test/server';
-import { renderWithProviders } from '@/test/utils';
+import { renderWithProviders, makeQueryClient } from '@/test/utils';
 import { AuthProvider } from '@/auth/AuthContext';
 import { saveSession } from '@/auth/storage';
+import { closedAccountFixture } from '@/test/fixtures';
 import { CreateTransferDialog } from './CreateTransferDialog';
 
 const apiBase = 'http://localhost:8080';
@@ -25,6 +26,8 @@ const twoUsdAccounts = [
     currency: 'USD',
     overdraftLimit: null,
     subtype: null,
+    status: 'Opened',
+    role: 'owner',
     version: 1,
   },
   {
@@ -34,6 +37,8 @@ const twoUsdAccounts = [
     currency: 'USD',
     overdraftLimit: null,
     subtype: null,
+    status: 'Opened',
+    role: 'owner',
     version: 1,
   },
 ];
@@ -46,6 +51,8 @@ const usdAndEurAccounts = [
     currency: 'USD',
     overdraftLimit: null,
     subtype: null,
+    status: 'Opened',
+    role: 'owner',
     version: 1,
   },
   {
@@ -55,11 +62,13 @@ const usdAndEurAccounts = [
     currency: 'EUR',
     overdraftLimit: null,
     subtype: null,
+    status: 'Opened',
+    role: 'owner',
     version: 1,
   },
 ];
 
-function setupAccounts(accounts: typeof twoUsdAccounts) {
+function setupAccounts(accounts: object[]) {
   server.use(
     http.get(`${apiBase}/api/accounts`, () =>
       HttpResponse.json({ accounts, totalCount: accounts.length }),
@@ -98,6 +107,16 @@ function captureLabelCreate() {
 }
 
 describe('CreateTransferDialog', () => {
+  it('shows the need-two-accounts state when only one account is eligible', async () => {
+    setupAccounts([twoUsdAccounts[0]!, closedAccountFixture]);
+    const queryClient = makeQueryClient();
+    renderWithProviders(<Wrapper />, { initialPath: '/', queryClient });
+    // The empty state also shows while accounts load, so wait for them first.
+    await waitFor(() => expect(queryClient.getQueryData(['accounts'])).toBeDefined());
+    expect(await screen.findByText(/create at least two accounts first/i)).toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: /source account/i })).not.toBeInTheDocument();
+  });
+
   it('creates a label inline and sends it with the transfer', async () => {
     const user = userEvent.setup();
     const created = captureLabelCreate();

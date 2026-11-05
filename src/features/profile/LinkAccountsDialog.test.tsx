@@ -162,14 +162,18 @@ describe('LinkAccountsDialog', () => {
       name: /UA213223130000026007233566001/,
     });
     await user.click(firstSelect);
-    await user.click(await screen.findByRole('option', { name: 'Checking' }));
+    await user.click(await screen.findByRole('option', { name: /^Checking/ }));
 
     const secondSelect = screen.getByRole('combobox', {
       name: /UA213223130000026007233566002/,
     });
     await user.click(secondSelect);
     const listbox = await screen.findByRole('listbox');
-    const checkingOption = within(listbox).getByRole('option', { name: 'Checking' });
+    const names = within(listbox)
+      .getAllByRole('option')
+      .map((o) => o.getAttribute('aria-label'));
+    expect(names[0]).toBe('— not imported —');
+    const checkingOption = within(listbox).getByRole('option', { name: /^Checking/ });
     expect(checkingOption).not.toHaveAttribute('aria-disabled', 'true');
   });
 
@@ -195,14 +199,14 @@ describe('LinkAccountsDialog', () => {
       name: /UA213223130000026007233566001/,
     });
     await user.click(firstSelect);
-    await user.click(await screen.findByRole('option', { name: 'Checking' }));
+    await user.click(await screen.findByRole('option', { name: /^Checking/ }));
 
     const secondSelect = screen.getByRole('combobox', {
       name: /UA213223130000026007233566002/,
     });
     await user.click(secondSelect);
     const listbox = await screen.findByRole('listbox');
-    await user.click(within(listbox).getByRole('option', { name: 'Checking' }));
+    await user.click(within(listbox).getByRole('option', { name: /^Checking/ }));
 
     await user.click(screen.getByRole('button', { name: 'OK' }));
     await waitFor(() => {
@@ -221,8 +225,8 @@ describe('LinkAccountsDialog', () => {
     });
     await user.click(uahSelect);
     let listbox = await screen.findByRole('listbox');
-    expect(within(listbox).getByRole('option', { name: 'Checking' })).toBeInTheDocument();
-    expect(within(listbox).queryByRole('option', { name: 'Savings' })).not.toBeInTheDocument();
+    expect(within(listbox).getByRole('option', { name: /^Checking/ })).toBeInTheDocument();
+    expect(within(listbox).queryByRole('option', { name: /^Savings/ })).not.toBeInTheDocument();
     await user.keyboard('{Escape}');
 
     // ext-acc-2 is USD → only the USD local account (Savings) is offered.
@@ -231,8 +235,8 @@ describe('LinkAccountsDialog', () => {
     });
     await user.click(usdSelect);
     listbox = await screen.findByRole('listbox');
-    expect(within(listbox).getByRole('option', { name: 'Savings' })).toBeInTheDocument();
-    expect(within(listbox).queryByRole('option', { name: 'Checking' })).not.toBeInTheDocument();
+    expect(within(listbox).getByRole('option', { name: /^Savings/ })).toBeInTheDocument();
+    expect(within(listbox).queryByRole('option', { name: /^Checking/ })).not.toBeInTheDocument();
   });
 
   it('does not offer a bank account already linked by another connection', async () => {
@@ -251,8 +255,8 @@ describe('LinkAccountsDialog', () => {
     await user.click(uahSelect);
     const listbox = await screen.findByRole('listbox');
     // Unlinked bank account is offered; the one owned by conn-2 is not.
-    expect(within(listbox).getByRole('option', { name: 'Reserve' })).toBeInTheDocument();
-    expect(within(listbox).queryByRole('option', { name: 'Checking' })).not.toBeInTheDocument();
+    expect(within(listbox).getByRole('option', { name: /^Reserve/ })).toBeInTheDocument();
+    expect(within(listbox).queryByRole('option', { name: /^Checking/ })).not.toBeInTheDocument();
   });
 
   it('still offers a bank account mapped only by this connection', async () => {
@@ -267,7 +271,7 @@ describe('LinkAccountsDialog', () => {
     });
     await user.click(uahSelect);
     const listbox = await screen.findByRole('listbox');
-    expect(within(listbox).getByRole('option', { name: 'Checking' })).toBeInTheDocument();
+    expect(within(listbox).getByRole('option', { name: /^Checking/ })).toBeInTheDocument();
   });
 
   it('does not offer non-bank local accounts', async () => {
@@ -285,9 +289,9 @@ describe('LinkAccountsDialog', () => {
     });
     await user.click(uahSelect);
     const listbox = await screen.findByRole('listbox');
-    expect(within(listbox).getByRole('option', { name: 'Checking' })).toBeInTheDocument();
-    expect(within(listbox).queryByRole('option', { name: 'Wallet' })).not.toBeInTheDocument();
-    expect(within(listbox).queryByRole('option', { name: 'Mystery' })).not.toBeInTheDocument();
+    expect(within(listbox).getByRole('option', { name: /^Checking/ })).toBeInTheDocument();
+    expect(within(listbox).queryByRole('option', { name: /^Wallet/ })).not.toBeInTheDocument();
+    expect(within(listbox).queryByRole('option', { name: /^Mystery/ })).not.toBeInTheDocument();
   });
 
   it('keeps a currently-mapped non-bank account selectable in its own row', async () => {
@@ -312,8 +316,8 @@ describe('LinkAccountsDialog', () => {
     // …and remains selectable within its own row, alongside the bank account.
     await user.click(uahSelect);
     const listbox = await screen.findByRole('listbox');
-    expect(within(listbox).getByRole('option', { name: 'Wallet' })).toBeInTheDocument();
-    expect(within(listbox).getByRole('option', { name: 'Checking' })).toBeInTheDocument();
+    expect(within(listbox).getByRole('option', { name: /^Wallet/ })).toBeInTheDocument();
+    expect(within(listbox).getByRole('option', { name: /^Checking/ })).toBeInTheDocument();
   });
 
   it('keeps the sole current mapping selectable and hides the empty-state hint', async () => {
@@ -337,7 +341,7 @@ describe('LinkAccountsDialog', () => {
 
     await user.click(uahSelect);
     const listbox = await screen.findByRole('listbox');
-    expect(within(listbox).getByRole('option', { name: 'Wallet' })).toBeInTheDocument();
+    expect(within(listbox).getByRole('option', { name: /^Wallet/ })).toBeInTheDocument();
   });
 
   it('Save PUTs the expected accountMap and closes', async () => {
@@ -354,7 +358,7 @@ describe('LinkAccountsDialog', () => {
       name: /UA213223130000026007233566001/,
     });
     await user.click(firstSelect);
-    await user.click(await screen.findByRole('option', { name: 'Checking' }));
+    await user.click(await screen.findByRole('option', { name: /^Checking/ }));
 
     await user.click(screen.getByRole('button', { name: 'OK' }));
     await waitFor(() => {
@@ -366,7 +370,7 @@ describe('LinkAccountsDialog', () => {
   it('disambiguates same-currency local accounts by their bank label', async () => {
     const user = userEvent.setup();
     // Two UAH accounts that share the name "Card" — indistinguishable without
-    // the bank qualifier the accountLabel helper appends.
+    // the bank qualifier in the short account name.
     server.use(
       http.get(`${apiBase}/api/accounts`, () => {
         const uahAccounts: AccountResponse[] = [
@@ -402,10 +406,16 @@ describe('LinkAccountsDialog', () => {
     });
     await user.click(uahSelect);
     const listbox = await screen.findByRole('listbox');
-    expect(within(listbox).getByRole('option', { name: 'Card · Monobank' })).toBeInTheDocument();
-    expect(within(listbox).getByRole('option', { name: 'Card · PrivatBank' })).toBeInTheDocument();
+    expect(
+      within(listbox).getByRole('option', { name: 'Card · Monobank · UAH' }),
+    ).toBeInTheDocument();
+    expect(
+      within(listbox).getByRole('option', { name: 'Card · PrivatBank · UAH' }),
+    ).toBeInTheDocument();
     // The bare, ambiguous name must no longer appear on its own.
-    expect(within(listbox).queryByRole('option', { name: 'Card' })).not.toBeInTheDocument();
+    expect(
+      within(listbox).queryByRole('option', { name: /^Card( · UAH)?$/ }),
+    ).not.toBeInTheDocument();
   });
 
   it('shows a rate-limit retry affordance on a 429 fetch', async () => {
@@ -441,7 +451,7 @@ describe('LinkAccountsDialog', () => {
       name: /UA213223130000026007233566001/,
     });
     await user.click(firstSelect);
-    await user.click(await screen.findByRole('option', { name: 'Checking' }));
+    await user.click(await screen.findByRole('option', { name: /^Checking/ }));
     await user.click(screen.getByRole('button', { name: 'OK' }));
     expect(await screen.findByText(/already mapped/i)).toBeInTheDocument();
   });
@@ -498,13 +508,13 @@ describe('LinkAccountsDialog (file provider)', () => {
       name: /UA903052992990004149123456789/,
     });
     await user.click(uahSelect);
-    await user.click(await screen.findByRole('option', { name: 'Checking' }));
+    await user.click(await screen.findByRole('option', { name: /^Checking/ }));
 
     const usdSelect = screen.getByRole('combobox', {
       name: /UA903052992990004149987654321/,
     });
     await user.click(usdSelect);
-    await user.click(await screen.findByRole('option', { name: 'Savings' }));
+    await user.click(await screen.findByRole('option', { name: /^Savings/ }));
 
     await user.click(screen.getByRole('button', { name: 'OK' }));
     await waitFor(() => {

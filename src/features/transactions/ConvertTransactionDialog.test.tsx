@@ -36,6 +36,7 @@ beforeEach(() => {
             overdraftLimit: null,
             subtype: { type: 'bankAccount', bankName: 'ACME' },
             status: 'Opened',
+            role: 'owner',
             version: 1,
           },
           {
@@ -46,6 +47,7 @@ beforeEach(() => {
             overdraftLimit: null,
             subtype: { type: 'bankAccount', bankName: 'ACME' },
             status: 'Opened',
+            role: 'owner',
             version: 1,
           },
         ],
