@@ -41,6 +41,35 @@ beforeEach(() => {
   );
 });
 
+const bankAccount = (n: number) => ({
+  id: `00000000-0000-0000-0000-00000000000${n}`,
+  name: `Acc ${n}`,
+  balance: 100,
+  currency: 'USD',
+  overdraftLimit: null,
+  subtype: { type: 'bankAccount', bankName: 'ACME' },
+  status: 'Opened',
+  role: 'owner',
+  version: 1,
+});
+
+function serveAccountsWithDefault(count: number, defaultAccount: number) {
+  server.use(
+    http.get(`${apiBase}/api/accounts`, () =>
+      HttpResponse.json({
+        accounts: Array.from({ length: count }, (_, i) => bankAccount(i + 1)),
+        totalCount: count,
+      }),
+    ),
+    http.get(`${apiBase}/api/users/me/configuration`, () =>
+      HttpResponse.json({
+        ...configurationFixture,
+        defaults: { ...configurationFixture.defaults, account: bankAccount(defaultAccount).id },
+      }),
+    ),
+  );
+}
+
 function Wrapper() {
   const [open, setOpen] = useState(true);
   return (
@@ -51,6 +80,13 @@ function Wrapper() {
 }
 
 describe('CreateIncomeDialog', () => {
+  it('seeds from the profile default account when no account is scoped', async () => {
+    serveAccountsWithDefault(2, 2);
+    renderWithProviders(<Wrapper />, { initialPath: '/' });
+    const trigger = await screen.findByRole('combobox', { name: /^account/i });
+    await waitFor(() => expect(trigger).toHaveTextContent('Acc 2'));
+  });
+
   it('seeds the category from the global default income category', async () => {
     const user = userEvent.setup();
     let capturedBody: Record<string, unknown> = {};

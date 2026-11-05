@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { MoneyInput } from '@/components/MoneyInput';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
-import type { AccountResponse, DictionaryEntryResponse } from '@/api/types';
+import type { AccountResponse, DictionaryEntryResponse, UUID } from '@/api/types';
 import { transferFormSchema, makeTransferFormSchema, type TransferFormValues } from './schema';
 import { LabelMultiSelect } from './LabelMultiSelect';
 import type { CreateEntry } from './useInlineCreate';
@@ -36,6 +36,9 @@ export interface TransferFormProps {
   onSubmit: (values: TransferFormValues) => void | Promise<void>;
   onCancel: () => void;
   onReady?: (api: TransferFormApi) => void;
+  // Leading "Recent" accounts in each picker (create dialog).
+  recentSourceIds?: readonly UUID[];
+  recentTargetIds?: readonly UUID[];
 }
 
 export function TransferForm({
@@ -49,6 +52,8 @@ export function TransferForm({
   onSubmit,
   onCancel,
   onReady,
+  recentSourceIds,
+  recentTargetIds,
 }: TransferFormProps) {
   const { t } = useTranslation('transactions');
   const resolver = useMemo<Resolver<TransferFormValues>>(
@@ -156,6 +161,7 @@ export function TransferForm({
                   <FormControl>
                     <AccountPicker
                       accounts={sourceOptions}
+                      recent={recentSourceIds}
                       value={field.value || null}
                       onChange={(id) => {
                         field.onChange(id ?? '');
@@ -183,6 +189,7 @@ export function TransferForm({
                   <FormControl>
                     <AccountPicker
                       accounts={targetOptions}
+                      recent={recentTargetIds}
                       value={field.value || null}
                       onChange={(id) => field.onChange(id ?? '')}
                       aria-label={t('form.targetAccount')}

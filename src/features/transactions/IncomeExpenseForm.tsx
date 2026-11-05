@@ -7,7 +7,7 @@ import { DialogBody, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
-import type { AccountResponse, DictionaryEntryResponse } from '@/api/types';
+import type { AccountResponse, DictionaryEntryResponse, UUID } from '@/api/types';
 import { makeIncomeExpenseFormSchema, type IncomeExpenseFormValues } from './schema';
 import { LabelMultiSelect } from './LabelMultiSelect';
 import { ContactCombobox } from './ContactCombobox';
@@ -57,6 +57,8 @@ export interface IncomeExpenseFormProps {
   lockTarget?: boolean;
   onSubmit: (values: IncomeExpenseFormValues) => void | Promise<void>;
   onCancel: () => void;
+  // Leading "Recent" accounts in the account picker (create dialogs).
+  recentAccountIds?: readonly UUID[];
   onReady?: (api: IncomeExpenseFormApi) => void;
 }
 
@@ -78,6 +80,7 @@ export function IncomeExpenseForm({
   onSubmit,
   onCancel,
   onReady,
+  recentAccountIds,
 }: IncomeExpenseFormProps) {
   const { t } = useTranslation('transactions');
   const resolver = useMemo<Resolver<IncomeExpenseFormValues>>(() => {
@@ -188,6 +191,7 @@ export function IncomeExpenseForm({
                 <FormControl>
                   <AccountPicker
                     accounts={accountOptions}
+                    recent={recentAccountIds}
                     value={field.value || null}
                     onChange={(id) => field.onChange(id ?? '')}
                     aria-label={t('form.account')}

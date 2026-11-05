@@ -58,16 +58,20 @@ describe('transactableAccounts', () => {
 
 describe('defaultRecordAccount', () => {
   it('prefers the given account when it is eligible', () => {
-    expect(defaultRecordAccount(all, 'edited')?.id).toBe('edited');
+    expect(defaultRecordAccount(all, ['edited'])?.id).toBe('edited');
   });
 
-  it('falls back to the first eligible account when the preferred one is not', () => {
-    expect(defaultRecordAccount(all, 'viewed')?.id).toBe('owned');
+  it('takes the first eligible preference, in order', () => {
+    expect(defaultRecordAccount(all, ['viewed', null, 'edited'])?.id).toBe('edited');
+  });
+
+  it('falls back to the first eligible account when no preference is', () => {
+    expect(defaultRecordAccount(all, ['viewed', undefined])?.id).toBe('owned');
     expect(defaultRecordAccount(all)?.id).toBe('owned');
   });
 
   it('skips the excluded account', () => {
-    expect(defaultRecordAccount(all, undefined, 'owned')?.id).toBe('edited');
+    expect(defaultRecordAccount(all, [], 'owned')?.id).toBe('edited');
   });
 
   it('returns undefined when nothing is eligible', () => {

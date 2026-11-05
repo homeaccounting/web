@@ -8,6 +8,7 @@ import { renderWithProviders, makeQueryClient } from '@/test/utils';
 import { AuthProvider } from '@/auth/AuthContext';
 import { saveSession } from '@/auth/storage';
 import { closedAccountFixture } from '@/test/fixtures';
+import { readRecentAccounts } from '@/features/accounts/recentAccounts';
 import { CreateTransferDialog } from './CreateTransferDialog';
 
 const apiBase = 'http://localhost:8080';
@@ -186,6 +187,9 @@ describe('CreateTransferDialog', () => {
 
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(requestUrl).toContain('/api/transactions/transfer');
+    // Source and target are remembered apart for each picker's Recent group.
+    expect(readRecentAccounts('transferSource')).toEqual([accountA]);
+    expect(readRecentAccounts('transferTarget')).toEqual([accountB]);
   });
 
   it('when currencies match, exchangeRate is omitted from the request payload', async () => {

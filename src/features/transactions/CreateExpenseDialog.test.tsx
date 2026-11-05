@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import { useState } from 'react';
 import { server } from '@/test/server';
 import { renderWithProviders } from '@/test/utils';
@@ -15,6 +15,7 @@ import {
 } from '@/test/fixtures';
 import { CreateExpenseDialog } from './CreateExpenseDialog';
 import { writeStickyDay } from '@/lib/stickyDate';
+import { readRecentAccounts, recordRecentAccount } from '@/features/accounts/recentAccounts';
 
 const apiBase = 'http://localhost:8080';
 
@@ -44,6 +45,35 @@ beforeEach(() => {
     ),
   );
 });
+
+const bankAccount = (n: number) => ({
+  id: `00000000-0000-0000-0000-00000000000${n}`,
+  name: `Acc ${n}`,
+  balance: 100,
+  currency: 'USD',
+  overdraftLimit: null,
+  subtype: { type: 'bankAccount', bankName: 'ACME' },
+  status: 'Opened',
+  role: 'owner',
+  version: 1,
+});
+
+function serveAccountsWithDefault(count: number, defaultAccount: number) {
+  server.use(
+    http.get(`${apiBase}/api/accounts`, () =>
+      HttpResponse.json({
+        accounts: Array.from({ length: count }, (_, i) => bankAccount(i + 1)),
+        totalCount: count,
+      }),
+    ),
+    http.get(`${apiBase}/api/users/me/configuration`, () =>
+      HttpResponse.json({
+        ...configurationFixture,
+        defaults: { ...configurationFixture.defaults, account: bankAccount(defaultAccount).id },
+      }),
+    ),
+  );
+}
 
 function Wrapper() {
   const [open, setOpen] = useState(true);
@@ -87,6 +117,29 @@ describe('CreateExpenseDialog', () => {
     const trigger = await screen.findByRole('combobox', { name: /^account/i });
     await waitFor(() => expect(trigger).toHaveTextContent('Checking'));
     expect(trigger).not.toHaveTextContent('Aardvark');
+  });
+
+  it('seeds from the profile default account when no account is scoped', async () => {
+    serveAccountsWithDefault(2, 2);
+    renderWithProviders(<Wrapper />, { initialPath: '/' });
+    const trigger = await screen.findByRole('combobox', { name: /^account/i });
+    await waitFor(() => expect(trigger).toHaveTextContent('Acc 2'));
+  });
+
+  it('lists the profile default, then recently used accounts, under Recent', async () => {
+    const user = userEvent.setup();
+    serveAccountsWithDefault(6, 4);
+    recordRecentAccount('expense', bankAccount(2).id);
+    renderWithProviders(<Wrapper />, { initialPath: '/' });
+    const trigger = await screen.findByRole('combobox', { name: /^account/i });
+    await waitFor(() => expect(trigger).toHaveTextContent('Acc 4'));
+    await user.click(trigger);
+    const recent = screen.getByRole('group', { name: 'Recent' });
+    expect(
+      within(recent)
+        .getAllByRole('option')
+        .map((o) => o.getAttribute('aria-label')),
+    ).toEqual(['Acc 4 · ACME · USD', 'Acc 2 · ACME · USD']);
   });
 
   it('creates a label inline and sends it with the expense', async () => {
@@ -175,6 +228,8 @@ describe('CreateExpenseDialog', () => {
     await user.click(screen.getByRole('button', { name: 'OK' }));
 
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    // Remembered for the Recent group next time.
+    expect(readRecentAccounts('expense')).toEqual([accountId]);
   });
 
   it('defaults the date to a full timestamp and POSTs to /api/transactions/expense', async () => {
