@@ -20,6 +20,8 @@ const twoAccounts = [
     currency: 'USD',
     overdraftLimit: null,
     subtype: { type: 'bankAccount', bankName: 'ACME' },
+    status: 'Opened',
+    role: 'owner',
     version: 1,
   },
   {
@@ -29,6 +31,8 @@ const twoAccounts = [
     currency: 'USD',
     overdraftLimit: null,
     subtype: { type: 'bankAccount', bankName: 'ACME' },
+    status: 'Opened',
+    role: 'owner',
     version: 1,
   },
 ];

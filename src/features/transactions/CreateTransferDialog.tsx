@@ -11,6 +11,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ApiError } from '@/api/client';
 import type { UUID } from '@/api/types';
 import { useAccounts } from '@/features/accounts/useAccounts';
+import { defaultRecordAccount } from '@/features/accounts/transactableAccounts';
 import { flattenDictionary } from '@/api/dictionary';
 import { useConfiguration } from '@/features/configuration/useConfiguration';
 import { defaultTransactionDate, writeStickyDay } from '@/lib/stickyDate';
@@ -39,9 +40,9 @@ export function CreateTransferDialog({
   const labels = flattenDictionary(config?.dictionaries.label);
   const createEntry = useCreateDictionaryItem();
 
-  const sourceAccount = accounts?.find((a) => a.id === selectedAccountId) ?? accounts?.[0];
+  const sourceAccount = defaultRecordAccount(accounts ?? [], selectedAccountId);
   const sourceAccountId = sourceAccount?.id ?? '';
-  const targetAccount = accounts?.find((a) => a.id !== sourceAccountId);
+  const targetAccount = defaultRecordAccount(accounts ?? [], undefined, sourceAccountId);
 
   // Computed fresh on every render (deliberately not memoized) so the date
   // re-seeds each time the dialog opens: the inner form remounts on open (the
@@ -85,7 +86,7 @@ export function CreateTransferDialog({
   const bannerMessage =
     create.error instanceof ApiError ? create.error.message : t('form.genericError');
 
-  const hasEnoughAccounts = accounts && accounts.length >= 2;
+  const hasEnoughAccounts = !!sourceAccount && !!targetAccount;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -99,7 +100,7 @@ export function CreateTransferDialog({
             <AlertDescription>{bannerMessage}</AlertDescription>
           </Alert>
         )}
-        {hasEnoughAccounts && (
+        {accounts && hasEnoughAccounts && (
           <TransferForm
             mode="create"
             enforceBalance
