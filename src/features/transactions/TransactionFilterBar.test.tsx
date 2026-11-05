@@ -4,6 +4,13 @@ import userEvent from '@testing-library/user-event';
 import type { AccountResponse, DictionaryEntryResponse } from '@/api/types';
 import { TransactionFilterBar } from './TransactionFilterBar';
 
+// The account rows' balances use useFormat → useConfiguration, which needs an
+// AuthProvider; with no country the formatter falls back to the default.
+vi.mock('@/features/configuration/useConfiguration', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/features/configuration/useConfiguration')>()),
+  useConfiguration: () => ({ data: undefined }),
+}));
+
 const labels: DictionaryEntryResponse[] = [{ id: 'l1', name: 'Trip' }];
 const categories: DictionaryEntryResponse[] = [{ id: 'c1', name: 'Food' }];
 const contacts: DictionaryEntryResponse[] = [

@@ -1,10 +1,16 @@
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Check, ChevronDown, X } from 'lucide-react';
+import { Check, ChevronDown, Minus, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import type { AccountResponse, UUID } from '@/api/types';
+import { AccountOptionContent } from '@/features/accounts/AccountOptionContent';
 import { shortAccountName } from '@/features/accounts/accountName';
+import {
+  buildPickerModel,
+  filterPickerKinds,
+  type PickerKind,
+} from '@/features/accounts/accountPickerModel';
 
 export interface AccountMultiSelectProps {
   options: AccountResponse[];
@@ -22,10 +28,41 @@ export interface AccountMultiSelectProps {
   containerClassName?: string;
 }
 
-// Multi-select with type-ahead over accounts. Typing filters the option list
-// by case-insensitive substring on the short account name (see accountName.ts); clicking
-// an option toggles its membership in `value` without closing the menu.
-// Selected entries render as removable chips inside the input area. Mirrors
+// A navigable row: a group header toggles every account under it.
+type Row =
+  | { type: 'group'; key: string; label: string; ids: UUID[] }
+  | { type: 'account'; account: AccountResponse };
+
+const rowKey = (row: Row) => (row.type === 'group' ? `group:${row.key}` : row.account.id);
+
+const idsOf = (accounts: AccountResponse[]) => accounts.map((a) => a.id);
+
+function rowsFor(kinds: PickerKind[], showHeaders: boolean): Row[] {
+  return kinds.flatMap((k): Row[] => [
+    ...(showHeaders
+      ? [
+          {
+            type: 'group' as const,
+            key: k.key,
+            label: k.label,
+            ids: k.sections.flatMap((s) => idsOf(s.accounts)),
+          },
+        ]
+      : []),
+    ...k.sections.flatMap((s): Row[] => [
+      ...(showHeaders && s.subLabel !== null
+        ? [{ type: 'group' as const, key: s.key, label: s.ariaLabel, ids: idsOf(s.accounts) }]
+        : []),
+      ...s.accounts.map((account) => ({ type: 'account' as const, account })),
+    ]),
+  ]);
+}
+
+// Multi-select with type-ahead over accounts, grouped like AccountPicker and
+// the sidebar (tracker#97). Typing filters with the picker's token search over
+// full names (see accountName.ts); clicking a row toggles it without closing
+// the menu, and a header toggles the visible accounts under it. Selected
+// entries render as removable chips inside the input area. Mirrors
 // LabelMultiSelect — see that file for the shared structure/behavior.
 export function AccountMultiSelect({
   options,
@@ -37,7 +74,7 @@ export function AccountMultiSelect({
   'aria-describedby': ariaDescribedby,
   containerClassName,
 }: AccountMultiSelectProps) {
-  const { t } = useTranslation('transactions');
+  const { t } = useTranslation(['transactions', 'accounts']);
   const generatedId = useId();
   const inputId = id ?? generatedId;
   const listId = `${inputId}-list`;
@@ -49,15 +86,19 @@ export function AccountMultiSelect({
   const [active, setActive] = useState(0);
   const wrapRef = useRef<HTMLDivElement | null>(null);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return options;
-    return options.filter((o) => label(o).toLowerCase().includes(q));
-  }, [options, query, label]);
+  const model = useMemo(() => buildPickerModel(options), [options]);
+  const filtered = useMemo(() => filterPickerKinds(model.kinds, query), [model.kinds, query]);
+  const rows = useMemo(() => rowsFor(filtered, model.showHeaders), [filtered, model.showHeaders]);
+  const rowIndex = useMemo(() => new Map(rows.map((row, i) => [rowKey(row), i])), [rows]);
+  const optionId = useCallback((i: number) => `${listId}-opt-${i}`, [listId]);
 
   useEffect(() => {
     setActive(0);
   }, [query, open]);
+
+  useEffect(() => {
+    if (open) document.getElementById(optionId(active))?.scrollIntoView({ block: 'nearest' });
+  }, [open, active, optionId]);
 
   useEffect(() => {
     if (!open) return;
@@ -79,11 +120,83 @@ export function AccountMultiSelect({
     }
   };
 
+  const toggleGroup = (ids: UUID[]) => {
+    if (ids.every((id) => value.includes(id))) {
+      onChange(value.filter((x) => !ids.includes(x)));
+    } else {
+      onChange([...value, ...ids.filter((id) => !value.includes(id))]);
+    }
+  };
+
+  const toggleRow = (row: Row) => {
+    if (row.type === 'group') toggleGroup(row.ids);
+    else toggle(row.account);
+  };
+
   const remove = (id: UUID) => onChange(value.filter((x) => x !== id));
 
   const selected = value
     .map((id) => options.find((o) => o.id === id))
     .filter((x): x is AccountResponse => !!x);
+
+  const renderOption = (
+    key: string,
+    label: string,
+    state: 'all' | 'some' | 'none',
+    onPick: () => void,
+    content: ReactNode,
+    className?: string,
+  ) => {
+    const index = rowIndex.get(key) ?? -1;
+    const Mark = state === 'some' ? Minus : Check;
+    return (
+      <div
+        key={key}
+        id={optionId(index)}
+        role="option"
+        tabIndex={-1}
+        aria-selected={state === 'all'}
+        aria-label={label}
+        onMouseDown={(e) => {
+          // mousedown so the input's blur (which would close the menu)
+          // doesn't beat the click handler. Clearing the query also
+          // keeps the typeahead UX predictable across consecutive picks.
+          e.preventDefault();
+          onPick();
+          setQuery('');
+        }}
+        onMouseEnter={() => setActive(index)}
+        className={cn(
+          'flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm',
+          className,
+          index === active && 'bg-accent text-accent-foreground',
+        )}
+      >
+        {content}
+        <Mark aria-hidden className={cn('h-4 w-4 shrink-0', state === 'none' && 'invisible')} />
+      </div>
+    );
+  };
+
+  // Toggles the accounts the search leaves visible under this header.
+  const renderGroup = (
+    key: string,
+    label: string,
+    ids: UUID[],
+    content: ReactNode,
+    className: string,
+  ) => {
+    const count = ids.filter((id) => value.includes(id)).length;
+    const state = count === 0 ? 'none' : count === ids.length ? 'all' : 'some';
+    return renderOption(
+      `group:${key}`,
+      t('accounts:picker.selectGroup', { group: label }),
+      state,
+      () => toggleGroup(ids),
+      content,
+      className,
+    );
+  };
 
   return (
     <div ref={wrapRef} className="relative">
@@ -116,9 +229,7 @@ export function AccountMultiSelect({
           role="combobox"
           aria-expanded={open}
           aria-controls={listId}
-          aria-activedescendant={
-            open && filtered[active] ? `${listId}-opt-${filtered[active].id}` : undefined
-          }
+          aria-activedescendant={open && rows[active] ? optionId(active) : undefined}
           aria-invalid={ariaInvalid}
           aria-describedby={ariaDescribedby}
           placeholder={selected.length === 0 ? t('pickers.allAccounts') : ''}
@@ -135,14 +246,15 @@ export function AccountMultiSelect({
                 setOpen(true);
                 return;
               }
-              setActive((i) => Math.min(i + 1, filtered.length - 1));
+              setActive((i) => Math.max(0, Math.min(i + 1, rows.length - 1)));
             } else if (e.key === 'ArrowUp') {
               e.preventDefault();
               setActive((i) => Math.max(i - 1, 0));
             } else if (e.key === 'Enter') {
-              if (open && filtered[active]) {
+              const row = rows[active];
+              if (open && row) {
                 e.preventDefault();
-                toggle(filtered[active]);
+                toggleRow(row);
               }
             } else if (e.key === 'Backspace' && query === '' && selected.length > 0) {
               e.preventDefault();
@@ -164,43 +276,59 @@ export function AccountMultiSelect({
         />
       </div>
       {open && (
-        <ul
-          id={listId}
-          role="listbox"
-          aria-multiselectable="true"
-          className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
-        >
-          {filtered.length === 0 && (
-            <li className="px-2 py-1.5 text-sm text-muted-foreground">{t('pickers.noMatches')}</li>
+        <div className="absolute z-50 mt-1 w-full min-w-80 rounded-md border bg-popover text-popover-foreground shadow-md">
+          <div
+            id={listId}
+            role="listbox"
+            aria-multiselectable="true"
+            className="max-h-72 overflow-auto p-1"
+          >
+            {filtered.map((kind) => (
+              <div key={kind.key}>
+                {model.showHeaders &&
+                  renderGroup(
+                    kind.key,
+                    kind.label,
+                    kind.sections.flatMap((s) => idsOf(s.accounts)),
+                    <span className="flex-1 font-semibold">{kind.label}</span>,
+                    'sticky top-0 z-10 bg-popover text-xs text-muted-foreground',
+                  )}
+                {kind.sections.map((section) => {
+                  const subHeader = model.showHeaders && section.subLabel !== null;
+                  return (
+                    <div
+                      key={section.key}
+                      role={model.showHeaders ? 'group' : undefined}
+                      aria-label={model.showHeaders ? section.ariaLabel : undefined}
+                    >
+                      {subHeader &&
+                        renderGroup(
+                          section.key,
+                          section.ariaLabel,
+                          idsOf(section.accounts),
+                          <span className="flex-1">{section.subLabel}</span>,
+                          'pl-4 text-xs text-muted-foreground',
+                        )}
+                      {section.accounts.map((a) =>
+                        renderOption(
+                          a.id,
+                          shortAccountName(a),
+                          value.includes(a.id) ? 'all' : 'none',
+                          () => toggle(a),
+                          <AccountOptionContent account={a} showQualifier={!subHeader} />,
+                          subHeader ? 'pl-4' : undefined,
+                        ),
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+          {rows.length === 0 && (
+            <div className="px-3 py-2 text-sm text-muted-foreground">{t('pickers.noMatches')}</div>
           )}
-          {filtered.map((opt, i) => {
-            const checked = value.includes(opt.id);
-            return (
-              <li
-                key={opt.id}
-                id={`${listId}-opt-${opt.id}`}
-                role="option"
-                aria-selected={checked}
-                onMouseDown={(e) => {
-                  // mousedown so the input's blur (which would close the menu)
-                  // doesn't beat the click handler. Clearing the query also
-                  // keeps the typeahead UX predictable across consecutive picks.
-                  e.preventDefault();
-                  toggle(opt);
-                  setQuery('');
-                }}
-                onMouseEnter={() => setActive(i)}
-                className={cn(
-                  'flex cursor-pointer items-center justify-between rounded-sm px-2 py-1.5 text-sm',
-                  i === active && 'bg-accent text-accent-foreground',
-                )}
-              >
-                <span className={cn(checked && 'font-medium')}>{label(opt)}</span>
-                {checked && <Check aria-hidden className="h-4 w-4" />}
-              </li>
-            );
-          })}
-        </ul>
+        </div>
       )}
     </div>
   );
