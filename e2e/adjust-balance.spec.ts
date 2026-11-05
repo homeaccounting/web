@@ -67,7 +67,7 @@ test.describe('adjust balance consistency @local', () => {
     const accountSelect = adjust.getByRole('combobox', { name: 'Account' });
     await expect(adjust.getByText(/current balance/i)).toBeVisible();
     await accountSelect.click();
-    await page.getByRole('option', { name: 'Savings (USD)' }).click();
+    await page.getByRole('option', { name: /^Savings/ }).click();
     await expect(adjust.getByText(/current balance/i)).toContainText('500');
 
     // 6. Adjust the Savings balance to 650 and submit.

@@ -95,6 +95,11 @@ Per-resource modules (`accounts.ts`, `auth.ts`, `transactions.ts`, `users.ts`, `
 
 Each feature folder owns its hooks (`useX.ts`), components (`XPane.tsx`, dialogs), and Zod schemas. Hooks wrap TanStack Query and the API client; components stay presentational.
 
+Account names follow one scheme across web, mobile and backend (backend ADR
+`docs/decisions/009-account-naming.md`), implemented in
+`src/features/accounts/accountName.ts`. Every single-select account field uses
+`AccountPicker`; pickers that create transactions pass `transactableAccounts(...)`.
+
 ## Code Style
 
 - **Formatter**: Prettier (with `prettier-plugin-tailwindcss`). Run `just format` before committing.
