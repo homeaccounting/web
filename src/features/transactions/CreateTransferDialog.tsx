@@ -12,6 +12,7 @@ import { ApiError } from '@/api/client';
 import type { UUID } from '@/api/types';
 import { useAccounts } from '@/features/accounts/useAccounts';
 import { defaultRecordAccount } from '@/features/accounts/transactableAccounts';
+import { recentAccountIds, recordRecentAccount } from '@/features/accounts/recentAccounts';
 import { flattenDictionary } from '@/api/dictionary';
 import { useConfiguration } from '@/features/configuration/useConfiguration';
 import { defaultTransactionDate, writeStickyDay } from '@/lib/stickyDate';
@@ -40,9 +41,12 @@ export function CreateTransferDialog({
   const labels = flattenDictionary(config?.dictionaries.label);
   const createEntry = useCreateDictionaryItem();
 
-  const sourceAccount = defaultRecordAccount(accounts ?? [], selectedAccountId);
+  const profileDefault = config?.defaults.account;
+  const sourceAccount = defaultRecordAccount(accounts ?? [], [selectedAccountId, profileDefault]);
   const sourceAccountId = sourceAccount?.id ?? '';
-  const targetAccount = defaultRecordAccount(accounts ?? [], undefined, sourceAccountId);
+  const targetAccount = defaultRecordAccount(accounts ?? [], [], sourceAccountId);
+  const recentSources = recentAccountIds('transferSource', profileDefault);
+  const recentTargets = recentAccountIds('transferTarget');
 
   // Computed fresh on every render (deliberately not memoized) so the date
   // re-seeds each time the dialog opens: the inner form remounts on open (the
@@ -71,6 +75,8 @@ export function CreateTransferDialog({
     try {
       await create.mutateAsync(toTransferRequest(values, source.currency, target.currency));
       writeStickyDay(values.date, new Date());
+      recordRecentAccount('transferSource', values.sourceAccountId);
+      recordRecentAccount('transferTarget', values.targetAccountId);
       onOpenChange(false);
     } catch (e) {
       if (e instanceof ApiError && e.fieldErrors) {
@@ -105,6 +111,8 @@ export function CreateTransferDialog({
             mode="create"
             enforceBalance
             accounts={accounts}
+            recentSourceIds={recentSources}
+            recentTargetIds={recentTargets}
             labels={labels}
             onCreateLabel={(name) => createEntry('label', name)}
             defaultValues={defaults}

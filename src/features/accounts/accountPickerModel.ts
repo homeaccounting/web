@@ -3,8 +3,11 @@ import i18n from '@/lib/i18n';
 import { buildAccountGroups } from './accountGroups';
 import { accountMatches } from './accountName';
 
-// Small lists stay simple (tracker#97): no search box at or below this count.
+// Small lists stay simple (tracker#97): no search box or Recent group at or
+// below this count.
 export const SEARCH_THRESHOLD = 5;
+
+const RECENT_KEY = 'recent';
 
 // A run of rows under one header: a leaf group yields one section, a
 // sub-grouped kind one per sub-group (bank, provider, …).
@@ -30,7 +33,13 @@ export interface PickerModel {
 
 // Reuses the sidebar grouping so pickers and sidebar order accounts the same
 // way, closed accounts last in their own group as under "Show closed".
-export function buildPickerModel(accounts: AccountResponse[]): PickerModel {
+// `recentIds` adds a leading "Recent" group (tracker#103) whose accounts also
+// stay in their own groups below; ids not offered in `accounts` are dropped.
+export function buildPickerModel(
+  accounts: AccountResponse[],
+  recentIds: readonly UUID[] = [],
+): PickerModel {
+  const showSearch = accounts.length > SEARCH_THRESHOLD;
   const groups = buildAccountGroups(accounts.filter((a) => a.status !== 'Closed'));
   const closed = accounts.filter((a) => a.status === 'Closed');
   const kinds = groups.map((g) => ({
@@ -45,6 +54,17 @@ export function buildPickerModel(accounts: AccountResponse[]): PickerModel {
         }))
       : [{ key: g.key, subLabel: null, ariaLabel: g.label, accounts: g.accounts }],
   }));
+  const recent = showSearch
+    ? recentIds.flatMap((id) => accounts.find((a) => a.id === id) ?? [])
+    : [];
+  if (recent.length > 0) {
+    const label = i18n.t('accounts:group.recent', { defaultValue: 'Recent' });
+    kinds.unshift({
+      key: RECENT_KEY,
+      label,
+      sections: [{ key: RECENT_KEY, subLabel: null, ariaLabel: label, accounts: recent }],
+    });
+  }
   if (closed.length > 0) {
     const label = i18n.t('accounts:group.closed', { defaultValue: 'Closed' });
     kinds.push({
@@ -57,16 +77,18 @@ export function buildPickerModel(accounts: AccountResponse[]): PickerModel {
     kinds,
     // Headers only when grouping tells the user something.
     showHeaders: kinds.length >= 2 || groups.some((g) => g.subgroups !== undefined),
-    showSearch: accounts.length > SEARCH_THRESHOLD,
+    showSearch,
   };
 }
 
 // Filters inside the structure built from the full list rather than regrouping
 // the matches: regrouping would collapse sub-headers once fewer than six rows
-// match, so headers would jump while the user types.
+// match, so headers would jump while the user types. Recent hides while
+// searching, since every match is listed in its own group anyway.
 export function filterPickerKinds(kinds: PickerKind[], query: string): PickerKind[] {
   if (query.trim() === '') return kinds;
   return kinds
+    .filter((k) => k.key !== RECENT_KEY)
     .map((k) => ({
       ...k,
       sections: k.sections

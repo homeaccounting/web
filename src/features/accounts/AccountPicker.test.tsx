@@ -50,11 +50,13 @@ function Harness({
   accounts,
   initial = null,
   noneLabel,
+  recent,
   onChange,
 }: {
   accounts: AccountResponse[];
   initial?: UUID | null;
   noneLabel?: string;
+  recent?: UUID[];
   onChange?: (id: UUID | null) => void;
 }) {
   const [value, setValue] = useState<UUID | null>(initial);
@@ -64,6 +66,7 @@ function Harness({
       accounts={accounts}
       value={value}
       noneLabel={noneLabel}
+      recent={recent}
       onChange={(id) => {
         setValue(id);
         onChange?.(id);
@@ -111,6 +114,35 @@ describe('AccountPicker', () => {
     const privat = screen.getByRole('group', { name: 'Bank account, Privat' });
     expect(within(privat).getAllByRole('option')).toHaveLength(3);
     expect(screen.getByRole('group', { name: 'Cash' })).toBeInTheDocument();
+  });
+
+  it('leads with a Recent group whose accounts also stay in their own groups', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    renderWithProviders(
+      <Harness accounts={mixed} recent={['p3', 'c1']} initial="c1" onChange={onChange} />,
+    );
+    await user.click(trigger());
+    expect(optionNames().slice(0, 3)).toEqual([
+      'Salary · Privat · UAH',
+      'Pocket · USD',
+      'Pocket · USD',
+    ]);
+    const recentGroup = screen.getByRole('group', { name: 'Recent' });
+    expect(within(recentGroup).getAllByRole('option')).toHaveLength(2);
+    // The selection highlights its first row, under Recent.
+    const search = screen.getByRole('combobox', { name: 'Search accounts' });
+    expect(search).toHaveAttribute(
+      'aria-activedescendant',
+      within(recentGroup).getByRole('option', { name: 'Pocket · USD' }).id,
+    );
+    await user.click(within(recentGroup).getByRole('option', { name: 'Salary · Privat · UAH' }));
+    expect(onChange).toHaveBeenCalledWith('p3');
+
+    await user.click(trigger());
+    await user.type(screen.getByRole('combobox', { name: 'Search accounts' }), 'salary');
+    expect(screen.queryByRole('group', { name: 'Recent' })).not.toBeInTheDocument();
+    expect(optionNames()).toEqual(['Salary · Privat · UAH']);
   });
 
   it('shows the balance with its currency on each row', async () => {

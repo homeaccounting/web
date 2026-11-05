@@ -14,13 +14,17 @@ export function transactableAccounts(
   return accounts.filter((a) => canRecordOn(a) || keepIds.includes(a.id));
 }
 
-// The account a new transaction starts on: the preferred (scoped) account when
-// eligible, otherwise the first eligible one.
+// The account a new transaction starts on: the first eligible of `preferredIds`
+// (the scoped account, then the profile default), otherwise the first eligible.
 export function defaultRecordAccount(
   accounts: AccountResponse[],
-  preferredId?: UUID,
+  preferredIds: readonly (UUID | null | undefined)[] = [],
   excludeId?: UUID,
 ): AccountResponse | undefined {
   const eligible = accounts.filter((a) => canRecordOn(a) && a.id !== excludeId);
-  return eligible.find((a) => a.id === preferredId) ?? eligible[0];
+  for (const id of preferredIds) {
+    const preferred = eligible.find((a) => a.id === id);
+    if (preferred) return preferred;
+  }
+  return eligible[0];
 }

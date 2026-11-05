@@ -17,7 +17,7 @@ import { cn } from '@/lib/utils';
 import { AccountKindIcon } from './AccountKindIcon';
 import { AccountOptionContent } from './AccountOptionContent';
 import { shortAccountName } from './accountName';
-import { buildPickerModel, filterPickerKinds, pickerAccountIds } from './accountPickerModel';
+import { buildPickerModel, filterPickerKinds, type PickerKind } from './accountPickerModel';
 
 // id, aria-invalid and aria-describedby are injected by shadcn's <FormControl>
 // via Radix Slot and must land on the trigger, the focusable element.
@@ -27,6 +27,8 @@ export interface AccountPickerProps {
   onChange: (id: UUID | null) => void;
   // Adds a leading row that selects null ("None", "Not imported").
   noneLabel?: string;
+  // Ids for the leading "Recent" group, most relevant first (see recentAccounts).
+  recent?: readonly UUID[];
   placeholder?: string;
   className?: string;
   id?: string;
@@ -35,12 +37,18 @@ export interface AccountPickerProps {
   'aria-describedby'?: string;
 }
 
-// Navigable rows: null is the optional "none" row.
-type RowId = UUID | null;
+// Navigable rows; `id` null is the optional "none" row. An account can show
+// twice (under Recent and in its own group), so rows are keyed by section.
+interface Row {
+  key: string;
+  id: UUID | null;
+}
 
-const rowsFor = (kinds: Parameters<typeof pickerAccountIds>[0], withNone: boolean): RowId[] => [
-  ...(withNone ? [null] : []),
-  ...pickerAccountIds(kinds),
+const rowsFor = (kinds: PickerKind[], withNone: boolean): Row[] => [
+  ...(withNone ? [{ key: 'none', id: null }] : []),
+  ...kinds.flatMap((k) =>
+    k.sections.flatMap((s) => s.accounts.map((a) => ({ key: `${s.key}/${a.id}`, id: a.id }))),
+  ),
 ];
 
 // The shared single-select account field (tracker#97): rows grouped as in the
@@ -51,6 +59,7 @@ export function AccountPicker({
   value,
   onChange,
   noneLabel,
+  recent,
   placeholder,
   className,
   id,
@@ -62,7 +71,7 @@ export function AccountPicker({
   const generatedId = useId();
   const triggerId = id ?? generatedId;
   const listId = `${triggerId}-list`;
-  const optionId = useCallback((row: RowId) => `${listId}-opt-${row ?? 'none'}`, [listId]);
+  const optionId = useCallback((index: number) => `${listId}-opt-${index}`, [listId]);
 
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -70,30 +79,28 @@ export function AccountPicker({
   const listRef = useRef<HTMLDivElement | null>(null);
   const searchRef = useRef<HTMLInputElement | null>(null);
 
-  const model = useMemo(() => buildPickerModel(accounts), [accounts]);
+  const model = useMemo(() => buildPickerModel(accounts, recent), [accounts, recent]);
   const kinds = useMemo(() => filterPickerKinds(model.kinds, query), [model.kinds, query]);
   // The none row isn't an account, so it hides while the user searches.
   const showNone = noneLabel !== undefined && query.trim() === '';
   const rows = useMemo(() => rowsFor(kinds, showNone), [showNone, kinds]);
-  const rowIndex = useMemo(() => new Map(rows.map((row, i) => [row, i])), [rows]);
+  const rowIndex = useMemo(() => new Map(rows.map((row, i) => [row.key, i])), [rows]);
   const selected = accounts.find((a) => a.id === value);
 
   const handleOpenChange = (next: boolean) => {
     setOpen(next);
     if (!next) return;
     setQuery('');
-    setActive(Math.max(0, rowsFor(model.kinds, noneLabel !== undefined).indexOf(value)));
+    const initial = rowsFor(model.kinds, noneLabel !== undefined).findIndex((r) => r.id === value);
+    setActive(Math.max(0, initial));
   };
 
   useEffect(() => {
-    if (!open) return;
-    const row = rows[active];
-    if (row !== undefined)
-      document.getElementById(optionId(row))?.scrollIntoView({ block: 'nearest' });
-  }, [open, active, rows, optionId]);
+    if (open) document.getElementById(optionId(active))?.scrollIntoView({ block: 'nearest' });
+  }, [open, active, optionId]);
 
-  const pick = (row: RowId) => {
-    onChange(row);
+  const pick = (id: UUID | null) => {
+    onChange(id);
     setOpen(false);
   };
 
@@ -114,20 +121,25 @@ export function AccountPicker({
       const row = rows[active];
       if (row === undefined) return;
       e.preventDefault();
-      pick(row);
+      pick(row.id);
     }
   };
 
-  const activeRow = rows[active];
-  const activeId = open && activeRow !== undefined ? optionId(activeRow) : undefined;
+  const activeId = open && rows[active] !== undefined ? optionId(active) : undefined;
 
-  const renderOption = (row: RowId, label: string, content: ReactNode, indent = false) => {
-    const index = rowIndex.get(row) ?? -1;
-    const isSelected = row === value;
+  const renderOption = (
+    key: string,
+    id: UUID | null,
+    label: string,
+    content: ReactNode,
+    indent = false,
+  ) => {
+    const index = rowIndex.get(key) ?? -1;
+    const isSelected = id === value;
     return (
       <div
-        key={row ?? 'none'}
-        id={optionId(row)}
+        key={key}
+        id={optionId(index)}
         role="option"
         tabIndex={-1}
         aria-selected={isSelected}
@@ -136,12 +148,12 @@ export function AccountPicker({
           // Keeps focus in the search box (or listbox) through the pick.
           e.preventDefault();
         }}
-        onClick={() => pick(row)}
+        onClick={() => pick(id)}
         onKeyDown={(e) => {
           if (e.key !== 'Enter' && e.key !== ' ') return;
           e.preventDefault();
           e.stopPropagation();
-          pick(row);
+          pick(id);
         }}
         onMouseEnter={() => setActive(index)}
         className={cn(
@@ -238,7 +250,7 @@ export function AccountPicker({
         >
           {showNone &&
             noneLabel !== undefined &&
-            renderOption(null, noneLabel, <span className="flex-1">{noneLabel}</span>)}
+            renderOption('none', null, noneLabel, <span className="flex-1">{noneLabel}</span>)}
           {kinds.map((kind) => (
             <div key={kind.key}>
               {model.showHeaders && (
@@ -264,6 +276,7 @@ export function AccountPicker({
                     )}
                     {section.accounts.map((a) =>
                       renderOption(
+                        `${section.key}/${a.id}`,
                         a.id,
                         shortAccountName(a),
                         <AccountOptionContent account={a} showQualifier={!subHeader} />,

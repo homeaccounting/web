@@ -29,7 +29,8 @@
   "group": {
     "other": "Other",
     "sharedWithMe": "Shared with me",
-    "closed": "Closed"
+    "closed": "Closed",
+    "recent": "Recent"
   },
   "picker": {
     "placeholder": "Select an account",

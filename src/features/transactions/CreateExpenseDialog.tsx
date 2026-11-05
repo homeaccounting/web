@@ -12,6 +12,7 @@ import { ApiError } from '@/api/client';
 import type { UUID } from '@/api/types';
 import { useAccounts } from '@/features/accounts/useAccounts';
 import { defaultRecordAccount } from '@/features/accounts/transactableAccounts';
+import { recentAccountIds, recordRecentAccount } from '@/features/accounts/recentAccounts';
 import { flattenDictionary } from '@/api/dictionary';
 import { useConfiguration } from '@/features/configuration/useConfiguration';
 import { useCreateDictionaryItem } from '@/features/configuration/useCreateDictionaryEntry';
@@ -44,7 +45,9 @@ export function CreateExpenseDialog({
   const labels = flattenDictionary(config?.dictionaries.label);
   const contacts = flattenDictionary(config?.dictionaries.contact);
 
-  const defaultAccount = defaultRecordAccount(accounts ?? [], selectedAccountId);
+  const profileDefault = config?.defaults.account;
+  const defaultAccount = defaultRecordAccount(accounts ?? [], [selectedAccountId, profileDefault]);
+  const recent = recentAccountIds('expense', profileDefault);
   const defaultCategory = config?.defaults.expenseCategory ?? '';
 
   // Computed fresh on every render (deliberately not memoized) so the date
@@ -73,6 +76,7 @@ export function CreateExpenseDialog({
     try {
       await create.mutateAsync(toExpenseRequest(values));
       writeStickyDay(values.date, new Date());
+      recordRecentAccount('expense', values.accountId);
       onOpenChange(false);
     } catch (e) {
       if (e instanceof ApiError && e.fieldErrors) {
@@ -106,6 +110,7 @@ export function CreateExpenseDialog({
             mode="create"
             enforceBalance
             accounts={accounts}
+            recentAccountIds={recent}
             categories={categories}
             labels={labels}
             contacts={contacts}
