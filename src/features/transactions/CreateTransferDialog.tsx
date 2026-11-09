@@ -39,6 +39,7 @@ export function CreateTransferDialog({
   const create = useCreateTransfer();
 
   const labels = flattenDictionary(config?.dictionaries.label);
+  const feeCategories = flattenDictionary(config?.dictionaries['expense']);
   const createEntry = useCreateDictionaryItem();
 
   const profileDefault = config?.defaults.account;
@@ -61,6 +62,8 @@ export function CreateTransferDialog({
     exchangeRate: undefined,
     date: defaultTransactionDate(new Date()),
     labels: [] as UUID[],
+    expenses: [],
+    feeMode: 'source' as const,
   };
 
   const apiRef = useRef<TransferFormApi | null>(null);
@@ -114,6 +117,7 @@ export function CreateTransferDialog({
             recentSourceIds={recentSources}
             recentTargetIds={recentTargets}
             labels={labels}
+            feeCategories={feeCategories}
             onCreateLabel={(name) => createEntry('label', name)}
             defaultValues={defaults}
             isSubmitting={create.isPending}

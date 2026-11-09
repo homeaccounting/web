@@ -211,6 +211,7 @@ function ConvertTransferBody({
 }) {
   const edit = useEditTransaction();
   const labels = flattenDictionary(config?.dictionaries.label);
+  const feeCategories = flattenDictionary(config?.dictionaries['expense']);
   const createEntry = useCreateDictionaryItem();
 
   // Transfer-source conversion (Transfer→Transfer) is unreachable: the UI's convertTargets filter
@@ -256,6 +257,7 @@ function ConvertTransferBody({
         mode="create"
         accounts={accounts}
         labels={labels}
+        feeCategories={feeCategories}
         onCreateLabel={(name) => createEntry('label', name)}
         defaultValues={defaultValues}
         isSubmitting={edit.isPending}

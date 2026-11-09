@@ -8,6 +8,7 @@ import { wireToDateInput } from '@/lib/dates';
 import type { IncomeExpenseFormValues, TransferFormValues } from './schema';
 import { buildAllocations } from './diffTransaction';
 import { isExpense, isIncome } from './transactionType';
+import { feeAllocations, transferCredit, transferDebit } from './transferFees';
 
 // Seed a target-kind income/expense form from a source transaction. The "kept"
 // regular leg follows the §4 table:
@@ -70,6 +71,8 @@ export function toConvertTransferDefaults(
     description: tx.description,
     date: wireToDateInput(tx.date),
     labels: tx.labels,
+    expenses: [],
+    feeMode: 'source',
   };
 }
 
@@ -110,13 +113,16 @@ export function toTransferAmendment(
   targetCurrency: string,
 ): AmendTransactionRequest {
   const crossCurrency = sourceCurrency !== targetCurrency;
+  const credit = transferCredit(v);
+  const fees = feeAllocations(v.expenses, sourceCurrency);
   return {
     sourceAccountId: v.sourceAccountId,
     targetAccountId: v.targetAccountId,
-    sourceAmount: v.amount,
+    sourceAmount: transferDebit(v),
     sourceCurrency,
-    targetAmount: crossCurrency ? v.amount * (v.exchangeRate ?? 1) : v.amount,
+    targetAmount: crossCurrency ? credit * (v.exchangeRate ?? 1) : credit,
     targetCurrency,
     ...(crossCurrency && v.exchangeRate !== undefined ? { exchangeRate: v.exchangeRate } : {}),
+    ...(fees ? { newAllocations: fees } : {}),
   };
 }

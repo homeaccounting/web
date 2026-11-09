@@ -70,7 +70,9 @@ function targetRemaining(
   return { hasTarget, remaining };
 }
 
-function AllocationSectionRows({
+// Also used on its own by the transfer form's fee rows (tracker#104), where the
+// form has no target/total and binds `expenses` to the fees.
+export function AllocationSectionRows({
   section,
   currency,
 }: {

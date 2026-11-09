@@ -51,7 +51,8 @@
     "overTarget": "Розподіл перевищує ціль на {{amount}}",
     "shortOfTarget": "Розподілу бракує {{amount}} до цілі",
     "refundCategoryCap": "Повернення за категорією не може перевищувати {{amount}}, доступних до повернення",
-    "refundTotalCap": "Повернення не може перевищувати {{amount}}, доступних за цією транзакцією"
+    "refundTotalCap": "Повернення не може перевищувати {{amount}}, доступних за цією транзакцією",
+    "feesExceedAmount": "Комісії мають бути меншими за суму списання"
   },
   "merge": {
     "ineligibility": {
@@ -114,7 +115,14 @@
     "reimbursementsTitle": "Відшкодування (зменшує витрату)",
     "addReimbursement": "+ Додати відшкодування",
     "expenseCategoriesTitle": "Категорії витрат",
-    "addCategory": "+ Додати категорію"
+    "addCategory": "+ Додати категорію",
+    "addFee": "Додати комісію",
+    "fees": "Комісії",
+    "addFeeRow": "+ Додати комісію",
+    "feeTakenFrom": "Комісія з:",
+    "feeFromSource": "Джерела (зверху)",
+    "feeFromTarget": "Отримувача (з суми)",
+    "feeSummary": "Списано {{debited}} · Зараховано {{received}} · Комісія {{fee}}"
   },
   "resolve": {
     "genericError": "Щось пішло не так. Спробуйте ще раз.",
@@ -247,7 +255,8 @@
     "edit": "Редагувати",
     "convertTo": "Перетворити на",
     "refund": "Повернення",
-    "filters": "Фільтри"
+    "filters": "Фільтри",
+    "transferFee": "вкл. комісію {{amount}}"
   },
   "bulk": {
     "fill": "Заповнити {{amount}}",

@@ -1,4 +1,4 @@
-import type { Allocations, TransactionResponse, UUID } from '@/api/types';
+import type { Allocation, Allocations, TransactionResponse, UUID } from '@/api/types';
 
 export interface Slice {
   category: UUID; // UUID is string; '' represents a blank/unselected row
@@ -15,6 +15,19 @@ export function normalizeComment(c: string | null | undefined): string | undefin
   const t = (c ?? '').trim();
   return t === '' ? undefined : t;
 }
+
+// Each form row maps 1:1 to an allocation slice (money tagged with the form
+// currency). The transaction total is the sum of all slice amounts across both
+// buckets — there is no separate top-level amount.
+export const toMoneySlices = (
+  rows: readonly { category: string; amount: number; comment?: string }[],
+  currency: string,
+): Allocation[] =>
+  rows.map((r) => ({
+    categoryId: r.category,
+    amount: { amount: r.amount, currency },
+    comment: normalizeComment(r.comment),
+  }));
 
 export function allocationCategoryIds(tx: Pick<TransactionResponse, 'allocations'>): UUID[] {
   return allSlices(tx.allocations).map((s) => s.categoryId);

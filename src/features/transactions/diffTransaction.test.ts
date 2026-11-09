@@ -267,6 +267,8 @@ const trInitial: TransferFormValues = {
   exchangeRate: undefined,
   date: '2026-03-04',
   labels: ['l1'],
+  expenses: [],
+  feeMode: 'source',
 };
 
 describe('diffTransfer', () => {
@@ -304,6 +306,58 @@ describe('diffTransfer', () => {
       targetAmount: 80,
       targetCurrency: 'EUR',
       exchangeRate: 0.8,
+    });
+  });
+
+  describe('fees', () => {
+    const fee = (category: string, amount: number) => ({ category, amount, comment: '' });
+    const feeTx: TransactionResponse = {
+      ...transferTx,
+      sourceAmount: 51,
+      allocations: {
+        incomes: [],
+        expenses: [{ categoryId: 'c1', amount: { amount: 1, currency: 'USD' }, comment: null }],
+      },
+    };
+    const withFee: TransferFormValues = { ...trInitial, expenses: [fee('c1', 1)] };
+
+    it('an amount change resends the fees so the amendment keeps them', () => {
+      const d = diffTransfer(withFee, { ...withFee, amount: 70 }, feeTx);
+      expect(d.amendment).toMatchObject({ sourceAmount: 71, targetAmount: 70 });
+      expect(d.amendment?.newAllocations).toEqual({
+        incomes: [],
+        expenses: [
+          { categoryId: 'c1', amount: { amount: 1, currency: 'USD' }, comment: undefined },
+        ],
+      });
+    });
+
+    it('a re-categorised fee with the same total goes through PATCH /allocations', () => {
+      const d = diffTransfer(withFee, { ...withFee, expenses: [fee('c2', 1)] }, feeTx);
+      expect(d.amendment).toBeUndefined();
+      expect(d.allocations?.expenses[0]?.categoryId).toBe('c2');
+    });
+
+    it('removing the fees amends without newAllocations (clears them)', () => {
+      const d = diffTransfer(withFee, { ...withFee, expenses: [] }, feeTx);
+      expect(d.amendment).toMatchObject({ sourceAmount: 50, targetAmount: 50 });
+      expect(d.amendment?.newAllocations).toBeUndefined();
+    });
+
+    it('switching who bears the fee changes the debit', () => {
+      const d = diffTransfer(withFee, { ...withFee, feeMode: 'target' }, feeTx);
+      expect(d.amendment).toMatchObject({ sourceAmount: 50, targetAmount: 49 });
+    });
+
+    it('cross-currency: the rate converts the debit less the fees', () => {
+      const crossTx: TransactionResponse = {
+        ...feeTx,
+        targetCurrency: 'EUR',
+        exchangeRate: 0.5,
+      };
+      const initial: TransferFormValues = { ...withFee, exchangeRate: 0.5 };
+      const d = diffTransfer(initial, { ...initial, amount: 100 }, crossTx);
+      expect(d.amendment).toMatchObject({ sourceAmount: 101, targetAmount: 50, exchangeRate: 0.5 });
     });
   });
 

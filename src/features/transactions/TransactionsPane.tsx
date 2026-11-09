@@ -66,6 +66,7 @@ import {
   isAdjustment,
   isExpense,
   isIncome,
+  isTransfer,
   transactionKind,
   transactionTypeMeta,
 } from './transactionType';
@@ -77,6 +78,7 @@ import { buildRelationIndex } from './relationIndex';
 import { useUnlinkRelation } from './useUnlinkRelation';
 import { LinkTransactionDialog } from './LinkTransactionDialog';
 import { allocationCategoryIds, allocationComments } from './allocations';
+import { transferFeeTotal } from './transferFees';
 import { TransactionPagination, usePersistedPageSize } from './TransactionPagination';
 import { AccountHeader } from './AccountHeader';
 import { ControlBar } from './ControlBar';
@@ -610,6 +612,11 @@ export function TransactionsPane() {
             // amount appears in that account's currency; in multi/all scope a
             // scope-independent per-type rule applies. See transactionDisplayAmount.
             const { amount, currency, colorClass } = transactionDisplayAmount(t, single);
+            // The fee is part of the debit, so only explain it on the source leg.
+            const fee =
+              isTransfer(t.transactionType) && (!single || t.sourceAccountId === single)
+                ? transferFeeTotal(t)
+                : 0;
             const deEmphasized = t.status === 'Failed' || t.status === 'Cancelled';
             return (
               <ContextMenu key={`${t.id}:${menuNonce[t.id] ?? 0}`}>
@@ -795,6 +802,13 @@ export function TransactionsPane() {
                         !deEmphasized && colorClass,
                       )}
                     >
+                      {fee > 0 && (
+                        <span className="mr-2 text-xs text-muted-foreground">
+                          {translate('list.transferFee', {
+                            amount: formatMoney(fee, t.sourceCurrency),
+                          })}
+                        </span>
+                      )}
                       {formatMoney(amount, currency)}
                     </td>
                     <td className="w-20 px-2 py-2 text-right">

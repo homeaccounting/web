@@ -57,6 +57,7 @@ export interface DemoAddTransferRequest {
   description: string;
   date?: string;
   labels?: string[];
+  allocations?: Allocations;
 }
 
 const toAllocation = (c: DemoCategoryAmount, currency: string) => ({
@@ -188,8 +189,11 @@ export class DemoStore {
 
   addTransfer(req: DemoAddTransferRequest): TransactionResponse {
     const exchangeRate = req.exchangeRate ?? null;
+    const allocations = req.allocations ?? { incomes: [], expenses: [] };
+    // `amount` is the debit; fees are carved out of it before conversion.
+    const credited = allocations.expenses.reduce((left, f) => left - f.amount.amount, req.amount);
     const targetAmount =
-      req.sourceCurrency === req.targetCurrency ? req.amount : req.amount * (exchangeRate ?? 1);
+      req.sourceCurrency === req.targetCurrency ? credited : credited * (exchangeRate ?? 1);
     const transaction: TransactionResponse = {
       id: this.nextTransactionId(),
       sourceAccountId: req.sourceAccountId,
@@ -203,7 +207,7 @@ export class DemoStore {
       status: 'Completed',
       failureReason: null,
       transactionType: 'transfer',
-      allocations: { incomes: [], expenses: [] },
+      allocations,
       date: req.date ?? AS_OF,
       labels: req.labels ?? [],
       amendmentCount: 0,

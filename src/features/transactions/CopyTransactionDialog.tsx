@@ -197,6 +197,7 @@ function CopyTransferBody({
   const { t } = useTranslation('transactions');
   const create = useCreateTransfer();
   const labels = flattenDictionary(config?.dictionaries.label);
+  const feeCategories = flattenDictionary(config?.dictionaries['expense']);
   const createEntry = useCreateDictionaryItem();
 
   const defaultValues = useMemo(
@@ -241,6 +242,7 @@ function CopyTransferBody({
         mode="create"
         accounts={accounts}
         labels={labels}
+        feeCategories={feeCategories}
         onCreateLabel={(name) => createEntry('label', name)}
         defaultValues={defaultValues}
         isSubmitting={create.isPending}
