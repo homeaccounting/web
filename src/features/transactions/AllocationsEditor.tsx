@@ -9,14 +9,15 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { MoneyInput } from '@/components/MoneyInput';
 import { FormField, FormItem, FormControl, FormMessage } from '@/components/ui/form';
 import { CategoryCombobox } from './CategoryCombobox';
-import { collapseSlices } from './allocations';
+import { collapseSlices, emptySlice, sumSlices, type Slice } from './allocations';
 import { useFormat } from '@/lib/useFormat';
 import { roundMoney } from '@/lib/money';
 import { cn } from '@/lib/utils';
 import type { DictionaryEntryResponse } from '@/api/types';
 
 export interface AllocationSection {
-  name: 'incomes' | 'expenses';
+  /** Field-array path of the section's rows in the surrounding form. */
+  name: string;
   title: string;
   addLabel: string;
   categories: DictionaryEntryResponse[];
@@ -36,17 +37,6 @@ export interface AllocationsEditorProps {
    * create/edit behavior (toggle visible, target editable).
    */
   lockTarget?: boolean;
-}
-
-type Slice = { category: string; amount: number; comment: string };
-
-// Sum every row across all sections, ignoring blank/non-finite amounts.
-function sumSlices(rows: Slice[] | undefined): number {
-  if (!rows) return 0;
-  return rows.reduce((acc, row) => {
-    const n = typeof row?.amount === 'number' ? row.amount : Number(row?.amount);
-    return Number.isFinite(n) ? acc + n : acc;
-  }, 0);
 }
 
 // The amount still needed to hit the pinned target (target − current sum), or 0
@@ -70,32 +60,28 @@ function targetRemaining(
   return { hasTarget, remaining };
 }
 
-// Also used on its own by the transfer form's fee rows (tracker#104), where the
-// form has no target/total and binds `expenses` to the fees.
 export function AllocationSectionRows({
   section,
   currency,
+  remaining,
 }: {
   section: AllocationSection;
   currency: string;
+  /** Amount still needed to hit the target; omit when there is none (no Fill buttons). */
+  remaining?: number;
 }) {
   const { t } = useTranslation('transactions');
   const { formatMoney } = useFormat();
   const { control, watch, setValue } = useFormContext();
   const { fields, append, remove, replace } = useFieldArray({ control, name: section.name });
 
-  const targetMode = Boolean(watch('targetMode'));
-  const targetTotalRaw = watch('targetTotal') as number | '' | undefined;
-  const incomes = watch('incomes') as Slice[] | undefined;
-  const expenses = watch('expenses') as Slice[] | undefined;
-  const { hasTarget, remaining } = targetRemaining(targetMode, targetTotalRaw, incomes, expenses);
   // Add label without its leading "+ " (the icon supplies the plus); used as the
   // icon button's tooltip and accessible name.
   const addHint = section.addLabel.replace(/^\+\s*/, '');
   // The section's rows, watched so the Fill button reacts to amount edits. When any
   // row is empty/non-finite, limit Fill to those rows so users fill blanks first;
   // when all rows are finite, Fill appears on every row.
-  const sectionRows = (section.name === 'incomes' ? incomes : expenses) ?? [];
+  const sectionRows = (watch(section.name) as Slice[] | undefined) ?? [];
   const isFiniteAmount = (a: unknown) => Number.isFinite(typeof a === 'number' ? a : Number(a));
   const hasEmptyRow = sectionRows.some((r) => !isFiniteAmount(r?.amount));
   // Two rows with the same (non-blank) category can be merged into one; the
@@ -154,7 +140,7 @@ export function AllocationSectionRows({
                 </FormItem>
               )}
             />
-            {hasTarget &&
+            {remaining !== undefined &&
               Math.abs(remaining) >= 0.005 &&
               (() => {
                 const currentRaw = sectionRows[i]?.amount;
@@ -230,7 +216,7 @@ export function AllocationSectionRows({
                 size="icon"
                 aria-label={addHint}
                 className="h-9 w-9 [&_svg]:size-5"
-                onClick={() => append({ category: '', amount: NaN, comment: '' })}
+                onClick={() => append(emptySlice())}
               >
                 <Plus />
               </Button>
@@ -274,7 +260,7 @@ export function AllocationSectionRows({
 // Section-level errors (e.g. "Add at least one category", balance exceeded) are
 // attached to the array field itself, not a row. zod's resolver may place them
 // either directly on the array path or on its synthetic `.root`, so read both.
-function SectionError({ name }: { name: 'incomes' | 'expenses' }) {
+function SectionError({ name }: { name: string }) {
   const { t } = useTranslation();
   const {
     formState: { errors },
@@ -288,14 +274,25 @@ function SectionError({ name }: { name: 'incomes' | 'expenses' }) {
   return <p className="text-sm font-medium text-destructive">{t(message)}</p>;
 }
 
-function Section({ section, currency }: { section: AllocationSection; currency: string }) {
+function Section({
+  section,
+  currency,
+  remaining,
+}: {
+  section: AllocationSection;
+  currency: string;
+  remaining?: number;
+}) {
   const [expanded, setExpanded] = useState(!section.collapsible);
+  const rows = (
+    <AllocationSectionRows section={section} currency={currency} remaining={remaining} />
+  );
 
   if (!section.collapsible) {
     return (
       <div className="space-y-3">
         <h3 className="text-sm font-medium">{section.title}</h3>
-        <AllocationSectionRows section={section} currency={currency} />
+        {rows}
       </div>
     );
   }
@@ -315,7 +312,7 @@ function Section({ section, currency }: { section: AllocationSection; currency: 
         )}
         {section.title}
       </button>
-      {expanded && <AllocationSectionRows section={section} currency={currency} />}
+      {expanded && rows}
     </div>
   );
 }
@@ -347,7 +344,12 @@ export function AllocationsEditor({ sections, currency, lockTarget }: Allocation
   return (
     <div className="space-y-6">
       {sections.map((section) => (
-        <Section key={section.name} section={section} currency={currency} />
+        <Section
+          key={section.name}
+          section={section}
+          currency={currency}
+          remaining={hasTarget ? remaining : undefined}
+        />
       ))}
       {/* All total-related controls grouped in a card: the target toggle/input,
           the Total line, and — when a target is set — a progress bar filling toward

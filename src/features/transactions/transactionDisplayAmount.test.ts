@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { TransactionResponse } from '@/api/types';
-import { transactionAccountCell, transactionDisplayAmount } from './transactionDisplayAmount';
+import {
+  transactionAccountCell,
+  transactionDisplayAmount,
+  transactionFeeHint,
+} from './transactionDisplayAmount';
 
 const tx = (over: Partial<TransactionResponse>): TransactionResponse =>
   ({
@@ -105,5 +109,31 @@ describe('transactionAccountCell', () => {
         tx({ transactionType: 'transfer', sourceAccountId: 'a1', targetAccountId: 'a2' }),
       ),
     ).toEqual({ fromId: 'a1', toId: 'a2' });
+  });
+});
+
+describe('transactionFeeHint', () => {
+  const feeTransfer = tx({
+    transactionType: 'transfer',
+    sourceAccountId: 'a1',
+    targetAccountId: 'a2',
+    sourceAmount: 101.5,
+    allocations: {
+      incomes: [],
+      expenses: [{ categoryId: 'fee', amount: { amount: 1.5, currency: 'USD' } }],
+    },
+  });
+
+  it('shows the fee in multi/all scope and on the source leg', () => {
+    expect(transactionFeeHint(feeTransfer, null)).toEqual({ amount: 1.5, currency: 'USD' });
+    expect(transactionFeeHint(feeTransfer, 'a1')).toEqual({ amount: 1.5, currency: 'USD' });
+  });
+
+  it('hides it on the target leg, for plain transfers and for other kinds', () => {
+    expect(transactionFeeHint(feeTransfer, 'a2')).toBeNull();
+    expect(
+      transactionFeeHint({ ...feeTransfer, allocations: { incomes: [], expenses: [] } }, null),
+    ).toBeNull();
+    expect(transactionFeeHint({ ...feeTransfer, transactionType: 'expense' }, null)).toBeNull();
   });
 });

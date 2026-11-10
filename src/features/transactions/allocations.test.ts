@@ -5,7 +5,10 @@ import {
   collapseSlices,
   sliceArraysFromTx,
   dropEmptySlices,
+  emptySlice,
   normalizeComment,
+  sumSlices,
+  withoutEmptySlices,
 } from './allocations';
 import type { TransactionResponse } from '@/api/types';
 
@@ -197,5 +200,37 @@ describe('dropEmptySlices', () => {
       { category: '', amount: 100 },
       { category: 'cat2', amount: 200 },
     ]);
+  });
+});
+
+describe('sumSlices', () => {
+  it('sums to the cent, skipping blank, NaN and non-numeric amounts', () => {
+    expect(sumSlices([{ amount: 0.1 }, { amount: 0.2 }, { amount: NaN }, { amount: '' }])).toBe(
+      0.3,
+    );
+    expect(sumSlices([{ amount: '2.5' }])).toBe(2.5);
+    expect(sumSlices(undefined)).toBe(0);
+  });
+});
+
+describe('emptySlice', () => {
+  it('is a blank row that dropEmptySlices removes', () => {
+    expect(dropEmptySlices([emptySlice()])).toEqual([]);
+    expect(emptySlice('cat')).toEqual({ category: 'cat', amount: NaN, comment: '' });
+  });
+});
+
+describe('withoutEmptySlices', () => {
+  it('drops blank rows only from the named keys and leaves the rest untouched', () => {
+    const values = {
+      fees: [emptySlice(), { category: 'c', amount: 1, comment: '' }],
+      other: [emptySlice()],
+      note: 'x',
+    };
+    expect(withoutEmptySlices(values, ['fees'])).toEqual({
+      fees: [{ category: 'c', amount: 1, comment: '' }],
+      other: [emptySlice()],
+      note: 'x',
+    });
   });
 });

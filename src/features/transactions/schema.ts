@@ -7,14 +7,8 @@ import type {
   UUID,
 } from '@/api/types';
 import { isIncome } from './transactionType';
-import { normalizeComment, sliceArraysFromTx } from './allocations';
-import {
-  feeAllocations,
-  feeTotal,
-  transferCredit,
-  transferDebit,
-  type FeeRow,
-} from './transferFees';
+import { normalizeComment, sliceArraysFromTx, sumSlices, type SliceValues } from './allocations';
+import { FEE_MODES, feeAllocations, transferCredit, transferDebit } from './transferFees';
 import { dateInputToWire, wireToDateInput } from '@/lib/dates';
 import { formatMoney } from '@/lib/format';
 import { roundMoney } from '@/lib/money';
@@ -93,21 +87,20 @@ export const transferFormSchema = z
     exchangeRate: z.coerce.number().positive().optional(),
     date: requiredIsoDate,
     labels: z.array(uuid).default([]),
-    // Transfer fees (tracker#104), expense categories in the source currency.
-    // Named `expenses` so the shared allocation rows editor binds to it; empty
-    // means a plain transfer.
-    expenses: z.array(sliceSchema).default([]),
+    // Transfer fees (tracker#104), expense categories in the source currency;
+    // empty means a plain transfer.
+    fees: z.array(sliceSchema).default([]),
     // Client-only: who bears the fee (see transferFees.ts). Never sent.
-    feeMode: z.enum(['source', 'target']).default('source'),
+    feeMode: z.enum(FEE_MODES).default('source'),
   })
   .refine((v) => v.sourceAccountId !== v.targetAccountId, {
     message: 'transactions:validation.accountsMustDiffer',
     path: ['targetAccountId'],
   })
   // Mirrors the backend's TransferFeesNotBelowSource: something must arrive.
-  .refine((v) => v.expenses.length === 0 || transferCredit(v) > 0, {
+  .refine((v) => v.fees.length === 0 || transferCredit(v) > 0, {
     message: 'transactions:validation.feesExceedAmount',
-    path: ['expenses'],
+    path: ['fees'],
   });
 export type TransferFormValues = z.infer<typeof transferFormSchema>;
 
@@ -308,9 +301,9 @@ export function toIncomeRequest(v: IncomeExpenseInput): IncomeRequest {
 // construction (refineAllocations rejects income slices on an expense).
 export const toExpenseRequest: (v: IncomeExpenseInput) => ExpenseRequest = toIncomeRequest;
 
-type TransferInput = Omit<TransferFormValues, 'labels' | 'expenses'> & {
+type TransferInput = Omit<TransferFormValues, 'labels' | 'fees'> & {
   labels: readonly UUID[];
-  expenses: readonly FeeRow[];
+  fees: readonly SliceValues[];
 };
 
 export function toTransferRequest(
@@ -327,7 +320,7 @@ export function toTransferRequest(
     exchangeRate: sourceCurrency === targetCurrency ? undefined : v.exchangeRate,
     date: dateInputToWire(v.date),
     labels: labelsOrUndefined(v.labels),
-    allocations: feeAllocations(v.expenses, v.currency),
+    allocations: feeAllocations(v.fees, v.currency),
   };
 }
 
@@ -368,18 +361,18 @@ export function toTransferFormValues(
 ): TransferFormValues {
   // Seeded in the "fee on top" view: the amount is what moved, so the debited
   // total re-derives as amount + fees.
-  const { expenses } = sliceArraysFromTx(tx);
-  const fees = feeTotal(expenses);
+  const { expenses: fees } = sliceArraysFromTx(tx);
+  const feeTotal = sumSlices(fees);
   return {
     sourceAccountId: tx.sourceAccountId,
     targetAccountId: tx.targetAccountId,
-    amount: fees === 0 ? tx.sourceAmount : roundMoney(tx.sourceAmount - fees),
+    amount: feeTotal === 0 ? tx.sourceAmount : roundMoney(tx.sourceAmount - feeTotal),
     currency: accounts.find((a) => a.id === tx.sourceAccountId)?.currency ?? tx.sourceCurrency,
     description: tx.description,
     exchangeRate: tx.exchangeRate ?? undefined,
     date: dateToInput(tx.date),
     labels: tx.labels,
-    expenses,
+    fees,
     feeMode: 'source',
   };
 }

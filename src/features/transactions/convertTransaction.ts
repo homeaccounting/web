@@ -8,7 +8,6 @@ import { wireToDateInput } from '@/lib/dates';
 import type { IncomeExpenseFormValues, TransferFormValues } from './schema';
 import { buildAllocations } from './diffTransaction';
 import { isExpense, isIncome } from './transactionType';
-import { feeAllocations, transferCredit, transferDebit } from './transferFees';
 
 // Seed a target-kind income/expense form from a source transaction. The "kept"
 // regular leg follows the §4 table:
@@ -71,7 +70,7 @@ export function toConvertTransferDefaults(
     description: tx.description,
     date: wireToDateInput(tx.date),
     labels: tx.labels,
-    expenses: [],
+    fees: [],
     feeMode: 'source',
   };
 }
@@ -99,30 +98,5 @@ export function toIncomeExpenseAmendment(
     targetCurrency: v.currency,
     contactId: v.contactId ?? null,
     newAllocations: buildAllocations(v, v.currency),
-  };
-}
-
-// Build a cross-kind amend request for a transfer target. Like diffTransfer, the
-// target amount is the source amount scaled by the rate when cross-currency —
-// but here cross-currency is keyed off the PICKED accounts' currencies (passed
-// in by the dialog), not the source tx's, since the source is a single-currency
-// income/expense.
-export function toTransferAmendment(
-  v: TransferFormValues,
-  sourceCurrency: string,
-  targetCurrency: string,
-): AmendTransactionRequest {
-  const crossCurrency = sourceCurrency !== targetCurrency;
-  const credit = transferCredit(v);
-  const fees = feeAllocations(v.expenses, sourceCurrency);
-  return {
-    sourceAccountId: v.sourceAccountId,
-    targetAccountId: v.targetAccountId,
-    sourceAmount: transferDebit(v),
-    sourceCurrency,
-    targetAmount: crossCurrency ? credit * (v.exchangeRate ?? 1) : credit,
-    targetCurrency,
-    ...(crossCurrency && v.exchangeRate !== undefined ? { exchangeRate: v.exchangeRate } : {}),
-    ...(fees ? { newAllocations: fees } : {}),
   };
 }

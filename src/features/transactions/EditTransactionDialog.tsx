@@ -457,7 +457,7 @@ function EditTransferBody({
 }) {
   const { t } = useTranslation('transactions');
   const labels = flattenDictionary(config?.dictionaries.label);
-  const feeCategories = flattenDictionary(config?.dictionaries['expense']);
+  const feeCategories = flattenDictionary(config?.dictionaries.expense);
   const createEntry = useCreateDictionaryItem();
 
   const defaultValues = useMemo(() => toTransferFormValues(tx, accounts), [tx, accounts]);

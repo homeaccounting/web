@@ -39,7 +39,7 @@ export function CreateTransferDialog({
   const create = useCreateTransfer();
 
   const labels = flattenDictionary(config?.dictionaries.label);
-  const feeCategories = flattenDictionary(config?.dictionaries['expense']);
+  const feeCategories = flattenDictionary(config?.dictionaries.expense);
   const createEntry = useCreateDictionaryItem();
 
   const profileDefault = config?.defaults.account;
@@ -62,7 +62,7 @@ export function CreateTransferDialog({
     exchangeRate: undefined,
     date: defaultTransactionDate(new Date()),
     labels: [] as UUID[],
-    expenses: [],
+    fees: [],
     feeMode: 'source' as const,
   };
 

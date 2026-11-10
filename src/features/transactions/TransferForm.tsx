@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { MoneyInput } from '@/components/MoneyInput';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import type { AccountResponse, DictionaryEntryResponse, UUID } from '@/api/types';
@@ -21,8 +22,11 @@ import { transactableAccounts } from '@/features/accounts/transactableAccounts';
 import { convertAmount, deriveExchangeRate } from '@/lib/money';
 import { useFormat } from '@/lib/useFormat';
 import { AllocationSectionRows } from './AllocationsEditor';
-import { dropEmptySlices } from './allocations';
-import { feeTotal, transferCredit, transferDebit, type FeeMode } from './transferFees';
+import { emptySlice, ignoreEmptySlices, sumSlices, withoutEmptySlices } from './allocations';
+import { FEE_MODES, transferCredit, transferDebit } from './transferFees';
+
+// A blank fee row (seeded by the toggle or "+") is a UI affordance, not a fee.
+const SLICE_FIELDS = ['fees'] as const;
 
 export interface TransferFormApi {
   setFieldError: (field: string, message: string) => void;
@@ -65,14 +69,16 @@ export function TransferForm({
 }: TransferFormProps) {
   const { t } = useTranslation('transactions');
   const { formatMoney } = useFormat();
-  const resolver = useMemo<Resolver<TransferFormValues>>(() => {
-    const base = zodResolver(
-      enforceBalance ? makeTransferFormSchema(accounts) : transferFormSchema,
-    ) as Resolver<TransferFormValues>;
-    // A blank fee row (seeded by the toggle or "+") is a UI affordance, not a fee.
-    return (values, context, options) =>
-      base({ ...values, expenses: dropEmptySlices(values.expenses) }, context, options);
-  }, [enforceBalance, accounts]);
+  const resolver = useMemo<Resolver<TransferFormValues>>(
+    () =>
+      ignoreEmptySlices(
+        zodResolver(
+          enforceBalance ? makeTransferFormSchema(accounts) : transferFormSchema,
+        ) as Resolver<TransferFormValues>,
+        SLICE_FIELDS,
+      ),
+    [enforceBalance, accounts],
+  );
 
   const form = useForm<TransferFormValues>({
     resolver,
@@ -112,23 +118,23 @@ export function TransferForm({
   }, [form, onReady]);
 
   const submit = form.handleSubmit(async (values) => {
-    await onSubmit({ ...values, expenses: dropEmptySlices(values.expenses) });
+    await onSubmit(withoutEmptySlices(values, SLICE_FIELDS));
   });
 
-  const [showFees, setShowFees] = useState(defaultValues.expenses.length > 0);
-  const feeModeName = useId();
+  const [showFees, setShowFees] = useState(defaultValues.fees.length > 0);
+  const feeId = useId();
   const amount = form.watch('amount');
-  const fees = form.watch('expenses');
+  const fees = form.watch('fees');
   const feeMode = form.watch('feeMode');
-  const feeInput = { amount, expenses: fees, feeMode };
-  const fee = feeTotal(fees);
+  const feeInput = { amount, fees, feeMode };
+  const fee = sumSlices(fees);
   const debit = transferDebit(feeInput);
   // What the rate converts: the debit less the fees.
   const credit = transferCredit(feeInput);
 
   const toggleFees = (on: boolean) => {
     setShowFees(on);
-    form.setValue('expenses', on ? [{ category: '', amount: NaN, comment: '' }] : [], {
+    form.setValue('fees', on ? [emptySlice()] : [], {
       shouldDirty: true,
     });
   };
@@ -152,7 +158,8 @@ export function TransferForm({
   // value rather than to each input.
   const lastCredit = useRef(credit);
   useEffect(() => {
-    if (lastCredit.current === credit) return;
+    // Object.is: a blank amount makes `credit` NaN, and NaN !== NaN.
+    if (Object.is(lastCredit.current, credit)) return;
     lastCredit.current = credit;
     if (targetDrivesRate.current) {
       form.setValue('exchangeRate', deriveExchangeRate(credit, targetAmount), {
@@ -173,6 +180,13 @@ export function TransferForm({
     setTargetAmount(value);
     setDerivedRate(deriveExchangeRate(credit, value));
   };
+
+  // What the target receives, in its own currency once a rate applies.
+  const received = !source
+    ? ''
+    : showExchangeRate && typeof targetAmount === 'number'
+      ? formatMoney(targetAmount, target.currency)
+      : formatMoney(credit, source.currency);
 
   return (
     <FormProvider {...form}>
@@ -293,32 +307,40 @@ export function TransferForm({
 
           <div data-testid="transfer-fees" className="space-y-3">
             <div className="flex items-center gap-2">
-              <Switch
-                id={`${feeModeName}-toggle`}
-                checked={showFees}
-                onCheckedChange={toggleFees}
-              />
-              <Label htmlFor={`${feeModeName}-toggle`}>{t('form.addFee')}</Label>
+              <Switch id={`${feeId}-toggle`} checked={showFees} onCheckedChange={toggleFees} />
+              <Label htmlFor={`${feeId}-toggle`}>{t('form.addFee')}</Label>
             </div>
             {showFees && (
               <>
-                <fieldset className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-                  <legend className="float-left mr-2 font-medium">{t('form.feeTakenFrom')}</legend>
-                  {(['source', 'target'] as const satisfies readonly FeeMode[]).map((m) => (
-                    <label key={m} className="flex cursor-pointer items-center gap-1.5">
-                      <input
-                        type="radio"
-                        name={feeModeName}
-                        checked={feeMode === m}
-                        onChange={() => form.setValue('feeMode', m, { shouldDirty: true })}
-                      />
-                      {t(m === 'source' ? 'form.feeFromSource' : 'form.feeFromTarget')}
-                    </label>
-                  ))}
-                </fieldset>
+                <FormField
+                  control={form.control}
+                  name="feeMode"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-wrap items-center gap-x-4 gap-y-1 space-y-0 text-sm">
+                      <span id={`${feeId}-mode`} className="font-medium">
+                        {t('form.feeTakenFrom')}
+                      </span>
+                      <RadioGroup
+                        aria-labelledby={`${feeId}-mode`}
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        className="flex flex-wrap gap-x-4 gap-y-1"
+                      >
+                        {FEE_MODES.map((m) => (
+                          <div key={m} className="flex items-center gap-1.5">
+                            <RadioGroupItem value={m} id={`${feeId}-${m}`} />
+                            <Label htmlFor={`${feeId}-${m}`} className="font-normal">
+                              {t(m === 'source' ? 'form.feeFromSource' : 'form.feeFromTarget')}
+                            </Label>
+                          </div>
+                        ))}
+                      </RadioGroup>
+                    </FormItem>
+                  )}
+                />
                 <AllocationSectionRows
                   section={{
-                    name: 'expenses',
+                    name: 'fees',
                     title: t('form.fees'),
                     addLabel: t('form.addFeeRow'),
                     categories: feeCategories,
@@ -332,10 +354,7 @@ export function TransferForm({
                   >
                     {t('form.feeSummary', {
                       debited: formatMoney(debit, source.currency),
-                      received:
-                        showExchangeRate && typeof targetAmount === 'number'
-                          ? formatMoney(targetAmount, target.currency)
-                          : formatMoney(credit, source.currency),
+                      received,
                       fee: formatMoney(fee, source.currency),
                     })}
                   </p>

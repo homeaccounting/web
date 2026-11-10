@@ -24,8 +24,8 @@ import {
   toConvertIncomeExpenseDefaults,
   toConvertTransferDefaults,
   toIncomeExpenseAmendment,
-  toTransferAmendment,
 } from './convertTransaction';
+import { toTransferAmendment } from './transferFees';
 import type { TransactionEditDiff } from './diffTransaction';
 import { useEditTransaction } from './useEditTransaction';
 import { transactionKindLabel, type TransactionKind } from './labels';
@@ -211,7 +211,7 @@ function ConvertTransferBody({
 }) {
   const edit = useEditTransaction();
   const labels = flattenDictionary(config?.dictionaries.label);
-  const feeCategories = flattenDictionary(config?.dictionaries['expense']);
+  const feeCategories = flattenDictionary(config?.dictionaries.expense);
   const createEntry = useCreateDictionaryItem();
 
   // Transfer-source conversion (Transfer→Transfer) is unreachable: the UI's convertTargets filter
@@ -229,6 +229,8 @@ function ConvertTransferBody({
     const source = accounts.find((a) => a.id === values.sourceAccountId);
     const target = accounts.find((a) => a.id === values.targetAccountId);
     if (!source || !target) return; // schema guards make this unreachable
+    // Cross-currency is keyed off the PICKED accounts, not the source tx: an
+    // income/expense being converted is single-currency.
     const amendment = toTransferAmendment(values, source.currency, target.currency);
     const diff: TransactionEditDiff = { amendment, ...scalarDiff(baselineRef.current, values) };
     try {

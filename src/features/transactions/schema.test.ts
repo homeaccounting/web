@@ -217,7 +217,7 @@ describe('toTransferRequest', () => {
     exchangeRate: 1.25,
     date: '2026-06-01',
     labels: [LBL],
-    expenses: [],
+    fees: [],
     feeMode: 'source',
   } as const;
 
@@ -688,7 +688,7 @@ describe('toTransferFormValues', () => {
       exchangeRate: 0.9,
       date: '2026-03-04T15:00',
       labels: ['l1'],
-      expenses: [],
+      fees: [],
       feeMode: 'source',
     });
   });
@@ -711,7 +711,7 @@ describe('toTransferFormValues', () => {
     expect(v).toMatchObject({
       amount: 1000,
       feeMode: 'source',
-      expenses: [{ category: CAT, amount: 10, comment: '' }],
+      fees: [{ category: CAT, amount: 10, comment: '' }],
     });
   });
 });
@@ -727,7 +727,7 @@ describe('transfer fees', () => {
     description: '',
     date: '2026-06-01',
     labels: [],
-    expenses: [{ category: CAT, amount: 10 }],
+    fees: [{ category: CAT, amount: 10 }],
     feeMode: 'source' as const,
   };
 
@@ -745,17 +745,17 @@ describe('transfer fees', () => {
   });
 
   it('omits allocations for a plain transfer', () => {
-    expect(toTransferRequest({ ...base, expenses: [] }, 'UAH', 'UAH').allocations).toBeUndefined();
+    expect(toTransferRequest({ ...base, fees: [] }, 'UAH', 'UAH').allocations).toBeUndefined();
   });
 
   it('rejects deducted fees that leave nothing to credit', () => {
     const r = transferFormSchema.safeParse({
       ...base,
       feeMode: 'target',
-      expenses: [{ category: CAT, amount: 1000 }],
+      fees: [{ category: CAT, amount: 1000 }],
     });
     expect(r.success).toBe(false);
-    expect(r.error?.issues[0]?.path).toEqual(['expenses']);
+    expect(r.error?.issues[0]?.path).toEqual(['fees']);
   });
 
   it('checks the balance against the debit including a fee on top', () => {

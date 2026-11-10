@@ -18,6 +18,7 @@ import type {
 } from '@/api/types';
 import { externalAccountsFixture } from '@/test/fixtures';
 import { AS_OF, getSeed, type SeedVariant } from './seed';
+import { transferFeeTotal, transferTargetAmount } from '@/features/transactions/transferFees';
 
 // Subset of CreateAccountRequest the demo store accepts. `overdraftLimit` is
 // omitted here (not exercised by any demo flow yet); add if a later task needs it.
@@ -191,9 +192,11 @@ export class DemoStore {
     const exchangeRate = req.exchangeRate ?? null;
     const allocations = req.allocations ?? { incomes: [], expenses: [] };
     // `amount` is the debit; fees are carved out of it before conversion.
-    const credited = allocations.expenses.reduce((left, f) => left - f.amount.amount, req.amount);
-    const targetAmount =
-      req.sourceCurrency === req.targetCurrency ? credited : credited * (exchangeRate ?? 1);
+    const targetAmount = transferTargetAmount(
+      req.amount - transferFeeTotal(allocations),
+      exchangeRate,
+      req.sourceCurrency !== req.targetCurrency,
+    );
     const transaction: TransactionResponse = {
       id: this.nextTransactionId(),
       sourceAccountId: req.sourceAccountId,

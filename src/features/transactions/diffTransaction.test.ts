@@ -267,7 +267,7 @@ const trInitial: TransferFormValues = {
   exchangeRate: undefined,
   date: '2026-03-04',
   labels: ['l1'],
-  expenses: [],
+  fees: [],
   feeMode: 'source',
 };
 
@@ -319,7 +319,7 @@ describe('diffTransfer', () => {
         expenses: [{ categoryId: 'c1', amount: { amount: 1, currency: 'USD' }, comment: null }],
       },
     };
-    const withFee: TransferFormValues = { ...trInitial, expenses: [fee('c1', 1)] };
+    const withFee: TransferFormValues = { ...trInitial, fees: [fee('c1', 1)] };
 
     it('an amount change resends the fees so the amendment keeps them', () => {
       const d = diffTransfer(withFee, { ...withFee, amount: 70 }, feeTx);
@@ -333,13 +333,13 @@ describe('diffTransfer', () => {
     });
 
     it('a re-categorised fee with the same total goes through PATCH /allocations', () => {
-      const d = diffTransfer(withFee, { ...withFee, expenses: [fee('c2', 1)] }, feeTx);
+      const d = diffTransfer(withFee, { ...withFee, fees: [fee('c2', 1)] }, feeTx);
       expect(d.amendment).toBeUndefined();
       expect(d.allocations?.expenses[0]?.categoryId).toBe('c2');
     });
 
     it('removing the fees amends without newAllocations (clears them)', () => {
-      const d = diffTransfer(withFee, { ...withFee, expenses: [] }, feeTx);
+      const d = diffTransfer(withFee, { ...withFee, fees: [] }, feeTx);
       expect(d.amendment).toMatchObject({ sourceAmount: 50, targetAmount: 50 });
       expect(d.amendment?.newAllocations).toBeUndefined();
     });

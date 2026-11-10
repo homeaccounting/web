@@ -61,7 +61,7 @@ const defaults = {
   exchangeRate: undefined,
   date: '',
   labels: [] as string[],
-  expenses: [],
+  fees: [],
   feeMode: 'source' as const,
 };
 
@@ -294,7 +294,7 @@ describe('TransferForm', () => {
       ...defaults,
       amount: 1000,
       date: '2026-03-04T10:00',
-      expenses: [{ category: FEE, amount: 10, comment: '' }],
+      fees: [{ category: FEE, amount: 10, comment: '' }],
     };
 
     function renderFees(defaultValues: TransferFormValues, onSubmit = vi.fn()) {
@@ -346,7 +346,7 @@ describe('TransferForm', () => {
       expect(onSubmit.mock.calls[0]![0]).toMatchObject({
         amount: 1000,
         feeMode: 'target',
-        expenses: [{ category: FEE, amount: 10 }],
+        fees: [{ category: FEE, amount: 10 }],
       });
     });
 
@@ -356,7 +356,7 @@ describe('TransferForm', () => {
       await user.click(screen.getByRole('switch', { name: /add fee/i }));
       await user.click(screen.getByRole('button', { name: /transfer|ok|create/i }));
       await waitFor(() => expect(onSubmit).toHaveBeenCalled());
-      expect(onSubmit.mock.calls[0]![0]).toMatchObject({ expenses: [] });
+      expect(onSubmit.mock.calls[0]![0]).toMatchObject({ fees: [] });
     });
 
     it('cross-currency: the rate converts the amount less a deducted fee', async () => {
@@ -378,7 +378,7 @@ describe('TransferForm', () => {
       exchangeRate: undefined as number | undefined,
       date: '2026-03-04',
       labels: [] as string[],
-      expenses: [],
+      fees: [],
       feeMode: 'source' as const,
     };
 
