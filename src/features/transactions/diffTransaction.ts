@@ -1,5 +1,4 @@
 import type {
-  Allocation,
   Allocations,
   AmendTransactionRequest,
   ISO8601,
@@ -8,8 +7,9 @@ import type {
 } from '@/api/types';
 import { dateInputToWire } from '@/lib/dates';
 import type { IncomeExpenseFormValues, TransferFormValues } from './schema';
-import { normalizeComment } from './allocations';
+import { normalizeComment, sumSlices, toMoneySlices, type SliceValues } from './allocations';
 import { isIncome } from './transactionType';
+import { feeAllocations, toTransferAmendment, transferDebit } from './transferFees';
 
 export interface TransactionEditDiff {
   description?: string;
@@ -20,35 +20,16 @@ export interface TransactionEditDiff {
   contactId?: UUID | null;
 }
 
-// Each form row maps 1:1 to an allocation slice (money tagged with the form
-// currency). The transaction total is the sum of all slice amounts across both
-// buckets — there is no separate top-level amount.
-const toMoneySlices = (
-  rows: { category: string; amount: number; comment?: string }[],
-  currency: string,
-): Allocation[] =>
-  rows.map((r) => ({
-    categoryId: r.category,
-    amount: { amount: r.amount, currency },
-    comment: normalizeComment(r.comment),
-  }));
-
 export const buildAllocations = (v: IncomeExpenseFormValues, currency: string): Allocations => ({
   incomes: toMoneySlices(v.incomes, currency),
   expenses: toMoneySlices(v.expenses, currency),
 });
 
-// Precondition: callers pass cleaned/finite slice amounts — the baseline comes
-// from `toIncomeExpenseFormValues` (always finite) and the next values are
-// cleaned by `dropEmptySlices` in IncomeExpenseForm before submit. A NaN here
-// would make `newTotal !== oldTotal` spuriously true and emit a bogus amendment.
-const sumSlices = (v: IncomeExpenseFormValues) =>
-  [...v.incomes, ...v.expenses].reduce((s, r) => s + r.amount, 0);
+// Callers pass cleaned slices — the baseline comes from `toIncomeExpenseFormValues`
+// and the next values are cleaned by `withoutEmptySlices` in IncomeExpenseForm.
+const allocationTotal = (v: IncomeExpenseFormValues) => sumSlices([...v.incomes, ...v.expenses]);
 
-const sameSlices = (
-  a: { category: string; amount: number; comment?: string }[],
-  b: { category: string; amount: number; comment?: string }[],
-) =>
+const sameSlices = (a: SliceValues[], b: SliceValues[]) =>
   a.length === b.length &&
   a.every(
     (s, i) =>
@@ -74,8 +55,8 @@ export function diffIncomeExpense(
   const externalLeg = income ? tx.sourceAccountId : tx.targetAccountId;
   const externalCurrency = income ? tx.sourceCurrency : tx.targetCurrency;
   const accountChanged = next.accountId !== initial.accountId;
-  const newTotal = sumSlices(next);
-  const oldTotal = sumSlices(initial);
+  const newTotal = allocationTotal(next);
+  const oldTotal = allocationTotal(initial);
   const totalChanged = newTotal !== oldTotal;
   const splitChanged =
     !sameSlices(initial.incomes, next.incomes) || !sameSlices(initial.expenses, next.expenses);
@@ -122,24 +103,19 @@ export function diffTransfer(
 
   const sourceChanged = next.sourceAccountId !== initial.sourceAccountId;
   const targetChanged = next.targetAccountId !== initial.targetAccountId;
-  const amountChanged = next.amount !== initial.amount;
+  // Compared as debited totals: switching who bears the fee changes the debit
+  // without touching the typed amount.
+  const amountChanged = transferDebit(next) !== transferDebit(initial);
   const rateChanged = (next.exchangeRate ?? null) !== (initial.exchangeRate ?? null);
+  const feeTotalChanged = sumSlices(next.fees) !== sumSlices(initial.fees);
+  const feesChanged = !sameSlices(initial.fees, next.fees);
 
-  if (sourceChanged || targetChanged || amountChanged || rateChanged) {
-    const crossCurrency = tx.sourceCurrency !== tx.targetCurrency;
-    const sourceAmount = next.amount;
-    const targetAmount = crossCurrency ? next.amount * (next.exchangeRate ?? 1) : next.amount;
-    diff.amendment = {
-      sourceAccountId: next.sourceAccountId,
-      targetAccountId: next.targetAccountId,
-      sourceAmount,
-      sourceCurrency: tx.sourceCurrency,
-      targetAmount,
-      targetCurrency: tx.targetCurrency,
-      ...(crossCurrency && next.exchangeRate !== undefined
-        ? { exchangeRate: next.exchangeRate }
-        : {}),
-    };
+  if (sourceChanged || targetChanged || amountChanged || rateChanged || feeTotalChanged) {
+    diff.amendment = toTransferAmendment(next, tx.sourceCurrency, tx.targetCurrency);
+  } else if (feesChanged) {
+    // Same fee total: a re-categorisation goes through PATCH /allocations (the
+    // backend rejects a total change there with TRANSFER_FEE_TOTAL_CHANGED).
+    diff.allocations = feeAllocations(next.fees, tx.sourceCurrency);
   }
 
   return diff;

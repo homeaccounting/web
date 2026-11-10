@@ -1,10 +1,30 @@
-import type { Allocations, TransactionResponse, UUID } from '@/api/types';
+import type { FieldValues, Resolver } from 'react-hook-form';
+import type { Allocation, Allocations, TransactionResponse, UUID } from '@/api/types';
+import { roundMoney } from '@/lib/money';
 
 export interface Slice {
   category: UUID; // UUID is string; '' represents a blank/unselected row
   amount: number; // amount NaN while blank
   comment: string; // free-text note; '' when none
 }
+
+// A blank row, as seeded by the "+ Add" affordances.
+export const emptySlice = (category: UUID = ''): Slice => ({ category, amount: NaN, comment: '' });
+
+// Sum of the rows' amounts, ignoring blank/non-finite ones (raw form values can be
+// strings or NaN while being typed).
+export function sumSlices(rows: readonly { amount: unknown }[] | undefined): number {
+  if (!rows) return 0;
+  return roundMoney(
+    rows.reduce<number>((acc, row) => {
+      const n = Number(row.amount);
+      return Number.isFinite(n) ? acc + n : acc;
+    }, 0),
+  );
+}
+
+// A slice as held in form values and submitted: the comment is optional.
+export type SliceValues = Omit<Slice, 'comment'> & { comment?: string };
 
 const allSlices = (a: Allocations) => [...a.incomes, ...a.expenses];
 
@@ -15,6 +35,16 @@ export function normalizeComment(c: string | null | undefined): string | undefin
   const t = (c ?? '').trim();
   return t === '' ? undefined : t;
 }
+
+// Each form row maps 1:1 to an allocation slice (money tagged with the form
+// currency). The transaction total is the sum of all slice amounts across both
+// buckets — there is no separate top-level amount.
+export const toMoneySlices = (rows: readonly SliceValues[], currency: string): Allocation[] =>
+  rows.map((r) => ({
+    categoryId: r.category,
+    amount: { amount: r.amount, currency },
+    comment: normalizeComment(r.comment),
+  }));
 
 export function allocationCategoryIds(tx: Pick<TransactionResponse, 'allocations'>): UUID[] {
   return allSlices(tx.allocations).map((s) => s.categoryId);
@@ -84,6 +114,27 @@ function splitComment(joined: string): string[] {
 // Generic over the row shape (comment optional) so both the editor `Slice` and the
 // form-values slice can be filtered. A row is empty only when the category is blank
 // AND the amount is NaN — a lone comment never makes a row submittable.
-export function dropEmptySlices<T extends { category: string; amount: number }>(slices: T[]): T[] {
+type SliceRow = { category: string; amount: number };
+
+export function dropEmptySlices<T extends SliceRow>(slices: readonly T[]): T[] {
   return slices.filter((s) => !(s.category === '' && Number.isNaN(s.amount)));
+}
+
+export function withoutEmptySlices<T extends Record<K, SliceRow[]>, K extends keyof T>(
+  values: T,
+  keys: readonly K[],
+): T {
+  const cleaned = { ...values };
+  for (const k of keys) cleaned[k] = dropEmptySlices(values[k]) as T[K];
+  return cleaned;
+}
+
+// Fully-empty rows are a UI affordance (the "+ Add" button seeds a blank row);
+// they must not trip per-row validation. Strip them before the resolver runs so
+// only meaningful slices are validated and surfaced.
+export function ignoreEmptySlices<T extends FieldValues & Record<K, SliceRow[]>, K extends keyof T>(
+  resolver: Resolver<T>,
+  keys: readonly K[],
+): Resolver<T> {
+  return (values, context, options) => resolver(withoutEmptySlices(values, keys), context, options);
 }

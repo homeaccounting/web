@@ -653,3 +653,72 @@ describe('EditTransactionDialog — provider counterparty → category (tracker#
     );
   });
 });
+
+describe('EditTransactionDialog — transfer fees', () => {
+  const otherId = '00000000-0000-0000-0000-000000000003';
+  const feeTx: TransactionResponse = {
+    ...baseTx,
+    sourceAccountId: accountId,
+    targetAccountId: otherId,
+    sourceAmount: 1010,
+    targetAmount: 1000,
+    transactionType: 'transfer',
+    allocations: {
+      incomes: [],
+      expenses: [{ categoryId, amount: { amount: 10, currency: 'USD' }, comment: null }],
+    },
+  };
+
+  it('opens with the fee and resends it when the amount is amended', async () => {
+    const account = (id: string, name: string) => ({
+      id,
+      name,
+      balance: 5000,
+      currency: 'USD',
+      overdraftLimit: null,
+      subtype: { type: 'cash' },
+      status: 'Opened',
+      role: 'owner',
+      version: 1,
+    });
+    let amendBody: unknown;
+    server.use(
+      http.get(`${apiBase}/api/accounts`, () =>
+        HttpResponse.json({
+          accounts: [account(accountId, 'Checking'), account(otherId, 'Savings')],
+          totalCount: 2,
+        }),
+      ),
+      http.put(`${apiBase}/api/transactions/:id/amendment`, async ({ request }) => {
+        amendBody = await request.json();
+        return HttpResponse.json(feeTx);
+      }),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(
+      <AuthProvider>
+        <EditTransactionDialog open onOpenChange={vi.fn()} tx={feeTx} />
+      </AuthProvider>,
+    );
+
+    // The fee row's amount input is also named "Amount"; the transfer amount comes first.
+    const [amount] = await screen.findAllByRole('spinbutton', { name: /^amount/i });
+    if (!amount) throw new Error('amount input missing');
+    expect(amount).toHaveValue(1000);
+    expect(screen.getByTestId('transfer-fee-summary')).toHaveTextContent(/Debited.*1,010/);
+
+    await user.clear(amount);
+    await user.type(amount, '2000');
+    await user.click(screen.getByRole('button', { name: /ok|save/i }));
+
+    await waitFor(() => expect(amendBody).toBeDefined());
+    expect(amendBody).toMatchObject({
+      sourceAmount: 2010,
+      targetAmount: 2000,
+      newAllocations: {
+        incomes: [],
+        expenses: [{ categoryId, amount: { amount: 10, currency: 'USD' } }],
+      },
+    });
+  });
+});

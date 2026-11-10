@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '@/test/utils';
 import type { AccountResponse, DictionaryEntryResponse } from '@/api/types';
 import { TransferForm } from './TransferForm';
+import type { TransferFormValues } from './schema';
 
 vi.mock('@/features/configuration/useConfiguration', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/features/configuration/useConfiguration')>()),
@@ -60,6 +61,8 @@ const defaults = {
   exchangeRate: undefined,
   date: '',
   labels: [] as string[],
+  fees: [],
+  feeMode: 'source' as const,
 };
 
 describe('TransferForm', () => {
@@ -84,6 +87,7 @@ describe('TransferForm', () => {
         mode="create"
         accounts={sameName}
         labels={labels}
+        feeCategories={[]}
         defaultValues={defaults}
         isSubmitting={false}
         onSubmit={vi.fn()}
@@ -102,6 +106,7 @@ describe('TransferForm', () => {
         mode="create"
         accounts={accounts}
         labels={labels}
+        feeCategories={[]}
         defaultValues={defaults}
         isSubmitting={false}
         onSubmit={vi.fn()}
@@ -120,6 +125,7 @@ describe('TransferForm', () => {
         mode="create"
         accounts={accounts}
         labels={labels}
+        feeCategories={[]}
         defaultValues={defaults}
         isSubmitting={false}
         onSubmit={vi.fn()}
@@ -145,6 +151,7 @@ describe('TransferForm', () => {
         mode="create"
         accounts={extra}
         labels={labels}
+        feeCategories={[]}
         defaultValues={defaults}
         isSubmitting={false}
         onSubmit={vi.fn()}
@@ -162,6 +169,7 @@ describe('TransferForm', () => {
         mode="create"
         accounts={accounts}
         labels={labels}
+        feeCategories={[]}
         defaultValues={defaults}
         isSubmitting={false}
         onSubmit={vi.fn()}
@@ -178,6 +186,7 @@ describe('TransferForm', () => {
         mode="create"
         accounts={accounts}
         labels={labels}
+        feeCategories={[]}
         defaultValues={defaults}
         isSubmitting={false}
         onSubmit={vi.fn()}
@@ -199,6 +208,7 @@ describe('TransferForm', () => {
         mode="create"
         accounts={accounts}
         labels={labels}
+        feeCategories={[]}
         defaultValues={{ ...defaults, amount: 10, date: '2026-03-04T10:00' }}
         isSubmitting={false}
         onSubmit={onSubmit}
@@ -225,6 +235,7 @@ describe('TransferForm', () => {
           mode="create"
           accounts={accounts}
           labels={labels}
+          feeCategories={[]}
           defaultValues={{ ...fxDefaults, date: '2026-03-04T10:00' }}
           isSubmitting={false}
           onSubmit={onSubmit}
@@ -276,6 +287,87 @@ describe('TransferForm', () => {
     });
   });
 
+  describe('fees', () => {
+    const FEE = '00000000-0000-0000-0000-0000000000f1';
+    const feeCategories: DictionaryEntryResponse[] = [{ id: FEE, name: 'Bank fee' }];
+    const withFee = {
+      ...defaults,
+      amount: 1000,
+      date: '2026-03-04T10:00',
+      fees: [{ category: FEE, amount: 10, comment: '' }],
+    };
+
+    function renderFees(defaultValues: TransferFormValues, onSubmit = vi.fn()) {
+      renderWithProviders(
+        <TransferForm
+          mode="create"
+          accounts={accounts}
+          labels={labels}
+          feeCategories={feeCategories}
+          defaultValues={defaultValues}
+          isSubmitting={false}
+          onSubmit={onSubmit}
+          onCancel={vi.fn()}
+        />,
+      );
+      return onSubmit;
+    }
+
+    const summary = () => screen.getByTestId('transfer-fee-summary');
+
+    it('keeps the fee rows hidden until "Add fee" is switched on', async () => {
+      const user = userEvent.setup();
+      renderFees(defaults);
+      expect(screen.queryByRole('radio', { name: /source/i })).not.toBeInTheDocument();
+      await user.click(screen.getByRole('switch', { name: /add fee/i }));
+      expect(screen.getByRole('radio', { name: /source/i })).toBeChecked();
+      expect(screen.getByLabelText(/^category$/i)).toBeInTheDocument();
+    });
+
+    it('opens automatically when the transfer already has a fee', () => {
+      renderFees(withFee);
+      expect(screen.getByRole('switch', { name: /add fee/i })).toBeChecked();
+      expect(summary()).toHaveTextContent(/Debited.*1,010.*Received.*1,000.*Fee.*10/);
+    });
+
+    it('a deducted fee lowers what is received instead of raising the debit', async () => {
+      const user = userEvent.setup();
+      renderFees(withFee);
+      await user.click(screen.getByRole('radio', { name: /target/i }));
+      expect(summary()).toHaveTextContent(/Debited.*1,000.*Received.*990.*Fee.*10/);
+    });
+
+    it('submits the fee rows and the chosen mode', async () => {
+      const user = userEvent.setup();
+      const onSubmit = renderFees(withFee);
+      await user.click(screen.getByRole('radio', { name: /target/i }));
+      await user.click(screen.getByRole('button', { name: /transfer|ok|create/i }));
+      await waitFor(() => expect(onSubmit).toHaveBeenCalled());
+      expect(onSubmit.mock.calls[0]![0]).toMatchObject({
+        amount: 1000,
+        feeMode: 'target',
+        fees: [{ category: FEE, amount: 10 }],
+      });
+    });
+
+    it('switching the fee off submits a plain transfer', async () => {
+      const user = userEvent.setup();
+      const onSubmit = renderFees(withFee);
+      await user.click(screen.getByRole('switch', { name: /add fee/i }));
+      await user.click(screen.getByRole('button', { name: /transfer|ok|create/i }));
+      await waitFor(() => expect(onSubmit).toHaveBeenCalled());
+      expect(onSubmit.mock.calls[0]![0]).toMatchObject({ fees: [] });
+    });
+
+    it('cross-currency: the rate converts the amount less a deducted fee', async () => {
+      const user = userEvent.setup();
+      renderFees({ ...withFee, targetAccountId: A2, exchangeRate: 0.5 });
+      expect(screen.getByLabelText(/target amount/i)).toHaveValue(500);
+      await user.click(screen.getByRole('radio', { name: /target/i }));
+      expect(screen.getByLabelText(/target amount/i)).toHaveValue(495);
+    });
+  });
+
   describe('edit mode', () => {
     const editDefaults = {
       sourceAccountId: A1,
@@ -286,6 +378,8 @@ describe('TransferForm', () => {
       exchangeRate: undefined as number | undefined,
       date: '2026-03-04',
       labels: [] as string[],
+      fees: [],
+      feeMode: 'source' as const,
     };
 
     it('hides "Defaults to today" helper text', () => {
@@ -294,6 +388,7 @@ describe('TransferForm', () => {
           mode="edit"
           accounts={accounts}
           labels={labels}
+          feeCategories={[]}
           defaultValues={editDefaults}
           isSubmitting={false}
           onSubmit={vi.fn()}
@@ -309,6 +404,7 @@ describe('TransferForm', () => {
           mode="edit"
           accounts={accounts}
           labels={labels}
+          feeCategories={[]}
           defaultValues={editDefaults}
           isSubmitting={false}
           onSubmit={vi.fn()}
@@ -324,6 +420,7 @@ describe('TransferForm', () => {
           mode="edit"
           accounts={accounts}
           labels={labels}
+          feeCategories={[]}
           defaultValues={editDefaults}
           isSubmitting={false}
           onSubmit={vi.fn()}

@@ -21,6 +21,7 @@ import { IncomeExpenseForm, type IncomeExpenseFormApi } from './IncomeExpenseFor
 import { useCreateIncome } from './useCreateIncome';
 import { toIncomeRequest, type IncomeExpenseFormValues } from './schema';
 import { transactionKindLabel } from './labels';
+import { emptySlice } from './allocations';
 
 export interface CreateIncomeDialogProps {
   open: boolean;
@@ -60,7 +61,7 @@ export function CreateIncomeDialog({
   const defaults: IncomeExpenseFormValues = {
     accountId: defaultAccount?.id ?? '',
     currency: defaultAccount?.currency ?? '',
-    incomes: [{ category: defaultCategory, amount: NaN, comment: '' }],
+    incomes: [emptySlice(defaultCategory)],
     expenses: [],
     description: '',
     date: defaultTransactionDate(new Date()),

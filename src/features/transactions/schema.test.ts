@@ -217,6 +217,8 @@ describe('toTransferRequest', () => {
     exchangeRate: 1.25,
     date: '2026-06-01',
     labels: [LBL],
+    fees: [],
+    feeMode: 'source',
   } as const;
 
   it('drops exchangeRate when currencies match', () => {
@@ -686,7 +688,82 @@ describe('toTransferFormValues', () => {
       exchangeRate: 0.9,
       date: '2026-03-04T15:00',
       labels: ['l1'],
+      fees: [],
+      feeMode: 'source',
     });
+  });
+
+  it('seeds fees in the "fee on top" view: amount is the debit less the fees', () => {
+    const tx = baseTx({
+      transactionType: 'transfer',
+      sourceAccountId: 'a1',
+      targetAccountId: 'a2',
+      sourceAmount: 1010,
+      sourceCurrency: 'UAH',
+      targetAmount: 1000,
+      targetCurrency: 'UAH',
+      allocations: {
+        incomes: [],
+        expenses: [{ categoryId: CAT, amount: { amount: 10, currency: 'UAH' }, comment: null }],
+      },
+    });
+    const v = toTransferFormValues(tx, [acc('a1', 'UAH'), acc('a2', 'UAH')]);
+    expect(v).toMatchObject({
+      amount: 1000,
+      feeMode: 'source',
+      fees: [{ category: CAT, amount: 10, comment: '' }],
+    });
+  });
+});
+
+describe('transfer fees', () => {
+  const S = '11111111-1111-1111-1111-111111111111';
+  const T = '22222222-2222-2222-2222-222222222222';
+  const base = {
+    sourceAccountId: S,
+    targetAccountId: T,
+    amount: 1000,
+    currency: 'UAH',
+    description: '',
+    date: '2026-06-01',
+    labels: [],
+    fees: [{ category: CAT, amount: 10 }],
+    feeMode: 'source' as const,
+  };
+
+  it('fee on top debits amount + fee and sends the fee as an expense allocation', () => {
+    const req = toTransferRequest(base, 'UAH', 'UAH');
+    expect(req.amount).toBe(1010);
+    expect(req.allocations).toEqual({
+      incomes: [],
+      expenses: [{ categoryId: CAT, amount: { amount: 10, currency: 'UAH' }, comment: undefined }],
+    });
+  });
+
+  it('fee deducted debits the typed amount', () => {
+    expect(toTransferRequest({ ...base, feeMode: 'target' }, 'UAH', 'UAH').amount).toBe(1000);
+  });
+
+  it('omits allocations for a plain transfer', () => {
+    expect(toTransferRequest({ ...base, fees: [] }, 'UAH', 'UAH').allocations).toBeUndefined();
+  });
+
+  it('rejects deducted fees that leave nothing to credit', () => {
+    const r = transferFormSchema.safeParse({
+      ...base,
+      feeMode: 'target',
+      fees: [{ category: CAT, amount: 1000 }],
+    });
+    expect(r.success).toBe(false);
+    expect(r.error?.issues[0]?.path).toEqual(['fees']);
+  });
+
+  it('checks the balance against the debit including a fee on top', () => {
+    const accts = [{ ...acc(S, 'UAH'), balance: 1005, overdraftLimit: 0 }, acc(T, 'UAH')];
+    expect(makeTransferFormSchema(accts).safeParse(base).success).toBe(false);
+    expect(makeTransferFormSchema(accts).safeParse({ ...base, feeMode: 'target' }).success).toBe(
+      true,
+    );
   });
 });
 

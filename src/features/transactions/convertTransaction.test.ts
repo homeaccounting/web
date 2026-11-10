@@ -4,7 +4,6 @@ import {
   toConvertIncomeExpenseDefaults,
   toConvertTransferDefaults,
   toIncomeExpenseAmendment,
-  toTransferAmendment,
 } from './convertTransaction';
 
 const EXT = 'ext-1';
@@ -251,52 +250,5 @@ describe('toIncomeExpenseAmendment', () => {
       EXT,
     );
     expect(a.contactId).toBeNull();
-  });
-});
-
-describe('toTransferAmendment', () => {
-  it('same-currency transfer omits the exchange rate', () => {
-    const a = toTransferAmendment(
-      {
-        sourceAccountId: A,
-        targetAccountId: B,
-        amount: 50,
-        currency: 'USD',
-        exchangeRate: undefined,
-        description: '',
-        date: '2026-06-01',
-        labels: [],
-      },
-      'USD',
-      'USD',
-    );
-    expect(a).toMatchObject({
-      sourceAccountId: A,
-      targetAccountId: B,
-      sourceAmount: 50,
-      targetAmount: 50,
-    });
-    expect(a.exchangeRate).toBeUndefined();
-    expect(a.newAllocations).toBeUndefined();
-  });
-
-  it('cross-currency transfer applies the exchange rate to the target amount', () => {
-    const a = toTransferAmendment(
-      {
-        sourceAccountId: A,
-        targetAccountId: B,
-        amount: 50,
-        currency: 'USD',
-        exchangeRate: 2,
-        description: '',
-        date: '2026-06-01',
-        labels: [],
-      },
-      'USD',
-      'EUR',
-    );
-    expect(a.sourceAmount).toBe(50);
-    expect(a.targetAmount).toBe(100);
-    expect(a.exchangeRate).toBe(2);
   });
 });

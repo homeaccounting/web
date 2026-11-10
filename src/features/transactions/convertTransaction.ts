@@ -70,6 +70,8 @@ export function toConvertTransferDefaults(
     description: tx.description,
     date: wireToDateInput(tx.date),
     labels: tx.labels,
+    fees: [],
+    feeMode: 'source',
   };
 }
 
@@ -96,27 +98,5 @@ export function toIncomeExpenseAmendment(
     targetCurrency: v.currency,
     contactId: v.contactId ?? null,
     newAllocations: buildAllocations(v, v.currency),
-  };
-}
-
-// Build a cross-kind amend request for a transfer target. Like diffTransfer, the
-// target amount is the source amount scaled by the rate when cross-currency —
-// but here cross-currency is keyed off the PICKED accounts' currencies (passed
-// in by the dialog), not the source tx's, since the source is a single-currency
-// income/expense.
-export function toTransferAmendment(
-  v: TransferFormValues,
-  sourceCurrency: string,
-  targetCurrency: string,
-): AmendTransactionRequest {
-  const crossCurrency = sourceCurrency !== targetCurrency;
-  return {
-    sourceAccountId: v.sourceAccountId,
-    targetAccountId: v.targetAccountId,
-    sourceAmount: v.amount,
-    sourceCurrency,
-    targetAmount: crossCurrency ? v.amount * (v.exchangeRate ?? 1) : v.amount,
-    targetCurrency,
-    ...(crossCurrency && v.exchangeRate !== undefined ? { exchangeRate: v.exchangeRate } : {}),
   };
 }

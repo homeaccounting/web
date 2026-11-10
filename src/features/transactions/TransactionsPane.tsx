@@ -45,7 +45,11 @@ import {
   scopeSpansMultiple,
   withAccountScope,
 } from './accountScope';
-import { transactionAccountCell, transactionDisplayAmount } from './transactionDisplayAmount';
+import {
+  transactionAccountCell,
+  transactionDisplayAmount,
+  transactionFeeHint,
+} from './transactionDisplayAmount';
 import { useScopedTransactions } from './useScopedTransactions';
 import { useConsistentAccountView } from './useConsistentAccountView';
 import { useAccounts } from '@/features/accounts/useAccounts';
@@ -610,6 +614,7 @@ export function TransactionsPane() {
             // amount appears in that account's currency; in multi/all scope a
             // scope-independent per-type rule applies. See transactionDisplayAmount.
             const { amount, currency, colorClass } = transactionDisplayAmount(t, single);
+            const fee = transactionFeeHint(t, single);
             const deEmphasized = t.status === 'Failed' || t.status === 'Cancelled';
             return (
               <ContextMenu key={`${t.id}:${menuNonce[t.id] ?? 0}`}>
@@ -795,6 +800,13 @@ export function TransactionsPane() {
                         !deEmphasized && colorClass,
                       )}
                     >
+                      {fee && (
+                        <span className="mr-2 text-xs text-muted-foreground">
+                          {translate('list.transferFee', {
+                            amount: formatMoney(fee.amount, fee.currency),
+                          })}
+                        </span>
+                      )}
                       {formatMoney(amount, currency)}
                     </td>
                     <td className="w-20 px-2 py-2 text-right">

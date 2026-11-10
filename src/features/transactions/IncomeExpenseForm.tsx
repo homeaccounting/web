@@ -13,12 +13,14 @@ import { LabelMultiSelect } from './LabelMultiSelect';
 import { ContactCombobox } from './ContactCombobox';
 import type { CreateEntry } from './useInlineCreate';
 import { AllocationsEditor, type AllocationSection } from './AllocationsEditor';
-import { dropEmptySlices } from './allocations';
+import { ignoreEmptySlices, withoutEmptySlices } from './allocations';
 import { DatePicker } from '@/components/DatePicker';
 import { RequiredMarker } from '@/components/RequiredMarker';
 import { transactionKindLabel, type TransactionKind } from './labels';
 import { AccountPicker } from '@/features/accounts/AccountPicker';
 import { transactableAccounts } from '@/features/accounts/transactableAccounts';
+
+const SLICE_FIELDS = ['incomes', 'expenses'] as const;
 
 export interface IncomeExpenseFormApi {
   setFieldError: (field: string, message: string) => void;
@@ -89,20 +91,12 @@ export function IncomeExpenseForm({
       // (tracker#33). Unlocked (create/edit) keeps the equality gate.
       targetCeiling: Boolean(lockTarget),
     });
-    const base = zodResolver(
-      extraRefine ? schema.superRefine(extraRefine) : schema,
-    ) as Resolver<IncomeExpenseFormValues>;
-    // Fully-empty rows are a UI affordance (the "+ Add" button seeds a blank
-    // row); they must not trip per-row validation. Strip them before zod runs
-    // so only meaningful slices are validated and surfaced.
-    return (values, context, options) => {
-      const cleaned: IncomeExpenseFormValues = {
-        ...values,
-        incomes: dropEmptySlices(values.incomes),
-        expenses: dropEmptySlices(values.expenses),
-      };
-      return base(cleaned, context, options);
-    };
+    return ignoreEmptySlices(
+      zodResolver(
+        extraRefine ? schema.superRefine(extraRefine) : schema,
+      ) as Resolver<IncomeExpenseFormValues>,
+      SLICE_FIELDS,
+    );
   }, [enforceBalance, accounts, kind, extraRefine, lockTarget]);
 
   const form = useForm<IncomeExpenseFormValues>({
@@ -134,11 +128,7 @@ export function IncomeExpenseForm({
   }, [form, onReady]);
 
   const submit = form.handleSubmit(async (values) => {
-    await onSubmit({
-      ...values,
-      incomes: dropEmptySlices(values.incomes),
-      expenses: dropEmptySlices(values.expenses),
-    });
+    await onSubmit(withoutEmptySlices(values, SLICE_FIELDS));
   });
 
   const sections: AllocationSection[] =

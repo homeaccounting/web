@@ -21,6 +21,7 @@ import { IncomeExpenseForm, type IncomeExpenseFormApi } from './IncomeExpenseFor
 import { useCreateExpense } from './useCreateExpense';
 import { toExpenseRequest, type IncomeExpenseFormValues } from './schema';
 import { transactionKindLabel } from './labels';
+import { emptySlice } from './allocations';
 
 export interface CreateExpenseDialogProps {
   open: boolean;
@@ -58,7 +59,7 @@ export function CreateExpenseDialog({
     accountId: defaultAccount?.id ?? '',
     currency: defaultAccount?.currency ?? '',
     incomes: [],
-    expenses: [{ category: defaultCategory, amount: NaN, comment: '' }],
+    expenses: [emptySlice(defaultCategory)],
     description: '',
     date: defaultTransactionDate(new Date()),
     labels: [],

@@ -1,4 +1,4 @@
-import type { TransactionResponse, UUID } from '@/api/types';
+import type { Money, TransactionResponse, UUID } from '@/api/types';
 import {
   isAdjustment,
   isExpense,
@@ -6,6 +6,7 @@ import {
   isTransfer,
   transactionAmountClass,
 } from './transactionType';
+import { transferFeeTotal } from './transferFees';
 
 export interface DisplayAmount {
   amount: number; // signed for income/expense; positive magnitude for transfer/adjustment
@@ -38,6 +39,18 @@ export function transactionDisplayAmount(
   // transfer / adjustment: neutral magnitude on the source leg; the Account
   // column's "from → to" conveys direction.
   return { amount: t.sourceAmount, currency: t.sourceCurrency, colorClass };
+}
+
+// The fee to explain next to a transfer's amount, or null when there is none to
+// show. The fee is part of the debit, so it is only shown on the source leg.
+export function transactionFeeHint(
+  t: TransactionResponse,
+  viewedAccountId: UUID | null,
+): Money | null {
+  if (!isTransfer(t.transactionType)) return null;
+  if (viewedAccountId && t.sourceAccountId !== viewedAccountId) return null;
+  const fee = transferFeeTotal(t.allocations);
+  return fee > 0 ? { amount: fee, currency: t.sourceCurrency } : null;
 }
 
 export interface AccountCell {

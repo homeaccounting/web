@@ -51,7 +51,8 @@
     "overTarget": "Allocations are {{amount}} over the target",
     "shortOfTarget": "Allocations are {{amount}} short of the target",
     "refundCategoryCap": "Refund for a category can't exceed {{amount}} left to refund",
-    "refundTotalCap": "Refund can't exceed {{amount}} left on this transaction"
+    "refundTotalCap": "Refund can't exceed {{amount}} left on this transaction",
+    "feesExceedAmount": "Fees must be less than the debited amount"
   },
   "merge": {
     "ineligibility": {
@@ -114,7 +115,14 @@
     "reimbursementsTitle": "Reimbursements (reduces an expense)",
     "addReimbursement": "+ Add reimbursement",
     "expenseCategoriesTitle": "Expense categories",
-    "addCategory": "+ Add category"
+    "addCategory": "+ Add category",
+    "addFee": "Add fee",
+    "fees": "Fees",
+    "addFeeRow": "+ Add fee",
+    "feeTakenFrom": "Fee taken from:",
+    "feeFromSource": "Source (on top)",
+    "feeFromTarget": "Target (deducted)",
+    "feeSummary": "Debited {{debited}} · Received {{received}} · Fee {{fee}}"
   },
   "resolve": {
     "genericError": "Something went wrong. Please try again.",
@@ -247,7 +255,8 @@
     "edit": "Edit",
     "convertTo": "Convert to",
     "refund": "Refund",
-    "filters": "Filters"
+    "filters": "Filters",
+    "transferFee": "incl. fee {{amount}}"
   },
   "bulk": {
     "fill": "Fill {{amount}}",

@@ -318,6 +318,11 @@ export interface InternalTransferRequest {
   exchangeRate?: number;
   date?: ISO8601;
   labels?: UUID[];
+  // Optional fees (tracker#104), expense bucket only, in the source currency.
+  // `amount` is then the TOTAL debited; the target is credited `amount − Σfees`
+  // (converted by `exchangeRate` when cross-currency). Omit for a plain transfer.
+  // Mirrors backend Web/Types.hs TransferRequest.allocations :: Maybe AllocationsDTO.
+  allocations?: Allocations;
 }
 
 // Edit transaction — per-field DTOs.
@@ -375,8 +380,11 @@ export interface AmendTransactionRequest {
   // (income/expense) amendment — there is no within-kind/cross-kind
   // distinction; omitting them is rejected with
   // AllocationsRequiredForCategorisedKind. Optional here only because transfer
-  // amendments (uncategorised) carry none. Allocation-only edits that leave the
-  // total unchanged use the dedicated PATCH /allocations endpoint instead.
+  // amendments carry them only as fees (tracker#104): a transfer amendment
+  // WITHOUT them clears any existing fees, so resend the fees to keep them
+  // (Application/Services/TransactionService.hs synthesiseAmendmentTransactionType).
+  // Allocation-only edits that leave the total unchanged use the dedicated
+  // PATCH /allocations endpoint instead.
   newAllocations?: Allocations;
   // FULL desired state — absent/null CLEARS the contact; resend current to preserve (Web/Types.hs AmendTransactionRequest).
   contactId?: UUID | null;

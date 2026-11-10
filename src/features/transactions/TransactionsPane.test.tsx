@@ -1781,6 +1781,42 @@ describe('TransactionsPane', () => {
     });
   });
 
+  it('explains a transfer fee on the source leg only', async () => {
+    saveSession({ token: 't', userId: 'u', email: 'e', expiresAt: 9e15 });
+    const feeTransfer = (id: string, description: string, from: string, to: string) => ({
+      ...transactionFixture,
+      id,
+      description,
+      transactionType: 'transfer',
+      sourceAccountId: from,
+      targetAccountId: to,
+      sourceAmount: 1010,
+      sourceCurrency: 'USD',
+      targetAmount: 1000,
+      targetCurrency: 'USD',
+      allocations: {
+        incomes: [],
+        expenses: [{ categoryId: 'fee', amount: { amount: 10, currency: 'USD' } }],
+      },
+    });
+    server.use(
+      http.get(`${apiBase}/api/transactions`, () =>
+        HttpResponse.json({
+          transactions: [
+            feeTransfer('xfer-out', 'FeeOut', 'a1', 'a2'),
+            feeTransfer('xfer-in', 'FeeIn', 'a2', 'a1'),
+          ],
+          totalCount: 2,
+        }),
+      ),
+    );
+    renderWithProviders(ui(), { initialPath: '/transactions?accounts=a1' });
+    const out = (await screen.findByText('FeeOut')).closest('tr')!;
+    expect(out).toHaveTextContent(/incl\. fee \$10\.00/);
+    const into = screen.getByText('FeeIn').closest('tr')!;
+    expect(into).not.toHaveTextContent(/incl\. fee/);
+  });
+
   describe('quick-assign contact', () => {
     const AMAZON_ID = '00000000-0000-0000-0000-0000000c0d70';
 
